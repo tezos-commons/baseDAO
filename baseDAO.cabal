@@ -1,0 +1,64 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 0dbc4fbe3537a89bedb8ad5605e41a5f1bcd5fc82da388fc5e540656c7141d24
+
+name:           baseDAO
+version:        0.1.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/baseDAO#readme>
+homepage:       https://github.com/tqtezos/baseDAO
+bug-reports:    https://github.com/tqtezos/baseDAO/-/issues
+author:         Serokell, Tocqueville Group
+maintainer:     Serokell <hi@serokell.io>
+copyright:      2020 Tocqueville Group
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/tqtezos/baseDAO
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_baseDAO
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , universum
+  mixins:
+    base hiding (Prelude)
+  default-language: Haskell2010
+
+executable baseDAO-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_baseDAO
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , baseDAO
+  default-language: Haskell2010
+
+test-suite baseDAO-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_baseDAO
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , baseDAO
+  default-language: Haskell2010

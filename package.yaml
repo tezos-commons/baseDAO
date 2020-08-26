@@ -1,0 +1,50 @@
+name:                baseDAO
+version:             0.1.0.0
+license:             BSD3
+author:              Serokell, Tocqueville Group
+copyright:           2020 Tocqueville Group
+
+extra-source-files:
+- README.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/baseDAO#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+executables:
+  baseDAO-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - baseDAO
+
+tests:
+  baseDAO-test:
+    main:                Spec.hs
+    source-dirs:         test
+    build-tools: tasty-discover:tasty-discover
+
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -eventlog
+    - -with-rtsopts=-N
+    - '"-with-rtsopts=-N -A64m -AL256m"'
+
+    dependencies:
+    - baseDAO
