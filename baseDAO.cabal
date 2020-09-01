@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1e9e99f680b0ce747c71c70e8cfb78e49cc5caa1c85a9be082462491b4df1734
+-- hash: e21c56d358b53a59e238456b511999a0c83c05c20a2a5077a89b3349eff64ca4
 
 name:           baseDAO
 version:        0.1.0.0
@@ -27,6 +27,8 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , lorentz ==0.6.0
+    , morley ==1.6.0
     , universum
   default-language: Haskell2010
 
@@ -40,6 +42,8 @@ executable baseDAO
   build-depends:
       base >=4.7 && <5
     , baseDAO
+    , lorentz ==0.6.0
+    , morley ==1.6.0
     , universum
   default-language: Haskell2010
 
@@ -56,5 +60,7 @@ test-suite baseDAO-test
   build-depends:
       base >=4.7 && <5
     , baseDAO
+    , lorentz ==0.6.0
+    , morley ==1.6.0
     , universum
   default-language: Haskell2010

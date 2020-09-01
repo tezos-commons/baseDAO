@@ -1,4 +1,18 @@
 resolver: lts-16.11
 
 packages:
-- .
+  - .
+
+extra-deps:
+  - lorentz-0.6.0@sha256:546c75525aa41a3e5782aaa4da17bd13b72a57ecee9836c553582b675bb5f4f1,4095
+  - morley-1.6.0@sha256:62f2e31fa68c4e67fb4f4626664b5a0f02185c3d48f106b5dd10fb7efe569922,7419
+  - base58-bytestring-0.1.0
+  - hex-text-0.1.0.0
+  - show-type-0.1.1
+  - named-0.3.0.1@sha256:69b9722301201f8ed8abc89c4595e22c746e944bf4cdfafa8b21b14d336b26d1,2233
+  - vinyl-0.12.1@sha256:43456d4b3009646eee63953cbe539f1f4d0caf8bc3c25e841117e712836508f3,3790
+  - cryptonite-0.27
+  - haskell-dap-0.0.14.0@sha256:1befb8a6fce3e05c7cb10a1c883269fbd1c54ff7cec3314fa7dd64dba822a89e,3336
+  - morley-prelude-0.3.0@sha256:9e9473ac14cfa206adf0a3700764c0251de05042f1fe45daf9cb8556079ae663,2085
+
+

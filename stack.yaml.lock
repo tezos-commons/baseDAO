@@ -3,7 +3,77 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: lorentz-0.6.0@sha256:546c75525aa41a3e5782aaa4da17bd13b72a57ecee9836c553582b675bb5f4f1,4095
+    pantry-tree:
+      size: 3965
+      sha256: 0789c021428aebeb01b6ec0baa4e5dc3e9ff21784f0cb3b46e00d5efbe8a135e
+  original:
+    hackage: lorentz-0.6.0@sha256:546c75525aa41a3e5782aaa4da17bd13b72a57ecee9836c553582b675bb5f4f1,4095
+- completed:
+    hackage: morley-1.6.0@sha256:62f2e31fa68c4e67fb4f4626664b5a0f02185c3d48f106b5dd10fb7efe569922,7419
+    pantry-tree:
+      size: 8077
+      sha256: e07bf3e81ba5b44753c51c95d60d53b0040021e6a7ec39022c7a50bff54b8f63
+  original:
+    hackage: morley-1.6.0@sha256:62f2e31fa68c4e67fb4f4626664b5a0f02185c3d48f106b5dd10fb7efe569922,7419
+- completed:
+    hackage: base58-bytestring-0.1.0@sha256:a1da72ee89d5450bac1c792d9fcbe95ed7154ab7246f2172b57bd4fd9b5eab79,1913
+    pantry-tree:
+      size: 419
+      sha256: 053784f8edef6433518c873a7c502dc75348f812e2384e1306f90467ea54f40b
+  original:
+    hackage: base58-bytestring-0.1.0
+- completed:
+    hackage: hex-text-0.1.0.0@sha256:52dc2cf5ce45f7d86ea5e56e2ac57820f788c10bbb3fe83f6d57e678a426305b,1072
+    pantry-tree:
+      size: 314
+      sha256: 84ce6d618602d39e89e28b1a9cc41f0def4786d7046ac0a742557b5ab5381466
+  original:
+    hackage: hex-text-0.1.0.0
+- completed:
+    hackage: show-type-0.1.1@sha256:24f681a3481b3f9630e619d816054804ba1bd6cc05b5978ddd2cece8499ff2fa,1154
+    pantry-tree:
+      size: 214
+      sha256: c07e39492e0b8da34f87b3f7516f7739d60543013e7f22bc7db0dbe99eb57540
+  original:
+    hackage: show-type-0.1.1
+- completed:
+    hackage: named-0.3.0.1@sha256:69b9722301201f8ed8abc89c4595e22c746e944bf4cdfafa8b21b14d336b26d1,2233
+    pantry-tree:
+      size: 426
+      sha256: 4f9aaa00a4fac7404da5b5ea175cbb71142b5a47921ac0521f3836cc75681d9f
+  original:
+    hackage: named-0.3.0.1@sha256:69b9722301201f8ed8abc89c4595e22c746e944bf4cdfafa8b21b14d336b26d1,2233
+- completed:
+    hackage: vinyl-0.12.1@sha256:43456d4b3009646eee63953cbe539f1f4d0caf8bc3c25e841117e712836508f3,3790
+    pantry-tree:
+      size: 1857
+      sha256: 1a0a5f97e92926ea84c90c7cc8da6f8ce1765ab7aca5deef98e8feca75c0c4cd
+  original:
+    hackage: vinyl-0.12.1@sha256:43456d4b3009646eee63953cbe539f1f4d0caf8bc3c25e841117e712836508f3,3790
+- completed:
+    hackage: cryptonite-0.27@sha256:b75ec07ef0244574aa5374f0a1b349dff8c8f84583cb6c58fd95e565245716d4,18143
+    pantry-tree:
+      size: 22989
+      sha256: 1a63bb79748aeb2c0312d6a166fe8436a139929b017bf208f002e79073d21966
+  original:
+    hackage: cryptonite-0.27
+- completed:
+    hackage: haskell-dap-0.0.14.0@sha256:1befb8a6fce3e05c7cb10a1c883269fbd1c54ff7cec3314fa7dd64dba822a89e,3336
+    pantry-tree:
+      size: 2945
+      sha256: 7ef9bdacad04e0dd250c9e81e4d5aa4b030ffb317029f486676bec781393725b
+  original:
+    hackage: haskell-dap-0.0.14.0@sha256:1befb8a6fce3e05c7cb10a1c883269fbd1c54ff7cec3314fa7dd64dba822a89e,3336
+- completed:
+    hackage: morley-prelude-0.3.0@sha256:9e9473ac14cfa206adf0a3700764c0251de05042f1fe45daf9cb8556079ae663,2085
+    pantry-tree:
+      size: 270
+      sha256: 402cd467a690373ca891fa31650376312be351244c6d7e187ca9961d3708de0a
+  original:
+    hackage: morley-prelude-0.3.0@sha256:9e9473ac14cfa206adf0a3700764c0251de05042f1fe45daf9cb8556079ae663,2085
 snapshots:
 - completed:
     size: 532381
