@@ -4,25 +4,19 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0dbc4fbe3537a89bedb8ad5605e41a5f1bcd5fc82da388fc5e540656c7141d24
+-- hash: 1e9e99f680b0ce747c71c70e8cfb78e49cc5caa1c85a9be082462491b4df1734
 
 name:           baseDAO
-version:        0.1.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/baseDAO#readme>
-homepage:       https://github.com/tqtezos/baseDAO
-bug-reports:    https://github.com/tqtezos/baseDAO/-/issues
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/tqtezos/baseDAO#readme>
 author:         Serokell, Tocqueville Group
-maintainer:     Serokell <hi@serokell.io>
-copyright:      2020 Tocqueville Group
+maintainer:     Serokell, Tocqueville Group
+copyright:      2020 TQ Tezos
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-
-source-repository head
-  type: git
-  location: https://github.com/tqtezos/baseDAO
 
 library
   exposed-modules:
@@ -34,11 +28,9 @@ library
   build-depends:
       base >=4.7 && <5
     , universum
-  mixins:
-    base hiding (Prelude)
   default-language: Haskell2010
 
-executable baseDAO-exe
+executable baseDAO
   main-is: Main.hs
   other-modules:
       Paths_baseDAO
@@ -48,6 +40,7 @@ executable baseDAO-exe
   build-depends:
       base >=4.7 && <5
     , baseDAO
+    , universum
   default-language: Haskell2010
 
 test-suite baseDAO-test
@@ -57,8 +50,11 @@ test-suite baseDAO-test
       Paths_baseDAO
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -eventlog -with-rtsopts=-N "-with-rtsopts=-N -A64m -AL256m"
+  build-tool-depends:
+      tasty-discover:tasty-discover
   build-depends:
       base >=4.7 && <5
     , baseDAO
+    , universum
   default-language: Haskell2010

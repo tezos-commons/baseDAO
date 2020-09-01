@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2020 Tocqueville Group
+SPDX-FileCopyrightText: TQ Tezos
 
 SPDX-License-Identifier: LicenseRef-MIT-TQ
 -->

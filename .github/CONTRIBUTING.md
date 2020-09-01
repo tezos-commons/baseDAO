@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2020 Tocqueville Group
+SPDX-FileCopyrightText: 2020 TQ Tezos
 
 SPDX-License-Identifier: LicenseRef-MIT-TQ
 -->
@@ -20,7 +20,7 @@ Please use issue templates to create an issue.
 If you would like to contribute code to fix a bug, add a new feature, or
 otherwise improve our project, merge requests are most welcome.
 
-Our merge request template contains a [checklist](/.gitрги/pull_request.md#white_check_mark-checklist-for-your-merge-request) of acceptance criteria for your merge request.
+Our merge request template contains a [checklist](/.git/pull_request.md#white_check_mark-checklist-for-your-merge-request) of acceptance criteria for your merge request.
 Please read it before you start contributing and make sure your contributions adhere to this checklist.
 
 ### Prelude
@@ -56,23 +56,13 @@ project using `cabal`. If you want to update dependencies in one of these cabal 
 should transfer changes to `package.yaml` or `stack.yaml` and run [`scripts/generate-cabal-files.sh`](scripts/generate-cabal-files.sh),
 this script will update these files.
 
-## Makefile
-
-We have a [Makefile](/Makefile) which provides shortcuts for the most
-common developers' activities, like building with flags suitable for
-development, testing, applying `stylish-haskell` and `hlint`, building
-Haddock documentation. Mentioned `Makefile` can build all the packages we have.
-Each extra package, like [`cleveland`](/code/cleveland/Makefile),
-has its own `Makefile`.
-
-If you want to run test suite with additional options, set `TEST_ARGUMENTS` variable.
-Example: `TEST_ARGUMENTS="--pattern Parser" make test`.
-If you want to enable `--hide-successes` option, you can use `make test-hide-successes`.
-It will automatically set `TERM=dumb` which is a workaround for the issue mentioned earlier.
-
 ## Branching policy
 
-Our branching policy is described [here](/docs/branching.md).
+This project uses a variation of the [OneFlow](https://www.endoflineblog.com/oneflow-a-git-branching-model-and-workflow) branching model with two branches. Naming of long-lived branches is different:
+* `develop` branch from OneFlow is called `master` in this repository.
+* `master` branch from OneFlow is called `production` in this repository.
+
+So code in the `master` branch represents latest development version and code in the `production` branch represents latest stable version.
 
 ## Legal
 
@@ -86,7 +76,7 @@ but, basically, it all boils down to the following:
     file – it is not as hard as it might sound):
 
     ```haskell
-    -- SPDX-FileCopyrightText: 2020 Tocqueville Group
+    -- SPDX-FileCopyrightText: 2020 TQ Tezos
     --
     -- SPDX-License-Identifier: LicenseRef-MIT-TQ
     ```

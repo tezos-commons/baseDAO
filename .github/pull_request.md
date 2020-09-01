@@ -1,11 +1,3 @@
-[//]: # (This is a template of a pull request template.)
-[//]: # (You should modify it considering specifics of a particular repository and put it there.)
-[//]: # (Comments like this are meta-comments, they shouldn't be present in the final template.)
-[//]: # (Comments starting with '<!---' are intended to stay in the final template.)
-
-[//]: # (Keep in mind that it's only a template which contains items relevant to almost all conceivable repository.)
-[//]: # (There can be other important items relevant to your repository that you can add here.)
-
 ## Description
 
 <!--
