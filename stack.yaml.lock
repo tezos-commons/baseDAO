@@ -61,13 +61,6 @@ packages:
   original:
     hackage: cryptonite-0.27
 - completed:
-    hackage: haskell-dap-0.0.14.0@sha256:1befb8a6fce3e05c7cb10a1c883269fbd1c54ff7cec3314fa7dd64dba822a89e,3336
-    pantry-tree:
-      size: 2945
-      sha256: 7ef9bdacad04e0dd250c9e81e4d5aa4b030ffb317029f486676bec781393725b
-  original:
-    hackage: haskell-dap-0.0.14.0@sha256:1befb8a6fce3e05c7cb10a1c883269fbd1c54ff7cec3314fa7dd64dba822a89e,3336
-- completed:
     hackage: morley-prelude-0.3.0@sha256:9e9473ac14cfa206adf0a3700764c0251de05042f1fe45daf9cb8556079ae663,2085
     pantry-tree:
       size: 270

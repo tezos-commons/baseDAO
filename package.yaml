@@ -15,8 +15,15 @@ dependencies:
   - morley == 1.6.0
   - lorentz == 0.6.0
 
+default-extensions:
+  - NoImplicitPrelude
+
 library:
   source-dirs: src
+  generated-other-modules:
+    - Paths_baseDAO
+
+  dependencies: [universum]
 
 executables:
   baseDAO:

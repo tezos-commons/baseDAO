@@ -1,10 +1,10 @@
-cabal-version: 1.12
+cabal-version: 2.0
 
 -- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e21c56d358b53a59e238456b511999a0c83c05c20a2a5077a89b3349eff64ca4
+-- hash: 372f5016c879718eaa941768f761b35e4ce22cc2dbdefabd0a882f41a62bc046
 
 name:           baseDAO
 version:        0.1.0.0
@@ -23,8 +23,11 @@ library
       Lib
   other-modules:
       Paths_baseDAO
+  autogen-modules:
+      Paths_baseDAO
   hs-source-dirs:
       src
+  default-extensions: NoImplicitPrelude
   build-depends:
       base >=4.7 && <5
     , lorentz ==0.6.0
@@ -38,6 +41,7 @@ executable baseDAO
       Paths_baseDAO
   hs-source-dirs:
       app
+  default-extensions: NoImplicitPrelude
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
@@ -54,6 +58,7 @@ test-suite baseDAO-test
       Paths_baseDAO
   hs-source-dirs:
       test
+  default-extensions: NoImplicitPrelude
   ghc-options: -threaded -rtsopts -eventlog -with-rtsopts=-N "-with-rtsopts=-N -A64m -AL256m"
   build-tool-depends:
       tasty-discover:tasty-discover
