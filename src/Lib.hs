@@ -5,4 +5,4 @@ module Lib
 import Universum
 
 someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+someFunc = putTextLn "someFunc"

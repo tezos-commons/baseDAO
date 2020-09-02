@@ -4,7 +4,7 @@ cabal-version: 2.0
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 372f5016c879718eaa941768f761b35e4ce22cc2dbdefabd0a882f41a62bc046
+-- hash: 2c4072a6490bdbe3cff3d010a262e115a20a846c0285646740fbb0758fa4bf5c
 
 name:           baseDAO
 version:        0.1.0.0
@@ -18,6 +18,10 @@ build-type:     Simple
 extra-source-files:
     README.md
 
+source-repository head
+  type: git
+  location: git@github.com:tqtezos/baseDAO.git
+
 library
   exposed-modules:
       Lib
@@ -27,7 +31,8 @@ library
       Paths_baseDAO
   hs-source-dirs:
       src
-  default-extensions: NoImplicitPrelude
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude
   build-depends:
       base >=4.7 && <5
     , lorentz ==0.6.0
@@ -41,13 +46,11 @@ executable baseDAO
       Paths_baseDAO
   hs-source-dirs:
       app
-  default-extensions: NoImplicitPrelude
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude
   build-depends:
       base >=4.7 && <5
     , baseDAO
-    , lorentz ==0.6.0
-    , morley ==1.6.0
     , universum
   default-language: Haskell2010
 
@@ -58,14 +61,12 @@ test-suite baseDAO-test
       Paths_baseDAO
   hs-source-dirs:
       test
-  default-extensions: NoImplicitPrelude
-  ghc-options: -threaded -rtsopts -eventlog -with-rtsopts=-N "-with-rtsopts=-N -A64m -AL256m"
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -threaded -eventlog "-with-rtsopts=-N -A64m -AL256m"
   build-tool-depends:
       tasty-discover:tasty-discover
   build-depends:
       base >=4.7 && <5
     , baseDAO
-    , lorentz ==0.6.0
-    , morley ==1.6.0
     , universum
   default-language: Haskell2010
