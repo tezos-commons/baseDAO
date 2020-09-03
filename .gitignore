@@ -1,0 +1,9 @@
+.stack-work/
+# There are 2 possible reasons to have .cabal files:
+# 1. To let others use this repo as a dependency – it's very unlikely,
+# at least at this point.
+# 2. To support building with cabal – for that we also need to maintain
+# cabal.project.
+# In order to avoid overhead of keeping .cabal files in sync we just don't
+# commit them.
+*.cabal
