@@ -67,6 +67,50 @@ packages:
       sha256: 402cd467a690373ca891fa31650376312be351244c6d7e187ca9961d3708de0a
   original:
     hackage: morley-prelude-0.3.0@sha256:9e9473ac14cfa206adf0a3700764c0251de05042f1fe45daf9cb8556079ae663,2085
+- completed:
+    hackage: tasty-hunit-compat-0.2@sha256:71e077ae5c514fadd4586efc19315f10fa5f3c94770820f68f63768441d665f7,1199
+    pantry-tree:
+      size: 229
+      sha256: ef4e8284433af224f89a1dfd2968ea79de3570cef6e81b10187aca5d1fae6f76
+  original:
+    hackage: tasty-hunit-compat-0.2@sha256:71e077ae5c514fadd4586efc19315f10fa5f3c94770820f68f63768441d665f7,1199
+- completed:
+    subdir: code/cleveland
+    name: cleveland
+    version: 0.1.0
+    git: https://gitlab.com/morley-framework/morley.git
+    pantry-tree:
+      size: 9308
+      sha256: 2696db3801a2b67f1f1432c1a64741c8bbe4d99f63dc6cb8bb95ba194f88958c
+    commit: 3bc23ad17a0719ee96d83a94b0194ca5bfe3b8c7
+  original:
+    subdir: code/cleveland
+    git: https://gitlab.com/morley-framework/morley.git
+    commit: 3bc23ad17a0719ee96d83a94b0194ca5bfe3b8c7
+- completed:
+    subdir: code/morley-client
+    name: morley-client
+    version: 0.1.0
+    git: https://gitlab.com/morley-framework/morley.git
+    pantry-tree:
+      size: 2816
+      sha256: 94e7a975886677fc4ff5e79cfd2a3ebde030c968b8e974f74dbb764a0a60e506
+    commit: 3bc23ad17a0719ee96d83a94b0194ca5bfe3b8c7
+  original:
+    subdir: code/morley-client
+    git: https://gitlab.com/morley-framework/morley.git
+    commit: 3bc23ad17a0719ee96d83a94b0194ca5bfe3b8c7
+- completed:
+    name: caps
+    version: '0'
+    git: https://github.com/int-index/caps.git
+    pantry-tree:
+      size: 374
+      sha256: 3a80cb98282b5cc87b8c9907bfdf4d7185818e89901dc9b17d53caecbf21e607
+    commit: c5d61837eb358989b581ed82b1e79158c4823b1b
+  original:
+    git: https://github.com/int-index/caps.git
+    commit: c5d61837eb358989b581ed82b1e79158c4823b1b
 snapshots:
 - completed:
     size: 532381

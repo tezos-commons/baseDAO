@@ -13,3 +13,13 @@ extra-deps:
   - vinyl-0.12.1@sha256:43456d4b3009646eee63953cbe539f1f4d0caf8bc3c25e841117e712836508f3,3790
   - cryptonite-0.27
   - morley-prelude-0.3.0@sha256:9e9473ac14cfa206adf0a3700764c0251de05042f1fe45daf9cb8556079ae663,2085
+  - tasty-hunit-compat-0.2@sha256:71e077ae5c514fadd4586efc19315f10fa5f3c94770820f68f63768441d665f7,1199
+  - git:
+      https://gitlab.com/morley-framework/morley.git # CI can't use SSH
+    commit:
+      3bc23ad17a0719ee96d83a94b0194ca5bfe3b8c7 # morley-1.6.0
+    subdirs:
+      - code/cleveland
+      - code/morley-client
+  - git: https://github.com/int-index/caps.git
+    commit: c5d61837eb358989b581ed82b1e79158c4823b1b
