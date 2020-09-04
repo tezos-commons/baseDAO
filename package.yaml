@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
+
 name:                baseDAO
 version:             0.1.0.0
 license:             MIT

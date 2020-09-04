@@ -1,0 +1,5 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+Files: .github/ISSUE_TEMPLATE/* .github/pull_request_template.md
+Copyright: 2020 TQ Tezos
+License: LicenseRef-MIT-TQ
