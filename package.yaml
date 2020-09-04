@@ -11,6 +11,9 @@ extra-source-files:
 
 description:         Please see the README on GitHub at <https://github.com/tqtezos/baseDAO#readme>
 
+verbatim:
+  cabal-version: 2.2
+
 default-extensions:
   - AllowAmbiguousTypes
   - BangPatterns
@@ -76,11 +79,17 @@ dependencies:
 
 library:
   source-dirs: src
+  default-extensions: [ RebindableSyntax ]
+  ghc-options: [ -Wno-unused-do-bind ]
+
   generated-other-modules:
     - Paths_baseDAO
   dependencies:
     - morley == 1.6.0
     - lorentz == 0.6.0
+    - containers
+    - fmt
+    - text
 
 executables:
   baseDAO:
@@ -88,10 +97,15 @@ executables:
     source-dirs:         app
     dependencies:
     - baseDAO
+    - containers
+    - morley == 1.6.0
+    - lorentz == 0.6.0
+    - optparse-applicative
+    - with-utf8
 
 tests:
   baseDAO-test:
-    main:        Spec.hs
+    main:        Main.hs
     source-dirs: test
     build-tools: tasty-discover:tasty-discover
 
@@ -102,3 +116,14 @@ tests:
 
     dependencies:
     - baseDAO
+    - cleveland
+    - containers
+    - fmt
+    - hspec
+    - hspec-expectations
+    - HUnit
+    - lorentz == 0.6.0
+    - morley == 1.6.0
+    - tasty
+    - tasty-hspec
+    - tasty-hunit-compat
