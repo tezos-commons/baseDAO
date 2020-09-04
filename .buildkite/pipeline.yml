@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
+
+steps:
+  - label: hlint
+    commands:
+    - nix run -f ci.nix pkgs.hlint -c
+        ./scripts/lint.sh
+
+  - label: reuse lint
+    commands:
+    - nix run -f ci.nix pkgs.reuse -c
+        reuse lint
+
+  - label: check trailing whitespace
+    commands:
+    - .buildkite/check-trailing-whitespace.sh
+
+  - label: xrefcheck
+    commands:
+    - nix run -f ci.nix xrefcheck -c xrefcheck
+    retry:
+      automatic:
+        limit: 1
+
+  - label: build
+    commands:
+    - nix-build ci.nix -A all-components
+
+  - label: bats
+    commands:
+    - nix run -f ci.nix
+          pkgs.bats
+          packages.baseDAO.exes.baseDAO
+        -c bats ./scripts/test.bats
+
+  - label: test
+    commands:
+    - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
+    - ./result/bin/baseDAO-test
+
+  - label: weeder
+    commands:
+    - nix-build ci.nix -A weeder-script
+      # weeder needs .cabal file:
+    - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack
+    - ./result
