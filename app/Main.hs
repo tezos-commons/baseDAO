@@ -13,7 +13,12 @@ import Paths_baseDAO (version)
 import Lorentz (DGitRevision, GitRepoSettings(..), mkDGitRevision)
 import Lorentz.ContractRegistry
 
-import qualified Basic
+-- import qualified Basic
+import qualified Lorentz.Contracts.ManagedLedger as ML
+import qualified Lorentz.Contracts.BaseDAO as DAO
+import Util.Named
+import Morley.CLI (addressOption)
+import Util.IO
 
 programInfo :: DGitRevision -> Opt.ParserInfo CmdLnArgs
 programInfo gitRev = Opt.info (Opt.helper <*> versionOption <*> argParser contracts gitRev) $
@@ -38,12 +43,21 @@ usageDoc = Just $ mconcat
    , "  baseDAO print --help", linebreak
    ]
 
+-- contracts :: ContractRegistry
+-- contracts = ContractRegistry $ Map.fromList
+--   [ "Basic" ?:: ContractInfo
+--     { ciContract = Basic.measureBoaConstrictor
+--     , ciIsDocumented = True
+--     , ciStorageParser = Just (pure Basic.emptyStorage)
+--     , ciStorageNotes = Nothing
+--     }
+--   ]
 contracts :: ContractRegistry
 contracts = ContractRegistry $ Map.fromList
-  [ "Basic" ?:: ContractInfo
-    { ciContract = Basic.measureBoaConstrictor
+  [ "ManagedLedger" ?:: ContractInfo
+    { ciContract = DAO.contractScript
     , ciIsDocumented = True
-    , ciStorageParser = Just (pure Basic.emptyStorage)
+    , ciStorageParser = Nothing
     , ciStorageNotes = Nothing
     }
   ]
