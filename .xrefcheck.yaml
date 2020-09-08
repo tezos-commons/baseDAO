@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2019-2020 Serokell <https://serokell.io>
+#
+# SPDX-License-Identifier: Unlicense
+
+# Parameters of repository traversal.
+traversal:
+  # Files and folders which we pretend do not exist
+  # (so they are neither analyzed nor can be referenced).
+  ignored:
+    # Git files
+    - .git
+
+    # Stack files
+    - .stack-work
+
+# Verification parameters.
+verification:
+  # On 'anchor not found' error, how much similar anchors should be displayed as
+  # hint. Number should be between 0 and 1, larger value means stricter filter.
+  anchorSimilarityThreshold: 0.5
+
+  # When checking external references, how long to wait on request before
+  # declaring "Response timeout".
+  externalRefCheckTimeout: 10s
+
+  # Prefixes of files, references in which should not be analyzed.
+  notScanned:
+    # GitHub-specific files
+    - .github/pull_request_template.md
+    - .github/issue_template.md
+    - .github/PULL_REQUEST_TEMPLATE
+    - .github/ISSUE_TEMPLATE
+
+    # GitLab-specific files
+    - .gitlab/merge_request_templates/
+    - .gitlab/issue_templates/
+
+    # This file is ignored because it refers to
+    # https://github.com/tqtezos/baseDAO/issues/new
+    # which requires a github account with access to the repo
+    # (xrefcheck itself doesn't have it)
+    - .github/CONTRIBUTING.md
+
+  # Glob patterns describing the files which do not physically exist in the
+  # repository but should be treated as existing nevertheless.
+  virtualFiles:
+    # GitHub pages
+    - ../../../issues
+    - ../../../issues/*
+    - ../../../pulls
+    - ../../../pulls/*
+
+    # GitLab pages
+    - ../../issues
+    - ../../issues/*
+    - ../../merge_requests
+    - ../../merge_requests/*
