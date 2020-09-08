@@ -45,17 +45,6 @@ In short, this option is somewhat broken when `tasty` thinks that it outputs to 
 A workaround is to set `TERM=dumb`.
 3. You can run tests using our `Makefile`, see below.
 
-## Cabal and Stack
-
-We use [`hpack`](https://hackage.haskell.org/package/hpack) and `stack.yaml` to maintain the project
-and its dependencies, but we also provide `.cabal` files in the repository due to
-[stack issue](https://github.com/commercialhaskell/stack/issues/4906) which makes it impossible
-to use `morley` as a dependency with stack version > 2 without `.cabal` files. Also we provide
-`cabal.project` and `cabal.project.freeze` files in order to provide an ability to build the
-project using `cabal`. If you want to update dependencies in one of these cabal related files you
-should transfer changes to `package.yaml` or `stack.yaml` and run [`scripts/generate-cabal-files.sh`](scripts/generate-cabal-files.sh),
-this script will update these files.
-
 ## Branching policy
 
 This project uses a variation of the [OneFlow](https://www.endoflineblog.com/oneflow-a-git-branching-model-and-workflow) branching model with two branches. Naming of long-lived branches is different:
