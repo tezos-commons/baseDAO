@@ -20,7 +20,7 @@ Please use issue templates to create an issue.
 If you would like to contribute code to fix a bug, add a new feature, or
 otherwise improve our project, merge requests are most welcome.
 
-Our merge request template contains a [checklist](/.github/pull_request.md#white_check_mark-checklist-for-your-merge-request) of acceptance criteria for your merge request.
+Our merge request template contains a [checklist](/.github/pull_request_template.md#white_check_mark-checklist-for-your-pull-request) of acceptance criteria for your merge request.
 Please read it before you start contributing and make sure your contributions adhere to this checklist.
 
 ### Prelude
