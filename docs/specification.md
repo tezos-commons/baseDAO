@@ -127,7 +127,11 @@ Parameter (in Michelson):
 
 - Permission logic follows the default permissions descriptor specified in FA2.
 
-- Only 2 `token_id` values are supported: 0 and 1.
+- Althought the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed to this entrypoint MUST be 0.
+
+- If the destination address is the `freeze_my_tokens` address:
+  - This entrypoint MUST update the unfrozen token balance(`token_id = 0`) according to FA2 requirement.
+  - It MUST also update the frozen token balance (`token_id = 1`) of the source address by the amount specified in the parameter.
 
 ### **balance_of**
 
@@ -176,7 +180,7 @@ Parameter (in Michelson):
 
 - This entrypoint MUST follow the FA2 requirements.
 
-- Only 2 `token_id` values are supported: 0 and 1.
+- Since the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed MUST be either 0 or 1.
 
 ### **token_metadata_registry**
 
@@ -191,8 +195,7 @@ Parameter (in Michelson)
 ```
 
 - Return contract address that holds token metadata.
-
-- **TODO**
+- Since the contract owns its token metadata the returned value of this entrypoint call will always be equal to `SELF`.
 
 ### **update_operators**
 
@@ -273,9 +276,39 @@ Parameter (in Michelson):
 
 ## Custom (non-FA2) token functions
 
-Functions related to token transfers, but not present in FA2.
+Functions related to token transfers, but not present in FA2. They do not have `token_id` argument because only unfrozen token is supported (`token_id = 0`) and not necessary (since they are not part of FA2).
 
-**TODO**
+#### **mint**
+
+Types
+```
+mint = list nat
+```
+
+Parameter (in Michelson):
+```
+list nat
+```
+
+- Produces the given amounts of tokens to the wallet associated with a predefined address.
+- Each minting must happen atomically, so if one of them fails, then the whole operation must fail.
+- Fails if the sender is not administrator.
+
+#### **burn**
+
+Types
+```
+burn = list nat
+```
+
+Parameter (in Michelson):
+```
+list nat
+```
+
+- Decreases balance of a wallet associated with a predefined address.
+- Each burning operation must happen atomically, so if one of them fails, then the whole operation must fail.
+- Fails if the sender is not administrator.
 
 ## Proposal entrypoints
 
