@@ -22,7 +22,7 @@ These two parts are coupled into one smart contract because interaction between 
 - The contract must be FA2 compatible as to facilitate listing on
   exchanges and interaction with services which support FA2.
 
-- The contract must store tokens of two types: frozen and unfrozen.
+- The contract must store tokens of two types: frozen (`token_id` is 0) and unfrozen (`token_id` is 1).
 
 - The storage of the contract must have annotations for all fields
   and must be documented to make its interpretation easy for users.
@@ -62,12 +62,12 @@ We start with standard FA2 errors which are part of the FA2 specification.
 
 The next group consists of the errors that are not part of the FA2 specification.
 
-| Error                           | Description                                            |
-|---------------------------------|--------------------------------------------------------|
-| `NOT_ADMINISTRATOR`             | The sender is not the administrator                     |
-| `NOT_PENDING_ADMINISTRATOR`     | Authorized sender is not the current pending administrator |
-| `NOT_PENDING_ADMINISTRATOR_SET` | Throws when trying to authorize as the pending administrator whilst is not set for a contract |
-| `QUORUM_NOT_MET`                | **TODO**                                               |
+| Error                          | Description                                            |
+|--------------------------------|--------------------------------------------------------|
+| `NOT_ADMINISTRATOR`            | The sender is not the administrator                     |
+| `NOT_PENDING_ADMINISTRATOR`    | Authorized sender is not the current pending administrator |
+| `NO_PENDING_ADMINISTRATOR_SET` | Throws when trying to authorize as the pending administrator whilst is not set for a contract |
+| `QUORUM_NOT_MET`               | **TODO**                                               |
 
 # Entrypoints
 
@@ -77,6 +77,10 @@ Full list:
 * [`token_metadata_registry`](#token_metadata_registry)
 * [`update_operators`](#update_operators)
 * [`is_operator`](#is_operator)
+* [`mint`](#mint)
+* [`burn`](#burn)
+* [`transfer_ownership`](#transfer_ownership)
+* [`accept_ownership`](#accept_ownership)
 
 Format:
 ```
@@ -144,11 +148,13 @@ Parameter (in Michelson):
 
 - Permission logic follows the default permissions descriptor specified in FA2.
 
-- Althought the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed to this entrypoint MUST be 0.
+- Although the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed to this entrypoint MUST be 0.
 
 - If the destination address is the `freeze_my_tokens` address:
   - This entrypoint MUST update the unfrozen token balance(`token_id = 0`) according to FA2 requirement.
-  - It MUST also update the frozen token balance (`token_id = 1`) of the source address by the amount specified in the parameter.
+  - It MUST also increase the frozen token balance (`token_id = 1`) of the source address by the amount specified in the parameter.
+
+- The administrator can transfer tokens from any address to any address.
 
 ### **balance_of**
 
@@ -295,7 +301,7 @@ Parameter (in Michelson):
 
 Functions related to token transfers, but not present in FA2. They do not have `token_id` argument because only unfrozen token is supported (`token_id = 0`) and not necessary (since they are not part of FA2).
 
-#### **mint**
+### **mint**
 
 Types
 ```
@@ -314,10 +320,9 @@ Parameter (in Michelson):
 ```
 
 - Produces the given amounts of tokens to the wallet associated with the given address.
-- The operation MUST follow permission policies described above.
 - Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
 
-#### **burn**
+### **burn**
 
 Types
 ```
@@ -336,7 +341,6 @@ Parameter (in Michelson):
 ```
 
 - Reduce the given amounts of tokens to the wallet associated with the given address.
-- The operation MUST follow permission policies described above.
 - Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
 - Fails with `FA2_INSUFFICIENT_BALANCE` if the wallet associated with the given address
 does not have enough tokens to burn.
@@ -377,6 +381,7 @@ Parameter (in Michelson):
 ```
 unit
 ```
+
 - Accept the administrator privilege.
 
 - Fails with `NOT_PENDING_ADMINISTRATOR` if the sender is not the current pending administrator or `NO_PENDING_ADMINISTRATOR_SET` if there is no pending administrator.
