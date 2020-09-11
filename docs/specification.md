@@ -34,6 +34,20 @@ Note that the actual storage type is implementation detail and is not specified 
 
 **TODO**
 
+## Roles
+
+The token supports one "global" user role: `Administrator`. This role applies to the
+whole contract (hence "global"):
+
+* **administrator**
+  - Can re-assign this role to a new address.
+  - There always must be exactly one administrator.
+  - [TODO]: Add DAO functionality
+
+Additionally, the contract inherits the **operator** role from FA2.
+This role is "local" to a particular address.
+Each address can have any number of operators and be an operator of any number of addresses.
+
 # Errors
 
 In error scenarios the stablecoin contract fails with a string or a pair where the first item is a string.
@@ -48,9 +62,12 @@ We start with standard FA2 errors which are part of the FA2 specification.
 
 The next group consists of the errors that are not part of the FA2 specification.
 
-| Error                        | Description |
-|------------------------------|-------------|
-| `QUORUM_NOT_MET`             | **TODO**    |
+| Error                           | Description                                            |
+|---------------------------------|--------------------------------------------------------|
+| `NOT_ADMINISTRATOR`             | The sender is not the administrator                     |
+| `NOT_PENDING_ADMINISTRATOR`     | Authorized sender is not the current pending administrator |
+| `NOT_PENDING_ADMINISTRATOR_SET` | Throws when trying to authorize as the pending administrator whilst is not set for a contract |
+| `QUORUM_NOT_MET`                | **TODO**                                               |
 
 # Entrypoints
 
@@ -282,33 +299,87 @@ Functions related to token transfers, but not present in FA2. They do not have `
 
 Types
 ```
-mint = list nat
+mint =
+  ( address :to_
+  , nat     :value
+  )
 ```
 
 Parameter (in Michelson):
 ```
-list nat
+(pair
+  (address %to_)
+  (nat %value)
+)
 ```
 
-- Produces the given amounts of tokens to the wallet associated with a predefined address.
-- Each minting must happen atomically, so if one of them fails, then the whole operation must fail.
-- Fails if the sender is not administrator.
+- Produces the given amounts of tokens to the wallet associated with the given address.
+- The operation MUST follow permission policies described above.
+- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
 
 #### **burn**
 
 Types
 ```
-burn = list nat
+burn =
+  ( address :to_
+  , nat     :value
+  )
 ```
 
 Parameter (in Michelson):
 ```
-list nat
+(pair
+  (address %to_)
+  (nat %value)
+)
 ```
 
-- Decreases balance of a wallet associated with a predefined address.
-- Each burning operation must happen atomically, so if one of them fails, then the whole operation must fail.
-- Fails if the sender is not administrator.
+- Reduce the given amounts of tokens to the wallet associated with the given address.
+- The operation MUST follow permission policies described above.
+- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `FA2_INSUFFICIENT_BALANCE` if the wallet associated with the given address
+does not have enough tokens to burn.
+
+## Role reassigning functions
+
+### **transfer_ownership**
+
+Types
+```
+transfer_ownership = address
+```
+
+Parameter (in Michelson):
+```
+address
+```
+
+- Initiate transfer of the role of administrator to a new address.
+
+- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+
+- The current administrator retains his privileges up until
+  `accept_ownership` is called.
+
+- Can be called multiple times, each call replaces pending administrator with
+  the new one. Note, that if proposed administrator is the same as the current
+  one, then the pending administrator is simply invalidated.
+
+### **accept_ownership**
+
+Types
+```
+accept_ownership = unit
+```
+
+Parameter (in Michelson):
+```
+unit
+```
+- Accept the administrator privilege.
+
+- Fails with `NOT_PENDING_ADMINISTRATOR` if the sender is not the current pending administrator or `NO_PENDING_ADMINISTRATOR_SET` if there is no pending administrator.
 
 ## Proposal entrypoints
 
