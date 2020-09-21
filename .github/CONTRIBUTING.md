@@ -20,7 +20,7 @@ Please use issue templates to create an issue.
 If you would like to contribute code to fix a bug, add a new feature, or
 otherwise improve our project, merge requests are most welcome.
 
-Our merge request template contains a [checklist](/.github/pull_request.md#white_check_mark-checklist-for-your-merge-request) of acceptance criteria for your merge request.
+Our merge request template contains a [checklist](/.github/pull_request_template.md#white_check_mark-checklist-for-your-pull-request) of acceptance criteria for your merge request.
 Please read it before you start contributing and make sure your contributions adhere to this checklist.
 
 ### Prelude
@@ -44,17 +44,6 @@ It's useful because otherwise if test suite fails you need to find the cause of 
 In short, this option is somewhat broken when `tasty` thinks that it outputs to console.
 A workaround is to set `TERM=dumb`.
 3. You can run tests using our `Makefile`, see below.
-
-## Cabal and Stack
-
-We use [`hpack`](https://hackage.haskell.org/package/hpack) and `stack.yaml` to maintain the project
-and its dependencies, but we also provide `.cabal` files in the repository due to
-[stack issue](https://github.com/commercialhaskell/stack/issues/4906) which makes it impossible
-to use `morley` as a dependency with stack version > 2 without `.cabal` files. Also we provide
-`cabal.project` and `cabal.project.freeze` files in order to provide an ability to build the
-project using `cabal`. If you want to update dependencies in one of these cabal related files you
-should transfer changes to `package.yaml` or `stack.yaml` and run [`scripts/generate-cabal-files.sh`](scripts/generate-cabal-files.sh),
-this script will update these files.
 
 ## Branching policy
 

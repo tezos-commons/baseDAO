@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
+
 .stack-work/
 # There are 2 possible reasons to have .cabal files:
 # 1. To let others use this repo as a dependency – it's very unlikely,

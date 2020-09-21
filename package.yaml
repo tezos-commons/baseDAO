@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
+
 name:                baseDAO
 version:             0.1.0.0
 license:             MIT
@@ -75,7 +78,6 @@ ghc-options:
 
 dependencies:
   - base >= 4.7 && < 5
-  - universum
 
 library:
   source-dirs: src
@@ -87,9 +89,6 @@ library:
   dependencies:
     - morley == 1.6.0
     - lorentz == 0.6.0
-    - containers
-    - fmt
-    - text
 
 executables:
   baseDAO:
@@ -101,6 +100,7 @@ executables:
     - morley == 1.6.0
     - lorentz == 0.6.0
     - optparse-applicative
+    - universum
     - with-utf8
 
 tests:
@@ -117,13 +117,9 @@ tests:
     dependencies:
     - baseDAO
     - cleveland
-    - containers
-    - fmt
-    - hspec
-    - hspec-expectations
     - HUnit
     - lorentz == 0.6.0
     - morley == 1.6.0
     - tasty
-    - tasty-hspec
     - tasty-hunit-compat
+    - universum

@@ -1,0 +1,75 @@
+{
+    "hackage.nix": {
+        "branch": "master",
+        "description": "Automatically generated Nix expressions for Hackage",
+        "homepage": "",
+        "owner": "input-output-hk",
+        "repo": "hackage.nix",
+        "rev": "6285296843304b16b40758273e535881b70c7d1c",
+        "sha256": "1n8qibzsdhdrnrnwblzyjhxlhgicwx1mfv5x008311gfpkx30njz",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/hackage.nix/archive/6285296843304b16b40758273e535881b70c7d1c.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "haskell-nix-weeder": {
+        "branch": "master",
+        "description": "haskell.nix + weeder",
+        "homepage": null,
+        "owner": "serokell",
+        "repo": "haskell-nix-weeder",
+        "rev": "a959fce7499df473e13336959cba77fbc87f3b7f",
+        "sha256": "1pmlndvbhzxj1k5f87d9dxfa00zbvmkmvnbd1davzwg77bd639l0",
+        "type": "tarball",
+        "url": "https://github.com/serokell/haskell-nix-weeder/archive/a959fce7499df473e13336959cba77fbc87f3b7f.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "haskell.nix": {
+        "branch": "master",
+        "description": "Alternative Haskell Infrastructure for Nixpkgs",
+        "homepage": "https://input-output-hk.github.io/haskell.nix",
+        "owner": "input-output-hk",
+        "repo": "haskell.nix",
+        "rev": "565db5410605db0135c229336eea7f906ab1253f",
+        "sha256": "09lmcixsw6dbwc93672np8dkvy2yq3qfrfhwl9v6v06bgvbmg7x6",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/565db5410605db0135c229336eea7f906ab1253f.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs": {
+        "branch": "master",
+        "description": "Pinned Nixpkgs tree (master follows nixos-unstable-small, only tags have stable history)",
+        "homepage": "",
+        "owner": "serokell",
+        "repo": "nixpkgs",
+        "rev": "66a26e65eb7f9b6cb3f773052da0cd3ac52f015c",
+        "sha256": "09ab1wywcwhqlwy566y00h6q8c7x64qvdk2b82jvadixbanx46wh",
+        "type": "tarball",
+        "url": "https://github.com/serokell/nixpkgs/archive/66a26e65eb7f9b6cb3f773052da0cd3ac52f015c.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "stackage.nix": {
+        "branch": "master",
+        "description": "Automatically generated Nix expressions of Stackage snapshots",
+        "homepage": "",
+        "owner": "input-output-hk",
+        "repo": "stackage.nix",
+        "rev": "f0fb182a887d531d2361b4224682bc0e06c2aef0",
+        "sha256": "0zd8sbk8q5bix172yx5n2fvpb6n8rb0ydfsd4l8d6iy8985rcfxr",
+        "type": "tarball",
+        "url": "https://github.com/input-output-hk/stackage.nix/archive/f0fb182a887d531d2361b4224682bc0e06c2aef0.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "xrefcheck": {
+        "branch": "v0.1.2",
+        "description": "Check cross-references in repository documents",
+        "homepage": "",
+        "owner": "serokell",
+        "repo": "xrefcheck",
+        "rev": "53344d09ceed236d37154b4e583495c9759c7ef3",
+        "sha256": "17fawxqpshd29gviffzb59mjjskifrnkljc8nic6lbvsvml5fsv3",
+        "type": "tarball",
+        "url": "https://github.com/serokell/xrefcheck/archive/53344d09ceed236d37154b4e583495c9759c7ef3.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
+        "version": "0.1.2"
+    }
+}

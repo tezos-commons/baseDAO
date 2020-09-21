@@ -1,14 +1,19 @@
+-- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-License-Identifier: LicenseRef-MIT-TQ
+
 module Test.Basic
   ( unit_updates_storage_properly
   ) where
 
-import Basic (Parameter(..), measureBoaConstrictor)
+import Universum
 
 import Lorentz
 import Lorentz.Test
 import Michelson.Test.Integrational
 import Michelson.Typed.Convert
 import Test.Tasty.HUnit (Assertion)
+
+import Basic (Parameter (..), measureBoaConstrictor)
 
 unit_updates_storage_properly :: Assertion
 unit_updates_storage_properly = integrationalTestExpectation $ do
