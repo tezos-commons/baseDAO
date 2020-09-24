@@ -17,14 +17,14 @@ exe="baseDAO"
   "$exe" list
 }
 
-@test "Print Basic" {
-  "$exe" print -n Basic
+@test "Print BaseDAO" {
+  "$exe" print -n BaseDAO
 }
 
-@test "Print initial Basic storage" {
-  "$exe" storage-Basic
+@test "Print initial BaseDAO storage" {
+  "$exe" storage-BaseDAO
 }
 
-@test "Document Basic" {
-  "$exe" document -n Basic
+@test "Document BaseDAO" {
+  "$exe" document -n BaseDAO
 }
