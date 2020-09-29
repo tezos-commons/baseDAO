@@ -10,6 +10,7 @@ module Lorentz.Contracts.BaseDAO
 
   , baseDaoContract
   , emptyStorage
+  , mkStorage
   ) where
 
 import Lorentz

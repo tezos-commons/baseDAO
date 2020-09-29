@@ -1,15 +1,15 @@
 # SPDX-FileCopyrightText: 2020 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-resolver: lts-16.11
+resolver: lts-16.5
 
 packages:
   - .
 
 extra-deps:
-  - lorentz-0.6.1
   - morley-1.7.0
-  - indigo-0.2.1
+  - lorentz-0.6.1
+  - indigo-0.2.2
   - base58-bytestring-0.1.0
   - hex-text-0.1.0.0
   - show-type-0.1.1
@@ -21,7 +21,7 @@ extra-deps:
   - git:
       https://gitlab.com/morley-framework/morley.git # CI can't use SSH
     commit:
-      2d0506578493fec3851d711a5cc26c9dc5885001 # morley-1.7.0
+      619915ceccb66ba36d0eca06cedd76f605a15bd3 # master
     subdirs:
       - code/cleveland
       - code/morley-client
