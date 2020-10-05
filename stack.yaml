@@ -7,8 +7,9 @@ packages:
   - .
 
 extra-deps:
-  - lorentz-0.6.0@sha256:546c75525aa41a3e5782aaa4da17bd13b72a57ecee9836c553582b675bb5f4f1,4095
-  - morley-1.6.0@sha256:62f2e31fa68c4e67fb4f4626664b5a0f02185c3d48f106b5dd10fb7efe569922,7419
+  - lorentz-0.6.1
+  - morley-1.7.0
+  - indigo-0.2.1
   - base58-bytestring-0.1.0
   - hex-text-0.1.0.0
   - show-type-0.1.1
@@ -20,9 +21,13 @@ extra-deps:
   - git:
       https://gitlab.com/morley-framework/morley.git # CI can't use SSH
     commit:
-      3bc23ad17a0719ee96d83a94b0194ca5bfe3b8c7 # morley-1.6.0
+      2d0506578493fec3851d711a5cc26c9dc5885001 # morley-1.7.0
     subdirs:
       - code/cleveland
       - code/morley-client
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
+  - git: https://gitlab.com/morley-framework/morley-ledgers.git
+    commit: 47a94df200451d78d81cf0515f9328645a03bd22
+    subdirs:
+      - code/morley-ledgers

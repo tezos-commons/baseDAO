@@ -9,14 +9,14 @@ import Universum
 
 import qualified Data.Map as Map
 import Data.Version (showVersion)
+import Lorentz (DGitRevision, GitRepoSettings (..), mkDGitRevision)
+import Lorentz.ContractRegistry
 import Main.Utf8 (withUtf8)
 import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
 import Paths_baseDAO (version)
-import Lorentz (DGitRevision, GitRepoSettings(..), mkDGitRevision)
-import Lorentz.ContractRegistry
 
-import qualified Basic
+import qualified Lorentz.Contracts.BaseDAO as DAO
 
 programInfo :: DGitRevision -> Opt.ParserInfo CmdLnArgs
 programInfo gitRev = Opt.info (Opt.helper <*> versionOption <*> argParser contracts gitRev) $
@@ -43,10 +43,10 @@ usageDoc = Just $ mconcat
 
 contracts :: ContractRegistry
 contracts = ContractRegistry $ Map.fromList
-  [ "Basic" ?:: ContractInfo
-    { ciContract = Basic.measureBoaConstrictor
+  [ "BaseDAO" ?:: ContractInfo
+    { ciContract = DAO.baseDaoContract
     , ciIsDocumented = True
-    , ciStorageParser = Just (pure Basic.emptyStorage)
+    , ciStorageParser = Just (pure DAO.emptyStorage)
     , ciStorageNotes = Nothing
     }
   ]
