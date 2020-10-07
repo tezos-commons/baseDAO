@@ -2,10 +2,9 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Lorentz.Contracts.BaseDAO
-  ( module Exports
-
-  , Ledger
+  ( Ledger
   , Operators
+  , Parameter (..)
   , Storage (..)
 
   , baseDaoContract
@@ -15,11 +14,10 @@ module Lorentz.Contracts.BaseDAO
 
 import Lorentz
 import Lorentz.Contracts.BaseDAO.FA2
-import Lorentz.Contracts.Spec.FA2Interface as Exports
-import Lorentz.Contracts.BaseDAO.Types
-
+import Lorentz.Contracts.BaseDAO.Management
+import Lorentz.Contracts.BaseDAO.Types as BaseDAO
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Util.Markdown
-
 
 contractDoc :: Markdown
 contractDoc = [md|
@@ -27,16 +25,21 @@ contractDoc = [md|
   (https://gitlab.com/tzip/tzip/-/blob/667f925471728bb8e81fbd30b93a171e401b6dc1/proposals/tzip-12/tzip-12.md)
   |]
 
-
-baseDaoContract :: Contract Parameter Storage
+baseDaoContract :: Contract BaseDAO.Parameter Storage
 baseDaoContract = defaultContract $ contractName "FA2 smart contract" $ do
   doc $ DDescription contractDoc
   unpair
-  entryCase @Parameter (Proxy @PlainEntrypointsKind)
+  entryCase @BaseDAO.Parameter (Proxy @PlainEntrypointsKind)
+    ( #cCall_FA2 /-> fa2Handler
+    , #cTransfer_ownership /-> transferOwnership
+    , #cAccept_ownership /-> acceptOwnership
+    )
+
+fa2Handler :: Entrypoint FA2.Parameter Storage
+fa2Handler =
+  entryCase @FA2.Parameter (Proxy @PlainEntrypointsKind)
     ( #cTransfer /-> transfer
     , #cBalance_of /-> balanceOf
     , #cToken_metadata_registry /-> tokenMetadataRegistry
-    , #cPermissions_descriptor /-> permissionsDescriptor
     , #cUpdate_operators /-> updateOperators
     )
-

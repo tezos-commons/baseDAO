@@ -9,7 +9,7 @@ packages:
 extra-deps:
   - morley-1.7.0
   - lorentz-0.6.1
-  - indigo-0.2.2
+  - indigo-0.3.0
   - base58-bytestring-0.1.0
   - hex-text-0.1.0.0
   - show-type-0.1.1
@@ -28,6 +28,6 @@ extra-deps:
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 47a94df200451d78d81cf0515f9328645a03bd22
+    commit: efc259c75713de77340b2e242104b49e3704c55d # master
     subdirs:
       - code/morley-ledgers
