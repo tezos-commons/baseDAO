@@ -87,10 +87,11 @@ library:
   generated-other-modules:
     - Paths_baseDAO
   dependencies:
-    - morley == 1.7.0
+    - morley
     - morley-ledgers
-    - lorentz == 0.6.1
+    - lorentz
     - containers
+    - universum
 
 executables:
   baseDAO:
@@ -99,8 +100,8 @@ executables:
     dependencies:
     - baseDAO
     - containers
-    - morley == 1.7.0
-    - lorentz == 0.6.1
+    - morley
+    - lorentz
     - optparse-applicative
     - universum
     - with-utf8
@@ -118,8 +119,12 @@ tests:
 
     dependencies:
     - baseDAO
-    - HUnit
-    - lorentz == 0.6.1
+    - cleveland
+    - hspec
+    - lorentz
+    - morley
+    - morley-ledgers
     - tasty
     - tasty-hunit-compat
     - universum
+    - containers
