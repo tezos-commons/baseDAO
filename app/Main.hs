@@ -1,6 +1,7 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+{-# LANGUAGE ApplicativeDo #-}
 module Main
   ( main
   ) where
@@ -9,12 +10,14 @@ import Universum
 
 import qualified Data.Map as Map
 import Data.Version (showVersion)
-import Lorentz (DGitRevision, GitRepoSettings (..), mkDGitRevision)
+import Lorentz (DGitRevision, GitRepoSettings(..), mkDGitRevision)
 import Lorentz.ContractRegistry
 import Main.Utf8 (withUtf8)
+import Morley.CLI (addressOption)
 import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
 import Paths_baseDAO (version)
+import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 
@@ -46,10 +49,17 @@ contracts = ContractRegistry $ Map.fromList
   [ "BaseDAO" ?:: ContractInfo
     { ciContract = DAO.baseDaoContract
     , ciIsDocumented = True
-    , ciStorageParser = Just (pure DAO.emptyStorage)
+    , ciStorageParser = Just baseDaoStorageParser
     , ciStorageNotes = Nothing
     }
   ]
+
+baseDaoStorageParser :: Opt.Parser DAO.Storage
+baseDaoStorageParser = do
+  adminAddress <-
+    addressOption Nothing (#name .! "admin")
+    (#help .! "Administrator of the BaseDAO contract")
+  pure $ DAO.mkStorage adminAddress mempty mempty
 
 main :: IO ()
 main = withUtf8 $ do

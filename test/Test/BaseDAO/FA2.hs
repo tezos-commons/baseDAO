@@ -26,7 +26,7 @@ ignore _ = pass
 
 originateBaseDAO
   :: MonadNettest caps base m
-  => m ((Address, Address), (Address, Address), TAddress FA2.Parameter, Address)
+  => m ((Address, Address), (Address, Address), TAddress DAO.Parameter, Address)
 originateBaseDAO = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
@@ -45,7 +45,7 @@ originateBaseDAO = do
         ]
   let
     originateData = OriginateData
-      { odFrom = AddressResolved genesisAddress
+      { odFrom = nettestAddress
       , odName = "BaseDAO"
       , odBalance = toMutez 0
       , odStorage = DAO.mkStorage admin bal operators

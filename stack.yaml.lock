@@ -19,12 +19,12 @@ packages:
   original:
     hackage: lorentz-0.6.1
 - completed:
-    hackage: indigo-0.2.2@sha256:f46ea4d3f0c3937e1f2063a352aec446cce52aabf87f00b0edbbf263685f7e48,6548
+    hackage: indigo-0.3.0@sha256:266aaecbc3a93cce7a9ea9c88fe7ccdfd5e5d4d5414d8126b1c27017e4cebca7,6564
     pantry-tree:
-      size: 3406
-      sha256: ee81575ccbba17cc95980f505a5b4e52d261f46d82a447b2bf14416e99e25073
+      size: 3622
+      sha256: 5b70db853780eff2f7ad196f77af85323a96cdb2b645ef9d4d5902914d488774
   original:
-    hackage: indigo-0.2.2
+    hackage: indigo-0.3.0
 - completed:
     hackage: base58-bytestring-0.1.0@sha256:a1da72ee89d5450bac1c792d9fcbe95ed7154ab7246f2172b57bd4fd9b5eab79,1913
     pantry-tree:
@@ -125,12 +125,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley-ledgers.git
     pantry-tree:
       size: 1421
-      sha256: 4cb0661fe0a19b6c0d1c8c2eb8aa1a1127a3062312270ac9bdb9c97620e02c38
-    commit: 47a94df200451d78d81cf0515f9328645a03bd22
+      sha256: 80cbf412593e8b0bfff0a088039a380aebf59642991923008320f13e75dcb13b
+    commit: efc259c75713de77340b2e242104b49e3704c55d
   original:
     subdir: code/morley-ledgers
     git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 47a94df200451d78d81cf0515f9328645a03bd22
+    commit: efc259c75713de77340b2e242104b49e3704c55d
 snapshots:
 - completed:
     size: 531707
