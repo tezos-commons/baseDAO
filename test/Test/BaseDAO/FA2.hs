@@ -98,28 +98,38 @@ zeroTransferScenario :: (Monad m) => NettestImpl m -> m ()
 zeroTransferScenario = uncapsNettest $ do
   nonexistent :: Address <- newAddress "nonexistent"
   ((owner1, _), _, dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! nonexistent
-          , #txs .! [ (#to_ .! owner1, (#token_id .! 0, #amount .! 0)) ]
-          )
-        ]
+  let params = [ FA2.TransferItem
+        { tiFrom = nonexistent
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 0
+            , tdAmount = 0
+            } ]
+        } ]
+
   callFrom (AddressResolved nonexistent) dao (Call @"Transfer") params
 
 validTransferScenario :: (Monad m) => NettestImpl m -> m ()
 validTransferScenario = uncapsNettest $ do
   ((owner1, op1), (owner2, _), dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! owner1
-          , #txs .! [ (#to_ .! owner2, (#token_id .! 0, #amount .! 10)) ]
-          )
-        ]
+  let params = [ FA2.TransferItem
+        { tiFrom = owner1
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner2
+            , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
   callFrom (AddressResolved op1) dao (Call @"Transfer") params
 
   -- Check the balance
   consumer <- originateSimple "consumer" [] contractConsumer
 
   callFrom (AddressResolved owner2) dao (Call @"Balance_of")
-    (mkFA2View [ (#owner .! owner2, #token_id .! 0)] consumer)
+    (mkFA2View [ FA2.BalanceRequestItem
+      { briOwner = owner2
+      , briTokenId = 0
+      } ] consumer)
 
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((owner2, 0 :: Natural), 110 :: Natural)]] )
@@ -127,17 +137,24 @@ validTransferScenario = uncapsNettest $ do
 validTransferOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 validTransferOwnerScenario = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! owner1
-          , #txs .! [ (#to_ .! owner2, (#token_id .! 0, #amount .! 10)) ]
-          )
-        ]
+  let params = [ FA2.TransferItem
+        { tiFrom = owner1
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner2
+            , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
+
   callFrom (AddressResolved owner1) dao (Call @"Transfer") params
   -- Check the balance
   consumer <- originateSimple "consumer" [] contractConsumer
 
   callFrom (AddressResolved owner2) dao (Call @"Balance_of")
-    (mkFA2View [ (#owner .! owner2, #token_id .! 0)] consumer)
+    (mkFA2View [ FA2.BalanceRequestItem
+      { briOwner = owner2
+      , briTokenId = 0
+      } ] consumer)
 
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((owner2, 0 :: Natural), 110 :: Natural)]] )
@@ -145,37 +162,53 @@ validTransferOwnerScenario = uncapsNettest $ do
 updatingOperatorScenario :: (Monad m) => NettestImpl m -> m ()
 updatingOperatorScenario = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
-  let params = (#owner .! owner1, (#operator .! owner2, #token_id .! 0))
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.Add_operator params]
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.Remove_operator params]
+  let params = FA2.OperatorParam
+        { opOwner = owner1
+        , opOperator = owner2
+        , opTokenId = 0
+        }
+  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.AddOperator params]
+  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.RemoveOperator params]
 
-  let notOwnerParams = (#owner .! owner2, (#operator .! owner1, #token_id .! 0))
+  let notOwnerParams = FA2.OperatorParam
+        { opOwner = owner2
+        , opOperator = owner1
+        , opTokenId = 0
+        }
 
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") ([FA2.Add_operator notOwnerParams])
+  callFrom (AddressResolved owner1) dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
     & expectCustomError_ #nOT_OWNER
 
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.Remove_operator notOwnerParams]
+  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
     & expectCustomError_ #nOT_OWNER
 
 lowBalanceScenario :: (Monad m) => NettestImpl m -> m ()
 lowBalanceScenario = uncapsNettest $ do
   ((owner1, op1), (owner2, _), dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! owner1
-          , #txs .! [ (#to_ .! owner2, (#token_id .! 0, #amount .! 200)) ]
-          )
-        ]
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner1
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner2
+            , tdTokenId = 0
+            , tdAmount = 200
+            } ]
+        } ]
   callFrom (AddressResolved op1) dao (Call @"Transfer") params
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
 
 lowBalanceOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 lowBalanceOwnerScenario = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! owner1
-          , #txs .! [ (#to_ .! owner2, (#token_id .! 0, #amount .! 200)) ]
-          )
-        ]
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner1
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner2
+            , tdTokenId = 0
+            , tdAmount = 200
+            } ]
+        } ]
   callFrom (AddressResolved owner1) dao (Call @"Transfer") params
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
 
@@ -183,11 +216,16 @@ noSourceAccountScenario :: (Monad m) => NettestImpl m -> m ()
 noSourceAccountScenario = uncapsNettest $ do
   nonexistent :: Address <- newAddress "nonexistent"
   ((owner1, _), _, dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! nonexistent
-          , #txs .! [ (#to_ .! owner1, (#token_id .! 0, #amount .! 1)) ]
-          )
-        ]
+
+  let params = [ FA2.TransferItem
+        { tiFrom = nonexistent
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 0
+            , tdAmount = 1
+            } ]
+        } ]
+
   -- Failed with 'fA2_INSUFFICIENT_BALANCE' due to nonexistent account is treated
   -- as an existing account with 0 balance.
   callFrom (AddressResolved nonexistent) dao (Call @"Transfer") params
@@ -197,11 +235,15 @@ badOperatorScenario :: (Monad m) => NettestImpl m -> m ()
 badOperatorScenario = uncapsNettest $ do
   op3  :: Address <- newAddress "operator3"
   ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! owner2
-          , #txs .! [ (#to_ .! owner1, (#token_id .! 0, #amount .! 0)) ]
-          )
-        ]
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 0
+            , tdAmount = 0
+            } ]
+        } ]
   callFrom (AddressResolved op3) dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
@@ -213,11 +255,15 @@ emptyTransferListScenario = uncapsNettest $ do
 validateTokenScenario :: (Monad m) => NettestImpl m -> m ()
 validateTokenScenario = uncapsNettest $ do
   ((owner1, op1), (owner2, _), dao, _) <- originateBaseDAO
-  let params tokenId =
-        [ ( #from_ .! owner1
-          , #txs .! [ (#to_ .! owner2, (#token_id .! tokenId, #amount .! 10)) ]
-          )
-        ]
+
+  let params tokenId = [ FA2.TransferItem
+        { tiFrom = owner1
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner2
+            , tdTokenId = tokenId
+            , tdAmount = 10
+            } ]
+        } ]
       callWith = callFrom (AddressResolved op1) dao (Call @"Transfer")
 
   callWith (params 0)
@@ -230,11 +276,15 @@ validateTokenScenario = uncapsNettest $ do
 validateTokenOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 validateTokenOwnerScenario = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
-  let params tokenId =
-        [ ( #from_ .! owner1
-          , #txs .! [ (#to_ .! owner2, (#token_id .! tokenId, #amount .! 10)) ]
-          )
-        ]
+
+  let params tokenId = [ FA2.TransferItem
+        { tiFrom = owner1
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner2
+            , tdTokenId = tokenId
+            , tdAmount = 10
+            } ]
+        } ]
       callWith = callFrom (AddressResolved owner1) dao (Call @"Transfer")
 
   callWith (params 0)
@@ -246,22 +296,30 @@ validateTokenOwnerScenario = uncapsNettest $ do
 noForeignMoneyScenario :: (Monad m) => NettestImpl m -> m ()
 noForeignMoneyScenario = uncapsNettest $ do
   ((owner1, op1), (owner2, _), dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! owner2
-          , #txs .! [ (#to_ .! owner1, (#token_id .! 0, #amount .! 10)) ]
-          )
-        ]
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
   callFrom (AddressResolved op1) dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
 noForeignMoneyOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 noForeignMoneyOwnerScenario = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
-  let params =
-        [ ( #from_ .! owner2
-          , #txs .! [ (#to_ .! owner1, (#token_id .! 0, #amount .! 10)) ]
-          )
-        ]
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
   callFrom (AddressResolved owner1) dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
@@ -273,20 +331,24 @@ balanceOfOwnerScenario = uncapsNettest $ do
     params requestItems = mkFA2View requestItems consumer
     callWith = callFrom (AddressResolved owner1) dao (Call @"Balance_of")
 
-  callWith (params [ (#owner .! owner1, #token_id .! 0)])
-  callWith (params [ (#owner .! owner1, #token_id .! 1)])
+  callWith (params [ FA2.BalanceRequestItem owner1 0 ])
+  callWith (params [ FA2.BalanceRequestItem owner1 1 ])
   callWith (params [])
-  callWith (params [ (#owner .! owner1, #token_id .! 2)])
+  callWith (params [ FA2.BalanceRequestItem owner1 2 ])
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 
 adminTransferScenario :: (Monad m) => NettestImpl m -> m ()
 adminTransferScenario = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDAO
-  let params = [
-          ( #from_ .! owner2
-          , #txs .! [ (#to_ .! owner1, (#token_id .! 0, #amount .! 10)) ]
-          )
-        ]
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
   callFrom (AddressResolved admin) dao (Call @"Transfer") params
 
 -------------------------------------------------

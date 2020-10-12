@@ -5,19 +5,19 @@
 
 packages:
 - completed:
-    hackage: morley-1.7.0@sha256:fb07ecd60cc93065883a7bfbef2c786ccae6fceaa794a26cfa627dabe0dc5a37,7453
+    hackage: morley-1.7.1@sha256:5f859ee96730ba4bfe5405014f4491a05b20ffd0800a24d538d1af63f335990a,7686
     pantry-tree:
-      size: 8039
-      sha256: 32a1ee308fa9952f0cac3436c2812139f6fdcd7dc87d67aaeb852a76f0aa1fbf
+      size: 8656
+      sha256: 6e4c186eb5ccad81c7d3e295b79adf066c7dfe658b6d5a7f865d0d432856fe4e
   original:
-    hackage: morley-1.7.0
+    hackage: morley-1.7.1
 - completed:
-    hackage: lorentz-0.6.1@sha256:745fc75a2fcfbc56f5d46c6e1d00bf633192de91f3c80e47546d48cb606f1cbc,4156
+    hackage: lorentz-0.6.2@sha256:ec5b0862eef3f6a17384dd4f0abc4d0df0371bd4a8dd50f979b819e27a0fce33,4101
     pantry-tree:
       size: 4028
-      sha256: 0227d10d20c0c8900c48a81eaeb57ef58f223dfd1b251f91684605a2110fd2e6
+      sha256: 6d15e31bfdd3f652103b434290f446a70ed4f1b451199c16f34597f5c3b3dbfa
   original:
-    hackage: lorentz-0.6.1
+    hackage: lorentz-0.6.2
 - completed:
     hackage: indigo-0.3.0@sha256:266aaecbc3a93cce7a9ea9c88fe7ccdfd5e5d4d5414d8126b1c27017e4cebca7,6564
     pantry-tree:
@@ -87,26 +87,26 @@ packages:
     version: 0.1.0
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 9540
-      sha256: 2372b71ba64d49c2a9a0b169f617b968813b40462162c38a1bb56d0a31ccc60e
-    commit: 619915ceccb66ba36d0eca06cedd76f605a15bd3
+      size: 10876
+      sha256: 1c06ae7f70d9270e791086b34148845786cf86a84610a24d69581144645105ee
+    commit: 17f54b2ef528e201bffca22073055525f4b3de56
   original:
     subdir: code/cleveland
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 619915ceccb66ba36d0eca06cedd76f605a15bd3
+    commit: 17f54b2ef528e201bffca22073055525f4b3de56
 - completed:
     subdir: code/morley-client
     name: morley-client
     version: 0.1.0
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 2816
-      sha256: f8740d15f35dd1f4a840f1ccb92e9baafa7783d00873ceed43505de4f50491b1
-    commit: 619915ceccb66ba36d0eca06cedd76f605a15bd3
+      size: 2817
+      sha256: 7c21cb61e91c527b1286f9a601c800ebd81b425195a4b58b03ca967d0f1203fd
+    commit: 17f54b2ef528e201bffca22073055525f4b3de56
   original:
     subdir: code/morley-client
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 619915ceccb66ba36d0eca06cedd76f605a15bd3
+    commit: 17f54b2ef528e201bffca22073055525f4b3de56
 - completed:
     name: caps
     version: '0'
@@ -124,13 +124,13 @@ packages:
     version: 0.2.0.1
     git: https://gitlab.com/morley-framework/morley-ledgers.git
     pantry-tree:
-      size: 1421
-      sha256: 80cbf412593e8b0bfff0a088039a380aebf59642991923008320f13e75dcb13b
-    commit: efc259c75713de77340b2e242104b49e3704c55d
+      size: 1422
+      sha256: 5df26d135409e4eb69361a4e1d9e67a62966c613b045d3eea8ca11f563fce341
+    commit: ee1fdc1c4880e265ad5509be2d57376662e93918
   original:
     subdir: code/morley-ledgers
     git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: efc259c75713de77340b2e242104b49e3704c55d
+    commit: ee1fdc1c4880e265ad5509be2d57376662e93918
 snapshots:
 - completed:
     size: 531707

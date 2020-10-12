@@ -11,7 +11,7 @@ module Lorentz.Contracts.BaseDAO.FA2
 
 import Lorentz
 import Lorentz.Contracts.BaseDAO.Types
-import Lorentz.Contracts.Spec.FA2Interface hiding (name, sender)
+import Lorentz.Contracts.Spec.FA2Interface
 
 -- | TODO: Implement missing methods
 transfer :: Entrypoint TransferParams Storage
@@ -43,20 +43,18 @@ updateOperators :: Entrypoint UpdateOperatorsParam Storage
 updateOperators = do
   iter $
     caseT @UpdateOperator
-      ( #cAdd_operator /-> addOperator
-      , #cRemove_operator /-> removeOperator
+      ( #cAddOperator /-> addOperator
+      , #cRemoveOperator /-> removeOperator
       )
   nil; pair
 
 addOperator :: forall s. OperatorParam & Storage & s :-> Storage & s
 addOperator = do
-  unpair
-  fromNamed #owner
-  swap
-  unpair
-  fromNamed #operator
-  swap
-  fromNamed #token_id
+  getField #opTokenId
+  dip do
+    getField #opOperator
+    dip $ toField #opOwner
+  stackType @(TokenId & Address & Address & Storage & _)
   dup
   assertNeq0or1
   dug @2
@@ -87,13 +85,11 @@ addOperator = do
 
 removeOperator :: forall s. OperatorParam & Storage & s :-> Storage & s
 removeOperator = do
-  unpair
-  fromNamed #owner
-  swap
-  unpair
-  fromNamed #operator
-  swap
-  fromNamed #token_id
+  getField #opTokenId
+  dip do
+    getField #opOperator
+    dip $ toField #opOwner
+  stackType @(TokenId & Address & Address & Storage & _)
   dup
   assertNeq0or1
   dug @2
@@ -121,12 +117,6 @@ removeOperator = do
 
     ifKeyDoesntExist :: (Address, (Address, TokenId)) & Operators & Storage & s :-> Storage & s
     ifKeyDoesntExist = dropN @2
-
--- | TODO: Move this one to Lorentz
-dupTop2 :: a & b & f :-> a & b & a & b & f
-dupTop2 = do
-  duupX @2
-  duupX @2
 
 -- | TODO: Probably this one can be moved to Lorentz as well
 assertNeq0or1 :: Natural & f :-> f
