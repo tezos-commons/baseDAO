@@ -13,16 +13,13 @@ module Lorentz.Contracts.BaseDAO.FA2
 import Lorentz
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface
-import Lorentz.Contracts.Spec.FA2Interface
-
-import Util.Named
 
 defaultPermissionsDescriptor :: PermissionsDescriptor
 defaultPermissionsDescriptor = PermissionsDescriptor
-  { operator = OwnerOrOperatorTransfer (#owner_or_operator_transfer .! ())
-  , receiver = OwnerNoHook (#owner_no_hook .! ())
-  , sender = OwnerNoHook (#owner_no_hook .! ())
-  , custom = Nothing
+  { pdOperator = OwnerOrOperatorTransfer
+  , pdReceiver = OwnerNoHook
+  , pdSender = OwnerNoHook
+  , pdCustom = Nothing
   }
 
 -- | TODO: Implement missing methods
@@ -32,28 +29,35 @@ transfer pdsec = do
   nil; pair
   where
     transferItem = do
-      unpair
-      fromNamed #from_
+      getField #tiFrom
       swap
-      fromNamed #txs
+      getField #tiTxs
+      swap
+      drop @TransferItem
       iter transferOne
       drop @Address
 
     transferOne :: forall s. TransferDestination & Address & Storage & s :-> Address & Storage & s
     transferOne = do
-      dug @2
-      checkAdmin (operator pdsec)
-      dig @2
-      unpair
-      fromNamed #to_
+      getField #tdTokenId
       swap
-      unpair
-      fromNamed #token_id
+      dug @3
+      swap
+      checkAdmin (pdOperator pdsec)
+      swap
+      drop @TokenId
+      dig @2
+      getField #tdTo
+      swap
+      getField #tdAmount
+      swap
+      getField #tdTokenId
+      swap
+      drop @TransferDestination
       dup
       push @Natural 0
-      assertNeq [mt|aaaa|]
+      assertNeq [mt|#FA2_TOKEN_UNDEFINED|]
       swap
-      fromNamed #amount
       swap
       pair
       dup
@@ -69,29 +73,30 @@ transfer pdsec = do
 
     checkAdmin
       :: forall f. OwnerOrOperatorTransfer
-      ->  Address & Storage & f
-      :-> Address & Storage & f
-    checkAdmin (NoTransfer _ ) = failUsing [mt|#fA2_TX_DENIED|]
-    checkAdmin (OwnerTransfer _) = do
+      ->  Address & TokenId & Storage & f
+      :-> Address & TokenId & Storage & f
+    checkAdmin NoTransfer = failUsing [mt|#fA2_TX_DENIED|]
+    checkAdmin OwnerTransfer = do
       dup
       Lorentz.sender
       if IsEq
       then nop
       else failUsing [mt|#fA2_NOT_OWNER|]
-    checkAdmin (OwnerOrOperatorTransfer _ ) = do
+    checkAdmin OwnerOrOperatorTransfer = do
       dup
       Lorentz.sender
       if IsEq
       then nop
       else do
-        dup
+        dupTop2
+        pair
         Lorentz.sender
         pair
-        dig @2
+        dig @3
         getField #sOperators
         dig @2
         mem
-        if_ swap (failUsing [mt|#fA2_NOT_OPERATOR|])
+        if_ (dug @2) (failUsing [mt|#fA2_NOT_OPERATOR|])
 
 
 
@@ -186,11 +191,11 @@ balanceOf = do
 
     checkOne :: forall s. BalanceRequestItem & [BalanceResponseItem] & Storage & s :-> [BalanceResponseItem] & Storage & s
     checkOne = do
-      dup
-      unpair
-      fromNamed #owner
+      getField #briOwner
       swap
-      fromNamed #token_id
+      getField #briTokenId
+      swap
+      dug @2
       dup
       push @Natural 0
       assertNeq [mt|#fA2_TOKEN_UNDEFINED|]
@@ -208,10 +213,8 @@ balanceOf = do
       :: Natural & BalanceRequestItem & [BalanceResponseItem] & Storage & s
       :-> [BalanceResponseItem] & Storage & s
     ifKeyExists = do
-      toNamed #balance
       swap
-      toNamed #request
-      pair
+      constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
 
     ifKeyDoesntExist
@@ -219,10 +222,8 @@ balanceOf = do
       :-> [BalanceResponseItem] & Storage & s
     ifKeyDoesntExist = do
       push @Natural 0
-      toNamed #balance
       swap
-      toNamed #request
-      pair
+      constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
 
 

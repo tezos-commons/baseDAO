@@ -38,7 +38,7 @@ baseDaoContract = defaultContract $ contractName "FA2 smart contract" $ do
 fa2Handler :: Entrypoint FA2.Parameter Storage
 fa2Handler =
   entryCase @FA2.Parameter (Proxy @PlainEntrypointsKind)
-    ( #cTransfer /-> transfer
+    ( #cTransfer /-> transfer defaultPermissionsDescriptor
     , #cBalance_of /-> balanceOf
     , #cToken_metadata_registry /-> tokenMetadataRegistry
     , #cUpdate_operators /-> updateOperators
