@@ -56,7 +56,7 @@ transfer pdsec = do
       drop @TransferDestination
       dup
       push @Natural 0
-      assertNeq [mt|#FA2_TOKEN_UNDEFINED|]
+      assertEq [mt|#FA2_TOKEN_UNDEFINED|]
       swap
       swap
       pair
