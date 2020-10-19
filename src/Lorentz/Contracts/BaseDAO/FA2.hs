@@ -31,9 +31,7 @@ transfer = do
       swap
       getField #sAdmin
       Lorentz.sender
-      if IsEq
-      then push True
-      else push False
+      eq
       dig @2
       getField #tiTxs
       swap
