@@ -36,8 +36,8 @@ originateBaseDAO = do
         , ((owner2, 0), 100)
         ]
   let (operators :: DAO.Operators) = BigMap $ Map.fromList
-        [ ((owner1, (operator1, 0)), ())
-        , ((owner2, (operator2, 0)), ())
+        [ ((owner1, operator1), ())
+        , ((owner2, operator2), ())
         ]
   let
     originateData = OriginateData

@@ -21,7 +21,7 @@ import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Michelson.Runtime.GState (genesisAddress)
 
-type Operators = BigMap (Address, (Address, FA2.TokenId)) ()
+type Operators = BigMap (Address, Address) ()
 
 type Ledger = BigMap (Address, FA2.TokenId) Natural
 

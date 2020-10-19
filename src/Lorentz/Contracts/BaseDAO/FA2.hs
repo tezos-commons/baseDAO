@@ -5,7 +5,6 @@ module Lorentz.Contracts.BaseDAO.FA2
    ( transfer
    , balanceOf
    , tokenMetadataRegistry
-   , permissionsDescriptor
    , updateOperators
    , defaultPermissionsDescriptor
    ) where
@@ -22,31 +21,40 @@ defaultPermissionsDescriptor = PermissionsDescriptor
   , pdCustom = Nothing
   }
 
--- | TODO: Implement missing methods
-transfer :: PermissionsDescriptor -> Entrypoint TransferParams Storage
-transfer pdsec = do
+transfer :: Entrypoint TransferParams Storage
+transfer = do
   iter transferItem
   nil; pair
   where
+    transferItem :: forall s. TransferItem & Storage & s :-> Storage & s
     transferItem = do
-      getField #tiFrom
       swap
+      getField #sAdmin
+      Lorentz.sender
+      if IsEq
+      then push True
+      else push False
+      dig @2
       getField #tiTxs
       swap
+      getField #tiFrom
+      swap
       drop @TransferItem
+      dug @2
       iter transferOne
-      drop @Address
+      dropN @2
 
-    transferOne :: forall s. TransferDestination & Address & Storage & s :-> Address & Storage & s
+    transferOne :: forall s. TransferDestination & Bool & Address & Storage & s :-> Bool & Address & Storage & s
     transferOne = do
-      getField #tdTokenId
       swap
+      dup
+      if_ nop $ do
+        dug @3
+        dug @3
+        checkSender
+        dig @3
+        dig @3
       dug @3
-      swap
-      checkAdmin (pdOperator pdsec)
-      swap
-      drop @TokenId
-      dig @2
       getField #tdTo
       swap
       getField #tdAmount
@@ -56,9 +64,14 @@ transfer pdsec = do
       drop @TransferDestination
       dup
       push @Natural 0
-      assertEq [mt|#FA2_TOKEN_UNDEFINED|]
-      swap
-      swap
+      if IsEq
+      then nop
+      else do
+        dup
+        push @Natural 1
+        if IsEq
+        then failCustom_ #fROZEN_TOKEN_NOT_TRANSFERABLE
+        else failCustom_ #fA2_TOKEN_UNDEFINED
       pair
       dup
       dig @3
@@ -69,35 +82,29 @@ transfer pdsec = do
       dig @4
       debitFrom;
       creditTo;
+      dug @2
       swap
 
-    checkAdmin
-      :: forall f. OwnerOrOperatorTransfer
-      ->  Address & TokenId & Storage & f
-      :-> Address & TokenId & Storage & f
-    checkAdmin NoTransfer = failUsing [mt|#fA2_TX_DENIED|]
-    checkAdmin OwnerTransfer = do
-      dup
-      Lorentz.sender
-      if IsEq
-      then nop
-      else failUsing [mt|#fA2_NOT_OWNER|]
-    checkAdmin OwnerOrOperatorTransfer = do
+    checkSender
+      :: forall f. Address & Storage & f
+      :-> Address &  Storage & f
+    checkSender = do
       dup
       Lorentz.sender
       if IsEq
       then nop
       else do
-        dupTop2
-        pair
-        Lorentz.sender
-        pair
-        dig @3
-        getField #sOperators
+        dup
         dig @2
+        getField #sOperators
+        swap
+        dug @3
+        swap
+        Lorentz.sender
+        swap
+        pair
         mem
-        if_ (dug @2) (failUsing [mt|#fA2_NOT_OPERATOR|])
-
+        if_ nop (failCustom_ #fA2_NOT_OPERATOR)
 
 
 debitFrom :: forall s. Storage & Address & (TokenId, Natural) & s :-> Storage & s
@@ -118,15 +125,26 @@ debitFrom = do
       :-> Storage & s
     ifKeyExists = do
       dig @4
+      dupTop2
       rsub
       isNat
       ifSome
         (do
           some
           swap
+          drop @Natural
+          swap
+          drop @Natural
+          swap
           update
           setField #sLedger)
-        (failUsing [mt|FA2_INSUFFICIENT_BALANCE|])
+        (do
+          toNamed #required
+          swap
+          toNamed #present
+          swap
+          pair
+          failCustom #fA2_INSUFFICIENT_BALANCE)
 
     ifKeyDoesntExist
       :: (Address, TokenId) & Ledger & Storage & Natural & s
@@ -135,9 +153,15 @@ debitFrom = do
       dropN @2
       swap
       push @Natural 0
+      dupTop2
       if IsLt
-      then failUsing [mt|FA2_INSUFFICIENT_BALANCE|]
-      else nop
+      then do
+        toNamed #present
+        swap
+        toNamed #required
+        pair
+        failCustom #fA2_INSUFFICIENT_BALANCE
+      else (dropN @2)
 
 creditTo :: forall s. Storage & Address & (TokenId, Natural) & s :-> Storage & s
 creditTo = do
@@ -198,7 +222,14 @@ balanceOf = do
       dug @2
       dup
       push @Natural 0
-      assertNeq [mt|#fA2_TOKEN_UNDEFINED|]
+      if IsEq
+      then nop
+      else do
+        dup
+        push @Natural 1
+        if IsEq
+        then nop
+        else failCustom_ #fA2_TOKEN_UNDEFINED
       swap
       pair
       dig @3
@@ -226,16 +257,6 @@ balanceOf = do
       constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
 
-
-permissionsDescriptor :: Entrypoint PermissionsDescriptorParam Storage
-permissionsDescriptor = doNothing
-
-doNothing :: Entrypoint a b
-doNothing = do
-  drop
-  nil
-  pair
-
 tokenMetadataRegistry :: Entrypoint TokenMetadataRegistryParam Storage
 tokenMetadataRegistry = do
   swap
@@ -262,14 +283,13 @@ addOperator = do
     getField #opOperator
     dip $ toField #opOwner
   stackType @(TokenId & Address & Address & Storage & _)
-  dup
-  assertNeq0or1
-  dug @2
+  assertEq0or1
   swap
-  dupTop2
-  assertNeq [mt|NOT_OWNER|]
-  dug @2
-  pair
+  dup
+  Lorentz.sender
+  if IsEq
+  then nop
+  else failCustom_ #nOT_OWNER
   swap
   pair
   swap
@@ -279,10 +299,10 @@ addOperator = do
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists :: (Address, (Address, TokenId)) & Operators & Storage & s :-> Storage & s
+    ifKeyExists :: (Address, Address) & Operators & Storage & s :-> Storage & s
     ifKeyExists = dropN @2
 
-    ifKeyDoesntExist :: (Address, (Address, TokenId)) & Operators & Storage & s :-> Storage & s
+    ifKeyDoesntExist :: (Address, Address) & Operators & Storage & s :-> Storage & s
     ifKeyDoesntExist = do
       unit
       some
@@ -297,14 +317,13 @@ removeOperator = do
     getField #opOperator
     dip $ toField #opOwner
   stackType @(TokenId & Address & Address & Storage & _)
-  dup
-  assertNeq0or1
-  dug @2
+  assertEq0or1
   swap
-  dupTop2
-  assertNeq [mt|NOT_OWNER|]
-  dug @2
-  pair
+  dup
+  Lorentz.sender
+  if IsEq
+  then nop
+  else failCustom_ #nOT_OWNER
   swap
   pair
   swap
@@ -314,7 +333,7 @@ removeOperator = do
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists :: (Address, (Address, TokenId)) & Operators & Storage & s :-> Storage & s
+    ifKeyExists :: (Address, Address) & Operators & Storage & s :-> Storage & s
     ifKeyExists = do
       push Nothing
       swap
@@ -322,12 +341,12 @@ removeOperator = do
       setField #sOperators
 
 
-    ifKeyDoesntExist :: (Address, (Address, TokenId)) & Operators & Storage & s :-> Storage & s
+    ifKeyDoesntExist :: (Address, Address) & Operators & Storage & s :-> Storage & s
     ifKeyDoesntExist = dropN @2
 
 -- | TODO: Probably this one can be moved to Lorentz as well
-assertNeq0or1 :: Natural & f :-> f
-assertNeq0or1 = do
+assertEq0or1 :: Natural & f :-> f
+assertEq0or1 = do
   dup
   push @Natural 0
   if IsEq
@@ -336,5 +355,5 @@ assertNeq0or1 = do
     dup
     push @Natural 1
     if IsEq
-    then failUsing [mt|FA2_OPERATION_PROHIBITED|]
-    else failUsing [mt|FA2_TOKEN_UNDEFINED|]
+    then failUsing [mt|fA2_OPERATION_PROHIBITED|]
+    else failCustom_ #fA2_TOKEN_UNDEFINED
