@@ -33,6 +33,8 @@ baseDaoContract = defaultContract $ contractName "FA2 smart contract" $ do
     ( #cCall_FA2 /-> fa2Handler
     , #cTransfer_ownership /-> transferOwnership
     , #cAccept_ownership /-> acceptOwnership
+    , #cMigrate /-> migrate
+    , #cConfirm_migration /-> confirmMigration
     )
 
 fa2Handler :: Entrypoint FA2.Parameter Storage

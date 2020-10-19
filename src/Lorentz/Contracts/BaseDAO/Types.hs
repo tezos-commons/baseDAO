@@ -9,6 +9,8 @@ module Lorentz.Contracts.BaseDAO.Types
   , Storage (..)
   , StorageC
   , TransferOwnershipParam
+  , MigrateParam
+  , MigrationStatus
 
   , emptyStorage
   , mkStorage
@@ -25,13 +27,26 @@ type Operators = BigMap (Address, Address) ()
 
 type Ledger = BigMap (Address, FA2.TokenId) Natural
 
+-- | Migration status of the contract
+data MigrationStatus
+  = NotInMigration
+  | MigratingTo Address
+  | MigratedTo Address
+  deriving stock (Generic, Show)
+  deriving anyclass (IsoValue, HasAnnotation)
+
+instance TypeHasDoc MigrationStatus where
+  typeDocMdDescription =
+    "Migration status of the contract"
+
 -- | Storage of the FA2 contract
 data Storage = Storage
-  { sLedger       :: Ledger
-  , sOperators    :: Operators
-  , sTokenAddress :: Address
-  , sAdmin        :: Address
-  , sPendingOwner :: Maybe Address
+  { sLedger          :: Ledger
+  , sOperators       :: Operators
+  , sTokenAddress    :: Address
+  , sAdmin           :: Address
+  , sPendingOwner    :: Maybe Address
+  , sMigrationStatus :: MigrationStatus
   }
   deriving stock (Generic, Show)
   deriving anyclass (IsoValue, HasAnnotation)
@@ -49,6 +64,7 @@ type StorageC store =
     [ "sAdmin" := Address
     , "sPendingOwner" := Maybe Address
     , "sLedger" := Ledger
+    , "sMigrationStatus" := MigrationStatus
     ]
 
 -- | Parameter of the BaseDAO contract
@@ -56,6 +72,8 @@ data Parameter
   = Call_FA2 FA2.Parameter
   | Transfer_ownership TransferOwnershipParam
   | Accept_ownership ()
+  | Migrate MigrateParam
+  | Confirm_migration ()
   deriving stock (Generic, Show)
   deriving anyclass (IsoValue)
 
@@ -63,6 +81,7 @@ instance ParameterHasEntrypoints Parameter where
   type ParameterEntrypointsDerivation Parameter = EpdDelegate
 
 type TransferOwnershipParam = ("newOwner" :! Address)
+type MigrateParam = ("newAddress" :! Address)
 
 emptyStorage :: Storage
 emptyStorage = Storage
@@ -72,6 +91,7 @@ emptyStorage = Storage
   , sTokenAddress = genesisAddress
   , sPendingOwner = Nothing
   , sAdmin = genesisAddress
+  , sMigrationStatus = NotInMigration
   }
 
 mkStorage
@@ -85,6 +105,7 @@ mkStorage admin balances operators = Storage
   , sTokenAddress = genesisAddress
   , sPendingOwner = Nothing
   , sAdmin = admin
+  , sMigrationStatus = NotInMigration
   }
 
 type instance ErrorArg "nOT_OWNER" = ()
@@ -123,3 +144,24 @@ instance CustomErrorHasDoc "nOT_ADMINISTRATOR" where
   customErrDocMdCause =
     "Received an operation that require administrative privileges\
     \ from an address that is not the current administrator"
+
+type instance ErrorArg "mIGRATED" = Address
+
+instance CustomErrorHasDoc "mIGRATED" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "Recieved a call on a migrated contract"
+
+type instance ErrorArg "nOT_MIGRATING" = ()
+
+instance CustomErrorHasDoc "nOT_MIGRATING" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "Recieved a confirm_migration call on a contract that is not in migration"
+
+type instance ErrorArg "nOT_MIGRATION_TARGET" = ()
+
+instance CustomErrorHasDoc "nOT_MIGRATION_TARGET" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "Recieved a confirm_migration call on a contract from an address other than the new version"

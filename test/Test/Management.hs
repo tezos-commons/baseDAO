@@ -6,7 +6,8 @@
 -- withOriginated func
 
 module Test.Management
-  ( test_baseDAO
+  ( expectMigrated
+  , test_baseDAO
   ) where
 
 import Universum
@@ -75,6 +76,17 @@ test_baseDAO =
               -- with 'no pending owner set' error
               callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
                 & expectNoPendingOwnerSet
+
+      , testCase "Respects migration state" $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 3 (\(owner:_) -> initialStorage owner) $
+              \[owner, newAddress1, newOwner] baseDao -> do
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                -- We test this by calling `confirmMigration` and seeing that it does not fail
+                callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
+                callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
+                  (#newOwner .! newOwner)
+                  & expectMigrated newAddress1
     ]
   , testGroup "Accept Ownership"
       [ testCase "authenticates the sender" $
@@ -112,6 +124,77 @@ test_baseDAO =
                    (#newOwner .! wallet1)
                  callFrom (AddressResolved owner) baseDao (Call @"Accept_ownership") ()
                   & expectNotPendingOwner
+
+      , testCase "Respects migration state" $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 2 (\(owner:_) -> initialStorage owner) $
+              \[owner, newAddress1] baseDao -> do
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                -- We test this by calling `confirmMigration` and seeing that it does not fail
+                callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
+                callFrom (AddressResolved owner) baseDao (Call @"Accept_ownership") ()
+                  & expectMigrated newAddress1
+      ]
+
+  , testGroup "Migration"
+      [ testCase "authenticates the sender" $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 3 (\(owner:_) -> initialStorage owner) $
+              \[_, newAddress1, randomAddress] baseDao -> do
+                callFrom (AddressResolved randomAddress) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                  & expectNotAdmin
+
+      , testCase "successfully sets the pending migration address " $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 2 (\(owner:_) -> initialStorage owner) $
+              \[owner, newAddress1] baseDao -> do
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                -- We test this by calling `confirmMigration` and seeing that it does not fail
+                callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
+
+      , testCase "overwrites previous migration target" $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 3 (\(owner:_) -> initialStorage owner) $
+              \[owner, newAddress1, newAddress2] baseDao -> do
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress2)
+                -- We test this by calling `confirmMigration` and seeing that it does not fail
+                callFrom (AddressResolved newAddress2) baseDao (Call @"Confirm_migration") ()
+
+      , testCase "allows calls until confirm migration is called" $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 3 (\(owner:_) -> initialStorage owner) $
+              \[owner, newAddress1, newAddress2] baseDao -> do
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress2)
+      ]
+
+  , testGroup "Confirm Migration"
+      [ testCase "authenticates the sender" $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 3 (\(owner:_) -> initialStorage owner) $
+              \[owner, newAddress1, randomAddress] baseDao -> do
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                -- We test this by calling `confirmMigration` and seeing that it does not fail
+                callFrom (AddressResolved randomAddress) baseDao (Call @"Confirm_migration") ()
+                  & expectNotMigrationTarget
+
+      , testCase "authenticates migration state" $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 2 (\(owner:_) -> initialStorage owner) $
+              \[_, newAddress1] baseDao -> do
+                callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
+                  & expectNotMigrating
+
+      , testCase "finalizes migration" $
+          nettestTestExpectation $ uncapsNettest $ do
+            withOriginated 2 (\(owner:_) -> initialStorage owner) $
+              \[owner, newAddress1] baseDao -> do
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                -- We test this by calling `confirmMigration` and seeing that it does not fail
+                callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
+                callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+                  & expectMigrated newAddress1
       ]
   ]
   where
@@ -131,3 +214,18 @@ expectNoPendingOwnerSet
   :: (MonadNettest caps base m)
   => m a -> m ()
 expectNoPendingOwnerSet = expectCustomError_ #nO_PENDING_ADMINISTRATOR_SET
+
+expectNotMigrating
+  :: (MonadNettest caps base m)
+  => m a -> m ()
+expectNotMigrating = expectCustomError_ #nOT_MIGRATING
+
+expectNotMigrationTarget
+  :: (MonadNettest caps base m)
+  => m a -> m ()
+expectNotMigrationTarget = expectCustomError_ #nOT_MIGRATION_TARGET
+
+expectMigrated
+  :: (MonadNettest caps base m)
+  => Address -> m a -> m ()
+expectMigrated addr = expectCustomError #mIGRATED addr

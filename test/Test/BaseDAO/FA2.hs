@@ -17,6 +17,7 @@ import Util.Named
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.BaseDAO as DAO
+import Test.Management (expectMigrated)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -69,6 +70,8 @@ test_BaseDAO_FA2 = testGroup "tests to check BaseDAO contract functionality"
           nettestTestExpectation badOperatorScenario
       , testCase "cannot transfer foreign money" $
           nettestTestExpectation noForeignMoneyScenario
+      , testCase "respects migration status" $
+          nettestTestExpectation migratedScenario
       ]
   , testGroup "Owner:"
       [ testCase "allows valid transfer and check balance" $
@@ -346,6 +349,24 @@ adminTransferScenario = uncapsNettest $ do
             } ]
         } ]
   callFrom (AddressResolved admin) dao (Call @"Transfer") params
+
+migratedScenario :: (Monad m) => NettestImpl m -> m ()
+migratedScenario = uncapsNettest $ do
+  ((owner1, op1), (owner2, newAddress1), dao, admin) <- originateBaseDAO
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
+
+  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
+  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
+  callFrom (AddressResolved op1) dao (Call @"Transfer") params
+    & expectMigrated newAddress1
 
 -------------------------------------------------
 -- Helper
