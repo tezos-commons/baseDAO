@@ -120,6 +120,7 @@ tests:
     dependencies:
     - baseDAO
     - cleveland
+    - hspec
     - lorentz
     - morley
     - morley-ledgers

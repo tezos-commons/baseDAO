@@ -180,7 +180,6 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `PROPOSAL_NOT_EXIST`           | Throws when trying to vote on a proposal that does not exist |
 | `QUORUM_NOT_MET`               | A proposal is flushed, but there are not enough votes        |
 | `CONTRACT_MIGRATED`            | Throw when conract has been migrated        |
-| `FROZEN_TOKEN_NOT_TRANSFERABLE`| The entrypoint called does not support frozen tokens         |
 
 # Entrypoints
 
