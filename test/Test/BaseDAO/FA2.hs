@@ -11,7 +11,6 @@ import qualified Data.Map.Strict as Map
 import Lorentz
 import Lorentz.Test
 import Morley.Nettest
-import Test.Hspec (Expectation)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)
 import Util.Named
@@ -20,9 +19,6 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.BaseDAO as DAO
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
-
-ignore :: Expectation -> Expectation
-ignore _ = pass
 
 originateBaseDAO
   :: MonadNettest caps base m
@@ -40,8 +36,8 @@ originateBaseDAO = do
         , ((owner2, 0), 100)
         ]
   let (operators :: DAO.Operators) = BigMap $ Map.fromList
-        [ ((owner1, (operator1, 0)), ())
-        , ((owner2, (operator2, 0)), ())
+        [ ((owner1, operator1), ())
+        , ((owner2, operator2), ())
         ]
   let
     originateData = OriginateData
@@ -60,37 +56,37 @@ test_BaseDAO_FA2 = testGroup "tests to check BaseDAO contract functionality"
       [ testCase "allows zero transfer from non-existent operator" $
           nettestTestExpectation zeroTransferScenario
       , testCase "allows valid transfer and check balance" $
-          ignore $ nettestTestExpectation validTransferScenario
+          nettestTestExpectation validTransferScenario
       , testCase "validates token id" $
-          ignore $ nettestTestExpectation validateTokenScenario
+          nettestTestExpectation validateTokenScenario
       , testCase "accepts an empty list of transfers" $
           nettestTestExpectation emptyTransferListScenario
       , testCase "aborts if there is a failure (due to low balance)" $
-          ignore $ nettestTestExpectation lowBalanceScenario
+          nettestTestExpectation lowBalanceScenario
       , testCase "aborts if there is a failure (due to non existent source account)" $
-          ignore $ nettestTestExpectation noSourceAccountScenario
+          nettestTestExpectation noSourceAccountScenario
       , testCase "aborts if there is a failure (due to bad operator)" $
-          ignore $ nettestTestExpectation badOperatorScenario
+          nettestTestExpectation badOperatorScenario
       , testCase "cannot transfer foreign money" $
-          ignore $ nettestTestExpectation noForeignMoneyScenario
+          nettestTestExpectation noForeignMoneyScenario
       ]
   , testGroup "Owner:"
       [ testCase "allows valid transfer and check balance" $
-          ignore $ nettestTestExpectation validTransferOwnerScenario
+          nettestTestExpectation validTransferOwnerScenario
       , testCase "allows updating operator " $
-          ignore $ nettestTestExpectation updatingOperatorScenario
+          nettestTestExpectation updatingOperatorScenario
       , testCase "allows balanceOf request" $
-          ignore $ nettestTestExpectation balanceOfOwnerScenario
+          nettestTestExpectation balanceOfOwnerScenario
       , testCase "validates token id" $
-          ignore $ nettestTestExpectation validateTokenOwnerScenario
+          nettestTestExpectation validateTokenOwnerScenario
       , testCase "aborts if there is a failure (due to low balance)" $
-          ignore $ nettestTestExpectation lowBalanceOwnerScenario
+          nettestTestExpectation lowBalanceOwnerScenario
       , testCase "cannot transfer foreign money" $
-          ignore $ nettestTestExpectation noForeignMoneyOwnerScenario
+          nettestTestExpectation noForeignMoneyOwnerScenario
       ]
   , testGroup "Admin:"
     [ testCase "transfer tokens from any address to any address" $
-        ignore $ nettestTestExpectation adminTransferScenario
+        nettestTestExpectation adminTransferScenario
     ]
   ]
 
