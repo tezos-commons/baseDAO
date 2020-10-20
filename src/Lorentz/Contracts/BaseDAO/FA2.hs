@@ -26,7 +26,7 @@ transfer = do
   iter transferItem
   nil; pair
   where
-    transferItem :: forall s. TransferItem & Storage & s :-> Storage & s
+    transferItem :: '[TransferItem, Storage] :-> '[Storage]
     transferItem = do
       swap
       getField #sAdmin
@@ -42,7 +42,7 @@ transfer = do
       iter transferOne
       dropN @2
 
-    transferOne :: forall s. TransferDestination & Bool & Address & Storage & s :-> Bool & Address & Storage & s
+    transferOne :: '[TransferDestination, Bool, Address, Storage] :-> '[Bool, Address, Storage]
     transferOne = do
       swap
       dup
@@ -85,7 +85,7 @@ transfer = do
 
     checkSender
       :: forall f. Address & Storage & f
-      :-> Address &  Storage & f
+      :-> Address & Storage & f
     checkSender = do
       dup
       Lorentz.sender
@@ -274,7 +274,7 @@ updateOperators = do
       )
   nil; pair
 
-addOperator :: forall s. OperatorParam & Storage & s :-> Storage & s
+addOperator :: '[OperatorParam, Storage] :-> '[Storage]
 addOperator = do
   getField #opTokenId
   dip do
@@ -297,10 +297,10 @@ addOperator = do
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists :: (Address, Address) & Operators & Storage & s :-> Storage & s
+    ifKeyExists :: '[(Address, Address), Operators, Storage] :-> '[Storage]
     ifKeyExists = dropN @2
 
-    ifKeyDoesntExist :: (Address, Address) & Operators & Storage & s :-> Storage & s
+    ifKeyDoesntExist ::  '[(Address, Address), Operators, Storage] :-> '[Storage]
     ifKeyDoesntExist = do
       unit
       some
@@ -308,7 +308,7 @@ addOperator = do
       update
       setField #sOperators
 
-removeOperator :: forall s. OperatorParam & Storage & s :-> Storage & s
+removeOperator :: '[OperatorParam, Storage] :-> '[Storage]
 removeOperator = do
   getField #opTokenId
   dip do
@@ -331,7 +331,7 @@ removeOperator = do
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists :: (Address, Address) & Operators & Storage & s :-> Storage & s
+    ifKeyExists ::  '[(Address, Address), Operators, Storage] :-> '[Storage]
     ifKeyExists = do
       push Nothing
       swap
@@ -339,7 +339,7 @@ removeOperator = do
       setField #sOperators
 
 
-    ifKeyDoesntExist :: (Address, Address) & Operators & Storage & s :-> Storage & s
+    ifKeyDoesntExist ::  '[(Address, Address), Operators, Storage] :-> '[Storage]
     ifKeyDoesntExist = dropN @2
 
 -- | TODO: Probably this one can be moved to Lorentz as well
@@ -353,5 +353,5 @@ assertEq0or1 = do
     dup
     push @Natural 1
     if IsEq
-    then failUsing [mt|fA2_OPERATION_PROHIBITED|]
+    then failUsing [mt|OPERATION_PROHIBITED|]
     else failCustom_ #fA2_TOKEN_UNDEFINED
