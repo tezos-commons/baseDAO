@@ -5,14 +5,8 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 # Overview
 
-This specification is based on the following documents:
-
-- [BaseDAO](https://docs.google.com/document/d/1bTMOntqvxbHmjaERqETmqw0hy2f8JdVsjNyhpWUOqDo/edit#)
-
-- Tezos Token Standard: [FA2][FA2]
-
 The contract described here consists of two parts:
-- Token functionality (FA2-based).
+- Token functionality ([FA2-based][FA2]).
 - DAO functionality with proposals and voting.
 
 These two parts are coupled into one smart contract because interaction between smart contracts in Tezos is expensive and hard to get right.
@@ -55,28 +49,40 @@ Compile-time value parameters are captured by the `Config` type (parameterized b
 
 ```haskell
 data Config proposalMetadata = Config
-  { cDaoName :: Text
+  { daoName :: Text
   -- ^ Name of the DAO.
-  , cDaoDescription :: Text
+  , daoDescription :: Text
   -- ^ Description of the DAO.
-  , cProposalCheck :: Lambda (Natural, Proposal proposalMetadata) Bool
+  , unfrozenTokenMetadata :: FA2.TokenMetadata
+  -- ^ FA2 metadata for unfrozen token.
+  , frozenTokenMetadata :: FA2.TokenMetadata
+  -- ^ FA2 metadata for frozen token.
+  , proposalCheck :: Lambda (ProposeParams proposalMetadata) Bool
   -- ^ A lambda used to verify whether a proposal can be submitted.
   -- It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   -- It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
-  -- (i. e. how much one should "freeze" in order to propose).
-  , cUnfrozenTokenMetadata :: FA2Metadata
-  -- ^ FA2 metadata for unfrozen token.
-  , cFrozenTokenMetadata :: FA2Metadata
-  -- ^ FA2 metadata for frozen token.
-  , cDecisionLambda :: Lambda
-      (Proposal proposalMetadata, Storage proposalMetadata)
-      (List Operation, Storage proposalMetadata)
-  -- ^ The decision lambda is executed based on a successful proposal.
-  , cRejectedProposalReturnValue :: Lambda Natural Natural
+  , rejectedProposalReturnValue :: Lambda (Proposal proposalMetadata) Natural
   -- ^ When a proposal is rejected, the value that voters get back can be slashed.
   -- This lambda specifies how many tokens will be received.
   -- For example, if Alice freezes 100 tokens to vote and this lambda divides the value by 2,
   -- only 50 tokens will be unfrozen and other 50 tokens will be burnt.
+  , decisionLambda :: Lambda
+      (Proposal proposalMetadata, Storage proposalMetadata)
+      (List Operation, Storage proposalMetadata)
+  -- ^ The decision lambda is executed based on a successful proposal.
+  , maxProposals :: Natural
+  -- ^ Determine the maximum number of proposals that are allowed in the contract.
+  , maxVotes :: Natural
+  -- ^ Determine the maximum number of votes associated with a proposal including positive votes
+  -- and negative votes.
+  , maxQuorumThreshold :: Natural
+  -- ^ Determine the maximum value of quorum threshold that is allowed to be set.
+  , minQuorumThreshold :: Natural
+  -- ^ Determine the minimum value of quorum threshold that is allowed to be set.
+  , maxVotingPeriod :: Natural
+  -- ^ Determine the maximum value of voting period that is allowed to be set.
+  , minVotingPeriod :: Natural
+  -- ^ Determine the minimum value of voting period that is allowed to be set.
   }
 ```
 
@@ -84,6 +90,21 @@ The `FA2Metadata` type matches `token_metadata` defined in FA2.
 The `Proposal` type is defined below.
 `Storage` is the full storage type of the contract.
 
+```haskell
+type ProposalId = Natural
+
+data Proposal proposalMetadata = Proposal
+  { pUpvotes :: Natural
+  , pDownvotes :: Natural
+  , pStartDate :: Timestamp
+  , pMetadata :: proposalMetadata
+  , pProposer :: Address
+  , pProposerFrozenToken :: Natural
+  , pVoters :: [(Address, Natural)]
+  -- ^ List of voter addresses associated with the vote amount
+  -- Needed for `flush` entrypoint.
+  }
+```
 ## Runtime configuration
 
 Some configuration values are specified in runtime and can be changed during the contract lifetime.
@@ -125,7 +146,6 @@ The proposer specifies how many tokens they want to freeze and this value is che
 the contract according to its compile-time configuration.
 If this value is accepted and the proposer has enough unfrozen tokens, these unfrozen tokens
 are frozen and voting starts.
-Apart from that the proposer specifies how many tokens one should lock in order to vote on this proposal.
 
 Proposals are identified by a natural number.
 A counter is used to assign identifiers to proposals.
@@ -134,7 +154,7 @@ So proposal IDs are 0, 1, 2…
 ## Voting
 
 Once a proposal is submitted, everyone can vote on it as long as they have enough unfrozen tokens.
-The exact value is specified in the proposal.
+One unfrozen token is required for one vote.
 The tokens are frozen for the duration of voting.
 Voting period is specified for the whole smart contract and can be updated by the administrator.
 It's possible to vote positively or negatively.
@@ -175,10 +195,16 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `NOT_PENDING_ADMINISTRATOR`    | Authorized sender is not the current pending administrator   |
 | `NO_PENDING_ADMINISTRATOR_SET` | Throws when trying to authorize as the pending administrator whilst is not set for a contract |
 | `NOT_TOKEN_OWNER`              | Trying to configure operators for a different wallet which sender does not own                |
-| `PROPOSAL_INSUFFICIENT_BALANCE` | Throws when trying to propose a contract without having enough unfrozen token                |
+| `FAIL_PROPOSAL_CHECK`          | Throws when trying to propose a proposal that does not pass `proposalCheck`               |
+| `PROPOSAL_INSUFFICIENT_BALANCE` | Throws when trying to propose a proposal without having enough unfrozen token                |
 | `VOTING_INSUFFICIENT_BALANCE` | Throws when trying to vote on a proposal without having enough unfrozen token                |
 | `PROPOSAL_NOT_EXIST`           | Throws when trying to vote on a proposal that does not exist |
 | `QUORUM_NOT_MET`               | A proposal is flushed, but there are not enough votes        |
+| `VOTING_PERIOD_OVER`           | Throws when trying to vote on a proposal that is already ended        |
+| `OUT_OF_BOUND_VOTING_PERIOD`   | Throws when trying to set voting period that is out of bound from what is specified in the `Config`        |
+| `OUT_OF_BOUND_QUORUM_THRESHOLD`   | Throws when trying to set quorum threshold that is out of bound from what is specified in the `Config`        |
+| `MAX_PROPOSALS_REACHED`   | Throws when trying to propose a proposal when proposals max amount is already reached |
+| `MAX_VOTES_REACHED`   | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached |
 | `CONTRACT_MIGRATED`            | Throw when conract has been migrated        |
 | `FROZEN_TOKEN_NOT_TRANSFERABLE`| The entrypoint called does not support frozen tokens         |
 
@@ -544,34 +570,33 @@ unit
 ### **propose**
 
 ```haskell
-data Proposal proposalMetadata = Proposal
-    { frozen_token_requirement :: Natural
-    -- ^ How many tokens should be frozen in order to vote on this proposal.
-    , metadata :: proposalMetadata
-    }
+data ProposeParams proposalMetadata = ProposeParams
+  { proposalTokenAmount :: Natural
+  --  ^ Determines how many sender's tokens will be frozen to get
+  -- the proposal accepted
+  , proposalMetadata :: proposalMetadata
+  }
 
 data Parameter proposalMetadata
-  = Propose Natural (Proposal proposalMetadata)
+  = Propose (ProposeParams proposalMetadata)
 ```
 
 Parameter (in Michelson):
 ```
 (pair %propose
-  nat
-  (pair
-    (nat %frozen_token_requirement)
-    (<proposal_type> %metadata)
-  )
+  (<proposal_type> %metadata)
+  (nat %proposal_token_amount)
 )
 ```
 
 - The proposal is saved and assigned a unique numeric proposal ID.
-- The `Natural` value (let's say `n`) determines how many sender's tokens will be frozen.
-- Sender MUST have enough unfrozen tokens (i. e. `≥ n`).
+- The `Natural` value: `proposalTokenAmount` determines how many sender's tokens will be frozen.
+- Sender MUST have enough unfrozen tokens (i. e. `≥ proposalTokenAmount`).
 - Fails with `PROPOSAL_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
-  is less than `n`.
-- Fails if the proposal is rejected by `cProposalCheck` from the configuration.
-- The sender's balance in frozen tokens is increased by `n` and in unfrozen tokens is decreased by `n`.
+  is less than `proposalTokenAmount`.
+- Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposalCheck` from the configuration.
+- Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
+- The sender's balance in frozen tokens is increased by `proposalTokenAmount` and in unfrozen tokens is decreased by `proposalTokenAmount`.
 
 ### **proposal_metadata**
 
@@ -579,12 +604,12 @@ Parameter (in Michelson):
 type ProposalId = Natural
 
 data Parameter proposalMetadata
-  = ProposalMetadata (View ProposalId (Proposal proposalMetadata))
+  = Proposal_metadata (View ProposalId (Proposal proposalMetadata))
 ```
 
 Parameter (in Michelson):
 ```
-(pair %proposal_meatadata
+(pair %proposal_metadata
   (nat %requests)
   (contract %callback <proposal_type>)
 )
@@ -598,8 +623,11 @@ Parameter (in Michelson):
 ### **set_voting_period**
 
 ```haskell
+-- | Voting period in seconds
+type VotingPeriod = Natural
+
 data Parameter proposalMetadata
-  = SetVotingPeriod Natural
+  = Set_voting_period VotingPeriod
 ```
 
 Parameter (in Michelson):
@@ -607,14 +635,21 @@ Parameter (in Michelson):
 nat
 ```
 
-- Update how long the voting period lasts for new proposals
+- Update how long the voting period should last.
+- This affects all ongoing and new proposals.
+- Voting period value is measured in seconds.
 - Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `OUT_OF_BOUND_VOTING_PERIOD` if the voting period value is out of the bound set by the configuration
 
 ### **set_quorum_threshold**
 
 ```haskell
+-- | QuorumThreshold that a proposal need to meet
+-- quorum_threshold = upvote - downvote
+type QuorumThreshold = Natural
+
 data Parameter proposalMetadata
-  = SetQuorumThreshold Natural
+  = Set_quorum_threshold QuorumThreshold
 ```
 
 Parameter (in Michelson):
@@ -622,40 +657,51 @@ Parameter (in Michelson):
 nat
 ```
 
-- Update the amount of votes which is required for a successful proposal for new proposals
+- Update the amount of votes which is required for a proposal to be accepted.
+- This affects all ongoing and new proposals.
+- Quorum threshold is calculated by substracting the number of upvotes with downvotes.
 - Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `OUT_OF_BOUND_QUORUM_THRESHOLD` if the voting period value is out of the bound set by the configuration
 
 ### **vote**
 
 ```haskell
 type ProposalId = Natural
 
-type VoteType = Upvote | Downvote
+type VoteType = Bool
 
 data VoteParam = VoteParam
-  { proposal_id :: ProposalId
-  , vote_type :: VoteType
+  { proposalId :: ProposalId
+  , voteType :: Bool
+  , voteAmount :: Natural
   }
 
 data Parameter proposalMetadata
-  = Vote VoteParam
+  = Vote [VoteParam]
 ```
 
 Parameter (in Michelson):
 
 ```
-(pair %vote
-  (nat %proposal_id)
-  (bool %vote_type)
+(list
+  (pair %vote
+    (nat %proposal_id)
+    (pair
+      (bool %vote_type)
+      (nat %vote_amount)
+    )
+  )
 )
 ```
 
-- Let `n` denote the amount of tokens required by the associated proposal to vote.
-- Sender MUST have enough unfrozen tokens (i. e. `≥ n`).
+- Sender MUST have unfrozen tokens equal to `voteAmount` or more (1 unfrozen token is needed for 1 vote).
 - Fails with `VOTING_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
-  is less than `n`.
+  is less than specified `vVoteAmount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal id is not associated with any ongoing proposals.
-- The sender's balance in frozen tokens is increased by `n` and in unfrozen tokens is decreased by `n`.
+- Fails with `VOTING_PERIOD_OVER` if the proposal associated with the proposa id is already ended.
+- Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal is already at the max value set by the configuration.
+- The sender's balance in frozen tokens is increased by `voteAmount` and in unfrozen tokens is decreased by `voteAmount`.
+- The entrypoint accepts a list of vote params. As a result, the sender can `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
 
 ### **token_address**
 
@@ -676,7 +722,7 @@ Parameter (in Michelson)
 
 ```haskell
 data Parameter proposalMetadata
-  = Flush
+  = Flush ()
 ```
 
 Parameter (in Michelson):
@@ -687,7 +733,7 @@ unit
 - Finish voting process on all proposals for which voting period is over.
 - Frozen tokens from voters and proposal submitter associated with those proposals are returned
   in form of unfrozen tokens:
-  - If proposal got rejected or the quorum was not met: the return amount are slashed based on `cRejectedProposalReturnValue`.
+  - If proposal got rejected or the quorum was not met: the return amount are slashed based on `rejectedProposalReturnValue`.
   - If proposal got accepted: the return amount are returned in total.
 - If proposal is accepted, decision lambda is called.
 
