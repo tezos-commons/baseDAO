@@ -47,14 +47,14 @@ usageDoc = Just $ mconcat
 contracts :: ContractRegistry
 contracts = ContractRegistry $ Map.fromList
   [ "BaseDAO" ?:: ContractInfo
-    { ciContract = DAO.baseDaoContract
+    { ciContract = DAO.baseDaoContract DAO.defaultConfig
     , ciIsDocumented = True
     , ciStorageParser = Just baseDaoStorageParser
     , ciStorageNotes = Nothing
     }
   ]
 
-baseDaoStorageParser :: Opt.Parser DAO.Storage
+baseDaoStorageParser :: Opt.Parser (DAO.Storage ())
 baseDaoStorageParser = do
   adminAddress <-
     addressOption Nothing (#name .! "admin")

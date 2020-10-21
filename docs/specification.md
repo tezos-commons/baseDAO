@@ -147,9 +147,8 @@ the contract according to its compile-time configuration.
 If this value is accepted and the proposer has enough unfrozen tokens, these unfrozen tokens
 are frozen and voting starts.
 
-Proposals are identified by a natural number.
-A counter is used to assign identifiers to proposals.
-So proposal IDs are 0, 1, 2…
+Proposals are identified by a key which is a bytestring computed via Blake2B hasing function of a
+pair of propose entrypoint params and the proposer address.
 
 ## Voting
 
@@ -197,8 +196,8 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `NOT_TOKEN_OWNER`              | Trying to configure operators for a different wallet which sender does not own                |
 | `FAIL_PROPOSAL_CHECK`          | Throws when trying to propose a proposal that does not pass `proposalCheck`               |
 | `FROZEN_TOKEN_NOT_TRANSFERABLE`| Transfer entrypoint is called for frozen token by a non-admin sender|
-| `PROPOSAL_INSUFFICIENT_BALANCE` | Throws when trying to propose a proposal without having enough unfrozen token                |
-| `VOTING_INSUFFICIENT_BALANCE` | Throws when trying to vote on a proposal without having enough unfrozen token                |
+| `PROPOSAL_INSUFFICIENT_BALANCE`| Throws when trying to propose a proposal without having enough unfrozen token                |
+| `VOTING_INSUFFICIENT_BALANCE`  | Throws when trying to vote on a proposal without having enough unfrozen token                |
 | `PROPOSAL_NOT_EXIST`           | Throws when trying to vote on a proposal that does not exist |
 | `QUORUM_NOT_MET`               | A proposal is flushed, but there are not enough votes        |
 | `VOTING_PERIOD_OVER`           | Throws when trying to vote on a proposal that is already ended        |
@@ -207,11 +206,13 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `MAX_PROPOSALS_REACHED`        | Throws when trying to propose a proposal when proposals max amount is already reached |
 | `MAX_VOTES_REACHED`            | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached |
 | `CONTRACT_MIGRATED`            | Throw when conract has been migrated        |
-| `FROZEN_TOKEN_NOT_TRANSFERABLE`| The entrypoint called does not support frozen tokens         |
 | `MIGRATED`                     | Throw when conract has been migrated        |
 | `NOT_MIGRATING`                | Throw when `confirm_migration` is called and contract is not in migration |
 | `NOT_MIGRATION_TARGET`         | Throw when `confirm_migration` is called by address other than the new address |
 | `FORBIDDEN_XTZ`                | Throws when some XTZ was received as part of the contract call |
+| `PROPOSER_NOT_EXIST_IN_LEDGER` | Expect a proposer address to exist in Ledger but it is not found         |
+| `PROPOSAL_NOT_UNIQUE`          | Trying to propose a proposal that is already existed in the Storage.         |
+
 
 # Entrypoints
 
@@ -651,7 +652,7 @@ nat
 
 ```haskell
 -- | QuorumThreshold that a proposal need to meet
--- quorum_threshold = upvote - downvote
+-- quorum_threshold = upvote + downvote
 type QuorumThreshold = Natural
 
 data Parameter proposalMetadata
@@ -663,9 +664,9 @@ Parameter (in Michelson):
 nat
 ```
 
-- Update the amount of votes which is required for a proposal to be accepted.
+- Update the quorum threshold value which proposals have to met to not get rejected.
+- Quorum threshold value is calculated by adding the number of upvotes with downvotes.
 - This affects all ongoing and new proposals.
-- Quorum threshold is calculated by substracting the number of upvotes with downvotes.
 - Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
 - Fails with `OUT_OF_BOUND_QUORUM_THRESHOLD` if the voting period value is out of the bound set by the configuration
 
@@ -739,8 +740,13 @@ unit
 - Finish voting process on all proposals for which voting period is over.
 - Frozen tokens from voters and proposal submitter associated with those proposals are returned
   in form of unfrozen tokens:
-  - If proposal got rejected or the quorum was not met: the return amount are slashed based on `rejectedProposalReturnValue`.
-  - If proposal got accepted: the return amount are returned in total.
+  - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
+    - The return amount for the proposer is equal to or less than the slashed amount based on `rejectedProposalReturnValue`.
+    - The return amount for each voters is equal to or less than the voter's frozen tokens.
+  - If proposal got accepted:
+    - The return amount for the proposer is equal to or less than proposer frozen tokens.
+    - The return amount for each voters is equal to or less than the voter's frozen tokens.
+- The lost of frozen tokens is due to the fact that the administrator has the right to `burn` or `transfer` frozen tokens of any proposers or voters.
 - If proposal is accepted, decision lambda is called.
 
 ## Migrating functions

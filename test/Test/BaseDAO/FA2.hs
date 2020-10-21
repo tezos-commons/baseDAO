@@ -7,7 +7,6 @@ module Test.BaseDAO.FA2
 
 import Universum
 
-import qualified Data.Map.Strict as Map
 import Lorentz
 import Lorentz.Test
 import Morley.Nettest
@@ -16,45 +15,14 @@ import Test.Tasty.HUnit (testCase)
 import Util.Named
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import qualified Lorentz.Contracts.BaseDAO as DAO
-import Test.Management (expectMigrated)
+import qualified Lorentz.Contracts.BaseDAO.Types as DAO
+import Test.BaseDAO.Management (expectMigrated)
+import Test.Common
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
-originateBaseDAO
-  :: MonadNettest caps base m
-  => m ((Address, Address), (Address, Address), TAddress DAO.Parameter, Address)
-originateBaseDAO = do
-  owner1 :: Address <- newAddress "owner1"
-  operator1 :: Address <- newAddress "operator1"
-  owner2 :: Address <- newAddress "owner2"
-  operator2 :: Address <- newAddress "operator2"
-
-  admin :: Address <- newAddress "admin"
-
-  let bal = Map.fromList
-        [ ((owner1, 0), 100)
-        , ((owner2, 0), 100)
-        , ((owner1, 1), 100)
-        , ((owner2, 1), 100)
-        ]
-  let (operators :: DAO.Operators) = BigMap $ Map.fromList
-        [ ((owner1, operator1), ())
-        , ((owner2, operator2), ())
-        ]
-  let
-    originateData = OriginateData
-      { odFrom = nettestAddress
-      , odName = "BaseDAO"
-      , odBalance = toMutez 0
-      , odStorage = DAO.mkStorage admin bal operators
-      , odContract = DAO.baseDaoContract
-      }
-  dao <- originate originateData
-  pure ((owner1, operator1), (owner2, operator2), dao, admin)
-
 test_BaseDAO_FA2 :: TestTree
-test_BaseDAO_FA2 = testGroup "tests to check BaseDAO contract functionality"
+test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
   [ testGroup "Operator:"
       [ testCase "allows zero transfer from non-existent operator" $
           nettestTestExpectation zeroTransferScenario
@@ -108,7 +76,7 @@ test_BaseDAO_FA2 = testGroup "tests to check BaseDAO contract functionality"
 zeroTransferScenario :: (Monad m) => NettestImpl m -> m ()
 zeroTransferScenario = uncapsNettest $ do
   nonexistent :: Address <- newAddress "nonexistent"
-  ((owner1, _), _, dao, _) <- originateBaseDAO
+  ((owner1, _), _, dao, _) <- originateBaseDao
   let params = [ FA2.TransferItem
         { tiFrom = nonexistent
         , tiTxs = [ FA2.TransferDestination
@@ -122,7 +90,7 @@ zeroTransferScenario = uncapsNettest $ do
 
 validTransferScenario :: (Monad m) => NettestImpl m -> m ()
 validTransferScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, op1), (owner2, _), dao, _) <- originateBaseDao
   let params = [ FA2.TransferItem
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
@@ -147,7 +115,7 @@ validTransferScenario = uncapsNettest $ do
 
 validTransferOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 validTransferOwnerScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDao
   let params = [ FA2.TransferItem
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
@@ -172,7 +140,7 @@ validTransferOwnerScenario = uncapsNettest $ do
 
 updatingOperatorAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
 updatingOperatorAfterMigrationScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, newAddress1), dao, admin) <- originateBaseDAO
+  ((owner1, _), (owner2, newAddress1), dao, admin) <- originateBaseDao
   let params = FA2.OperatorParam
         { opOwner = owner1
         , opOperator = owner2
@@ -186,7 +154,7 @@ updatingOperatorAfterMigrationScenario = uncapsNettest $ do
 
 updatingOperatorScenario :: (Monad m) => NettestImpl m -> m ()
 updatingOperatorScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDao
   let params = FA2.OperatorParam
         { opOwner = owner1
         , opOperator = owner2
@@ -209,7 +177,7 @@ updatingOperatorScenario = uncapsNettest $ do
 
 lowBalanceScenario :: (Monad m) => NettestImpl m -> m ()
 lowBalanceScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, op1), (owner2, _), dao, _) <- originateBaseDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner1
@@ -224,7 +192,7 @@ lowBalanceScenario = uncapsNettest $ do
 
 lowBalanceOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 lowBalanceOwnerScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner1
@@ -240,7 +208,7 @@ lowBalanceOwnerScenario = uncapsNettest $ do
 noSourceAccountScenario :: (Monad m) => NettestImpl m -> m ()
 noSourceAccountScenario = uncapsNettest $ do
   nonexistent :: Address <- newAddress "nonexistent"
-  ((owner1, _), _, dao, _) <- originateBaseDAO
+  ((owner1, _), _, dao, _) <- originateBaseDao
 
   let params = [ FA2.TransferItem
         { tiFrom = nonexistent
@@ -259,7 +227,7 @@ noSourceAccountScenario = uncapsNettest $ do
 badOperatorScenario :: (Monad m) => NettestImpl m -> m ()
 badOperatorScenario = uncapsNettest $ do
   op3  :: Address <- newAddress "operator3"
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -274,12 +242,12 @@ badOperatorScenario = uncapsNettest $ do
 
 emptyTransferListScenario :: (Monad m) => NettestImpl m -> m ()
 emptyTransferListScenario = uncapsNettest $ do
-  ((_, op1), _, dao, _) <- originateBaseDAO
+  ((_, op1), _, dao, _) <- originateBaseDao
   callFrom (AddressResolved op1) dao (Call @"Transfer") []
 
 validateTokenScenario :: (Monad m) => NettestImpl m -> m ()
 validateTokenScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, op1), (owner2, _), dao, _) <- originateBaseDao
 
   let params tokenId = [ FA2.TransferItem
         { tiFrom = owner1
@@ -299,7 +267,7 @@ validateTokenScenario = uncapsNettest $ do
 
 validateTokenOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 validateTokenOwnerScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDao
 
   let params tokenId = [ FA2.TransferItem
         { tiFrom = owner1
@@ -319,7 +287,7 @@ validateTokenOwnerScenario = uncapsNettest $ do
 
 noForeignMoneyScenario :: (Monad m) => NettestImpl m -> m ()
 noForeignMoneyScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, op1), (owner2, _), dao, _) <- originateBaseDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -334,7 +302,7 @@ noForeignMoneyScenario = uncapsNettest $ do
 
 noForeignMoneyOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 noForeignMoneyOwnerScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDAO
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -349,7 +317,7 @@ noForeignMoneyOwnerScenario = uncapsNettest $ do
 
 balanceOfOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 balanceOfOwnerScenario = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateBaseDAO
+  ((owner1, _), _, dao, _) <- originateBaseDao
   consumer <- originateSimple "consumer" [] contractConsumer
   let
     params requestItems = mkFA2View requestItems consumer
@@ -363,7 +331,7 @@ balanceOfOwnerScenario = uncapsNettest $ do
 
 adminTransferScenario :: (Monad m) => NettestImpl m -> m ()
 adminTransferScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDAO
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -378,7 +346,13 @@ adminTransferScenario = uncapsNettest $ do
 
 adminTransferFrozenScenario :: (Monad m) => NettestImpl m -> m ()
 adminTransferFrozenScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDAO
+  ((owner1, _), (owner2, _), dao, admin)
+    <- originateBaseDaoWithBalance DAO.defaultConfig
+        (\owner1 owner2 ->
+            [ ((owner1, 1), 100)
+            , ((owner2, 1), 100)
+            ]
+        )
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -392,7 +366,7 @@ adminTransferFrozenScenario = uncapsNettest $ do
 
 transferAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
 transferAfterMigrationScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, newAddress1), dao, admin) <- originateBaseDAO
+  ((owner1, op1), (owner2, newAddress1), dao, admin) <- originateBaseDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -410,7 +384,7 @@ transferAfterMigrationScenario = uncapsNettest $ do
 
 balanceOfRequestAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
 balanceOfRequestAfterMigrationScenario = uncapsNettest $ do
-  ((owner1, newAddress1), _, dao, admin) <- originateBaseDAO
+  ((owner1, newAddress1), _, dao, admin) <- originateBaseDao
   consumer <- originateSimple "consumer" [] contractConsumer
   let
     params requestItems = mkFA2View requestItems consumer
@@ -424,7 +398,7 @@ balanceOfRequestAfterMigrationScenario = uncapsNettest $ do
 
 tokenMetadataRegistryRequestAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
 tokenMetadataRegistryRequestAfterMigrationScenario = uncapsNettest $ do
-  ((owner1, newAddress1), _, dao, admin) <- originateBaseDAO
+  ((owner1, newAddress1), _, dao, admin) <- originateBaseDao
   consumer <- originateSimple "consumer" [] (contractConsumer @Address)
 
   callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
@@ -432,14 +406,3 @@ tokenMetadataRegistryRequestAfterMigrationScenario = uncapsNettest $ do
 
   callFrom (AddressResolved owner1) dao (Call @"Token_metadata_registry") (toContractRef consumer)
     & expectMigrated newAddress1
-
--------------------------------------------------
--- Helper
--------------------------------------------------
-
-mkFA2View
-  :: forall paramFa a r contract. ToContractRef r contract
-  => a
-  -> contract
-  -> FA2.FA2View paramFa a r
-mkFA2View a c = FA2.FA2View (mkView a c)

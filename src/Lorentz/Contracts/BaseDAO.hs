@@ -2,7 +2,10 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Lorentz.Contracts.BaseDAO
-  ( Ledger
+  ( Config(..)
+  , defaultConfig
+
+  , Ledger
   , Operators
   , Parameter (..)
   , Storage (..)
@@ -15,30 +18,36 @@ module Lorentz.Contracts.BaseDAO
 import Lorentz
 import Lorentz.Contracts.BaseDAO.FA2
 import Lorentz.Contracts.BaseDAO.Management
+import Lorentz.Contracts.BaseDAO.Proposal
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Util.Markdown
 
-contractDoc :: Markdown
-contractDoc = [md|
-  This documentation describes a smart contract which implements FA2 spec
-  (https://gitlab.com/tzip/tzip/-/blob/667f925471728bb8e81fbd30b93a171e401b6dc1/proposals/tzip-12/tzip-12.md)
-  |]
-
-baseDaoContract :: Contract BaseDAO.Parameter Storage
-baseDaoContract = defaultContract $ contractName "FA2 smart contract" $ do
-  doc $ DDescription contractDoc
+baseDaoContract
+  :: forall pm.
+      ( NiceParameter pm, TypeHasDoc pm
+      , HasAnnotation pm, TypeHasDoc (Proposal pm)
+      , NicePackedValue pm
+      )
+  => Config pm -> Contract (BaseDAO.Parameter pm) (BaseDAO.Storage pm)
+baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
+  doc $ DDescription cDaoDescription
   ensureZeroTransfer
   unpair
-  entryCase @BaseDAO.Parameter (Proxy @PlainEntrypointsKind)
+  entryCase @(BaseDAO.Parameter pm) (Proxy @PlainEntrypointsKind)
     ( #cCall_FA2 /-> fa2Handler
     , #cTransfer_ownership /-> transferOwnership
     , #cAccept_ownership /-> acceptOwnership
     , #cMigrate /-> migrate
     , #cConfirm_migration /-> confirmMigration
+    , #cPropose /-> propose config
+    , #cProposal_metadata /-> proposalMetadata
+    , #cVote /-> vote config
+    , #cSet_voting_period /-> setVotingPeriod config
+    , #cSet_quorum_threshold /-> setQuorumThreshold config
+    , #cFlush /-> flush config
     )
 
-fa2Handler :: Entrypoint FA2.Parameter Storage
+fa2Handler :: (IsoValue pm) => Entrypoint FA2.Parameter (BaseDAO.Storage pm)
 fa2Handler =
   entryCase @FA2.Parameter (Proxy @PlainEntrypointsKind)
     ( #cTransfer /-> transfer
