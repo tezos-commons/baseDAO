@@ -208,8 +208,9 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `CONTRACT_MIGRATED`            | Throw when conract has been migrated        |
 | `FROZEN_TOKEN_NOT_TRANSFERABLE`| The entrypoint called does not support frozen tokens         |
 | `MIGRATED`                     | Throw when conract has been migrated        |
-| `NOT_MIGRATING`                | Throw when `confirm_migration` is called and contract is not in migration
-| `NOT_MIGRATION_TARGET`         | Throw when `confirm_migration` is called by address other than the new address
+| `NOT_MIGRATING`                | Throw when `confirm_migration` is called and contract is not in migration |
+| `NOT_MIGRATION_TARGET`         | Throw when `confirm_migration` is called by address other than the new address |
+| `FORBIDDEN_XTZ`                | Throws when some XTZ was received as part of the contract call |
 
 # Entrypoints
 

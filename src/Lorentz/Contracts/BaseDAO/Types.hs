@@ -165,3 +165,10 @@ instance CustomErrorHasDoc "nOT_MIGRATION_TARGET" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Recieved a confirm_migration call on a contract from an address other than the new version"
+
+type instance ErrorArg "fORBIDDEN_XTZ" = ()
+
+instance CustomErrorHasDoc "fORBIDDEN_XTZ" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "Received some XTZ as part of a contract call, which is forbidden"

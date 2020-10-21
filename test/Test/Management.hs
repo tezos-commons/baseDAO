@@ -18,13 +18,27 @@ import Test.Tasty.HUnit (testCase)
 import Lorentz
 import Lorentz.Contracts.BaseDAO (mkStorage)
 import Morley.Nettest
+import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Test.Common
+import Tezos.Core (unsafeMkMutez)
 import Util.Named
 
 -- | We test non-token entrypoints of the BaseDAO contract here
 test_baseDAO :: [TestTree]
 test_baseDAO =
-  [ testGroup "Ownership transfer"
+  [ testCase "Contract forbids XTZ transfer" $
+      nettestTestExpectation $ uncapsNettest $ do
+        withOriginated 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
+          transfer TransferData
+            { tdFrom = AddressResolved wallet1
+            , tdTo = AddressResolved $ unTAddress baseDao
+            , tdAmount = unsafeMkMutez 1
+            , tdEntrypoint = unsafeBuildEpName "transfer_ownership"
+            , tdParameter = (#newOwner .! wallet1)
+            }
+          & expectForbiddenXTZ
+
+  , testGroup "Ownership transfer"
     [ testCase "transfer ownership entrypoint authenticates sender" $
         nettestTestExpectation $ uncapsNettest $ do
           withOriginated 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
@@ -229,3 +243,8 @@ expectMigrated
   :: (MonadNettest caps base m)
   => Address -> m a -> m ()
 expectMigrated addr = expectCustomError #mIGRATED addr
+
+expectForbiddenXTZ
+  :: (MonadNettest caps base m)
+  => m a -> m ()
+expectForbiddenXTZ = expectCustomError_ #fORBIDDEN_XTZ

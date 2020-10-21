@@ -10,9 +10,9 @@ module Lorentz.Contracts.BaseDAO.FA2
    ) where
 
 import Lorentz
+import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface
-import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 
 defaultPermissionsDescriptor :: PermissionsDescriptor
 defaultPermissionsDescriptor = PermissionsDescriptor
@@ -199,6 +199,7 @@ creditTo = do
 
 balanceOf :: Entrypoint BalanceRequestParams Storage
 balanceOf = do
+  dip ensureNotMigrated
   checkedCoerce_
     @(FA2View "requests" [BalanceRequestItem] [BalanceResponseItem])
     @(View [BalanceRequestItem] [BalanceResponseItem])
