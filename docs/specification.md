@@ -13,8 +13,7 @@ These two parts are coupled into one smart contract because interaction between 
 
 # General Requirements
 
-- The contract must be FA2 compatible as to facilitate listing on
-  exchanges and interaction with services which support FA2.
+- The contract must be FA2 compatible.
 
 - The contract must store tokens of two types: frozen (`token_id` is 1) and unfrozen (`token_id` is 0).
 
