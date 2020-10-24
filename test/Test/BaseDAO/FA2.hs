@@ -17,6 +17,7 @@ import Util.Named
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.BaseDAO as DAO
+import Test.Management (expectMigrated)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -88,6 +89,16 @@ test_BaseDAO_FA2 = testGroup "tests to check BaseDAO contract functionality"
     [ testCase "transfer tokens from any address to any address" $
         nettestTestExpectation adminTransferScenario
     ]
+  , testGroup "Entrypoints respect migration status"
+      [ testCase "transfer respects migration status" $
+          nettestTestExpectation transferAfterMigrationScenario
+      , testCase "update operator respects migration status " $
+          nettestTestExpectation updatingOperatorAfterMigrationScenario
+      , testCase "balanceOf request respects migration status" $
+          nettestTestExpectation balanceOfRequestAfterMigrationScenario
+      , testCase "tokenMetadataRegistry request respects migration status" $
+          nettestTestExpectation tokenMetadataRegistryRequestAfterMigrationScenario
+      ]
   ]
 
 zeroTransferScenario :: (Monad m) => NettestImpl m -> m ()
@@ -154,6 +165,20 @@ validTransferOwnerScenario = uncapsNettest $ do
 
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((owner2, 0 :: Natural), 110 :: Natural)]] )
+
+updatingOperatorAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
+updatingOperatorAfterMigrationScenario = uncapsNettest $ do
+  ((owner1, _), (owner2, newAddress1), dao, admin) <- originateBaseDAO
+  let params = FA2.OperatorParam
+        { opOwner = owner1
+        , opOperator = owner2
+        , opTokenId = 0
+        }
+
+  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
+  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
+  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.AddOperator params]
+    & expectCustomError #mIGRATED newAddress1
 
 updatingOperatorScenario :: (Monad m) => NettestImpl m -> m ()
 updatingOperatorScenario = uncapsNettest $ do
@@ -346,6 +371,49 @@ adminTransferScenario = uncapsNettest $ do
             } ]
         } ]
   callFrom (AddressResolved admin) dao (Call @"Transfer") params
+
+transferAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
+transferAfterMigrationScenario = uncapsNettest $ do
+  ((owner1, op1), (owner2, newAddress1), dao, admin) <- originateBaseDAO
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
+
+  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
+  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
+  callFrom (AddressResolved op1) dao (Call @"Transfer") params
+    & expectMigrated newAddress1
+
+balanceOfRequestAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
+balanceOfRequestAfterMigrationScenario = uncapsNettest $ do
+  ((owner1, newAddress1), _, dao, admin) <- originateBaseDAO
+  consumer <- originateSimple "consumer" [] contractConsumer
+  let
+    params requestItems = mkFA2View requestItems consumer
+    callWith = callFrom (AddressResolved owner1) dao (Call @"Balance_of")
+
+  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
+  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
+
+  callWith (params [ FA2.BalanceRequestItem owner1 0 ])
+    & expectMigrated newAddress1
+
+tokenMetadataRegistryRequestAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
+tokenMetadataRegistryRequestAfterMigrationScenario = uncapsNettest $ do
+  ((owner1, newAddress1), _, dao, admin) <- originateBaseDAO
+  consumer <- originateSimple "consumer" [] (contractConsumer @Address)
+
+  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
+  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
+
+  callFrom (AddressResolved owner1) dao (Call @"Token_metadata_registry") (toContractRef consumer)
+    & expectMigrated newAddress1
 
 -------------------------------------------------
 -- Helper

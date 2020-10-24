@@ -3,6 +3,9 @@
 
 module Lorentz.Contracts.BaseDAO.Management
   ( acceptOwnership
+  , confirmMigration
+  , ensureNotMigrated
+  , migrate
   , transferOwnership
   ) where
 
@@ -15,7 +18,9 @@ import Lorentz.Contracts.ManagedLedger.Doc (DRequireRole(..))
 transferOwnership
   :: Entrypoint TransferOwnershipParam Storage
 transferOwnership = do
-  dip authorizeAdmin
+  dip $ do
+    ensureNotMigrated
+    authorizeAdmin
 
   -- Check if new owner is current admin. If so, we just store a `none`
   -- value to the pending owner field in the storage, and leave a False
@@ -48,6 +53,7 @@ acceptOwnership
   :: Entrypoint () Storage
 acceptOwnership = do
   drop @()
+  ensureNotMigrated
   -- check if pending owner is set and put the unwrapped value of
   -- pending owner at the top. Throws error if pending owner is not set
   -- or sender address is different from the value of pending owner.
@@ -58,6 +64,47 @@ acceptOwnership = do
   -- unset pending owner field in storage
   none
   stSetField #sPendingOwner
+  nil; pair
+
+-- Authorises admin and set the migration status using the new address
+-- in param.
+migrate :: Entrypoint MigrateParam Storage
+migrate = do
+  dip $ do
+    ensureNotMigrated
+    authorizeAdmin
+  fromNamed #newAddress
+  wrap_ @MigrationStatus #cMigratingTo
+  stSetField #sMigrationStatus
+  nil; pair
+
+-- Authorise sender and move pending owner address to stack top.
+ensureNotMigrated ::
+  StorageC store => store : s :-> store : s
+ensureNotMigrated = do
+  stGetField #sMigrationStatus
+  caseT @MigrationStatus
+    ( #cNotInMigration /-> nop
+    , #cMigratingTo /-> drop
+    , #cMigratedTo /-> failCustom #mIGRATED
+    )
+
+-- Confirm that the sender is the new contract address and set `MIGRATED_TO` status
+confirmMigration :: Entrypoint () Storage
+confirmMigration = do
+  drop
+  doc $ DRequireRole "migration target contract"
+  stGetField #sMigrationStatus
+  caseT @MigrationStatus
+    ( #cNotInMigration /-> failCustom_ #nOT_MIGRATING
+    , #cMigratingTo /-> do
+        dup
+        sender
+        if IsEq then nop else failCustom_ #nOT_MIGRATION_TARGET
+        wrap_ @MigrationStatus #cMigratedTo
+        stSetField #sMigrationStatus
+    , #cMigratedTo /-> failCustom #mIGRATED
+    )
   nil; pair
 
 -- Authorise sender and move pending owner address to stack top.

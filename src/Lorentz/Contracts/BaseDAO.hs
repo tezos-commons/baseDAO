@@ -28,11 +28,14 @@ contractDoc = [md|
 baseDaoContract :: Contract BaseDAO.Parameter Storage
 baseDaoContract = defaultContract $ contractName "FA2 smart contract" $ do
   doc $ DDescription contractDoc
+  ensureZeroTransfer
   unpair
   entryCase @BaseDAO.Parameter (Proxy @PlainEntrypointsKind)
     ( #cCall_FA2 /-> fa2Handler
     , #cTransfer_ownership /-> transferOwnership
     , #cAccept_ownership /-> acceptOwnership
+    , #cMigrate /-> migrate
+    , #cConfirm_migration /-> confirmMigration
     )
 
 fa2Handler :: Entrypoint FA2.Parameter Storage
@@ -43,3 +46,9 @@ fa2Handler =
     , #cToken_metadata_registry /-> tokenMetadataRegistry
     , #cUpdate_operators /-> updateOperators
     )
+
+ensureZeroTransfer :: s :-> s
+ensureZeroTransfer = do
+  amount
+  push zeroMutez
+  if IsEq then nop else failCustom_ #fORBIDDEN_XTZ

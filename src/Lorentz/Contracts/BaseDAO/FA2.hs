@@ -10,6 +10,7 @@ module Lorentz.Contracts.BaseDAO.FA2
    ) where
 
 import Lorentz
+import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface
 
@@ -23,6 +24,7 @@ defaultPermissionsDescriptor = PermissionsDescriptor
 
 transfer :: Entrypoint TransferParams Storage
 transfer = do
+  dip ensureNotMigrated
   iter transferItem
   nil; pair
   where
@@ -103,7 +105,6 @@ transfer = do
         pair
         mem
         if_ nop (failCustom_ #fA2_NOT_OPERATOR)
-
 
 debitFrom :: forall s. Storage & Address & (TokenId, Natural) & s :-> Storage & s
 debitFrom = do
@@ -198,6 +199,7 @@ creditTo = do
 
 balanceOf :: Entrypoint BalanceRequestParams Storage
 balanceOf = do
+  dip ensureNotMigrated
   checkedCoerce_
     @(FA2View "requests" [BalanceRequestItem] [BalanceResponseItem])
     @(View [BalanceRequestItem] [BalanceResponseItem])
@@ -257,6 +259,7 @@ balanceOf = do
 
 tokenMetadataRegistry :: Entrypoint TokenMetadataRegistryParam Storage
 tokenMetadataRegistry = do
+  dip ensureNotMigrated
   swap
   getField #sTokenAddress
   dig @2
@@ -267,6 +270,7 @@ tokenMetadataRegistry = do
 
 updateOperators :: Entrypoint UpdateOperatorsParam Storage
 updateOperators = do
+  dip ensureNotMigrated
   iter $
     caseT @UpdateOperator
       ( #cAddOperator /-> addOperator
