@@ -70,7 +70,11 @@ transfer = do
         dup
         push @Natural 1
         if IsEq
-        then failCustom_ #fROZEN_TOKEN_NOT_TRANSFERABLE
+        then do
+          dig @5
+          dup
+          if_ (dug @5) $
+            failCustom_ #fROZEN_TOKEN_NOT_TRANSFERABLE
         else failCustom_ #fA2_TOKEN_UNDEFINED
       pair
       dup

@@ -35,6 +35,8 @@ originateBaseDAO = do
   let bal = Map.fromList
         [ ((owner1, 0), 100)
         , ((owner2, 0), 100)
+        , ((owner1, 1), 100)
+        , ((owner2, 1), 100)
         ]
   let (operators :: DAO.Operators) = BigMap $ Map.fromList
         [ ((owner1, operator1), ())
@@ -88,6 +90,8 @@ test_BaseDAO_FA2 = testGroup "tests to check BaseDAO contract functionality"
   , testGroup "Admin:"
     [ testCase "transfer tokens from any address to any address" $
         nettestTestExpectation adminTransferScenario
+    , testCase "transfer frozen tokens" $
+        nettestTestExpectation adminTransferFrozenScenario
     ]
   , testGroup "Entrypoints respect migration status"
       [ testCase "transfer respects migration status" $
@@ -288,7 +292,6 @@ validateTokenScenario = uncapsNettest $ do
       callWith = callFrom (AddressResolved op1) dao (Call @"Transfer")
 
   callWith (params 0)
-  -- TODO: Add `fROZEN_TOKEN_NOT_TRANSFERABLE` to spec.
   callWith (params 1)
     & expectCustomError_ #fROZEN_TOKEN_NOT_TRANSFERABLE
   callWith (params 2)
@@ -367,6 +370,21 @@ adminTransferScenario = uncapsNettest $ do
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
             , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
+  callFrom (AddressResolved admin) dao (Call @"Transfer") params
+
+
+adminTransferFrozenScenario :: (Monad m) => NettestImpl m -> m ()
+adminTransferFrozenScenario = uncapsNettest $ do
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDAO
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = 1
             , tdAmount = 10
             } ]
         } ]

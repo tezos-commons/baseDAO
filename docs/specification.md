@@ -196,6 +196,7 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `NO_PENDING_ADMINISTRATOR_SET` | Throws when trying to authorize as the pending administrator whilst is not set for a contract |
 | `NOT_TOKEN_OWNER`              | Trying to configure operators for a different wallet which sender does not own                |
 | `FAIL_PROPOSAL_CHECK`          | Throws when trying to propose a proposal that does not pass `proposalCheck`               |
+| `FROZEN_TOKEN_NOT_TRANSFERABLE`| Transfer entrypoint is called for frozen token by a non-admin sender|
 | `PROPOSAL_INSUFFICIENT_BALANCE` | Throws when trying to propose a proposal without having enough unfrozen token                |
 | `VOTING_INSUFFICIENT_BALANCE` | Throws when trying to vote on a proposal without having enough unfrozen token                |
 | `PROPOSAL_NOT_EXIST`           | Throws when trying to vote on a proposal that does not exist |
@@ -300,7 +301,7 @@ Parameter (in Michelson):
 
 - Permission logic follows the default permissions descriptor specified in FA2.
 
-- Although the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed to this entrypoint MUST be 0.
+- Although the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`). All `token_id` values passed to this entrypoint by non-admin MUST be 0.
 
 <!--
 - If the destination address is the `freeze_my_tokens` address:
@@ -308,7 +309,7 @@ Parameter (in Michelson):
   - It MUST also increase the frozen token balance (`token_id = 1`) of the source address by the amount specified in the parameter.
 -->
 
-- The administrator can transfer tokens from any address to any address.
+- The administrator can transfer tokens from any address to any address. He also can transfer frozen tokens.
 
 ### **balance_of**
 
