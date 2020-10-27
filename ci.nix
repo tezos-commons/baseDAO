@@ -82,6 +82,16 @@ rec {
   # a list of all components from all packages in the project
   all-components = with pkgs.lib; flatten (attrValues components);
 
+  # run baseDAO to produce contract documents
+  contracts-doc = { release, commitSha ? null, commitDate ? null }@releaseArgs:
+    pkgs.runCommand "contracts-doc" {
+      buildInputs = [ (hs-pkgs releaseArgs).baseDAO.components.exes.baseDAO ];
+    } ''
+      mkdir $out
+      cd $out
+      baseDAO document --name BaseDAO --output BaseDAO.md
+    '';
+
   # nixpkgs has weeder 2, but we use weeder 1
   weeder-legacy = pkgs.haskellPackages.callHackageDirect {
     pkg = "weeder";

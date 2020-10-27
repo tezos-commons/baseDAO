@@ -45,3 +45,35 @@ steps:
       # weeder needs .cabal file:
     - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack
     - ./result
+
+# Autodoc
+  - label: contract doc development
+    if: build.branch != "autodoc/master" && build.branch != "master"
+    commands:
+      - nix-build ci.nix -A contracts-doc --arg release false
+      - ln -s ./result/BaseDAO.md BaseDAO.md
+    artifact_paths:
+      - BaseDAO.md
+
+  - label: contract doc release
+    if: build.branch == "master"
+    commands:
+    - nix-build ci.nix -A contracts-doc --arg release true
+        --argstr commitSha "$(git rev-parse HEAD)"
+        --argstr commitDate "$(git log HEAD -1 --format=%cd)"
+    - ln -s ./result/BaseDAO.md BaseDAO.md
+    artifact_paths:
+      - BaseDAO.md
+
+  - label: xrefcheck generated doc
+    if: build.branch != "autodoc/master"
+    commands:
+    - mkdir tmp
+    - if [ "$BUILDKITE_BRANCH" = "master" ];
+      then CONTRACT_DOC_STEP="contract doc release";
+      else CONTRACT_DOC_STEP="contract doc development";
+      fi
+    - buildkite-agent artifact download BaseDAO.md tmp/
+        --step "$$CONTRACT_DOC_STEP"
+    - nix run -f ci.nix xrefcheck -c xrefcheck
+        --mode local-only --root tmp
