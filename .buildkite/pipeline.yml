@@ -48,7 +48,7 @@ steps:
 
 # Autodoc
   - label: contract doc development
-    if: build.branch != "autodoc/master" && build.branch != "master"
+    if: build.branch != "autodoc/master" && build.branch != "gromak/#18-autodoc-ci"
     commands:
       - nix-build ci.nix -A contracts-doc --arg release false
       - ln -s ./result/BaseDAO.md BaseDAO.md
@@ -56,7 +56,7 @@ steps:
       - BaseDAO.md
 
   - label: contract doc release
-    if: build.branch == "master"
+    if: build.branch == "gromak/#18-autodoc-ci"
     commands:
     - nix-build ci.nix -A contracts-doc --arg release true
         --argstr commitSha "$(git rev-parse HEAD)"
@@ -69,7 +69,7 @@ steps:
     if: build.branch != "autodoc/master"
     commands:
     - mkdir tmp
-    - if [ "$BUILDKITE_BRANCH" = "master" ];
+    - if [ "$BUILDKITE_BRANCH" = "gromak/#18-autodoc-ci" ];
       then CONTRACT_DOC_STEP="contract doc release";
       else CONTRACT_DOC_STEP="contract doc development";
       fi
@@ -79,7 +79,7 @@ steps:
         --mode local-only --root tmp
 
   - label: autodoc upload
-    if: build.branch == "master"
+    if: build.branch == "gromak/#18-autodoc-ci"
     commands:
     - mkdir tmp
     - buildkite-agent artifact download BaseDAO.md tmp/
