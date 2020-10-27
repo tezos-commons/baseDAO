@@ -77,3 +77,11 @@ steps:
         --step "$$CONTRACT_DOC_STEP"
     - nix run -f ci.nix xrefcheck -c xrefcheck
         --mode local-only --root tmp
+
+  - label: autodoc upload
+    if: build.branch == "master"
+    commands:
+    - mkdir tmp
+    - buildkite-agent artifact download BaseDAO.md tmp/
+        --step "contract doc release"
+    - ./scripts/ci/upload-autodoc.sh
