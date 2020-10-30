@@ -1,8 +1,6 @@
-# FA2 smart contract
+# BaseDAO
 
-This documentation describes a smart contract which implements FA2 spec
-(https://gitlab.com/tzip/tzip/-/blob/667f925471728bb8e81fbd30b93a171e401b6dc1/proposals/tzip-12/tzip-12.md)
-
+"BaseDAO description"
 
 ## Entrypoints
 
@@ -23,7 +21,7 @@ This documentation describes a smart contract which implements FA2 spec
 0. Construct an argument for the entrypoint.
 1. Wrap into `Call_FA2` constructor.
     + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (·))`
+    + **In Michelson:** `Left (Left (Left (·)))`
 </details>
 <p>
 
@@ -51,7 +49,7 @@ This documentation describes a smart contract which implements FA2 spec
     + **In Michelson:** `Left (Left (·))`
 1. Wrap into `Call_FA2` constructor.
     + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (·))`
+    + **In Michelson:** `Left (Left (Left (·)))`
 </details>
 <p>
 
@@ -90,7 +88,7 @@ This documentation describes a smart contract which implements FA2 spec
     + **In Michelson:** `Left (Right (·))`
 1. Wrap into `Call_FA2` constructor.
     + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (·))`
+    + **In Michelson:** `Left (Left (Left (·)))`
 </details>
 <p>
 
@@ -123,7 +121,7 @@ This documentation describes a smart contract which implements FA2 spec
     + **In Michelson:** `Right (Left (·))`
 1. Wrap into `Call_FA2` constructor.
     + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (·))`
+    + **In Michelson:** `Left (Left (Left (·)))`
 </details>
 <p>
 
@@ -154,7 +152,7 @@ This documentation describes a smart contract which implements FA2 spec
     + **In Michelson:** `Right (Right (·))`
 1. Wrap into `Call_FA2` constructor.
     + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (·))`
+    + **In Michelson:** `Left (Left (Left (·)))`
 </details>
 <p>
 
@@ -188,7 +186,7 @@ This documentation describes a smart contract which implements FA2 spec
 0. Construct an argument for the entrypoint.
 1. Wrap into `Transfer_ownership` constructor.
     + **In Haskell:** `Transfer_ownership (·)`
-    + **In Michelson:** `Left (Right (·))`
+    + **In Michelson:** `Left (Left (Right (·)))`
 </details>
 <p>
 
@@ -220,7 +218,7 @@ This documentation describes a smart contract which implements FA2 spec
 0. Construct an argument for the entrypoint.
 1. Wrap into `Accept_ownership` constructor.
     + **In Haskell:** `Accept_ownership (·)`
-    + **In Michelson:** `Right (Left (·))`
+    + **In Michelson:** `Left (Right (Left (·)))`
 </details>
 <p>
 
@@ -254,7 +252,7 @@ This documentation describes a smart contract which implements FA2 spec
 0. Construct an argument for the entrypoint.
 1. Wrap into `Migrate` constructor.
     + **In Haskell:** `Migrate (·)`
-    + **In Michelson:** `Right (Right (Left (·)))`
+    + **In Michelson:** `Left (Right (Right (Left (·))))`
 </details>
 <p>
 
@@ -286,7 +284,7 @@ This documentation describes a smart contract which implements FA2 spec
 0. Construct an argument for the entrypoint.
 1. Wrap into `Confirm_migration` constructor.
     + **In Haskell:** `Confirm_migration (·)`
-    + **In Michelson:** `Right (Right (Right (·)))`
+    + **In Michelson:** `Left (Right (Right (Right (·))))`
 </details>
 <p>
 
@@ -300,6 +298,206 @@ This documentation describes a smart contract which implements FA2 spec
 * [`NOT_MIGRATION_TARGET`](#errors-NOT_MIGRATION_TARGET) — Recieved a confirm_migration call on a contract from an address other than the new version
 
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+
+
+<a name="entrypoints-propose"></a>
+
+---
+
+### `propose`
+
+**Argument:** 
+  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`()`](#types-lparenrparen)
+  + **In Michelson:** `(pair (nat %ppFrozenToken) (unit %ppProposalMetadata))`
+    + **Example:** <span id="example-id">`Pair 0 Unit`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Propose` constructor.
+    + **In Haskell:** `Propose (·)`
+    + **In Michelson:** `Right (Left (Left (·)))`
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`FAIL_PROPOSAL_CHECK`](#errors-FAIL_PROPOSAL_CHECK) — Trying to propose a proposal that does not pass `proposalCheck`
+
+* [`MAX_PROPOSALS_REACHED`](#errors-MAX_PROPOSALS_REACHED) — Trying to propose a proposal when proposals max amount is already reached
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`PROPOSAL_INSUFFICIENT_BALANCE`](#errors-PROPOSAL_INSUFFICIENT_BALANCE) — Trying to propose a proposal without having enough unfrozen token
+
+* [`PROPOSAL_NOT_UNIQUE`](#errors-PROPOSAL_NOT_UNIQUE) — Trying to propose a proposal that is already existed in the Storage.
+
+
+
+<a name="entrypoints-proposal_metadata"></a>
+
+---
+
+### `proposal_metadata`
+
+**Argument:** 
+  + **In Haskell:** [`View`](#types-View) [`ByteString`](#types-ByteString) ([`Proposal`](#types-Proposal) [`()`](#types-lparenrparen))
+  + **In Michelson:** `(pair (bytes %viewParam) (contract %viewCallbackTo (pair (pair (nat %pUpvotes) (pair (nat %pDownvotes) (timestamp %pStartDate))) (pair (pair (unit %pMetadata) (address %pProposer)) (pair (nat %pProposerFrozenToken) (list %pVoters (pair address nat)))))))`
+    + **Example:** <span id="example-id">`Pair 0x0a "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Proposal_metadata` constructor.
+    + **In Haskell:** `Proposal_metadata (·)`
+    + **In Michelson:** `Right (Left (Right (Left (·))))`
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
+
+
+
+<a name="entrypoints-vote"></a>
+
+---
+
+### `vote`
+
+**Argument:** 
+  + **In Haskell:** [`List`](#types-List) [`VoteParam`](#types-VoteParam)
+  + **In Michelson:** `(list (pair (bytes %vProposalKey) (pair (bool %vVoteType) (nat %vVoteAmount))))`
+    + **Example:** <span id="example-id">`{ Pair 0x0a (Pair True 0) }`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Vote` constructor.
+    + **In Haskell:** `Vote (·)`
+    + **In Michelson:** `Right (Left (Right (Right (·))))`
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
+
+* [`MAX_VOTES_REACHED`](#errors-MAX_VOTES_REACHED) — Trying to vote on a proposal when the votes max amount of that proposal is already reached
+
+* [`VOTING_PERIOD_OVER`](#errors-VOTING_PERIOD_OVER) — Trying to vote on a proposal that is already ended
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`VOTING_INSUFFICIENT_BALANCE`](#errors-VOTING_INSUFFICIENT_BALANCE) — Trying to vote on a proposal without having enough unfrozen token
+
+
+
+<a name="entrypoints-set_voting_period"></a>
+
+---
+
+### `set_voting_period`
+
+**Argument:** 
+  + **In Haskell:** [`Natural`](#types-Natural)
+  + **In Michelson:** `nat`
+    + **Example:** <span id="example-id">`0`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Set_voting_period` constructor.
+    + **In Haskell:** `Set_voting_period (·)`
+    + **In Michelson:** `Right (Right (Left (·)))`
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`NOT_ADMINISTRATOR`](#errors-NOT_ADMINISTRATOR) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`OUT_OF_BOUND_VOTING_PERIOD`](#errors-OUT_OF_BOUND_VOTING_PERIOD) — Trying to set voting period that is out of bound.
+
+
+
+<a name="entrypoints-set_quorum_threshold"></a>
+
+---
+
+### `set_quorum_threshold`
+
+**Argument:** 
+  + **In Haskell:** [`Natural`](#types-Natural)
+  + **In Michelson:** `nat`
+    + **Example:** <span id="example-id">`0`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Set_quorum_threshold` constructor.
+    + **In Haskell:** `Set_quorum_threshold (·)`
+    + **In Michelson:** `Right (Right (Right (Left (·))))`
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`NOT_ADMINISTRATOR`](#errors-NOT_ADMINISTRATOR) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`OUT_OF_BOUND_QUORUM_THRESHOLD`](#errors-OUT_OF_BOUND_QUORUM_THRESHOLD) — Trying to set quorum threshold that is out of bound
+
+
+
+<a name="entrypoints-flush"></a>
+
+---
+
+### `flush`
+
+**Argument:** 
+  + **In Haskell:** [`()`](#types-lparenrparen)
+  + **In Michelson:** `unit`
+    + **Example:** <span id="example-id">`Unit`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Flush` constructor.
+    + **In Haskell:** `Flush (·)`
+    + **In Michelson:** `Right (Right (Right (Right (·))))`
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`NOT_ADMINISTRATOR`](#errors-NOT_ADMINISTRATOR) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
+
+* [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
 
 
 
@@ -381,6 +579,30 @@ Describes a response to a request for an owner's balance
   * ***balance*** :[`Natural`](#types-Natural)
 
 **Final Michelson representation:** `pair (pair address nat) nat`
+
+
+
+<a name="types-Bool"></a>
+
+---
+
+### `Bool`
+
+Bool primitive.
+
+**Final Michelson representation:** `bool`
+
+
+
+<a name="types-ByteString"></a>
+
+---
+
+### `ByteString`
+
+Bytes primitive.
+
+**Final Michelson representation:** `bytes`
 
 
 
@@ -486,6 +708,43 @@ Describes the FA2 operations.
 
 
 
+<a name="types-Proposal"></a>
+
+---
+
+### `Proposal`
+
+Contract's storage holding a big_map with all balances and the operators.
+
+**Structure (example):** `Proposal ()` = 
+  * ***pUpvotes*** :[`Natural`](#types-Natural)
+  * ***pDownvotes*** :[`Natural`](#types-Natural)
+  * ***pStartDate*** :[`Timestamp`](#types-Timestamp)
+  * ***pMetadata*** :[`()`](#types-lparenrparen)
+  * ***pProposer*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***pProposerFrozenToken*** :[`Natural`](#types-Natural)
+  * ***pVoters*** :[`List`](#types-List) ([`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), [`Natural`](#types-Natural))
+
+**Final Michelson representation (example):** `Proposal ()` = `pair (pair nat (pair nat timestamp)) (pair (pair unit address) (pair nat (list (pair address nat))))`
+
+
+
+<a name="types-ProposeParams"></a>
+
+---
+
+### `ProposeParams`
+
+Describes the how many proposer's frozen tokens will be frozen and the proposal metadata
+
+**Structure (example):** `ProposeParams ()` = 
+  * ***ppFrozenToken*** :[`Natural`](#types-Natural)
+  * ***ppProposalMetadata*** :[`()`](#types-lparenrparen)
+
+**Final Michelson representation (example):** `ProposeParams ()` = `pair nat unit`
+
+
+
 <a name="types-Text"></a>
 
 ---
@@ -497,6 +756,18 @@ Michelson string.
 This has to contain only ASCII characters with codes from [32; 126] range; additionally, newline feed character is allowed.
 
 **Final Michelson representation:** `string`
+
+
+
+<a name="types-Timestamp"></a>
+
+---
+
+### `Timestamp`
+
+Timestamp primitive.
+
+**Final Michelson representation:** `timestamp`
 
 
 
@@ -566,6 +837,23 @@ Read more in [A1 conventions document](https://gitlab.com/tzip/tzip/-/blob/c42e3
 [`ContractRef`](#types-Contract) [`Integer`](#types-Integer)
 
 **Final Michelson representation (example):** `View () Integer` = `pair unit (contract int)`
+
+
+
+<a name="types-VoteParam"></a>
+
+---
+
+### `VoteParam`
+
+Describes target proposal id, vote type and vote amount
+
+**Structure:** 
+  * ***proposalKey*** :[`ByteString`](#types-ByteString)
+  * ***voteType*** :[`Bool`](#types-Bool)
+  * ***voteAmount*** :[`Natural`](#types-Natural)
+
+**Final Michelson representation:** `pair bytes (pair bool nat)`
 
 
 
@@ -650,6 +938,18 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Representation:** `("FA2_TOKEN_UNDEFINED", ())`.
 
+<a name="errors-FAIL_PROPOSAL_CHECK"></a>
+
+---
+
+### `FAIL_PROPOSAL_CHECK`
+
+**Class:** Action exception
+
+**Fires if:** Trying to propose a proposal that does not pass `proposalCheck`
+
+**Representation:** `("FAIL_PROPOSAL_CHECK", ())`.
+
 <a name="errors-FORBIDDEN_XTZ"></a>
 
 ---
@@ -685,6 +985,30 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 **Fires if:** Some internal error occured.
 
 **Representation:** Textual error message, see [`Text`](#types-Text).
+
+<a name="errors-MAX_PROPOSALS_REACHED"></a>
+
+---
+
+### `MAX_PROPOSALS_REACHED`
+
+**Class:** Action exception
+
+**Fires if:** Trying to propose a proposal when proposals max amount is already reached
+
+**Representation:** `("MAX_PROPOSALS_REACHED", ())`.
+
+<a name="errors-MAX_VOTES_REACHED"></a>
+
+---
+
+### `MAX_VOTES_REACHED`
+
+**Class:** Action exception
+
+**Fires if:** Trying to vote on a proposal when the votes max amount of that proposal is already reached
+
+**Representation:** `("MAX_VOTES_REACHED", ())`.
 
 <a name="errors-MIGRATED"></a>
 
@@ -771,3 +1095,99 @@ Provided error argument will be of type [`Address (no entrypoint)`](#types-Addre
 **Fires if:** Received an `accept_ownership` call when no pending owner was set
 
 **Representation:** `("NO_PENDING_ADMINISTRATOR_SET", ())`.
+
+<a name="errors-OUT_OF_BOUND_QUORUM_THRESHOLD"></a>
+
+---
+
+### `OUT_OF_BOUND_QUORUM_THRESHOLD`
+
+**Class:** Action exception
+
+**Fires if:** Trying to set quorum threshold that is out of bound
+
+**Representation:** `("OUT_OF_BOUND_QUORUM_THRESHOLD", ())`.
+
+<a name="errors-OUT_OF_BOUND_VOTING_PERIOD"></a>
+
+---
+
+### `OUT_OF_BOUND_VOTING_PERIOD`
+
+**Class:** Action exception
+
+**Fires if:** Trying to set voting period that is out of bound.
+
+**Representation:** `("OUT_OF_BOUND_VOTING_PERIOD", ())`.
+
+<a name="errors-PROPOSAL_INSUFFICIENT_BALANCE"></a>
+
+---
+
+### `PROPOSAL_INSUFFICIENT_BALANCE`
+
+**Class:** Action exception
+
+**Fires if:** Trying to propose a proposal without having enough unfrozen token
+
+**Representation:** `("PROPOSAL_INSUFFICIENT_BALANCE", ())`.
+
+<a name="errors-PROPOSAL_NOT_EXIST"></a>
+
+---
+
+### `PROPOSAL_NOT_EXIST`
+
+**Class:** Action exception
+
+**Fires if:** Trying to vote on a proposal that does not exist
+
+**Representation:** `("PROPOSAL_NOT_EXIST", ())`.
+
+<a name="errors-PROPOSAL_NOT_UNIQUE"></a>
+
+---
+
+### `PROPOSAL_NOT_UNIQUE`
+
+**Class:** Action exception
+
+**Fires if:** Trying to propose a proposal that is already existed in the Storage.
+
+**Representation:** `("PROPOSAL_NOT_UNIQUE", ())`.
+
+<a name="errors-PROPOSER_NOT_EXIST_IN_LEDGER"></a>
+
+---
+
+### `PROPOSER_NOT_EXIST_IN_LEDGER`
+
+**Class:** Action exception
+
+**Fires if:** Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
+
+**Representation:** `("PROPOSER_NOT_EXIST_IN_LEDGER", ())`.
+
+<a name="errors-VOTING_INSUFFICIENT_BALANCE"></a>
+
+---
+
+### `VOTING_INSUFFICIENT_BALANCE`
+
+**Class:** Action exception
+
+**Fires if:** Trying to vote on a proposal without having enough unfrozen token
+
+**Representation:** `("VOTING_INSUFFICIENT_BALANCE", ())`.
+
+<a name="errors-VOTING_PERIOD_OVER"></a>
+
+---
+
+### `VOTING_PERIOD_OVER`
+
+**Class:** Action exception
+
+**Fires if:** Trying to vote on a proposal that is already ended
+
+**Representation:** `("VOTING_PERIOD_OVER", ())`.
