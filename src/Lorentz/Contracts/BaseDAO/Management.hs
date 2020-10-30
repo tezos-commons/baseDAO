@@ -7,6 +7,7 @@ module Lorentz.Contracts.BaseDAO.Management
   , ensureNotMigrated
   , migrate
   , transferOwnership
+  , authorizeAdmin
   ) where
 
 import Lorentz
@@ -16,7 +17,7 @@ import Lorentz.Contracts.ManagedLedger.Doc (DRequireRole(..))
 -- | Set the value of pending owner in storage
 -- using the address in parameter.
 transferOwnership
-  :: Entrypoint TransferOwnershipParam Storage
+  :: IsoValue pm => Entrypoint TransferOwnershipParam (Storage pm)
 transferOwnership = do
   dip $ do
     ensureNotMigrated
@@ -50,7 +51,7 @@ transferOwnership = do
 
 -- | Checks if pending owner is set and set the value of new administrator
 acceptOwnership
-  :: Entrypoint () Storage
+  :: IsoValue pm => Entrypoint () (Storage pm)
 acceptOwnership = do
   drop @()
   ensureNotMigrated
@@ -68,7 +69,7 @@ acceptOwnership = do
 
 -- Authorises admin and set the migration status using the new address
 -- in param.
-migrate :: Entrypoint MigrateParam Storage
+migrate :: IsoValue pm => Entrypoint MigrateParam (Storage pm)
 migrate = do
   dip $ do
     ensureNotMigrated
@@ -80,7 +81,7 @@ migrate = do
 
 -- Authorise sender and move pending owner address to stack top.
 ensureNotMigrated ::
-  StorageC store => store : s :-> store : s
+  StorageC store pm => store : s :-> store : s
 ensureNotMigrated = do
   stGetField #sMigrationStatus
   caseT @MigrationStatus
@@ -90,7 +91,7 @@ ensureNotMigrated = do
     )
 
 -- Confirm that the sender is the new contract address and set `MIGRATED_TO` status
-confirmMigration :: Entrypoint () Storage
+confirmMigration :: IsoValue pm => Entrypoint () (Storage pm)
 confirmMigration = do
   drop
   doc $ DRequireRole "migration target contract"
@@ -109,7 +110,7 @@ confirmMigration = do
 
 -- Authorise sender and move pending owner address to stack top.
 authorizePendingOwner ::
-  StorageC store => store : s :-> Address : store : s
+  StorageC store pm => store : s :-> Address : store : s
 authorizePendingOwner = do
   doc $ DRequireRole "pending owner"
   stGetField #sPendingOwner
@@ -123,7 +124,7 @@ authorizePendingOwner = do
 
 -- Authorise administrator.
 authorizeAdmin ::
-  StorageC store => store : s :-> store : s
+  StorageC store pm => store : s :-> store : s
 authorizeAdmin = do
   doc $ DRequireRole "administrator"
   stGetField #sAdmin; sender;

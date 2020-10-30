@@ -5,9 +5,9 @@
 -- For all the incomplete list pattern matches in the calls to with
 -- withOriginated func
 
-module Test.Management
+module Test.BaseDAO.Management
   ( expectMigrated
-  , test_baseDAO
+  , test_BaseDAO_Management
   ) where
 
 import Universum
@@ -24,8 +24,8 @@ import Tezos.Core (unsafeMkMutez)
 import Util.Named
 
 -- | We test non-token entrypoints of the BaseDAO contract here
-test_baseDAO :: [TestTree]
-test_baseDAO =
+test_BaseDAO_Management :: [TestTree]
+test_BaseDAO_Management =
   [ testCase "Contract forbids XTZ transfer" $
       nettestTestExpectation $ uncapsNettest $ do
         withOriginated 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->

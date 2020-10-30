@@ -7,6 +7,8 @@ module Lorentz.Contracts.BaseDAO.FA2
    , tokenMetadataRegistry
    , updateOperators
    , defaultPermissionsDescriptor
+   , debitFrom
+   , creditTo
    ) where
 
 import Lorentz
@@ -22,13 +24,13 @@ defaultPermissionsDescriptor = PermissionsDescriptor
   , pdCustom = Nothing
   }
 
-transfer :: Entrypoint TransferParams Storage
+transfer :: forall pm. IsoValue pm =>  Entrypoint TransferParams (Storage pm)
 transfer = do
   dip ensureNotMigrated
   iter transferItem
   nil; pair
   where
-    transferItem :: '[TransferItem, Storage] :-> '[Storage]
+    transferItem :: '[TransferItem, Storage pm] :-> '[Storage pm]
     transferItem = do
       swap
       getField #sAdmin
@@ -44,7 +46,7 @@ transfer = do
       iter transferOne
       dropN @2
 
-    transferOne :: '[TransferDestination, Bool, Address, Storage] :-> '[Bool, Address, Storage]
+    transferOne :: '[TransferDestination, Bool, Address, Storage pm] :-> '[Bool, Address, Storage pm]
     transferOne = do
       swap
       dup
@@ -90,8 +92,8 @@ transfer = do
       swap
 
     checkSender
-      :: forall f. Address & Storage & f
-      :-> Address & Storage & f
+      :: forall f. Address : Storage pm : f
+      :-> Address : Storage pm : f
     checkSender = do
       dup
       Lorentz.sender
@@ -110,22 +112,24 @@ transfer = do
         mem
         if_ nop (failCustom_ #fA2_NOT_OPERATOR)
 
-debitFrom :: forall s. Storage & Address & (TokenId, Natural) & s :-> Storage & s
+debitFrom
+  :: forall s store pm. StorageC store pm
+  => store & Address & (TokenId, Natural) & s :-> store & s
 debitFrom = do
   dig @2
   unpair
   dig @3
   pair
   dig @2
-  getField #sLedger
+  stGetField #sLedger
   dig @2
   dupTop2
   get
   ifSome ifKeyExists ifKeyDoesntExist
   where
     ifKeyExists
-      :: Natural & (Address, TokenId) & Ledger & Storage & Natural & s
-      :-> Storage & s
+      :: Natural : (Address, TokenId) : Ledger : store : Natural : s
+      :-> store : s
     ifKeyExists = do
       dig @4
       dupTop2
@@ -140,7 +144,7 @@ debitFrom = do
           drop @Natural
           swap
           update
-          setField #sLedger)
+          stSetField #sLedger)
         (do
           toNamed #required
           swap
@@ -150,8 +154,8 @@ debitFrom = do
           failCustom #fA2_INSUFFICIENT_BALANCE)
 
     ifKeyDoesntExist
-      :: (Address, TokenId) & Ledger & Storage & Natural & s
-      :-> Storage & s
+      :: (Address, TokenId) : Ledger : store : Natural : s
+      :-> store : s
     ifKeyDoesntExist = do
       dropN @2
       swap
@@ -166,42 +170,44 @@ debitFrom = do
         failCustom #fA2_INSUFFICIENT_BALANCE
       else (dropN @2)
 
-creditTo :: forall s. Storage & Address & (TokenId, Natural) & s :-> Storage & s
+creditTo
+  :: forall s pm store. (StorageC store pm)
+  => store : Address : (TokenId, Natural) : s :-> store : s
 creditTo = do
   dig @2
   unpair
   dig @3
   pair
   dig @2
-  getField #sLedger
+  stGetField #sLedger
   dig @2
   dupTop2
   get
   ifSome ifKeyExists ifKeyDoesntExist
   where
     ifKeyExists
-      :: Natural & (Address, TokenId) & Ledger & Storage & Natural & s
-      :-> Storage & s
+      :: Natural : (Address, TokenId) : Ledger : store : Natural : s
+      :-> store : s
     ifKeyExists = do
       dig @4
       add
       some
       swap
       update
-      setField #sLedger
+      stSetField #sLedger
 
     ifKeyDoesntExist
-      :: (Address, TokenId) & Ledger & Storage & Natural & s
-      :-> Storage & s
+      :: (Address, TokenId) : Ledger : store : Natural : s
+      :-> store : s
     ifKeyDoesntExist = do
       dig @3
       some
       swap
       update
-      setField #sLedger
+      stSetField #sLedger
 
 
-balanceOf :: Entrypoint BalanceRequestParams Storage
+balanceOf :: forall pm. IsoValue pm => Entrypoint BalanceRequestParams (Storage pm)
 balanceOf = do
   dip ensureNotMigrated
   checkedCoerce_
@@ -209,15 +215,15 @@ balanceOf = do
     @(View [BalanceRequestItem] [BalanceResponseItem])
   view_ checkAll
   where
-    checkAll :: [BalanceRequestItem] & Storage & s :-> [BalanceResponseItem] & s
+    checkAll :: [BalanceRequestItem] : Storage pm : s :-> [BalanceResponseItem] : s
     checkAll = do
       nil @BalanceResponseItem
       swap
       iter checkOne
       swap
-      drop @Storage
+      drop @(Storage pm)
 
-    checkOne :: forall s. BalanceRequestItem & [BalanceResponseItem] & Storage & s :-> [BalanceResponseItem] & Storage & s
+    checkOne :: forall s. BalanceRequestItem : [BalanceResponseItem] : Storage pm : s :-> [BalanceResponseItem] : Storage pm : s
     checkOne = do
       getField #briOwner
       swap
@@ -245,23 +251,23 @@ balanceOf = do
       ifSome ifKeyExists ifKeyDoesntExist
 
     ifKeyExists
-      :: Natural & BalanceRequestItem & [BalanceResponseItem] & Storage & s
-      :-> [BalanceResponseItem] & Storage & s
+      :: Natural : BalanceRequestItem : [BalanceResponseItem] : Storage pm : s
+      :-> [BalanceResponseItem] : Storage pm : s
     ifKeyExists = do
       swap
       constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
 
     ifKeyDoesntExist
-      :: BalanceRequestItem & [BalanceResponseItem] & Storage & s
-      :-> [BalanceResponseItem] & Storage & s
+      :: BalanceRequestItem : [BalanceResponseItem] : Storage pm : s
+      :-> [BalanceResponseItem] : Storage pm : s
     ifKeyDoesntExist = do
       push @Natural 0
       swap
       constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
 
-tokenMetadataRegistry :: Entrypoint TokenMetadataRegistryParam Storage
+tokenMetadataRegistry :: IsoValue pm => Entrypoint TokenMetadataRegistryParam (Storage pm)
 tokenMetadataRegistry = do
   dip ensureNotMigrated
   swap
@@ -272,7 +278,7 @@ tokenMetadataRegistry = do
   swap
   transferTokens # nil # swap # cons # pair
 
-updateOperators :: Entrypoint UpdateOperatorsParam Storage
+updateOperators :: IsoValue pm => Entrypoint UpdateOperatorsParam (Storage pm)
 updateOperators = do
   dip ensureNotMigrated
   iter $
@@ -282,13 +288,13 @@ updateOperators = do
       )
   nil; pair
 
-addOperator :: '[OperatorParam, Storage] :-> '[Storage]
+addOperator :: forall pm. IsoValue pm => '[OperatorParam, Storage pm] :-> '[Storage pm]
 addOperator = do
   getField #opTokenId
   dip do
     getField #opOperator
     dip $ toField #opOwner
-  stackType @(TokenId & Address & Address & Storage & _)
+  stackType @(TokenId : Address : Address : (Storage pm) : _)
   assertEq0or1
   swap
   dup
@@ -305,10 +311,10 @@ addOperator = do
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists :: '[(Address, Address), Operators, Storage] :-> '[Storage]
+    ifKeyExists :: '[(Address, Address), Operators, Storage pm] :-> '[Storage pm]
     ifKeyExists = dropN @2
 
-    ifKeyDoesntExist ::  '[(Address, Address), Operators, Storage] :-> '[Storage]
+    ifKeyDoesntExist ::  '[(Address, Address), Operators, Storage pm] :-> '[Storage pm]
     ifKeyDoesntExist = do
       unit
       some
@@ -316,13 +322,13 @@ addOperator = do
       update
       setField #sOperators
 
-removeOperator :: '[OperatorParam, Storage] :-> '[Storage]
+removeOperator :: forall pm. IsoValue pm => '[OperatorParam, Storage pm] :-> '[Storage pm]
 removeOperator = do
   getField #opTokenId
   dip do
     getField #opOperator
     dip $ toField #opOwner
-  stackType @(TokenId & Address & Address & Storage & _)
+  stackType @(TokenId : Address : Address : (Storage pm) : _)
   assertEq0or1
   swap
   dup
@@ -339,7 +345,7 @@ removeOperator = do
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists ::  '[(Address, Address), Operators, Storage] :-> '[Storage]
+    ifKeyExists ::  '[(Address, Address), Operators, Storage pm] :-> '[Storage pm]
     ifKeyExists = do
       push Nothing
       swap
@@ -347,11 +353,11 @@ removeOperator = do
       setField #sOperators
 
 
-    ifKeyDoesntExist ::  '[(Address, Address), Operators, Storage] :-> '[Storage]
+    ifKeyDoesntExist ::  '[(Address, Address), Operators, Storage pm] :-> '[Storage pm]
     ifKeyDoesntExist = dropN @2
 
 -- | TODO: Probably this one can be moved to Lorentz as well
-assertEq0or1 :: Natural & f :-> f
+assertEq0or1 :: Natural : f :-> f
 assertEq0or1 = do
   dup
   push @Natural 0
