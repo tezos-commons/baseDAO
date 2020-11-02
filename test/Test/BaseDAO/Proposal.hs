@@ -5,79 +5,69 @@ module Test.BaseDAO.Proposal
   ( test_BaseDAO_Proposal
   ) where
 
-import Universum hiding ((>>), drop, compare)
+import Universum hiding (compare, drop, (>>))
 
 import Lorentz
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
+import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase)
 import Tezos.Crypto (blake2b)
 
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
-import Test.Common
 import Test.BaseDAO.ProposalConfig
+import Test.Common
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 test_BaseDAO_Proposal :: TestTree
 test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
   [ testGroup "Proposal creator:"
-      [ testCase "can propose a valid proposal" $
-          nettestTestExpectation validProposal
-      , testCase "cannot propose an invalid proposal (rejected)" $
-          nettestTestExpectation rejectProposal
-      , testCase "cannot propose with insufficient tokens" $
-          nettestTestExpectation insufficientTokenProposal
-      , testCase "cannot propose a non-unique proposal" $
-          nettestTestExpectation nonUniqueProposal
+      [ nettestScenario "can propose a valid proposal" validProposal
+      , nettestScenario "cannot propose an invalid proposal (rejected)"
+          rejectProposal
+      , nettestScenario "cannot propose with insufficient tokens"
+          insufficientTokenProposal
+      , nettestScenario "cannot propose a non-unique proposal" nonUniqueProposal
       ]
   , testGroup "Voter:"
-      [ testCase "can vote on a valid proposal" $
-          nettestTestExpectation voteValidProposal
-      , testCase "cannot vote non-existing proposal" $
-          nettestTestExpectation voteNonExistingProposal
-      , testCase "can vote on multiple proposals" $
-          nettestTestExpectation voteMultiProposals
-      , testCase "cannot vote if the vote amounts exceeds token balance" $
-          nettestTestExpectation insufficientTokenVote
+      [ nettestScenario "can vote on a valid proposal"
+          voteValidProposal
+      , nettestScenario "cannot vote non-existing proposal"
+          voteNonExistingProposal
+      , nettestScenario "can vote on multiple proposals"
+          voteMultiProposals
+      , nettestScenario "cannot vote if the vote amounts exceeds token balance"
+          insufficientTokenVote
       -- TODO [#30]: Can be tested until delay time is implemented for nettest
-      -- , testCase "cannot vote on outdated proposal" $
+      -- , nettestScenario "cannot vote on outdated proposal" $
       --     nettestTestExpectation
       ]
   , testGroup "Admin:"
-      [ testCase "can set voting period" $
-          nettestTestExpectation setVotingPeriod
-      , testCase "can set quorum threshold" $
-          nettestTestExpectation setQuorumThreshold
-      , testCase "can flush proposals that got accepted" $
-          nettestTestExpectation flushAcceptedProposals
-      , testCase "can flush proposals that got rejected due to not meeting quorum_threshold" $
-          nettestTestExpectation flushRejectProposalQuorum
-      , testCase "can flush proposals that got rejected due to negative votes" $
-          nettestTestExpectation flushRejectProposalNegativeVotes
-      , testCase "flush should not affecting ongoing proposals" $
-          nettestTestExpectation flushNotAffectOngoingProposals
-      , testCase "flush with bad 'cRejectedProposalReturnValue'" $
-          nettestTestExpectation flushWithBadConfig
+      [ nettestScenario "can set voting period" setVotingPeriod
+      , nettestScenario "can set quorum threshold" setQuorumThreshold
+      , nettestScenario "can flush proposals that got accepted"
+          flushAcceptedProposals
+      , nettestScenario "can flush proposals that got rejected due to not meeting quorum_threshold"
+          flushRejectProposalQuorum
+      , nettestScenario "can flush proposals that got rejected due to negative votes"
+          flushRejectProposalNegativeVotes
+      , nettestScenario "flush should not affecting ongoing proposals"
+          flushNotAffectOngoingProposals
+      , nettestScenario "flush with bad 'cRejectedProposalReturnValue'"
+          flushWithBadConfig
       -- TODO [#15]: admin burn proposer token and test "flush"
 
-      , testCase "flush and run decision lambda" $
-          nettestTestExpectation flushDecisionLambda
+      , nettestScenario "flush and run decision lambda" flushDecisionLambda
       ]
   , testGroup "Other:"
-      [ testCase "can call proposalMetadata" $
-          nettestTestExpectation proposalMetadata
+      [ nettestScenario "can call proposalMetadata" proposalMetadata
       ]
   , testGroup "Bounded Value"
-      [ testCase "bounded value on proposals" $
-          nettestTestExpectation proposalBoundedValue
-      , testCase "bounded value on votes" $
-          nettestTestExpectation votesBoundedValue
-      , testCase "bounded range on quorum_threshold" $
-          nettestTestExpectation quorumThresholdBound
-      , testCase "bounded range on voting_period" $
-          nettestTestExpectation votingPeriodBound
+      [ nettestScenario "bounded value on proposals" proposalBoundedValue
+      , nettestScenario "bounded value on votes" votesBoundedValue
+      , nettestScenario "bounded range on quorum_threshold" quorumThresholdBound
+      , nettestScenario "bounded range on voting_period" votingPeriodBound
       ]
   ]
 
@@ -507,4 +497,3 @@ makeProposalKey params owner = blake2b $ lPackValue (params, owner)
 -- Check if certain field in storage
 -- checkPropertyOfProposal :: _
 -- checkPropertyOfProposal = error "undefined"
-
