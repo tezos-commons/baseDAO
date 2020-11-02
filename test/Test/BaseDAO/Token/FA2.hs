@@ -1,7 +1,7 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-module Test.BaseDAO.FA2
+module Test.BaseDAO.Token.FA2
   ( test_BaseDAO_FA2
   ) where
 

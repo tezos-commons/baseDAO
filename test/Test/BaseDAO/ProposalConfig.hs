@@ -13,7 +13,7 @@ module Test.BaseDAO.ProposalConfig
 import Lorentz
 
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
-import Lorentz.Contracts.BaseDAO.FA2 (creditTo)
+import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 config :: forall pm. (IsoValue pm) => DAO.Config pm

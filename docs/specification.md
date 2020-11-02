@@ -194,6 +194,7 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `NOT_PENDING_ADMINISTRATOR`    | Authorized sender is not the current pending administrator   |
 | `NO_PENDING_ADMINISTRATOR_SET` | Throws when trying to authorize as the pending administrator whilst is not set for a contract |
 | `NOT_TOKEN_OWNER`              | Trying to configure operators for a different wallet which sender does not own                |
+| `FAIL_TRANSFER_CONTRACT_TOKENS` | Trying to cross-transfer DAO tokens to another contract that does not exist or is not a valid FA2 contract. |
 | `FAIL_PROPOSAL_CHECK`          | Throws when trying to propose a proposal that does not pass `proposalCheck`               |
 | `FROZEN_TOKEN_NOT_TRANSFERABLE`| Transfer entrypoint is called for frozen token by a non-admin sender|
 | `PROPOSAL_INSUFFICIENT_BALANCE`| Throws when trying to propose a proposal without having enough unfrozen token                |
@@ -436,6 +437,7 @@ Functions related to token transfers, but not present in FA2. They do not have `
 data MintParam = MintParam
   { to_ :: Address
   , amount :: Natural
+  , token_id :: TokenId
   }
 
 data Parameter proposalMetadata
@@ -446,7 +448,10 @@ Parameter (in Michelson):
 ```
 (pair
   (address %to_)
-  (nat %value)
+  (pair
+    (nat %amount)
+    (nat %token_id)
+  )
 )
 ```
 
@@ -457,8 +462,9 @@ Parameter (in Michelson):
 
 ```haskell
 data BurnParam = BurnParam
-  { to_ :: Address
+  { from :: Address
   , amount :: Natural
+  , token_id :: TokenId
   }
 
 data Parameter proposalMetadata
@@ -468,8 +474,11 @@ data Parameter proposalMetadata
 Parameter (in Michelson):
 ```
 (pair
-  (address %to_)
-  (nat %value)
+  (address %from)
+  (pair
+    (nat %amount)
+    (nat %token_id)
+  )
 )
 ```
 

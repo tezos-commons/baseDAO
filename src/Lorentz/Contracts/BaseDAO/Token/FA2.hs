@@ -1,7 +1,7 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-module Lorentz.Contracts.BaseDAO.FA2
+module Lorentz.Contracts.BaseDAO.Token.FA2
    ( transfer
    , balanceOf
    , tokenMetadataRegistry
