@@ -46,12 +46,13 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
   , testGroup "Admin:"
       [ nettestScenario "can set voting period" setVotingPeriod
       , nettestScenario "can set quorum threshold" setQuorumThreshold
-      , nettestScenario "can flush proposals that got accepted"
-          flushAcceptedProposals
-      , nettestScenario "can flush proposals that got rejected due to not meeting quorum_threshold"
-          flushRejectProposalQuorum
-      , nettestScenario "can flush proposals that got rejected due to negative votes"
-          flushRejectProposalNegativeVotes
+      -- TODO [#30]: make sure these tests pass not only in emulator
+      , nettestScenarioOnEmulator "can flush proposals that got accepted" $
+          \_emulated -> flushAcceptedProposals
+      , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
+          \_emulated -> flushRejectProposalQuorum
+      , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
+          \_emulated -> flushRejectProposalNegativeVotes
       , nettestScenario "flush should not affecting ongoing proposals"
           flushNotAffectOngoingProposals
       , nettestScenario "flush with bad 'cRejectedProposalReturnValue'"
