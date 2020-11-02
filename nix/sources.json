@@ -59,6 +59,18 @@
         "url": "https://github.com/input-output-hk/stackage.nix/archive/ea1b7a50d8b401fcc4479c296f1058388e139208.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "tezos-packaging": {
+        "branch": "v7.4-1",
+        "description": "Various form of distribution for tezos-related executables",
+        "homepage": "",
+        "owner": "serokell",
+        "repo": "tezos-packaging",
+        "rev": "e583224fcc5dea18a58cba3acb56f8ee5d8067e5",
+        "sha256": "0z74wggzw3p9dcxlyivymnfq4z19d5dmpxxd5zchvqhr3mfsnxsh",
+        "type": "tarball",
+        "url": "https://github.com/serokell/tezos-packaging/archive/e583224fcc5dea18a58cba3acb56f8ee5d8067e5.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "xrefcheck": {
         "branch": "v0.1.2",
         "description": "Check cross-references in repository documents",
