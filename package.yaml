@@ -124,6 +124,5 @@ tests:
     - morley
     - morley-ledgers
     - tasty
-    - tasty-hunit-compat
     - universum
     - containers
