@@ -14,6 +14,7 @@ rec {
   };
   pkgs = import sources.nixpkgs haskell-nix.nixpkgsArgs;
   weeder-hacks = import sources.haskell-nix-weeder { inherit pkgs; };
+  tezos-client = (import "${sources.tezos-packaging}/nix/build/pkgs.nix" {}).ocamlPackages.tezos-client;
 
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work

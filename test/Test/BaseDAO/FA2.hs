@@ -10,12 +10,12 @@ import Universum
 import Lorentz
 import Lorentz.Test
 import Morley.Nettest
+import Morley.Nettest.Tasty (nettestScenario)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase)
 import Util.Named
 
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.BaseDAO.Management (expectMigrated)
 import Test.Common
 
@@ -24,52 +24,52 @@ import Test.Common
 test_BaseDAO_FA2 :: TestTree
 test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
   [ testGroup "Operator:"
-      [ testCase "allows zero transfer from non-existent operator" $
-          nettestTestExpectation zeroTransferScenario
-      , testCase "allows valid transfer and check balance" $
-          nettestTestExpectation validTransferScenario
-      , testCase "validates token id" $
-          nettestTestExpectation validateTokenScenario
-      , testCase "accepts an empty list of transfers" $
-          nettestTestExpectation emptyTransferListScenario
-      , testCase "aborts if there is a failure (due to low balance)" $
-          nettestTestExpectation lowBalanceScenario
-      , testCase "aborts if there is a failure (due to non existent source account)" $
-          nettestTestExpectation noSourceAccountScenario
-      , testCase "aborts if there is a failure (due to bad operator)" $
-          nettestTestExpectation badOperatorScenario
-      , testCase "cannot transfer foreign money" $
-          nettestTestExpectation noForeignMoneyScenario
+      [ nettestScenario "allows zero transfer from non-existent operator"
+          zeroTransferScenario
+      , nettestScenario "allows valid transfer and check balance"
+          validTransferScenario
+      , nettestScenario "validates token id"
+          validateTokenScenario
+      , nettestScenario "accepts an empty list of transfers"
+          emptyTransferListScenario
+      , nettestScenario "aborts if there is a failure (due to low balance)"
+          lowBalanceScenario
+      , nettestScenario "aborts if there is a failure (due to non existent source account)"
+          noSourceAccountScenario
+      , nettestScenario "aborts if there is a failure (due to bad operator)"
+          badOperatorScenario
+      , nettestScenario "cannot transfer foreign money"
+          noForeignMoneyScenario
       ]
   , testGroup "Owner:"
-      [ testCase "allows valid transfer and check balance" $
-          nettestTestExpectation validTransferOwnerScenario
-      , testCase "allows updating operator " $
-          nettestTestExpectation updatingOperatorScenario
-      , testCase "allows balanceOf request" $
-          nettestTestExpectation balanceOfOwnerScenario
-      , testCase "validates token id" $
-          nettestTestExpectation validateTokenOwnerScenario
-      , testCase "aborts if there is a failure (due to low balance)" $
-          nettestTestExpectation lowBalanceOwnerScenario
-      , testCase "cannot transfer foreign money" $
-          nettestTestExpectation noForeignMoneyOwnerScenario
+      [ nettestScenario "allows valid transfer and check balance"
+          validTransferOwnerScenario
+      , nettestScenario "allows updating operator "
+          updatingOperatorScenario
+      , nettestScenario "allows balanceOf request"
+          balanceOfOwnerScenario
+      , nettestScenario "validates token id"
+          validateTokenOwnerScenario
+      , nettestScenario "aborts if there is a failure (due to low balance)"
+          lowBalanceOwnerScenario
+      , nettestScenario "cannot transfer foreign money"
+          noForeignMoneyOwnerScenario
       ]
   , testGroup "Admin:"
-    [ testCase "transfer tokens from any address to any address" $
-        nettestTestExpectation adminTransferScenario
-    , testCase "transfer frozen tokens" $
-        nettestTestExpectation adminTransferFrozenScenario
+    [ nettestScenario "transfer tokens from any address to any address"
+        adminTransferScenario
+    , nettestScenario "transfer frozen tokens"
+        adminTransferFrozenScenario
     ]
   , testGroup "Entrypoints respect migration status"
-      [ testCase "transfer respects migration status" $
-          nettestTestExpectation transferAfterMigrationScenario
-      , testCase "update operator respects migration status " $
-          nettestTestExpectation updatingOperatorAfterMigrationScenario
-      , testCase "balanceOf request respects migration status" $
-          nettestTestExpectation balanceOfRequestAfterMigrationScenario
-      , testCase "tokenMetadataRegistry request respects migration status" $
-          nettestTestExpectation tokenMetadataRegistryRequestAfterMigrationScenario
+      [ nettestScenario "transfer respects migration status"
+          transferAfterMigrationScenario
+      , nettestScenario "update operator respects migration status "
+          updatingOperatorAfterMigrationScenario
+      , nettestScenario "balanceOf request respects migration status"
+          balanceOfRequestAfterMigrationScenario
+      , nettestScenario "tokenMetadataRegistry request respects migration status"
+          tokenMetadataRegistryRequestAfterMigrationScenario
       ]
   ]
 
