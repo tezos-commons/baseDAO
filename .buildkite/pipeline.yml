@@ -1,6 +1,12 @@
 # SPDX-FileCopyrightText: 2020 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+env:
+  TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER: "Y"
+  # this key is defined in local-chain bootstrap accounts list in
+  # https://github.com/serokell/serokell-profiles/blob/master/profiles/servers/jupiter/default.nix
+  TASTY_NETTEST_IMPORT_SECRET_KEY: "unencrypted:edsk3nAQ3uCP7vc2ccLhhWNNncgFfWQ5HgTyPawepQ8DURRRfzVQzB"
+
 steps:
   - label: hlint
     commands:
@@ -37,7 +43,10 @@ steps:
   - label: test
     commands:
     - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
-    - ./result/bin/baseDAO-test
+    # Emulator + local chain for Delphi protocol
+    - nix run -f ci.nix tezos-client -c
+      ./result/bin/baseDAO-test --nettest-run-network
+      -A localhost -P 8734
 
   - label: weeder
     commands:
