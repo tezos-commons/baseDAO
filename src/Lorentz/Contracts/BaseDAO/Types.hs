@@ -81,9 +81,6 @@ data Config proposalMetadata = Config
   , cMinQuorumThreshold :: Natural
   , cMaxVotingPeriod :: Natural -- Maximum of seconds allow to be set
   , cMinVotingPeriod :: Natural
-
-  -- TODO [#30]: remove (Currently needed due to Nettest can track time, use this to force flush)
-  , cForceVotingPeriod :: Bool
   }
 
 defaultConfig :: Config pm
@@ -119,8 +116,6 @@ defaultConfig = Config
 
   , cMaxVotes = 1000
   , cMaxProposals = 500
-
-  , cForceVotingPeriod = False
   }
 ------------------------------------------------------------------------
 -- Operators
