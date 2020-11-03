@@ -41,7 +41,6 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
     , #cMigrate /-> migrate
     , #cConfirm_migration /-> confirmMigration
     , #cPropose /-> propose config
-    , #cProposal_metadata /-> proposalMetadata
     , #cVote /-> vote config
     , #cSet_voting_period /-> setVotingPeriod config
     , #cSet_quorum_threshold /-> setQuorumThreshold config

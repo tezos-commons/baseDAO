@@ -215,7 +215,6 @@ data Parameter proposalMetadata
   | Migrate MigrateParam
   | Confirm_migration ()
   | Propose (ProposeParams proposalMetadata)
-  | Proposal_metadata (View ProposalKey (Proposal proposalMetadata))
   | Vote [VoteParam]
   -- Admin
   | Set_voting_period VotingPeriod

@@ -8,7 +8,6 @@ module Test.BaseDAO.Proposal
 import Universum hiding (compare, drop, (>>))
 
 import Lorentz
-import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
@@ -60,9 +59,6 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
 
       , nettestScenario "flush and run decision lambda" flushDecisionLambda
       ]
-  , testGroup "Other:"
-      [ nettestScenario "can call proposalMetadata" proposalMetadata
-      ]
   , testGroup "Bounded Value"
       [ nettestScenario "bounded value on proposals" proposalBoundedValue
       , nettestScenario "bounded value on votes" votesBoundedValue
@@ -84,7 +80,8 @@ validProposal = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 90
   -- TODO [#31]: Currently proposalId is expected to be knowned (checkInStorage)
 
-  checkIfAProposalExist (makeProposalKey params owner1) dao
+  -- TODO [#31]
+  -- checkIfAProposalExist (makeProposalKey params owner1) dao
 
 rejectProposal :: (Monad m) => NettestImpl m -> m ()
 rejectProposal = uncapsNettest $ do
@@ -239,14 +236,6 @@ setQuorumThreshold = uncapsNettest $ do
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") param
   -- TODO [#31]: checkStorage
 
-proposalMetadata :: (Monad m) => NettestImpl m -> m ()
-proposalMetadata = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig config
-
-  key1 <- createSampleProposal 1 owner1 dao
-
-  checkIfAProposalExist key1 dao
-
 flushNotAffectOngoingProposals :: (Monad m) => NettestImpl m -> m ()
 flushNotAffectOngoingProposals = uncapsNettest $ do
   ((owner1, _), _, dao, admin) <- originateBaseDaoWithConfig config
@@ -259,11 +248,13 @@ flushNotAffectOngoingProposals = uncapsNettest $ do
   callFrom (AddressResolved owner1) dao (Call @"Flush") ()
     & expectCustomError_ #nOT_ADMINISTRATOR
 
-  key1 <- createSampleProposal 1 owner1 dao
-  key2 <- createSampleProposal 2 owner1 dao
+  _key1 <- createSampleProposal 1 owner1 dao
+  _key2 <- createSampleProposal 2 owner1 dao
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
-  checkIfAProposalExist key1 dao
-  checkIfAProposalExist key2 dao
+
+  -- TODO: [#31]
+  -- checkIfAProposalExist (key1 :: ByteString) dao
+  -- checkIfAProposalExist (key2 :: ByteString) dao
 
 flushAcceptedProposals :: (Monad m) => NettestImpl m -> m ()
 flushAcceptedProposals = uncapsNettest $ do
@@ -293,8 +284,9 @@ flushAcceptedProposals = uncapsNettest $ do
   advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
-  checkIfAProposalExist key1 dao
-    & expectCustomError_ #pROPOSAL_NOT_EXIST
+  -- TODO: [#31]
+  -- checkIfAProposalExist (key1 :: ByteString) dao
+  --   & expectCustomError_ #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100 -- proposer
@@ -331,8 +323,9 @@ flushRejectProposalQuorum =
   advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
-  checkIfAProposalExist key1 dao
-    & expectCustomError_ #pROPOSAL_NOT_EXIST
+  -- TODO: [#31]
+  -- checkIfAProposalExist (key1 :: ByteString) dao
+  --   & expectCustomError_ #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 95 -- proposer: cRejectedValue reduce frozen token by half
@@ -372,8 +365,9 @@ flushRejectProposalNegativeVotes = uncapsNettest $ do
   advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
-  checkIfAProposalExist key1 dao
-    & expectCustomError_ #pROPOSAL_NOT_EXIST
+  -- TODO: [#31]
+  -- checkIfAProposalExist (key1 :: ByteString) dao
+  --   & expectCustomError_ #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 95 -- proposer: cRejectedValue reduce frozen token by half
@@ -399,8 +393,9 @@ flushWithBadConfig = uncapsNettest $ do
   advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
-  checkIfAProposalExist key1 dao
-    & expectCustomError_ #pROPOSAL_NOT_EXIST
+  -- TODO: [#31]
+  -- checkIfAProposalExist (key1 :: ByteString) dao
+  --   & expectCustomError_ #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 90 -- slash all frozen values
@@ -504,14 +499,15 @@ createSampleProposal counter owner1 dao = do
   callFrom (AddressResolved owner1) dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)
 
-checkIfAProposalExist
-  :: MonadNettest caps base m
-  => DAO.ProposalKey -> TAddress (DAO.Parameter TestProposalMetadata) -> m ()
-checkIfAProposalExist proposalKey dao = do
-  owner :: Address <- newAddress "owner"
-  consumer <- originateSimple "consumer" [] contractConsumer
-  -- | If the proposal exists, there should be no error
-  callFrom (AddressResolved owner) dao (Call @"Proposal_metadata") (mkView proposalKey consumer)
+-- TODO: Implement this via [#31] instead
+-- checkIfAProposalExist
+--   :: MonadNettest caps base m
+--   => DAO.ProposalKey -> TAddress (DAO.Parameter TestProposalMetadata) -> m ()
+-- checkIfAProposalExist proposalKey dao = do
+--   owner :: Address <- newAddress "owner"
+--   consumer <- originateSimple "consumer" [] contractConsumer
+--   -- | If the proposal exists, there should be no error
+--   callFrom (AddressResolved owner) dao (Call @"Proposal_metadata") (mkView proposalKey consumer)
 
 makeProposalKey :: DAO.ProposeParams Integer -> Address -> ByteString
 makeProposalKey params owner = blake2b $ lPackValue (params, owner)

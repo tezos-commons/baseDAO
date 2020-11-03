@@ -4,7 +4,6 @@
 -- | Proposal related entrypoints
 module Lorentz.Contracts.BaseDAO.Proposal
   ( propose
-  , proposalMetadata
   , vote
   , setVotingPeriod
   , setQuorumThreshold
@@ -369,18 +368,6 @@ vote config = do
     submitVote
 
   nil; pair
-
-------------------------------------------------------------------------
--- ProposalMetadata
-------------------------------------------------------------------------
-
-proposalMetadata
-  :: forall store pm. (StorageC store pm, NiceParameter pm)
-  => Entrypoint (View ProposalKey (Proposal pm)) store
-proposalMetadata = do
-  dip $ ensureNotMigrated
-  view_ $ do
-    checkIfProposalExist
 
 ------------------------------------------------------------------------
 -- Admin Entrypoints (set votingPeriod, quorum, flush)
