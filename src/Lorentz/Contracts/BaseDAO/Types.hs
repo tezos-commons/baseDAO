@@ -125,7 +125,7 @@ defaultConfig = Config
 -- Operators
 ------------------------------------------------------------------------
 
-type Operators = BigMap (Address, Address) ()
+type Operators = BigMap ("owner" :! Address, "operator" :! Address) ()
 
 ------------------------------------------------------------------------
 -- Ledger
@@ -182,7 +182,7 @@ instance IsoValue pm =>
   storeSubmapOps = storeSubmapOpsDeeper #sLedger
 
 instance IsoValue pm =>
-    StoreHasSubmap (Storage pm) "sOperators" (Address, Address) () where
+    StoreHasSubmap (Storage pm) "sOperators" ("owner" :! Address, "operator" :! Address) () where
   storeSubmapOps = storeSubmapOpsDeeper #sOperators
 
 instance IsoValue pm =>
@@ -192,7 +192,7 @@ instance IsoValue pm =>
 type StorageC store pm =
   ( StorageContains store
     [ "sLedger" := LedgerKey ~> LedgerValue
-    , "sOperators" := (Address, Address) ~> ()
+    , "sOperators" := ("owner" :! Address, "operator" :! Address) ~> ()
     , "sTokenAddress" := Address
     , "sAdmin" := Address
     , "sPendingOwner" := Maybe Address

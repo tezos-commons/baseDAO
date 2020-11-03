@@ -70,18 +70,18 @@ adminMintScenario = uncapsNettest $ do
 transferContractTokensScenario :: (Monad m) => NettestImpl m -> m ()
 transferContractTokensScenario = uncapsNettest $ do
   (_, _, dao, admin) <- originateBaseDao
-  ((owner1_, _), (owner2_, _), fa2Contract, _) <- originateBaseDao
+  ((owner1, _), (owner2, _), fa2Contract, _) <- originateBaseDao
   let addParams = FA2.OperatorParam
-        { opOwner = owner1_
+        { opOwner = owner1
         , opOperator = toAddress dao
         , opTokenId = DAO.unfrozenTokenId
         }
-  callFrom (AddressResolved owner1_) fa2Contract (Call @"Update_operators") [FA2.AddOperator addParams]
+  callFrom (AddressResolved owner1) fa2Contract (Call @"Update_operators") [FA2.AddOperator addParams]
 
   let transferParams = [ FA2.TransferItem
-            { tiFrom = owner1_
+            { tiFrom = owner1
             , tiTxs = [ FA2.TransferDestination
-                { tdTo = owner2_
+                { tdTo = owner2
                 , tdTokenId = DAO.unfrozenTokenId
                 , tdAmount = 10
                 } ]
@@ -91,11 +91,9 @@ transferContractTokensScenario = uncapsNettest $ do
         , DAO.tcParams = transferParams
         }
 
-  -- TODO: Figure out why FA2_NOT_OPERATOR occurs
   callFrom (AddressResolved admin) dao (Call @"Transfer_contract_tokens") param
-   & expectCustomError_ #fA2_NOT_OPERATOR
-  -- checkTokenBalance (DAO.unfrozenTokenId) dao owner1 90
-  -- checkTokenBalance (DAO.unfrozenTokenId) dao owner2 110
+  checkTokenBalance (DAO.unfrozenTokenId) fa2Contract owner1 90
+  checkTokenBalance (DAO.unfrozenTokenId) fa2Contract owner2 110
 
 tokenAddressScenario :: (Monad m) => NettestImpl m -> m ()
 tokenAddressScenario = uncapsNettest $ do

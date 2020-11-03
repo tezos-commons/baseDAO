@@ -18,6 +18,7 @@ import Lorentz
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Util.Named ((.!))
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
@@ -74,8 +75,8 @@ originateBaseDaoWithBalance config balFunc = do
   let bal = Map.fromList $ balFunc owner1 owner2
 
   let (operators :: DAO.Operators) = BigMap $ Map.fromList
-        [ ((owner1, operator1), ())
-        , ((owner2, operator2), ())
+        [ ((#owner .! owner1, #operator .! operator1), ())
+        , ((#owner .! owner2, #operator .! operator2), ())
         ]
   let
     originateData = OriginateData
