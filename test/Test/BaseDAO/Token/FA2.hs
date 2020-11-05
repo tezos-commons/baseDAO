@@ -1,7 +1,7 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-module Test.BaseDAO.FA2
+module Test.BaseDAO.Token.FA2
   ( test_BaseDAO_FA2
   ) where
 
@@ -160,8 +160,20 @@ updatingOperatorScenario = uncapsNettest $ do
         , opOperator = owner2
         , opTokenId = 0
         }
+      transferParams = [ FA2.TransferItem
+        { tiFrom = owner1
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner2
+            , tdTokenId = 0
+            , tdAmount = 10
+            } ]
+        } ]
   callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.AddOperator params]
+  callFrom (AddressResolved owner2) dao (Call @"Transfer") transferParams
+
   callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.RemoveOperator params]
+  callFrom (AddressResolved owner2) dao (Call @"Transfer") transferParams
+    & expectCustomError_ #fA2_NOT_OPERATOR
 
   let notOwnerParams = FA2.OperatorParam
         { opOwner = owner2

@@ -1,7 +1,7 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-module Lorentz.Contracts.BaseDAO.FA2
+module Lorentz.Contracts.BaseDAO.Token.FA2
    ( transfer
    , balanceOf
    , tokenMetadataRegistry
@@ -39,14 +39,14 @@ transfer = do
       dig @2
       getField #tiTxs
       swap
-      getField #tiFrom
+      getField #tiFrom; toNamed #from
       swap
       drop @TransferItem
       dug @2
       iter transferOne
       dropN @2
 
-    transferOne :: '[TransferDestination, Bool, Address, Storage pm] :-> '[Bool, Address, Storage pm]
+    transferOne :: '[TransferDestination, Bool, "from" :! Address, Storage pm] :-> '[Bool, "from" :! Address, Storage pm]
     transferOne = do
       swap
       dup
@@ -84,7 +84,7 @@ transfer = do
       dup
       dug @5
       dig @3
-      dug @2
+      dug @2; fromNamed #from
       dig @4
       debitFrom;
       creditTo;
@@ -92,10 +92,10 @@ transfer = do
       swap
 
     checkSender
-      :: forall f. Address : Storage pm : f
-      :-> Address : Storage pm : f
+      :: forall f. ("from" :! Address) : Storage pm : f
+      :-> ("from" :! Address) : Storage pm : f
     checkSender = do
-      dup
+      dup; fromNamed #from
       Lorentz.sender
       if IsEq
       then nop
@@ -105,8 +105,8 @@ transfer = do
         getField #sOperators
         swap
         dug @3
-        swap
-        Lorentz.sender
+        swap; fromNamed #from; toNamed #owner
+        Lorentz.sender; toNamed #operator
         swap
         pair
         mem
@@ -292,29 +292,31 @@ addOperator :: forall pm. IsoValue pm => '[OperatorParam, Storage pm] :-> '[Stor
 addOperator = do
   getField #opTokenId
   dip do
-    getField #opOperator
-    dip $ toField #opOwner
-  stackType @(TokenId : Address : Address : (Storage pm) : _)
+    getField #opOperator; toNamed #operator
+    dip $ do toField #opOwner; toNamed #owner
+  stackType @[TokenId, "operator" :! Address, "owner" :! Address, (Storage pm)]
   assertEq0or1
   swap
-  dup
+  dup; fromNamed #owner
   Lorentz.sender
   if IsEq
   then nop
   else failCustom_ #nOT_OWNER
-  swap
+  stackType @["owner" :! Address, "operator" :! Address, (Storage pm)]
   pair
   swap
   getField #sOperators
+  stackType @[ BigMap ("owner" :! Address, "operator" :! Address) ()
+             , (Storage pm), ("owner" :! Address, "operator" :! Address)]
   dig @2
   dupTop2
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists :: '[(Address, Address), Operators, Storage pm] :-> '[Storage pm]
+    ifKeyExists :: '[("owner" :! Address, "operator" :! Address), Operators, Storage pm] :-> '[Storage pm]
     ifKeyExists = dropN @2
 
-    ifKeyDoesntExist ::  '[(Address, Address), Operators, Storage pm] :-> '[Storage pm]
+    ifKeyDoesntExist ::  '[("owner" :! Address, "operator" :! Address), Operators, Storage pm] :-> '[Storage pm]
     ifKeyDoesntExist = do
       unit
       some
@@ -326,26 +328,28 @@ removeOperator :: forall pm. IsoValue pm => '[OperatorParam, Storage pm] :-> '[S
 removeOperator = do
   getField #opTokenId
   dip do
-    getField #opOperator
-    dip $ toField #opOwner
-  stackType @(TokenId : Address : Address : (Storage pm) : _)
+    getField #opOperator; toNamed #operator
+    dip $ do toField #opOwner; toNamed #owner
+  stackType @[TokenId, "operator" :! Address, "owner" :! Address, (Storage pm)]
   assertEq0or1
   swap
-  dup
+  dup; fromNamed #owner
   Lorentz.sender
   if IsEq
   then nop
   else failCustom_ #nOT_OWNER
-  swap
+  stackType @["owner" :! Address, "operator" :! Address, (Storage pm)]
   pair
   swap
   getField #sOperators
+  stackType @[ BigMap ("owner" :! Address, "operator" :! Address) ()
+             , (Storage pm), ("owner" :! Address, "operator" :! Address)]
   dig @2
   dupTop2
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists ::  '[(Address, Address), Operators, Storage pm] :-> '[Storage pm]
+    ifKeyExists ::  '[("owner" :! Address, "operator" :! Address), Operators, Storage pm] :-> '[Storage pm]
     ifKeyExists = do
       push Nothing
       swap
@@ -353,7 +357,7 @@ removeOperator = do
       setField #sOperators
 
 
-    ifKeyDoesntExist ::  '[(Address, Address), Operators, Storage pm] :-> '[Storage pm]
+    ifKeyDoesntExist ::  '[("owner" :! Address, "operator" :! Address), Operators, Storage pm] :-> '[Storage pm]
     ifKeyDoesntExist = dropN @2
 
 -- | TODO: Probably this one can be moved to Lorentz as well
