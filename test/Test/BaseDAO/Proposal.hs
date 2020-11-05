@@ -57,7 +57,9 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
           flushWithBadConfig
       -- TODO [#15]: admin burn proposer token and test "flush"
 
-      , nettestScenario "flush and run decision lambda" flushDecisionLambda
+      -- TODO [#38]: Improve this when contract size is smaller
+      , nettestScenarioOnEmulator "flush and run decision lambda" $
+          \_emulated -> flushDecisionLambda
       ]
   , testGroup "Bounded Value"
       [ nettestScenario "bounded value on proposals" proposalBoundedValue
@@ -219,7 +221,7 @@ setVotingPeriod = uncapsNettest $ do
   let param = 60 * 60 -- 1 hour
 
   callFrom (AddressResolved owner1) dao (Call @"Set_voting_period") param
-    & expectCustomError_ #nOT_ADMINISTRATOR
+    & expectCustomError_ #nOT_ADMIN
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") param
   -- TODO [#31]: checkStorage
@@ -231,7 +233,7 @@ setQuorumThreshold = uncapsNettest $ do
   let param = 100
 
   callFrom (AddressResolved owner1) dao (Call @"Set_quorum_threshold") param
-    & expectCustomError_ #nOT_ADMINISTRATOR
+    & expectCustomError_ #nOT_ADMIN
 
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") param
   -- TODO [#31]: checkStorage
@@ -246,7 +248,7 @@ flushNotAffectOngoingProposals = uncapsNettest $ do
 
   advanceTime (sec 3)
   callFrom (AddressResolved owner1) dao (Call @"Flush") ()
-    & expectCustomError_ #nOT_ADMINISTRATOR
+    & expectCustomError_ #nOT_ADMIN
 
   _key1 <- createSampleProposal 1 owner1 dao
   _key2 <- createSampleProposal 2 owner1 dao
@@ -297,7 +299,8 @@ flushAcceptedProposals = uncapsNettest $ do
 flushRejectProposalQuorum :: (Monad m) => NettestImpl m -> m ()
 flushRejectProposalQuorum =
   uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig config
+  ((owner1, _), (owner2, _), dao, admin)
+    <- originateBaseDaoWithConfig configWithRejectedProposal
 
   -- | Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -334,7 +337,8 @@ flushRejectProposalQuorum =
 
 flushRejectProposalNegativeVotes :: (Monad m) => NettestImpl m -> m ()
 flushRejectProposalNegativeVotes = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig config
+  ((owner1, _), (owner2, _), dao, admin)
+    <- originateBaseDaoWithConfig configWithRejectedProposal
 
   -- | Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao

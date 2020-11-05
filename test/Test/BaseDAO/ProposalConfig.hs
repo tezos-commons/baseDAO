@@ -6,6 +6,7 @@
 
 module Test.BaseDAO.ProposalConfig
   ( config
+  , configWithRejectedProposal
   , badRejectedValueConfig
   , decisionLambdaConfig
   ) where
@@ -28,7 +29,11 @@ config = DAO.defaultConfig
         push True
       else
         push False
-  , DAO.cRejectedProposalReturnValue = do
+  }
+
+configWithRejectedProposal :: forall pm. (IsoValue pm) => DAO.Config pm
+configWithRejectedProposal = DAO.defaultConfig
+  { DAO.cRejectedProposalReturnValue = do
       -- ^ divide frozen value by half
       toField #pProposerFrozenToken
       push (2 :: Natural)

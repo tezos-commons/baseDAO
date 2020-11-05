@@ -126,4 +126,3 @@ tests:
     - o-clock
     - tasty
     - universum
-    - containers

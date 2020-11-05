@@ -13,12 +13,12 @@ module Test.Common
 
 import Universum
 
-import qualified Data.Map.Strict as Map
+-- import qualified Data.Map.Strict as Map
 import Lorentz
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Util.Named ((.!))
+-- import Util.Named ((.!))
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
@@ -72,21 +72,40 @@ originateBaseDaoWithBalance config balFunc = do
 
   admin :: Address <- newAddress "admin"
 
-  let bal = Map.fromList $ balFunc owner1 owner2
-
-  let (operators :: DAO.Operators) = BigMap $ Map.fromList
-        [ ((#owner .! owner1, #operator .! operator1), ())
-        , ((#owner .! owner2, #operator .! operator2), ())
-        ]
   let
     originateData = OriginateData
       { odFrom = nettestAddress
       , odName = "BaseDAO"
       , odBalance = toMutez 0
-      , odStorage = DAO.mkStorage admin bal operators
+      -- , odStorage = DAO.mkStorage admin bal operators
+      , odStorage = mkStorage admin mempty mempty
       , odContract = DAO.baseDaoContract config
       }
   dao <- originate originateData
+
+  -- Add operators
+  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.AddOperator
+    (FA2.OperatorParam
+        { opOwner = owner1
+        , opOperator = operator1
+        , opTokenId = 0
+        }
+    )]
+  callFrom (AddressResolved owner2) dao (Call @"Update_operators") [FA2.AddOperator
+    (FA2.OperatorParam
+        { opOwner = owner2
+        , opOperator = operator2
+        , opTokenId = 0
+        }
+    )]
+
+  -- Initial balances
+  let bal = balFunc owner1 owner2
+  mapM_
+    (\((owner, tokenId), amount_) ->
+        callFrom (AddressResolved admin) dao (Call @"Mint") (MintParam owner tokenId amount_)
+    ) bal
+
   pure ((owner1, operator1), (owner2, operator2), dao, admin)
 
 originateBaseDao
