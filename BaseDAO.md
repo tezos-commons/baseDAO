@@ -186,7 +186,7 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Transfer_ownership` constructor.
     + **In Haskell:** `Transfer_ownership (·)`
-    + **In Michelson:** `Left (Left (Right (·)))`
+    + **In Michelson:** `Left (Left (Right (Left (·))))`
 </details>
 <p>
 
@@ -197,7 +197,7 @@
 **Possible errors:**
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
 
-* [`NOT_ADMINISTRATOR`](#errors-NOT_ADMINISTRATOR) — Received an operation that require administrative privileges from an address that is not the current administrator
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
 
 
 
@@ -218,7 +218,7 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Accept_ownership` constructor.
     + **In Haskell:** `Accept_ownership (·)`
-    + **In Michelson:** `Left (Right (Left (·)))`
+    + **In Michelson:** `Left (Left (Right (Right (·))))`
 </details>
 <p>
 
@@ -252,7 +252,7 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Migrate` constructor.
     + **In Haskell:** `Migrate (·)`
-    + **In Michelson:** `Left (Right (Right (Left (·))))`
+    + **In Michelson:** `Left (Right (Left (Left (·))))`
 </details>
 <p>
 
@@ -263,7 +263,7 @@
 **Possible errors:**
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
 
-* [`NOT_ADMINISTRATOR`](#errors-NOT_ADMINISTRATOR) — Received an operation that require administrative privileges from an address that is not the current administrator
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
 
 
 
@@ -284,7 +284,7 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Confirm_migration` constructor.
     + **In Haskell:** `Confirm_migration (·)`
-    + **In Michelson:** `Left (Right (Right (Right (·))))`
+    + **In Michelson:** `Left (Right (Left (Right (·))))`
 </details>
 <p>
 
@@ -309,7 +309,7 @@
 
 **Argument:** 
   + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`()`](#types-lparenrparen)
-  + **In Michelson:** `(pair (nat %ppFrozenToken) (unit %ppProposalMetadata))`
+  + **In Michelson:** `(pair (nat %frozen_token) (unit %proposal_metadata))`
     + **Example:** <span id="example-id">`Pair 0 Unit`</span>
 
 <details>
@@ -318,7 +318,7 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Propose` constructor.
     + **In Haskell:** `Propose (·)`
-    + **In Michelson:** `Right (Left (Left (·)))`
+    + **In Michelson:** `Left (Right (Right (Left (·))))`
 </details>
 <p>
 
@@ -337,34 +337,6 @@
 
 
 
-<a name="entrypoints-proposal_metadata"></a>
-
----
-
-### `proposal_metadata`
-
-**Argument:** 
-  + **In Haskell:** [`View`](#types-View) [`ByteString`](#types-ByteString) ([`Proposal`](#types-Proposal) [`()`](#types-lparenrparen))
-  + **In Michelson:** `(pair (bytes %viewParam) (contract %viewCallbackTo (pair (pair (nat %pUpvotes) (pair (nat %pDownvotes) (timestamp %pStartDate))) (pair (pair (unit %pMetadata) (address %pProposer)) (pair (nat %pProposerFrozenToken) (list %pVoters (pair address nat)))))))`
-    + **Example:** <span id="example-id">`Pair 0x0a "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Wrap into `Proposal_metadata` constructor.
-    + **In Haskell:** `Proposal_metadata (·)`
-    + **In Michelson:** `Right (Left (Right (Left (·))))`
-</details>
-<p>
-
-
-
-**Possible errors:**
-* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
-
-
-
 <a name="entrypoints-vote"></a>
 
 ---
@@ -373,7 +345,7 @@
 
 **Argument:** 
   + **In Haskell:** [`List`](#types-List) [`VoteParam`](#types-VoteParam)
-  + **In Michelson:** `(list (pair (bytes %vProposalKey) (pair (bool %vVoteType) (nat %vVoteAmount))))`
+  + **In Michelson:** `(list (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))))`
     + **Example:** <span id="example-id">`{ Pair 0x0a (Pair True 0) }`</span>
 
 <details>
@@ -382,13 +354,15 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Vote` constructor.
     + **In Haskell:** `Vote (·)`
-    + **In Michelson:** `Right (Left (Right (Right (·))))`
+    + **In Michelson:** `Left (Right (Right (Right (·))))`
 </details>
 <p>
 
 
 
 **Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
 * [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
 
 * [`MAX_VOTES_REACHED`](#errors-MAX_VOTES_REACHED) — Trying to vote on a proposal when the votes max amount of that proposal is already reached
@@ -418,7 +392,7 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Set_voting_period` constructor.
     + **In Haskell:** `Set_voting_period (·)`
-    + **In Michelson:** `Right (Right (Left (·)))`
+    + **In Michelson:** `Right (Left (Left (·)))`
 </details>
 <p>
 
@@ -427,7 +401,9 @@
 **Authorization:** The sender has to be `administrator`.
 
 **Possible errors:**
-* [`NOT_ADMINISTRATOR`](#errors-NOT_ADMINISTRATOR) — Received an operation that require administrative privileges from an address that is not the current administrator
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
 
 * [`OUT_OF_BOUND_VOTING_PERIOD`](#errors-OUT_OF_BOUND_VOTING_PERIOD) — Trying to set voting period that is out of bound.
 
@@ -450,7 +426,7 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Set_quorum_threshold` constructor.
     + **In Haskell:** `Set_quorum_threshold (·)`
-    + **In Michelson:** `Right (Right (Right (Left (·))))`
+    + **In Michelson:** `Right (Left (Right (Left (·))))`
 </details>
 <p>
 
@@ -459,7 +435,9 @@
 **Authorization:** The sender has to be `administrator`.
 
 **Possible errors:**
-* [`NOT_ADMINISTRATOR`](#errors-NOT_ADMINISTRATOR) — Received an operation that require administrative privileges from an address that is not the current administrator
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
 
 * [`OUT_OF_BOUND_QUORUM_THRESHOLD`](#errors-OUT_OF_BOUND_QUORUM_THRESHOLD) — Trying to set quorum threshold that is out of bound
 
@@ -482,7 +460,7 @@
 0. Construct an argument for the entrypoint.
 1. Wrap into `Flush` constructor.
     + **In Haskell:** `Flush (·)`
-    + **In Michelson:** `Right (Right (Right (Right (·))))`
+    + **In Michelson:** `Right (Left (Right (Right (·))))`
 </details>
 <p>
 
@@ -491,13 +469,141 @@
 **Authorization:** The sender has to be `administrator`.
 
 **Possible errors:**
-* [`NOT_ADMINISTRATOR`](#errors-NOT_ADMINISTRATOR) — Received an operation that require administrative privileges from an address that is not the current administrator
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
 
 * [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
 
 * [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
 
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+
+
+<a name="entrypoints-burn"></a>
+
+---
+
+### `burn`
+
+**Argument:** 
+  + **In Haskell:** [`BurnParam`](#types-BurnParam)
+  + **In Michelson:** `(pair (address %from_) (pair (nat %token_id) (nat %amount)))`
+    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0)`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Burn` constructor.
+    + **In Haskell:** `Burn (·)`
+    + **In Michelson:** `Right (Right (Left (Left (·))))`
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+
+
+<a name="entrypoints-mint"></a>
+
+---
+
+### `mint`
+
+**Argument:** 
+  + **In Haskell:** [`MintParam`](#types-MintParam)
+  + **In Michelson:** `(pair (address %to_) (pair (nat %token_id) (nat %amount)))`
+    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0)`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Mint` constructor.
+    + **In Haskell:** `Mint (·)`
+    + **In Michelson:** `Right (Right (Left (Right (·))))`
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+
+
+<a name="entrypoints-transfer_contract_tokens"></a>
+
+---
+
+### `transfer_contract_tokens`
+
+**Argument:** 
+  + **In Haskell:** [`TransferContractTokensParam`](#types-TransferContractTokensParam)
+  + **In Michelson:** `(pair (address %contract_address) (list %params (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))`
+    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0) } }`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Transfer_contract_tokens` constructor.
+    + **In Haskell:** `Transfer_contract_tokens (·)`
+    + **In Michelson:** `Right (Right (Right (Left (·))))`
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`FAIL_TRANSFER_CONTRACT_TOKENS`](#errors-FAIL_TRANSFER_CONTRACT_TOKENS) — Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract.
+
+
+
+<a name="entrypoints-token_address"></a>
+
+---
+
+### `token_address`
+
+**Argument:** 
+  + **In Haskell:** [`ContractRef`](#types-Contract) [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  + **In Michelson:** `(contract address)`
+    + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Wrap into `Token_address` constructor.
+    + **In Haskell:** `Token_address (·)`
+    + **In Michelson:** `Right (Right (Right (Right (·))))`
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
 
 
 
@@ -594,6 +700,23 @@ Bool primitive.
 
 
 
+<a name="types-BurnParam"></a>
+
+---
+
+### `BurnParam`
+
+Describes whose account, which token id and in what amount to burn
+
+**Structure:** 
+  * ***from_*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***tokenId*** :[`Natural`](#types-Natural)
+  * ***amount*** :[`Natural`](#types-Natural)
+
+**Final Michelson representation:** `pair address (pair nat nat)`
+
+
+
 <a name="types-ByteString"></a>
 
 ---
@@ -639,6 +762,23 @@ Signed number.
 List primitive.
 
 **Final Michelson representation (example):** `[Integer]` = `list int`
+
+
+
+<a name="types-MintParam"></a>
+
+---
+
+### `MintParam`
+
+Describes whose account, which token id and in what amount to mint
+
+**Structure:** 
+  * ***to_*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***tokenId*** :[`Natural`](#types-Natural)
+  * ***amount*** :[`Natural`](#types-Natural)
+
+**Final Michelson representation:** `pair address (pair nat nat)`
 
 
 
@@ -708,27 +848,6 @@ Describes the FA2 operations.
 
 
 
-<a name="types-Proposal"></a>
-
----
-
-### `Proposal`
-
-Contract's storage holding a big_map with all balances and the operators.
-
-**Structure (example):** `Proposal ()` = 
-  * ***pUpvotes*** :[`Natural`](#types-Natural)
-  * ***pDownvotes*** :[`Natural`](#types-Natural)
-  * ***pStartDate*** :[`Timestamp`](#types-Timestamp)
-  * ***pMetadata*** :[`()`](#types-lparenrparen)
-  * ***pProposer*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***pProposerFrozenToken*** :[`Natural`](#types-Natural)
-  * ***pVoters*** :[`List`](#types-List) ([`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), [`Natural`](#types-Natural))
-
-**Final Michelson representation (example):** `Proposal ()` = `pair (pair nat (pair nat timestamp)) (pair (pair unit address) (pair nat (list (pair address nat))))`
-
-
-
 <a name="types-ProposeParams"></a>
 
 ---
@@ -759,15 +878,19 @@ This has to contain only ASCII characters with codes from [32; 126] range; addit
 
 
 
-<a name="types-Timestamp"></a>
+<a name="types-TransferContractTokensParam"></a>
 
 ---
 
-### `Timestamp`
+### `TransferContractTokensParam`
 
-Timestamp primitive.
+TODO
 
-**Final Michelson representation:** `timestamp`
+**Structure:** 
+  * ***contractAddress*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***params*** :[`List`](#types-List) [`TransferItem`](#types-TransferItem)
+
+**Final Michelson representation:** `pair address (list (pair address (list (pair address (pair nat nat)))))`
 
 
 
@@ -950,6 +1073,18 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Representation:** `("FAIL_PROPOSAL_CHECK", ())`.
 
+<a name="errors-FAIL_TRANSFER_CONTRACT_TOKENS"></a>
+
+---
+
+### `FAIL_TRANSFER_CONTRACT_TOKENS`
+
+**Class:** Action exception
+
+**Fires if:** Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract.
+
+**Representation:** `("FAIL_TRANSFER_CONTRACT_TOKENS", ())`.
+
 <a name="errors-FORBIDDEN_XTZ"></a>
 
 ---
@@ -1024,17 +1159,17 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 Provided error argument will be of type [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen).
 
-<a name="errors-NOT_ADMINISTRATOR"></a>
+<a name="errors-NOT_ADMIN"></a>
 
 ---
 
-### `NOT_ADMINISTRATOR`
+### `NOT_ADMIN`
 
 **Class:** Action exception
 
 **Fires if:** Received an operation that require administrative privileges from an address that is not the current administrator
 
-**Representation:** `("NOT_ADMINISTRATOR", ())`.
+**Representation:** `("NOT_ADMIN", ())`.
 
 <a name="errors-NOT_MIGRATING"></a>
 
