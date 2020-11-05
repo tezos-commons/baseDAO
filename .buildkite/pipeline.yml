@@ -127,3 +127,7 @@ steps:
     - buildkite-agent artifact download "*.md" tmp/
         --step "contract doc release"
     - ./scripts/ci/upload-autodoc.sh
+
+notify:
+  - email: "tezos-alerts@serokell.io"
+    if: build.state == "failed" && build.source == "schedule"
