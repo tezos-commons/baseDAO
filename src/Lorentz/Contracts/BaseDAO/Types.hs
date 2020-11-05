@@ -451,9 +451,9 @@ instance CustomErrorHasDoc "nOT_PENDING_ADMINISTRATOR" where
   customErrDocMdCause =
     "Received an `accept_ownership` from an address other than what is in the pending owner field"
 
-type instance ErrorArg "nOT_ADMINISTRATOR" = ()
+type instance ErrorArg "nOT_ADMIN" = ()
 
-instance CustomErrorHasDoc "nOT_ADMINISTRATOR" where
+instance CustomErrorHasDoc "nOT_ADMIN" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Received an operation that require administrative privileges\

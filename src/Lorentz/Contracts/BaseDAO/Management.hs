@@ -128,4 +128,4 @@ authorizeAdmin ::
 authorizeAdmin = do
   doc $ DRequireRole "administrator"
   stGetField #sAdmin; sender;
-  if IsEq then nop else failCustom_ #nOT_ADMINISTRATOR
+  if IsEq then nop else failCustom_ #nOT_ADMIN

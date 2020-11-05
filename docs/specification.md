@@ -190,7 +190,7 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 
 | Error                          | Description                                            |
 |--------------------------------|--------------------------------------------------------|
-| `NOT_ADMINISTRATOR`            | The sender is not the administrator                          |
+| `NOT_ADMIN`            | The sender is not the administrator                          |
 | `NOT_PENDING_ADMINISTRATOR`    | Authorized sender is not the current pending administrator   |
 | `NO_PENDING_ADMINISTRATOR_SET` | Throws when trying to authorize as the pending administrator whilst is not set for a contract |
 | `NOT_TOKEN_OWNER`              | Trying to configure operators for a different wallet which sender does not own                |
@@ -456,7 +456,7 @@ Parameter (in Michelson):
 ```
 
 - Produces the given amounts of tokens to the wallet associated with the given address.
-- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 
 ### **burn**
 
@@ -483,7 +483,7 @@ Parameter (in Michelson):
 ```
 
 - Reduce the given amounts of tokens to the wallet associated with the given address.
-- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 - Fails with `FA2_INSUFFICIENT_BALANCE` if the wallet associated with the given address
 does not have enough tokens to burn.
 
@@ -531,7 +531,7 @@ Parameter (in Michelson):
 ```
 
 - This entrypoint can be used by the administrator to transfer tokens owned (or operated) by this contract in another FA2 contract.
-- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 - If the outermost address passed to this entrypoint is a smart contract with FA2 `transfer` entrypoint, this entrypoint is called with supplied argument.
 That is, the list of operations returned from the baseDAO contract should contain one `TRANSFER_TOKENS` operation calling the `transfer` entrypoint.
 Otherwise the call fails.
@@ -556,7 +556,7 @@ address
 
 - Initiate transfer of the role of administrator to a new address.
 
-- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 
 - The current administrator retains his privileges up until
   `accept_ownership` is called.
@@ -654,7 +654,7 @@ nat
 - Update how long the voting period should last.
 - This affects all ongoing and new proposals.
 - Voting period value is measured in seconds.
-- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 - Fails with `OUT_OF_BOUND_VOTING_PERIOD` if the voting period value is out of the bound set by the configuration
 
 ### **set_quorum_threshold**
@@ -676,7 +676,7 @@ nat
 - Update the quorum threshold value which proposals have to met to not get rejected.
 - Quorum threshold value is calculated by adding the number of upvotes with downvotes.
 - This affects all ongoing and new proposals.
-- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 - Fails with `OUT_OF_BOUND_QUORUM_THRESHOLD` if the voting period value is out of the bound set by the configuration
 
 ### **vote**
@@ -778,7 +778,7 @@ address
   continue normal operations.
 - The address denotes the new DAO address.
 - Overwrites the new address from any previous `migrate` calls.
-- Fails with `NOT_ADMINISTRATOR` if the sender is not the administrator.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 
 ### **confirm_migration**
 
