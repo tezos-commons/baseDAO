@@ -9,20 +9,25 @@ env:
 
 steps:
   - label: hlint
+    if: &not_scheduled
+     build.source != "schedule"
     commands:
     - nix run -f ci.nix pkgs.hlint -c
         ./scripts/lint.sh
 
   - label: reuse lint
+    if: *not_scheduled
     commands:
     - nix run -f ci.nix pkgs.reuse -c
         reuse lint
 
   - label: check trailing whitespace
+    if: *not_scheduled
     commands:
     - .buildkite/check-trailing-whitespace.sh
 
   - label: xrefcheck
+    if: *not_scheduled
     commands:
     - nix run -f ci.nix xrefcheck -c xrefcheck
     retry:
@@ -30,10 +35,12 @@ steps:
         limit: 1
 
   - label: build
+    if: *not_scheduled
     commands:
     - nix-build ci.nix -A all-components
 
   - label: bats
+    if: *not_scheduled
     commands:
     - nix run -f ci.nix
           pkgs.bats
@@ -41,6 +48,7 @@ steps:
         -c bats ./scripts/test.bats
 
   - label: test
+    if: *not_scheduled
     commands:
     - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
     # Emulator + local chain for Delphi protocol
@@ -49,6 +57,7 @@ steps:
       -A localhost -P 8735
 
   - label: weeder
+    if: *not_scheduled
     commands:
     - nix-build ci.nix -A weeder-script
       # weeder needs .cabal file:
@@ -56,12 +65,29 @@ steps:
     - ./result
 
   - label: haddock
+    if: *not_scheduled
     commands:
     - nix-build ci.nix -A haddock --no-out-link
 
+  - label: scheduled delphinet test
+    if: build.source == "schedule"
+    # use another agent for long scheduled jobs
+    agents:
+      queue: "scheduled"
+    commands:
+    - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
+    # Emulator + testnet for Delphi protocol
+    - nix run -f ci.nix tezos-client -c
+      ./result/bin/baseDAO-test --nettest-run-network
+      -A delphi.testnet.tezos.serokell.team -P 8732
+    retry:
+      automatic:
+        limit: 1
+    timeout_in_minutes: 150
+
 # Autodoc
   - label: contract doc development
-    if: build.branch != "autodoc/master" && build.branch != "master"
+    if: build.branch != "autodoc/master" && build.branch != "master" && build.source != "schedule"
     commands:
     - nix-build ci.nix -A contracts-doc --arg release false
     - ln -s ./result/*.md .
@@ -70,7 +96,7 @@ steps:
       - GameDAO.md
 
   - label: contract doc release
-    if: build.branch == "master"
+    if: build.branch == "master" && build.source != "schedule"
     commands:
     - nix-build ci.nix -A contracts-doc --arg release true
         --argstr commitSha "$(git rev-parse HEAD)"
@@ -82,7 +108,7 @@ steps:
 
   - label: xrefcheck generated doc
     soft_fail: true  # TODO: remove
-    if: build.branch != "autodoc/master"
+    if: build.branch != "autodoc/master" && build.source != "schedule"
     commands:
     - mkdir tmp
     - if [ "$BUILDKITE_BRANCH" = "master" ];
@@ -95,7 +121,7 @@ steps:
         --mode local-only --root tmp
 
   - label: autodoc upload
-    if: build.branch == "master"
+    if: build.branch == "master" && build.source != "schedule"
     commands:
     - mkdir tmp
     - buildkite-agent artifact download "*.md" tmp/
