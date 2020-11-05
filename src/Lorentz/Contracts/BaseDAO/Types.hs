@@ -267,7 +267,7 @@ emptyStorage = Storage
   , sMigrationStatus = NotInMigration
   , sVotingPeriod = 60 * 60 * 24 * 7 -- 7 days
   , sQuorumThreshold = 4
-    -- ^ any proposals that have less that 4 votes will be rejected
+    -- ↑ any proposals that have less that 4 votes will be rejected
     -- regardless of upvotes
 
   , sProposals = BigMap $ Map.empty

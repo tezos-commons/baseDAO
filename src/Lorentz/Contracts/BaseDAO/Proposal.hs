@@ -269,7 +269,7 @@ submitVote = do
 
   constructT @(Proposal pm)
     ( fieldCtor $ do
-        -- | Update upvote
+        -- Update upvote
         duupX @2;
         stackType @(VoteParam : Proposal pm : VoteParam : store : s)
         toField #vVoteType;
@@ -286,7 +286,7 @@ submitVote = do
           stackType @(Proposal pm : VoteParam : store : s)
           getField #pUpvotes
     , fieldCtor $ do
-        -- | Update downvote
+        -- Update downvote
         duupX @2
         stackType @(VoteParam : Proposal pm : VoteParam : store : s)
         toField #vVoteType;
@@ -592,7 +592,7 @@ handleProposalIsOver config@Config{..} = do
   unpair; unpair
 
   if Holds then do
-    -- | start unfreezing process
+    -- start unfreezing process
     swap; dip swap
     stackType @(Proposal pm : store : ProposalKey : [Operation] : s)
 
@@ -616,13 +616,13 @@ handleProposalIsOver config@Config{..} = do
         iter cons
         swap; dip swap
       else do
-        -- | Reject proposal if (upvote <= downvote)
+        -- Reject proposal if (upvote <= downvote)
         unfreezeProposerToken config False
         unfreezeVoterToken
         drop
 
     else do
-      -- | Reject proposal regardless of upvotes
+      -- Reject proposal regardless of upvotes
       unfreezeProposerToken config False
       unfreezeVoterToken
       drop
@@ -633,7 +633,7 @@ handleProposalIsOver config@Config{..} = do
     stDelete #sProposals
 
   else do
-    -- | Add the proposalId back to #sProposalKeyListSortByDate
+    -- Add the proposalId back to #sProposalKeyListSortByDate
     -- since we initially set this to []
     dip drop
 
