@@ -431,8 +431,8 @@ setQuorumThreshold Config{..} = do
 
 checkIfProposalIsOver
   :: forall store pm. (NiceParameter pm, StorageC store pm)
-  => Config pm -> '[ProposalKey, store] :-> '[((Bool, ProposalKey), Proposal pm), store]
-checkIfProposalIsOver config = do
+  => '[ProposalKey, store] :-> '[((Bool, ProposalKey), Proposal pm), store]
+checkIfProposalIsOver = do
   dupTop2
 
   checkIfProposalExist
@@ -448,21 +448,14 @@ checkIfProposalIsOver config = do
   toNamed #expectedEndDate
   now; toNamed #currentDate
 
-  cond
+  if #currentDate >=. #expectedEndDate then
+    push True
+  else
+    push False
 
   dip $ dip swap
 
   pair; pair
-
-  where
-    cond = case (cForceVotingPeriod config) of
-      True -> do drop; drop; push True
-      False -> do
-          if #currentDate >=. #expectedEndDate then
-            push True
-          else
-            push False
-
 
 -- Used in "flush". When unfreezing the tokens of voters/proposers
 -- It is possible that the currentBalance is less than the frozenValue due to
@@ -660,7 +653,7 @@ flush config = do
   stToField #sProposalKeyListSortByDate
   stackType @[[ProposalKey], store]
 
-  map (checkIfProposalIsOver config)
+  map checkIfProposalIsOver
 
   stackType @[[((Bool, ProposalKey), Proposal pm)], store]
 

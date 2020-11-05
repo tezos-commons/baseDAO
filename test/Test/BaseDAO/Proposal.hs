@@ -13,6 +13,7 @@ import Morley.Nettest
 import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
 import Tezos.Crypto (blake2b)
+import Time (sec)
 
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Test.BaseDAO.ProposalConfig
@@ -39,20 +40,18 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
           voteMultiProposals
       , nettestScenario "cannot vote if the vote amounts exceeds token balance"
           insufficientTokenVote
-      -- TODO [#30]: Can be tested until delay time is implemented for nettest
-      -- , nettestScenario "cannot vote on outdated proposal" $
-      --     nettestTestExpectation
+      , nettestScenario "cannot vote on outdated proposal" $
+          voteOutdatedProposal
       ]
   , testGroup "Admin:"
       [ nettestScenario "can set voting period" setVotingPeriod
       , nettestScenario "can set quorum threshold" setQuorumThreshold
-      -- TODO [#30]: make sure these tests pass not only in emulator
-      , nettestScenarioOnEmulator "can flush proposals that got accepted" $
-          \_emulated -> flushAcceptedProposals
-      , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
-          \_emulated -> flushRejectProposalQuorum
-      , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
-          \_emulated -> flushRejectProposalNegativeVotes
+      , nettestScenario "can flush proposals that got accepted" $
+          flushAcceptedProposals
+      , nettestScenario "can flush proposals that got rejected due to not meeting quorum_threshold" $
+          flushRejectProposalQuorum
+      , nettestScenario "can flush proposals that got rejected due to negative votes" $
+          flushRejectProposalNegativeVotes
       , nettestScenario "flush should not affecting ongoing proposals"
           flushNotAffectOngoingProposals
       , nettestScenario "flush with bad 'cRejectedProposalReturnValue'"
@@ -125,7 +124,7 @@ voteValidProposal = uncapsNettest $ do
   let params = DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 2
-        , vProposalKey = (key1 :: ByteString)
+        , vProposalKey = key1
         }
 
   callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
@@ -159,12 +158,12 @@ voteMultiProposals = uncapsNettest $ do
         [ DAO.VoteParam
             { vVoteType = True
             , vVoteAmount = 2
-            , vProposalKey = (key1 :: ByteString)
+            , vProposalKey = key1
             }
         , DAO.VoteParam
             { vVoteType = False
             , vVoteAmount = 3
-            , vProposalKey = (key2 :: ByteString)
+            , vProposalKey = key2
             }
         ]
 
@@ -183,17 +182,38 @@ insufficientTokenVote = uncapsNettest $ do
         [ DAO.VoteParam
             { vVoteType = True
             , vVoteAmount = 51
-            , vProposalKey = (key1 :: ByteString)
+            , vProposalKey = key1
             }
         , DAO.VoteParam
             { vVoteType = False
             , vVoteAmount = 50
-            , vProposalKey = (key1 :: ByteString)
+            , vProposalKey = key1
             }
         ]
 
   callFrom (AddressResolved owner2) dao (Call @"Vote") params
     & expectCustomError_ #vOTING_INSUFFICIENT_BALANCE
+
+voteOutdatedProposal :: (Monad m) => NettestImpl m -> m ()
+voteOutdatedProposal = uncapsNettest $ do
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig config
+
+  -- | Create sample proposal
+  key1 <- createSampleProposal 1 owner1 dao
+
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
+
+  let params = DAO.VoteParam
+        { vVoteType = True
+        , vVoteAmount = 2
+        , vProposalKey = key1
+        }
+
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
+  advanceTime (sec 25)
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
+    & expectCustomError_ #vOTING_PERIOD_OVER
+
 
 setVotingPeriod :: (Monad m) => NettestImpl m -> m ()
 setVotingPeriod = uncapsNettest $ do
@@ -225,52 +245,55 @@ proposalMetadata = uncapsNettest $ do
 
   key1 <- createSampleProposal 1 owner1 dao
 
-  checkIfAProposalExist (key1 :: ByteString) dao
+  checkIfAProposalExist key1 dao
 
 flushNotAffectOngoingProposals :: (Monad m) => NettestImpl m -> m ()
 flushNotAffectOngoingProposals = uncapsNettest $ do
   ((owner1, _), _, dao, admin) <- originateBaseDaoWithConfig config
 
+  -- Note: Cannot set to few seconds, since in real network, each
+  -- calls takes some times to run. 20 seconds seem to be the ideal.
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") (2 * 60)
+
+  advanceTime (sec 3)
   callFrom (AddressResolved owner1) dao (Call @"Flush") ()
     & expectCustomError_ #nOT_ADMINISTRATOR
 
   key1 <- createSampleProposal 1 owner1 dao
   key2 <- createSampleProposal 2 owner1 dao
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
-  checkIfAProposalExist (key1 :: ByteString) dao
-  checkIfAProposalExist (key2 :: ByteString) dao
+  checkIfAProposalExist key1 dao
+  checkIfAProposalExist key2 dao
 
 flushAcceptedProposals :: (Monad m) => NettestImpl m -> m ()
 flushAcceptedProposals = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig (config {DAO.cForceVotingPeriod = True})
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig config
 
   -- | Accepted Proposals
   key1 <- createSampleProposal 1 owner1 dao
   checkTokenBalance (DAO.frozenTokenId) dao owner1 10
 
-  -- TODO [#30]: Currently this is useless since we force voting period by config
-  -- This is due to Nettest not supporting time delay yet, so we cannot `wait`
-  -- until the voting period is over.
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 1
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
 
   let upvote = DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 2
-        , vProposalKey = (key1 :: ByteString)
+        , vProposalKey = key1
         }
       downvote = DAO.VoteParam
         { vVoteType = False
         , vVoteAmount = 1
-        , vProposalKey = (key1 :: ByteString)
+        , vProposalKey = key1
         }
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote, downvote]
   checkTokenBalance (DAO.frozenTokenId) dao owner2 3
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 97
 
+  advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
-  checkIfAProposalExist (key1 :: ByteString) dao
+  checkIfAProposalExist key1 dao
     & expectCustomError_ #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
@@ -282,32 +305,33 @@ flushAcceptedProposals = uncapsNettest $ do
 flushRejectProposalQuorum :: (Monad m) => NettestImpl m -> m ()
 flushRejectProposalQuorum =
   uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig (config {DAO.cForceVotingPeriod = True})
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig config
 
   -- | Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao
   checkTokenBalance (DAO.frozenTokenId) dao owner1 10
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 1
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 3
 
   let votes =
         [ DAO.VoteParam
           { vVoteType = True
           , vVoteAmount = 1
-          , vProposalKey = (key1 :: ByteString)
+          , vProposalKey = key1
           }
         , DAO.VoteParam
           { vVoteType = True
           , vVoteAmount = 1
-          , vProposalKey = (key1 :: ByteString)
+          , vProposalKey = key1
           }
         ]
   callFrom (AddressResolved owner2) dao (Call @"Vote") votes
 
+  advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
-  checkIfAProposalExist (key1 :: ByteString) dao
+  checkIfAProposalExist key1 dao
     & expectCustomError_ #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
@@ -317,37 +341,38 @@ flushRejectProposalQuorum =
 
 flushRejectProposalNegativeVotes :: (Monad m) => NettestImpl m -> m ()
 flushRejectProposalNegativeVotes = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig (config {DAO.cForceVotingPeriod = True})
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig config
 
   -- | Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao
   checkTokenBalance (DAO.frozenTokenId) dao owner1 10
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 1
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 3
 
   let votes =
         [ DAO.VoteParam
           { vVoteType = True
           , vVoteAmount = 1
-          , vProposalKey = (key1 :: ByteString)
+          , vProposalKey = key1
           }
         , DAO.VoteParam
           { vVoteType = False
           , vVoteAmount = 1
-          , vProposalKey = (key1 :: ByteString)
+          , vProposalKey = key1
           }
         , DAO.VoteParam
           { vVoteType = False
           , vVoteAmount = 1
-          , vProposalKey = (key1 :: ByteString)
+          , vProposalKey = key1
           }
         ]
   callFrom (AddressResolved owner2) dao (Call @"Vote") votes
 
+  advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
-  checkIfAProposalExist (key1 :: ByteString) dao
+  checkIfAProposalExist key1 dao
     & expectCustomError_ #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
@@ -357,23 +382,24 @@ flushRejectProposalNegativeVotes = uncapsNettest $ do
 
 flushWithBadConfig :: (Monad m) => NettestImpl m -> m ()
 flushWithBadConfig = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig
-                                              (badRejectedValueConfig {DAO.cForceVotingPeriod = True})
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig badRejectedValueConfig
 
   key1 <- createSampleProposal 1 owner1 dao
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 90
 
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 2
   let upvote = DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 1
-        , vProposalKey = (key1 :: ByteString)
+        , vProposalKey = key1
         }
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
 
+  advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
-  checkIfAProposalExist (key1 :: ByteString) dao
+  checkIfAProposalExist key1 dao
     & expectCustomError_ #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
@@ -383,19 +409,20 @@ flushWithBadConfig = uncapsNettest $ do
 
 flushDecisionLambda :: (Monad m) => NettestImpl m -> m ()
 flushDecisionLambda = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig
-                                              (decisionLambdaConfig {DAO.cForceVotingPeriod = True})
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig decisionLambdaConfig
 
   key1 <- createSampleProposal 1 owner1 dao
 
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
   let upvote = DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 1
-        , vProposalKey = (key1 :: ByteString)
+        , vProposalKey = key1
         }
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
 
+  advanceTime (sec 20)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
   -- | Credit the proposer 10 tokens when the proposal is accepted
@@ -423,12 +450,12 @@ votesBoundedValue = uncapsNettest $ do
   let upvote = DAO.VoteParam
         { vVoteType = False
         , vVoteAmount = 1
-        , vProposalKey = (key1 :: ByteString)
+        , vProposalKey = key1
         }
       downvote= DAO.VoteParam
         { vVoteType = False
         , vVoteAmount = 1
-        , vProposalKey = (key1 :: ByteString)
+        , vProposalKey = key1
         }
 
   callFrom (AddressResolved owner1) dao (Call @"Vote") [downvote]
@@ -464,11 +491,6 @@ votingPeriodBound = uncapsNettest $ do
 -------------------------------------------------------------------------------
 -- Helper
 -------------------------------------------------------------------------------
-
--- TODO [#30]: see this MR: https://gitlab.com/morley-framework/morley/-/issues/351
--- delayInSeconds :: MonadNettest caps base m => Natural -> m ()
--- delayInSeconds _ = do
---   pure ()
 
 createSampleProposal
   :: MonadNettest caps base m
