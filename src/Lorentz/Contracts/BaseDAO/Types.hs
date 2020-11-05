@@ -32,18 +32,30 @@ module Lorentz.Contracts.BaseDAO.Types
   , emptyStorage
   , mkStorage
 
+  , CachedFunc (..)
+  , mkCachedFunc
+  , pushCachedFunc
+  , callCachedFunc
+  , HasFuncContext
+
+  , Entrypoint'
+
   , unfrozenTokenId
   , frozenTokenId
   ) where
 
-import Universum hiding ((>>), drop)
+import Universum hiding (drop, (>>))
 
+import qualified Data.Kind as Kind
 import qualified Data.Map.Internal as Map
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Zip
 import Michelson.Runtime.GState (genesisAddress)
-import qualified Data.Kind as Kind
 import Util.Markdown
+import Util.Named
+import Util.Type
+import Util.TypeLits
 
 ------------------------------------------------------------------------
 -- Configuration
@@ -70,8 +82,9 @@ data Config proposalMetadata = Config
   -- For example, if Alice freezes 100 tokens to vote and this lambda divides the value by 2,
   -- only 50 tokens will be unfrozen and other 50 tokens will be burnt.
 
-  , cDecisionLambda :: forall s store. StorageC store proposalMetadata =>
-      (Proposal proposalMetadata) : store : s
+  , cDecisionLambda :: forall s store.
+     (StorageC store proposalMetadata, HasFuncContext s store)
+    => (Proposal proposalMetadata) : store : s
     :-> (List Operation, store) : s
   -- ^ The decision lambda is executed based on a successful proposal.
 
@@ -155,17 +168,17 @@ instance TypeHasDoc MigrationStatus where
 
 -- | Storage of the FA2 contract
 data Storage (proposalMetadata :: Kind.Type) = Storage
-  { sLedger       :: Ledger
-  , sOperators    :: Operators
-  , sTokenAddress :: Address
-  , sAdmin        :: Address
-  , sPendingOwner :: Maybe Address
-  , sMigrationStatus :: MigrationStatus
+  { sLedger                    :: Ledger
+  , sOperators                 :: Operators
+  , sTokenAddress              :: Address
+  , sAdmin                     :: Address
+  , sPendingOwner              :: Maybe Address
+  , sMigrationStatus           :: MigrationStatus
 
-  , sVotingPeriod :: VotingPeriod
-  , sQuorumThreshold :: QuorumThreshold
+  , sVotingPeriod              :: VotingPeriod
+  , sQuorumThreshold           :: QuorumThreshold
 
-  , sProposals :: BigMap ProposalKey (Proposal proposalMetadata)
+  , sProposals                 :: BigMap ProposalKey (Proposal proposalMetadata)
   , sProposalKeyListSortByDate :: [ProposalKey] -- Newest first
   }
   deriving stock (Generic, Show)
@@ -281,6 +294,71 @@ mkStorage admin balances operators = Storage
   }
 
 ------------------------------------------------------------------------
+-- Optimizations
+------------------------------------------------------------------------
+
+-- | Wrapper over code designating that it should not be used directly,
+-- rather picked stack where it has been put previously.
+-- This makes sense, since typechecking code is in all senses much more
+-- expensive than executing it.
+--
+-- We also attach a name to the function, so that we don't not need
+-- to remember the names.
+data CachedFunc n i o =
+  (Each [KnownList, ZipInstr] [i, o]) =>
+  CachedFunc (Label n) (i :-> o)
+
+-- | Construct a 'CachedFunc' object.
+mkCachedFunc
+  :: (KnownSymbol n, Each [KnownList, ZipInstr] [i, o])
+  => i :-> o -> CachedFunc n i o
+mkCachedFunc = CachedFunc fromLabel
+
+-- | Push 'CachedFunc' on stack so that it is later accessible by
+-- 'callCachedFunc'.
+pushCachedFunc
+  :: (NiceConstant (i :-> o))
+  => CachedFunc n i o
+  -> s :-> n :! (i :-> o) : s
+pushCachedFunc (CachedFunc Label f) = push (fromLabel .! f)
+
+-- | Call a function that previously was pushed on stack.
+--
+-- This is semantically equivalent to injecting the code of the
+-- given cached function, but requires much less instructions.
+--
+-- You have to provide the original 'CachedFunc' object here,
+-- this is necessary to inherit the documentation of the function.
+callCachedFunc
+  :: forall i o n s.
+     (HasNamedVar (i ++ s) n (i :-> o))
+  => CachedFunc n i o
+  -> (i ++ s) :-> (o ++ s)
+callCachedFunc (CachedFunc l f :: CachedFunc n i o) = do
+  cutLorentzNonDoc f
+  dupL l
+  execute @i @o @s
+
+-- | Indicates that we keep some functions on stack in order to include
+-- them only once in the contract.
+type HasFuncContext s store =
+  ( IsoValue store
+  , VarIsUnnamed store
+  , HasNamedVars s
+    [ "creditTo"
+        := '[store, Address, (FA2.TokenId, Natural)] :-> '[store]
+    , "debitFrom"
+        := '[store, Address, (FA2.TokenId, Natural)] :-> '[store]
+    ]
+  )
+
+------------------------------------------------------------------------
+-- Misc
+------------------------------------------------------------------------
+
+type Entrypoint' cp st s = (cp : st : s) :-> (([Operation], st) : s)
+
+------------------------------------------------------------------------
 -- Proposal
 ------------------------------------------------------------------------
 
@@ -290,16 +368,16 @@ type ProposalKey = ByteString
 -- `pVoters` is needed due to we need to keep track of voters to be able to
 -- unfreeze their tokens.
 data Proposal proposalMetadata = Proposal
-  { pUpvotes :: Natural
-  , pDownvotes :: Natural
-  , pStartDate :: Timestamp
+  { pUpvotes             :: Natural
+  , pDownvotes           :: Natural
+  , pStartDate           :: Timestamp
 
-  , pMetadata :: proposalMetadata
+  , pMetadata            :: proposalMetadata
 
-  , pProposer :: Address
+  , pProposer            :: Address
   , pProposerFrozenToken :: Natural
 
-  , pVoters :: [(Address, Natural)]
+  , pVoters              :: [(Address, Natural)]
   }
   deriving stock (Generic, Show)
   deriving anyclass IsoValue
@@ -319,7 +397,7 @@ instance HasAnnotation pm => HasAnnotation (Proposal pm) where
 ------------------------------------------------------------------------
 
 data ProposeParams proposalMetadata = ProposeParams
-  { ppFrozenToken :: Natural
+  { ppFrozenToken      :: Natural
   --  ^ Determines how many sender's tokens will be frozen to get
   -- the proposal accepted
   , ppProposalMetadata :: proposalMetadata
@@ -344,8 +422,8 @@ type VoteType = Bool
 
 data VoteParam = VoteParam
   { vProposalKey :: ProposalKey
-  , vVoteType :: VoteType
-  , vVoteAmount :: Natural
+  , vVoteType    :: VoteType
+  , vVoteAmount  :: Natural
   }
   deriving stock (Generic, Show)
   deriving anyclass IsoValue
@@ -361,9 +439,9 @@ instance HasAnnotation VoteParam where
 ------------------------------------------------------------------------
 
 data BurnParam = BurnParam
-  { bFrom_ :: Address
+  { bFrom_   :: Address
   , bTokenId :: FA2.TokenId
-  , bAmount :: Natural
+  , bAmount  :: Natural
   }
   deriving stock (Generic, Show)
   deriving anyclass IsoValue
@@ -375,9 +453,9 @@ instance HasAnnotation BurnParam where
   annOptions = baseDaoAnnOptions
 
 data MintParam = MintParam
-  { mTo_ :: Address
+  { mTo_     :: Address
   , mTokenId :: FA2.TokenId
-  , mAmount :: Natural
+  , mAmount  :: Natural
   }
   deriving stock (Generic, Show)
   deriving anyclass IsoValue
@@ -390,7 +468,7 @@ instance HasAnnotation MintParam where
 
 data TransferContractTokensParam = TransferContractTokensParam
   { tcContractAddress :: Address
-  , tcParams :: FA2.TransferParams
+  , tcParams          :: FA2.TransferParams
   }
   deriving stock (Generic, Show)
   deriving anyclass IsoValue

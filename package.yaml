@@ -33,6 +33,7 @@ default-extensions:
   - DerivingStrategies
   - DerivingVia
   - EmptyCase
+  - ExistentialQuantification
   - FlexibleContexts
   - FlexibleInstances
   - GADTs
