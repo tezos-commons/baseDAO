@@ -46,7 +46,7 @@ steps:
     # Emulator + local chain for Delphi protocol
     - nix run -f ci.nix tezos-client -c
       ./result/bin/baseDAO-test --nettest-run-network
-      -A localhost -P 8734
+      -A localhost -P 8735
 
   - label: weeder
     commands:

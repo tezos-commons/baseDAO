@@ -18,6 +18,10 @@ module Lorentz.Contracts.BaseDAO.Types
   , VoteParam (..)
   , VoteType
   , QuorumThreshold
+  , BurnParam (..)
+  , MintParam (..)
+  , TransferContractTokensParam (..)
+  , TokenAddressParam
 
   , Storage (..)
   , StorageC
@@ -121,7 +125,7 @@ defaultConfig = Config
 -- Operators
 ------------------------------------------------------------------------
 
-type Operators = BigMap (Address, Address) ()
+type Operators = BigMap ("owner" :! Address, "operator" :! Address) ()
 
 ------------------------------------------------------------------------
 -- Ledger
@@ -178,7 +182,7 @@ instance IsoValue pm =>
   storeSubmapOps = storeSubmapOpsDeeper #sLedger
 
 instance IsoValue pm =>
-    StoreHasSubmap (Storage pm) "sOperators" (Address, Address) () where
+    StoreHasSubmap (Storage pm) "sOperators" ("owner" :! Address, "operator" :! Address) () where
   storeSubmapOps = storeSubmapOpsDeeper #sOperators
 
 instance IsoValue pm =>
@@ -188,7 +192,7 @@ instance IsoValue pm =>
 type StorageC store pm =
   ( StorageContains store
     [ "sLedger" := LedgerKey ~> LedgerValue
-    , "sOperators" := (Address, Address) ~> ()
+    , "sOperators" := ("owner" :! Address, "operator" :! Address) ~> ()
     , "sTokenAddress" := Address
     , "sAdmin" := Address
     , "sPendingOwner" := Maybe Address
@@ -211,12 +215,15 @@ data Parameter proposalMetadata
   | Migrate MigrateParam
   | Confirm_migration ()
   | Propose (ProposeParams proposalMetadata)
-  | Proposal_metadata (View ProposalKey (Proposal proposalMetadata))
   | Vote [VoteParam]
   -- Admin
   | Set_voting_period VotingPeriod
   | Set_quorum_threshold QuorumThreshold
   | Flush ()
+  | Burn BurnParam
+  | Mint MintParam
+  | Transfer_contract_tokens TransferContractTokensParam
+  | Token_address TokenAddressParam
   deriving stock (Generic, Show)
 
 instance (HasAnnotation pm, NiceParameter pm) => ParameterHasEntrypoints (Parameter pm) where
@@ -295,7 +302,7 @@ data Proposal proposalMetadata = Proposal
   , pVoters :: [(Address, Natural)]
   }
   deriving stock (Generic, Show)
-  deriving anyclass (IsoValue, HasAnnotation)
+  deriving anyclass IsoValue
 
 instance (TypeHasDoc pm, IsoValue pm) => TypeHasDoc (Proposal pm) where
   typeDocMdDescription =
@@ -303,6 +310,9 @@ instance (TypeHasDoc pm, IsoValue pm) => TypeHasDoc (Proposal pm) where
   typeDocMdReference = poly1TypeDocMdReference
   typeDocHaskellRep = concreteTypeDocHaskellRep @(Proposal ())
   typeDocMichelsonRep = concreteTypeDocMichelsonRep @(Proposal ())
+
+instance HasAnnotation pm => HasAnnotation (Proposal pm) where
+  annOptions = baseDaoAnnOptions
 
 ------------------------------------------------------------------------
 -- Propose
@@ -315,7 +325,7 @@ data ProposeParams proposalMetadata = ProposeParams
   , ppProposalMetadata :: proposalMetadata
   }
   deriving stock (Generic, Show)
-  deriving anyclass (IsoValue, HasAnnotation)
+  deriving anyclass IsoValue
 
 instance (TypeHasDoc pm, IsoValue pm) => TypeHasDoc (ProposeParams pm) where
   typeDocMdDescription =
@@ -323,6 +333,9 @@ instance (TypeHasDoc pm, IsoValue pm) => TypeHasDoc (ProposeParams pm) where
   typeDocMdReference = poly1TypeDocMdReference
   typeDocHaskellRep = concreteTypeDocHaskellRep @(ProposeParams ())
   typeDocMichelsonRep = concreteTypeDocMichelsonRep @(ProposeParams ())
+
+instance HasAnnotation pm => HasAnnotation (ProposeParams pm) where
+  annOptions = baseDaoAnnOptions
 
 ------------------------------------------------------------------------
 -- Propose
@@ -335,10 +348,60 @@ data VoteParam = VoteParam
   , vVoteAmount :: Natural
   }
   deriving stock (Generic, Show)
-  deriving anyclass (IsoValue, HasAnnotation)
+  deriving anyclass IsoValue
 
 instance TypeHasDoc VoteParam where
   typeDocMdDescription = "Describes target proposal id, vote type and vote amount"
+
+instance HasAnnotation VoteParam where
+  annOptions = baseDaoAnnOptions
+
+------------------------------------------------------------------------
+-- Non FA2
+------------------------------------------------------------------------
+
+data BurnParam = BurnParam
+  { bFrom_ :: Address
+  , bTokenId :: FA2.TokenId
+  , bAmount :: Natural
+  }
+  deriving stock (Generic, Show)
+  deriving anyclass IsoValue
+
+instance TypeHasDoc BurnParam where
+  typeDocMdDescription = "Describes whose account, which token id and in what amount to burn"
+
+instance HasAnnotation BurnParam where
+  annOptions = baseDaoAnnOptions
+
+data MintParam = MintParam
+  { mTo_ :: Address
+  , mTokenId :: FA2.TokenId
+  , mAmount :: Natural
+  }
+  deriving stock (Generic, Show)
+  deriving anyclass IsoValue
+
+instance TypeHasDoc MintParam where
+  typeDocMdDescription = "Describes whose account, which token id and in what amount to mint"
+
+instance HasAnnotation MintParam where
+  annOptions = baseDaoAnnOptions
+
+data TransferContractTokensParam = TransferContractTokensParam
+  { tcContractAddress :: Address
+  , tcParams :: FA2.TransferParams
+  }
+  deriving stock (Generic, Show)
+  deriving anyclass IsoValue
+
+instance TypeHasDoc TransferContractTokensParam where
+  typeDocMdDescription = "TODO"
+
+instance HasAnnotation TransferContractTokensParam where
+  annOptions = baseDaoAnnOptions
+
+type TokenAddressParam = ContractRef Address
 
 ------------------------------------------------------------------------
 -- Tokens
@@ -349,6 +412,13 @@ unfrozenTokenId = 0
 
 frozenTokenId :: FA2.TokenId
 frozenTokenId = 1
+
+------------------------------------------------------------------------
+-- Helper
+------------------------------------------------------------------------
+
+baseDaoAnnOptions :: AnnOptions
+baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnake }
 
 ------------------------------------------------------------------------
 -- Error
@@ -381,9 +451,9 @@ instance CustomErrorHasDoc "nOT_PENDING_ADMINISTRATOR" where
   customErrDocMdCause =
     "Received an `accept_ownership` from an address other than what is in the pending owner field"
 
-type instance ErrorArg "nOT_ADMINISTRATOR" = ()
+type instance ErrorArg "nOT_ADMIN" = ()
 
-instance CustomErrorHasDoc "nOT_ADMINISTRATOR" where
+instance CustomErrorHasDoc "nOT_ADMIN" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Received an operation that require administrative privileges\
@@ -486,3 +556,9 @@ type instance ErrorArg "pROPOSAL_NOT_UNIQUE" = ()
 instance CustomErrorHasDoc "pROPOSAL_NOT_UNIQUE" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to propose a proposal that is already existed in the Storage."
+
+type instance ErrorArg "fAIL_TRANSFER_CONTRACT_TOKENS" = ()
+
+instance CustomErrorHasDoc "fAIL_TRANSFER_CONTRACT_TOKENS" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause = "Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract."

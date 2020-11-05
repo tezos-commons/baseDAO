@@ -4,7 +4,6 @@
 -- | Proposal related entrypoints
 module Lorentz.Contracts.BaseDAO.Proposal
   ( propose
-  , proposalMetadata
   , vote
   , setVotingPeriod
   , setQuorumThreshold
@@ -12,8 +11,8 @@ module Lorentz.Contracts.BaseDAO.Proposal
   ) where
 
 import Lorentz
-import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin)
-import Lorentz.Contracts.BaseDAO.FA2 (debitFrom, creditTo)
+import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
+import Lorentz.Contracts.BaseDAO.Token.FA2 (debitFrom, creditTo)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface (TokenId)
 
@@ -343,6 +342,7 @@ vote
   :: forall store pm. (StorageC store pm, NiceParameter pm)
   => Config pm -> Entrypoint [VoteParam] store
 vote config = do
+  dip ensureNotMigrated
   iter $ do
     dupTop2
     stackType @[VoteParam, store, VoteParam, store]
@@ -370,17 +370,6 @@ vote config = do
   nil; pair
 
 ------------------------------------------------------------------------
--- ProposalMetadata
-------------------------------------------------------------------------
-
-proposalMetadata
-  :: forall store pm. (StorageC store pm, NiceParameter pm)
-  => Entrypoint (View ProposalKey (Proposal pm)) store
-proposalMetadata =
-  view_ $ do
-    checkIfProposalExist
-
-------------------------------------------------------------------------
 -- Admin Entrypoints (set votingPeriod, quorum, flush)
 ------------------------------------------------------------------------
 
@@ -389,7 +378,9 @@ setVotingPeriod
   :: forall store pm. (StorageC store pm)
   => Config pm -> Entrypoint VotingPeriod store
 setVotingPeriod Config{..}= do
-  dip authorizeAdmin
+  dip $ do
+    ensureNotMigrated
+    authorizeAdmin
 
   toNamed #newValue
   dup
@@ -412,7 +403,9 @@ setQuorumThreshold
   :: forall store pm. (StorageC store pm)
   => Config pm -> Entrypoint QuorumThreshold store
 setQuorumThreshold Config{..} = do
-  dip authorizeAdmin
+  dip $ do
+    ensureNotMigrated
+    authorizeAdmin
 
   toNamed #newValue
   dup
@@ -647,7 +640,9 @@ flush
   :: forall store pm. (NiceParameter pm, StorageC store pm)
   => Config pm -> Entrypoint () store
 flush config = do
-  dip authorizeAdmin
+  dip $ do
+    ensureNotMigrated
+    authorizeAdmin
   drop
   dup
   stToField #sProposalKeyListSortByDate

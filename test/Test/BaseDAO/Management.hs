@@ -198,7 +198,7 @@ test_BaseDAO_Management =
 expectNotAdmin
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotAdmin = expectCustomError_ #nOT_ADMINISTRATOR
+expectNotAdmin = expectCustomError_ #nOT_ADMIN
 
 expectNotPendingOwner
   :: (MonadNettest caps base m)

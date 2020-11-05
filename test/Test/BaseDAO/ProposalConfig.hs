@@ -6,6 +6,7 @@
 
 module Test.BaseDAO.ProposalConfig
   ( config
+  , configWithRejectedProposal
   , badRejectedValueConfig
   , decisionLambdaConfig
   ) where
@@ -13,7 +14,7 @@ module Test.BaseDAO.ProposalConfig
 import Lorentz
 
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
-import Lorentz.Contracts.BaseDAO.FA2 (creditTo)
+import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 config :: forall pm. (IsoValue pm) => DAO.Config pm
@@ -28,7 +29,11 @@ config = DAO.defaultConfig
         push True
       else
         push False
-  , DAO.cRejectedProposalReturnValue = do
+  }
+
+configWithRejectedProposal :: forall pm. (IsoValue pm) => DAO.Config pm
+configWithRejectedProposal = DAO.defaultConfig
+  { DAO.cRejectedProposalReturnValue = do
       -- ^ divide frozen value by half
       toField #pProposerFrozenToken
       push (2 :: Natural)
