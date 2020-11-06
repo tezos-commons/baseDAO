@@ -41,6 +41,8 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , unfrozenTokenId
   , frozenTokenId
+
+  , baseDaoAnnOptions
   ) where
 
 import Universum hiding (drop, (>>))
