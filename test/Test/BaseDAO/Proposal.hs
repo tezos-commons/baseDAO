@@ -45,16 +45,18 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
   , testGroup "Admin:"
       [ nettestScenario "can set voting period" setVotingPeriod
       , nettestScenario "can set quorum threshold" setQuorumThreshold
-      , nettestScenario "can flush proposals that got accepted" $
-          flushAcceptedProposals
-      , nettestScenario "can flush proposals that got rejected due to not meeting quorum_threshold" $
-          flushRejectProposalQuorum
-      , nettestScenario "can flush proposals that got rejected due to negative votes" $
-          flushRejectProposalNegativeVotes
+
+      -- TODO [#47]: Disable running in real network due to time-sensitive operations
+      , nettestScenarioOnEmulator "can flush proposals that got accepted" $
+          \_emulated -> flushAcceptedProposals
+      , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
+          \_emulated -> flushRejectProposalQuorum
+      , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
+          \_emulated -> flushRejectProposalNegativeVotes
       , nettestScenario "flush should not affecting ongoing proposals"
           flushNotAffectOngoingProposals
-      , nettestScenario "flush with bad 'cRejectedProposalReturnValue'"
-          flushWithBadConfig
+      , nettestScenarioOnEmulator "flush with bad 'cRejectedProposalReturnValue'" $
+          \_emulated -> flushWithBadConfig
       -- TODO [#15]: admin burn proposer token and test "flush"
 
       -- TODO [#38]: Improve this when contract size is smaller
@@ -262,12 +264,13 @@ flushAcceptedProposals :: (Monad m) => NettestImpl m -> m ()
 flushAcceptedProposals = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig config
 
+  -- Use 60s for voting period, since in real network by the time we call
+  -- vote entrypoint 30s is already passed.
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
+  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
+
   -- | Accepted Proposals
   key1 <- createSampleProposal 1 owner1 dao
-  checkTokenBalance (DAO.frozenTokenId) dao owner1 10
-
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
 
   let upvote = DAO.VoteParam
         { vVoteType = True
@@ -280,10 +283,13 @@ flushAcceptedProposals = uncapsNettest $ do
         , vProposalKey = key1
         }
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote, downvote]
+
+  -- | Checking balance of proposer and voters
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 10
   checkTokenBalance (DAO.frozenTokenId) dao owner2 3
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 97
 
-  advanceTime (sec 20)
+  advanceTime (sec 61)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
   -- TODO: [#31]
@@ -302,12 +308,11 @@ flushRejectProposalQuorum =
   ((owner1, _), (owner2, _), dao, admin)
     <- originateBaseDaoWithConfig configWithRejectedProposal
 
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
+  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 3
+
   -- | Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao
-  checkTokenBalance (DAO.frozenTokenId) dao owner1 10
-
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 3
 
   let votes =
         [ DAO.VoteParam
@@ -323,7 +328,7 @@ flushRejectProposalQuorum =
         ]
   callFrom (AddressResolved owner2) dao (Call @"Vote") votes
 
-  advanceTime (sec 20)
+  advanceTime (sec 61)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
   -- TODO: [#31]
@@ -340,12 +345,11 @@ flushRejectProposalNegativeVotes = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin)
     <- originateBaseDaoWithConfig configWithRejectedProposal
 
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
+  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 3
+
   -- | Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao
-  checkTokenBalance (DAO.frozenTokenId) dao owner1 10
-
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 3
 
   let votes =
         [ DAO.VoteParam
@@ -366,7 +370,10 @@ flushRejectProposalNegativeVotes = uncapsNettest $ do
         ]
   callFrom (AddressResolved owner2) dao (Call @"Vote") votes
 
-  advanceTime (sec 20)
+  -- Check proposer balance
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 10
+
+  advanceTime (sec 61)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
   -- TODO: [#31]
@@ -382,11 +389,11 @@ flushWithBadConfig :: (Monad m) => NettestImpl m -> m ()
 flushWithBadConfig = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig badRejectedValueConfig
 
-  key1 <- createSampleProposal 1 owner1 dao
-  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 90
-
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 2
+
+  key1 <- createSampleProposal 1 owner1 dao
+
   let upvote = DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 1
@@ -394,7 +401,8 @@ flushWithBadConfig = uncapsNettest $ do
         }
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
 
-  advanceTime (sec 20)
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 90
+  advanceTime (sec 61)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
   -- TODO: [#31]
@@ -410,10 +418,11 @@ flushDecisionLambda :: (Monad m) => NettestImpl m -> m ()
 flushDecisionLambda = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig decisionLambdaConfig
 
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
+  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
+
   key1 <- createSampleProposal 1 owner1 dao
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
   let upvote = DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 1
@@ -421,7 +430,7 @@ flushDecisionLambda = uncapsNettest $ do
         }
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
 
-  advanceTime (sec 20)
+  advanceTime (sec 61)
   callFrom (AddressResolved admin) dao (Call @"Flush") ()
 
   -- | Credit the proposer 10 tokens when the proposal is accepted
