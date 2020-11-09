@@ -3,6 +3,15 @@ SPDX-FileCopyrightText: 2020 TQ Tezos
 SPDX-License-Identifier: LicenseRef-MIT-TQ
 -->
 
+# Table of contents
+
+* [Overview](#overview)
+* [General requirements](#general-requirements)
+* [Configuration](#configuration)
+* [Contract logic](#contract-logic)
+* [Errors](#errors)
+* [Entrypoints](#entrypoints)
+
 # Overview
 
 The contract described here consists of two parts:
