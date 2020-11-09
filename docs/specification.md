@@ -79,7 +79,7 @@ data Config proposalMetadata = Config
       (List Operation, Storage proposalMetadata)
   -- ^ The decision lambda is executed based on a successful proposal.
   , maxProposals :: Natural
-  -- ^ Determine the maximum number of proposals that are allowed in the contract.
+  -- ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   , maxVotes :: Natural
   -- ^ Determine the maximum number of votes associated with a proposal including positive votes
   -- and negative votes.
@@ -99,7 +99,7 @@ The `Proposal` type is defined below.
 `Storage` is the full storage type of the contract.
 
 ```haskell
-type ProposalId = Natural
+type ProposalKey = ByteString
 
 data Proposal proposalMetadata = Proposal
   { pUpvotes :: Natural
@@ -118,7 +118,7 @@ data Proposal proposalMetadata = Proposal
 Some configuration values are specified in runtime and can be changed during the contract lifetime.
 They must be provided on origination to construct the contract's initial storage.
 These values are:
-1. `administrator :: Address` is the address that can perform administrative actions.
+1. `admin :: Address` is the address that can perform administrative actions.
 2. `votingPeriod :: Natural` specifies how long the voting period lasts.
 3. `quorumThreshold :: Natural` specifies how many total votes are required for a successful proposal.
 
@@ -128,9 +128,10 @@ This chapter provides a high-level overview of the contract's logic.
 
 - The contract maintains a ledger of address and its balance (frozen and unfrozen tokens)
 - The contract manages a special role called "Administrator".
-- The contract stores a list of proposals with one of the states: "ongoing", "rejected", or "accepted".
-- After a successful migration, the contract `migrated` state will be `True` and all the subsequent
-  operations, except `transfer_contract_tokens`, will fail with `MIGRATED` and the updated contract address.
+- The contract stores a list of proposals that can be in one of the states: "ongoing", "rejected", or "accepted".
+- Migration form a two-step process:
+  + After migration start the contract `migrationStatus` state is set to `MigratingTo targetAddress` state.
+  + After successful migration confirmation `migrationStatus` is set to `MigratedTo newContractAddress` state. All the subsequent operations, except `transfer_contract_tokens`, will fail with `MIGRATED` tag paired with the updated contract address.
 - The contract forbids transferring XTZ to the contract, because they will be locked forever.
 
 ## Roles
@@ -141,7 +142,7 @@ whole contract (hence "global"):
 * **administrator**
   - Can re-assign this role to a new address.
   - Can perform administrative operations.
-  - Can trasfer FA2 tokens owned or operated by this contract.
+  - Can transfer FA2 tokens owned or operated by this contract.
   - There always must be exactly one administrator.
 
 Additionally, the contract inherits the **operator** role from FA2.
@@ -164,7 +165,7 @@ pair of propose entrypoint params and the proposer address.
 Once a proposal is submitted, everyone can vote on it as long as they have enough unfrozen tokens.
 One unfrozen token is required for one vote.
 The tokens are frozen for the duration of voting.
-Voting period is specified for the whole smart contract and can be updated by the administrator.
+Voting period is specified for the whole smart contract and can be updated by the administrator; on update, the existing proposals are also affected.
 It's possible to vote positively or negatively.
 After the voting ends, the contract is "flushed" by calling a dedicated entrypoint.
 
@@ -237,7 +238,6 @@ Full list:
 * [`transfer_ownership`](#transfer_ownership)
 * [`accept_ownership`](#accept_ownership)
 * [`propose`](#propose)
-* [`proposal_metadata`](#proposal_metadata)
 * [`set_voting_period`](#set_voting_period)
 * [`set_quorum_threshold`](#set_quorum_threshold)
 * [`vote`](#vote)
@@ -545,8 +545,6 @@ Parameter (in Michelson):
 That is, the list of operations returned from the baseDAO contract should contain one `TRANSFER_TOKENS` operation calling the `transfer` entrypoint.
 Otherwise the call fails.
 
-- Although the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed to this entrypoint MUST be 0.
-
 ## Role reassigning functions
 
 ### **transfer_ownership**
@@ -614,36 +612,15 @@ Parameter (in Michelson):
 )
 ```
 
-- The proposal is saved and assigned a unique numeric proposal ID.
+- The proposal is saved under `BLAKE2b` hash of proposal value and sender.
 - The `Natural` value: `proposalTokenAmount` determines how many sender's tokens will be frozen.
 - Sender MUST have enough unfrozen tokens (i. e. `≥ proposalTokenAmount`).
 - Fails with `PROPOSAL_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
   is less than `proposalTokenAmount`.
 - Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposalCheck` from the configuration.
 - Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
+- Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
 - The sender's balance in frozen tokens is increased by `proposalTokenAmount` and in unfrozen tokens is decreased by `proposalTokenAmount`.
-
-### **proposal_metadata**
-
-```haskell
-type ProposalId = Natural
-
-data Parameter proposalMetadata
-  = Proposal_metadata (View ProposalId (Proposal proposalMetadata))
-```
-
-Parameter (in Michelson):
-```
-(pair %proposal_metadata
-  (nat %requests)
-  (contract %callback <proposal_type>)
-)
-```
-
-- Return the proposal associated with the id.
-
-- Fails with `PROPOSAL_NOT_EXIST` if the proposal id is
-  not associated with any ongoing proposals.
 
 ### **set_voting_period**
 
@@ -691,12 +668,12 @@ nat
 ### **vote**
 
 ```haskell
-type ProposalId = Natural
+type ProposalKey = ByteString
 
 type VoteType = Bool
 
 data VoteParam = VoteParam
-  { proposalId :: ProposalId
+  { proposalKey :: ProposalKey
   , voteType :: Bool
   , voteAmount :: Natural
   }
@@ -710,7 +687,7 @@ Parameter (in Michelson):
 ```
 (list
   (pair %vote
-    (nat %proposal_id)
+    (nat %proposal_key)
     (pair
       (bool %vote_type)
       (nat %vote_amount)
@@ -722,8 +699,8 @@ Parameter (in Michelson):
 - Sender MUST have unfrozen tokens equal to `voteAmount` or more (1 unfrozen token is needed for 1 vote).
 - Fails with `VOTING_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
   is less than specified `vVoteAmount` .
-- Fails with `PROPOSAL_NOT_EXIST` if the proposal id is not associated with any ongoing proposals.
-- Fails with `VOTING_PERIOD_OVER` if the proposal associated with the proposa id is already ended.
+- Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
+- Fails with `VOTING_PERIOD_OVER` if the proposal associated with the proposal key is already ended.
 - Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal is already at the max value set by the configuration.
 - The sender's balance in frozen tokens is increased by `voteAmount` and in unfrozen tokens is decreased by `voteAmount`.
 - The entrypoint accepts a list of vote params. As a result, the sender can `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
