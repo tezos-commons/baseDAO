@@ -168,12 +168,12 @@ instance TypeHasDoc MigrationStatus where
 
 -- | Storage of the FA2 contract
 data Storage (proposalMetadata :: Kind.Type) = Storage
-  { sLedger                    :: Ledger
-  , sOperators                 :: Operators
-  , sTokenAddress              :: Address
-  , sAdmin                     :: Address
-  , sPendingOwner              :: Maybe Address
-  , sMigrationStatus           :: MigrationStatus
+  { sLedger       :: Ledger
+  , sOperators    :: Operators
+  , sTokenAddress :: Address
+  , sAdmin        :: Address
+  , sPendingOwner :: Address
+  , sMigrationStatus :: MigrationStatus
 
   , sVotingPeriod              :: VotingPeriod
   , sQuorumThreshold           :: QuorumThreshold
@@ -208,7 +208,7 @@ type StorageC store pm =
     , "sOperators" := ("owner" :! Address, "operator" :! Address) ~> ()
     , "sTokenAddress" := Address
     , "sAdmin" := Address
-    , "sPendingOwner" := Maybe Address
+    , "sPendingOwner" := Address
     , "sLedger" := Ledger
     , "sMigrationStatus" := MigrationStatus
 
@@ -262,7 +262,7 @@ emptyStorage = Storage
   { sLedger =  BigMap $ Map.empty
   , sOperators = BigMap $ Map.empty
   , sTokenAddress = genesisAddress
-  , sPendingOwner = Nothing
+  , sPendingOwner = genesisAddress
   , sAdmin = genesisAddress
   , sMigrationStatus = NotInMigration
   , sVotingPeriod = 60 * 60 * 24 * 7 -- 7 days
@@ -283,7 +283,7 @@ mkStorage admin balances operators = Storage
   { sLedger = BigMap balances
   , sOperators = operators
   , sTokenAddress = genesisAddress
-  , sPendingOwner = Nothing
+  , sPendingOwner = admin
   , sAdmin = admin
   , sMigrationStatus = NotInMigration
   , sVotingPeriod = 60 * 60 * 24 * 7 -- days
@@ -515,12 +515,6 @@ instance CustomErrorHasDoc "fROZEN_TOKEN_NOT_TRANSFERABLE" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "The sender tries to transfer frozen token"
-
-type instance ErrorArg "nO_PENDING_ADMINISTRATOR_SET" = ()
-
-instance CustomErrorHasDoc "nO_PENDING_ADMINISTRATOR_SET" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause = "Received an `accept_ownership` call when no pending owner was set"
 
 type instance ErrorArg "nOT_PENDING_ADMINISTRATOR" = ()
 
