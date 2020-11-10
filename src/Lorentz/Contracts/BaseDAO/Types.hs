@@ -47,11 +47,11 @@ module Lorentz.Contracts.BaseDAO.Types
 import Universum hiding (drop, (>>))
 
 import qualified Data.Kind as Kind
-import qualified Data.Map.Internal as Map
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Zip
 import Michelson.Runtime.GState (genesisAddress)
+import Named (defaults, (!))
 import Util.Markdown
 import Util.Named
 import Util.Type
@@ -257,41 +257,36 @@ type VotingPeriod = Natural
 -- (quorum_threshold >= upvote + downvote) && (upvote > downvote)
 type QuorumThreshold = Natural
 
-emptyStorage :: Storage pm
-emptyStorage = Storage
-  { sLedger =  BigMap $ Map.empty
-  , sOperators = BigMap $ Map.empty
+mkStorage
+  :: "admin" :! Address
+  -> "votingPeriod" :? Natural
+  -> "quorumThreshold" :? Natural
+  -> Storage pm
+mkStorage admin votingPeriod quorumThreshold =
+  Storage
+  { sLedger = mempty
+  , sOperators = mempty
   , sTokenAddress = genesisAddress
-  , sPendingOwner = genesisAddress
-  , sAdmin = genesisAddress
+  , sPendingOwner = arg #admin admin
+  , sAdmin = arg #admin admin
   , sMigrationStatus = NotInMigration
-  , sVotingPeriod = 60 * 60 * 24 * 7 -- 7 days
-  , sQuorumThreshold = 4
-    -- ↑ any proposals that have less that 4 votes will be rejected
+  , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
+  , sQuorumThreshold = argDef #quorumThreshold quorumThresholdDef quorumThreshold
+
+  , sProposals = mempty
+  , sProposalKeyListSortByDate = []
+  }
+  where
+    votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
+    quorumThresholdDef = 4
+    -- ^ any proposals that have less that 4 votes (by default) will be rejected
     -- regardless of upvotes
 
-  , sProposals = BigMap $ Map.empty
-  , sProposalKeyListSortByDate = []
-  }
-
-mkStorage
-  :: Address
-  -> Map (Address, FA2.TokenId) Natural
-  -> Operators
-  -> Storage pm
-mkStorage admin balances operators = Storage
-  { sLedger = BigMap balances
-  , sOperators = operators
-  , sTokenAddress = genesisAddress
-  , sPendingOwner = admin
-  , sAdmin = admin
-  , sMigrationStatus = NotInMigration
-  , sVotingPeriod = 60 * 60 * 24 * 7 -- days
-  , sQuorumThreshold = 4
-
-  , sProposals = BigMap $ Map.empty
-  , sProposalKeyListSortByDate = []
-  }
+emptyStorage :: Storage pm
+emptyStorage =
+  mkStorage
+    ! #admin genesisAddress
+    ! defaults
 
 ------------------------------------------------------------------------
 -- Optimizations

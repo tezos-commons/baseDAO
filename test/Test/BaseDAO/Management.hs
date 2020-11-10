@@ -19,6 +19,7 @@ import Lorentz.Contracts.BaseDAO (mkStorage)
 import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
+import Named (defaults, (!))
 import Test.Common
 import Tezos.Core (unsafeMkMutez)
 import Util.Named
@@ -190,7 +191,7 @@ test_BaseDAO_Management =
      ]
   ]
   where
-    initialStorage admin = mkStorage admin mempty mempty
+    initialStorage admin = mkStorage ! #admin admin ! defaults
 
 expectNotAdmin
   :: (MonadNettest caps base m)
