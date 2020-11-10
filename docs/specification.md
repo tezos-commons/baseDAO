@@ -40,9 +40,10 @@ The smart contract is implemented in Haskell eDSL Lorentz which allows us to hav
 1. Type parameters that should be instantiated to specific types by DAO creator.
 2. Michelson constants, including lambdas, that can be passed as Haskell values.
 
-BaseDAO has 1 type parameter `proposalMetadata` that defines the structure of a proposal.
-It contains fields that are required to submit a proposal.
-It can contain any fields.
+BaseDAO has 2 type parameters `proposalMetadata` and `contractMetadata` that define the structure of a proposal and contract-wide storage respectively.
+The former contains fields that are required to submit a proposal.
+The latter keeps global information like information about accepted proposals.
+They can contain any fields that can theoretically appear in storage; the only exception is that `proposalMetadata` cannot contain unpackable data like `big_map`s, since we need to be able to compute hash of every proposal.
 Here is an example of "treasury" style DAO:
 ```haskell
 data ProposalMetadata = ProposalMetadata
@@ -51,12 +52,14 @@ data ProposalMetadata = ProposalMetadata
   , agoraPostId :: Natural
   ...
   }
+
+data ContractMetadata = ContractMetadata  -- empty
 ```
 
-Compile-time value parameters are captured by the `Config` type (parameterized by `proposalMetadata`):
+Compile-time value parameters are captured by the `Config` type (parameterized by `proposalMetadata` and `contractMetadata`):
 
 ```haskell
-data Config proposalMetadata = Config
+data Config contractMetadata proposalMetadata = Config
   { daoName :: Text
   -- ^ Name of the DAO.
   , daoDescription :: Text
@@ -75,9 +78,13 @@ data Config proposalMetadata = Config
   -- For example, if Alice freezes 100 tokens to vote and this lambda divides the value by 2,
   -- only 50 tokens will be unfrozen and other 50 tokens will be burnt.
   , decisionLambda :: Lambda
-      (Proposal proposalMetadata, Storage proposalMetadata)
-      (List Operation, Storage proposalMetadata)
+      (Proposal proposalMetadata, Storage contractMetadata proposalMetadata)
+      (List Operation, contractMetadata)
   -- ^ The decision lambda is executed based on a successful proposal.
+  -- It has access to the proposal, can modify `contractMetadata` and perform aribtrary
+  -- operations.
+  -- In case if some data needs to be gathered from the accepted proposal, we suggest
+  -- adding a `BigMap ProposalKey data` to `contractMetadata` and put the data there.
   , maxProposals :: Natural
   -- ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   , maxVotes :: Natural
@@ -93,6 +100,8 @@ data Config proposalMetadata = Config
   -- ^ Determine the minimum value of voting period that is allowed to be set.
   }
 ```
+
+***TODO [#29]:*** Contract metadata is not implemented yet, as well as the signature change of `decisionLambda`.
 
 The `FA2Metadata` type matches `token_metadata` defined in FA2.
 The `Proposal` type is defined below.
