@@ -90,7 +90,7 @@ authorizePendingOwner = do
   doc $ DRequireRole "pending owner"
   stGetField #sPendingOwner
   sender
-  if IsEq then nop else failCustom_ #nOT_PENDING_ADMINISTRATOR
+  if IsEq then nop else failCustom_ #nOT_PENDING_ADMIN
 
 -- Authorise administrator.
 authorizeAdmin ::

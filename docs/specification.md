@@ -201,7 +201,7 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | Error                          | Description                                            |
 |--------------------------------|--------------------------------------------------------|
 | `NOT_ADMIN`            | The sender is not the administrator                          |
-| `NOT_PENDING_ADMINISTRATOR`    | Authorized sender is not the current pending administrator   |
+| `NOT_PENDING_ADMIN`    | Authorized sender is not the current pending administrator   |
 | `NOT_TOKEN_OWNER`              | Trying to configure operators for a different wallet which sender does not own                |
 | `FAIL_TRANSFER_CONTRACT_TOKENS` | Trying to cross-transfer DAO tokens to another contract that does not exist or is not a valid FA2 contract. |
 | `FAIL_PROPOSAL_CHECK`          | Throws when trying to propose a proposal that does not pass `proposalCheck`               |
@@ -585,7 +585,7 @@ unit
 
 - Accept the administrator privilege.
 
-- Fails with `NOT_PENDING_ADMINISTRATOR` if the sender is not the current pending administrator, this also includes the case when pending administrator was not set.
+- Fails with `NOT_PENDING_ADMIN` if the sender is not the current pending administrator, this also includes the case when pending administrator was not set.
 
 - When pending administrator is not set, it is considered equal to the current owner, thus administrator can accept ownership of its own contract without a prior `transfer_ownership` call.
 

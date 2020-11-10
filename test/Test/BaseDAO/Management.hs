@@ -200,7 +200,7 @@ expectNotAdmin = expectCustomError_ #nOT_ADMIN
 expectNotPendingOwner
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotPendingOwner = expectCustomError_ #nOT_PENDING_ADMINISTRATOR
+expectNotPendingOwner = expectCustomError_ #nOT_PENDING_ADMIN
 
 expectNotMigrating
   :: (MonadNettest caps base m)

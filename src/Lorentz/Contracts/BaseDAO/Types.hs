@@ -516,9 +516,9 @@ instance CustomErrorHasDoc "fROZEN_TOKEN_NOT_TRANSFERABLE" where
   customErrDocMdCause =
     "The sender tries to transfer frozen token"
 
-type instance ErrorArg "nOT_PENDING_ADMINISTRATOR" = ()
+type instance ErrorArg "nOT_PENDING_ADMIN" = ()
 
-instance CustomErrorHasDoc "nOT_PENDING_ADMINISTRATOR" where
+instance CustomErrorHasDoc "nOT_PENDING_ADMIN" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Received an `accept_ownership` from an address other than what is in the pending owner field"
