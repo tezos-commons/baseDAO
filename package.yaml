@@ -33,6 +33,7 @@ default-extensions:
   - DerivingStrategies
   - DerivingVia
   - EmptyCase
+  - ExistentialQuantification
   - FlexibleContexts
   - FlexibleInstances
   - GADTs
@@ -120,9 +121,12 @@ tests:
     dependencies:
     - baseDAO
     - cleveland
+    - fmt
+    - HUnit
     - lorentz
     - morley
     - morley-ledgers
     - o-clock
     - tasty
+    - tasty-hunit-compat
     - universum

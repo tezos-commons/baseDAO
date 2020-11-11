@@ -17,7 +17,7 @@ import Lorentz.Contracts.ManagedLedger.Doc (DRequireRole(..))
 -- | Set the value of pending owner in storage
 -- using the address in parameter.
 transferOwnership
-  :: IsoValue pm => Entrypoint TransferOwnershipParam (Storage pm)
+  :: IsoValue pm => Entrypoint' TransferOwnershipParam (Storage pm) s
 transferOwnership = do
   dip $ do
     ensureNotMigrated
@@ -51,7 +51,7 @@ transferOwnership = do
 
 -- | Checks if pending owner is set and set the value of new administrator
 acceptOwnership
-  :: IsoValue pm => Entrypoint () (Storage pm)
+  :: IsoValue pm => Entrypoint' () (Storage pm) s
 acceptOwnership = do
   drop @()
   ensureNotMigrated
@@ -69,7 +69,7 @@ acceptOwnership = do
 
 -- Authorises admin and set the migration status using the new address
 -- in param.
-migrate :: IsoValue pm => Entrypoint MigrateParam (Storage pm)
+migrate :: IsoValue pm => Entrypoint' MigrateParam (Storage pm) s
 migrate = do
   dip $ do
     ensureNotMigrated
@@ -91,7 +91,7 @@ ensureNotMigrated = do
     )
 
 -- Confirm that the sender is the new contract address and set `MIGRATED_TO` status
-confirmMigration :: IsoValue pm => Entrypoint () (Storage pm)
+confirmMigration :: IsoValue pm => Entrypoint' () (Storage pm) s
 confirmMigration = do
   drop
   doc $ DRequireRole "migration target contract"
