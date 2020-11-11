@@ -55,6 +55,10 @@ steps:
     - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack
     - ./result
 
+  - label: haddock
+    commands:
+    - nix-build ci.nix -A haddock --no-out-link
+
 # Autodoc
   - label: contract doc development
     if: build.branch != "autodoc/master" && build.branch != "master"
