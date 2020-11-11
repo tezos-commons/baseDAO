@@ -13,8 +13,8 @@ module Test.BaseDAO.ProposalConfig
 
 import Lorentz
 
-import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo)
+import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 config :: forall pm. (IsoValue pm) => DAO.Config pm
@@ -56,7 +56,7 @@ decisionLambdaConfig = config
   { DAO.cDecisionLambda = decisionLambda
   }
   where
-    decisionLambda :: forall s store. (DAO.StorageC store pm)
+    decisionLambda :: forall s store. (DAO.StorageC store pm, DAO.HasFuncContext s store)
       => (DAO.Proposal pm) : store : s
       :-> (List Operation, store) : s
     decisionLambda = do
@@ -65,5 +65,5 @@ decisionLambdaConfig = config
         push (DAO.unfrozenTokenId, 10 :: Natural)
       dig @2
       stackType @(store : Address : (FA2.TokenId, Natural) : s)
-      creditTo
+      DAO.callCachedFunc creditTo
       nil; pair

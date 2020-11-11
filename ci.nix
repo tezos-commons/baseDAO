@@ -83,6 +83,10 @@ rec {
   # a list of all components from all packages in the project
   all-components = with pkgs.lib; flatten (attrValues components);
 
+  # build haddock
+  haddock = with pkgs.lib; flatten (attrValues
+    (mapAttrs (pkgName: pkg: optional (pkg ? library) pkg.library.haddock) packages));
+
   # run baseDAO to produce contract documents
   contracts-doc = { release, commitSha ? null, commitDate ? null }@releaseArgs:
     pkgs.runCommand "contracts-doc" {
