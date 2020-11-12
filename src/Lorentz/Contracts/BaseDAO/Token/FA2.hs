@@ -12,6 +12,7 @@ module Lorentz.Contracts.BaseDAO.Token.FA2
    ) where
 
 import Lorentz
+import Lorentz.Contracts.BaseDAO.Doc (transferDoc, balanceOfDoc, tokenMetadataRegistryDoc, updateOperatorsDoc)
 import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface
@@ -28,6 +29,7 @@ transfer
   :: forall pm s. (IsoValue pm, HasFuncContext s (Storage pm))
   => Entrypoint' TransferParams (Storage pm) s
 transfer = do
+  doc $ DDescription transferDoc
   dip ensureNotMigrated
   iter transferItem
   nil; pair
@@ -213,6 +215,7 @@ balanceOf
   :: forall pm s. IsoValue pm
   => Entrypoint' BalanceRequestParams (Storage pm) s
 balanceOf = do
+  doc $ DDescription balanceOfDoc
   dip ensureNotMigrated
   checkedCoerce_
     @(FA2View "requests" [BalanceRequestItem] [BalanceResponseItem])
@@ -275,6 +278,7 @@ balanceOf = do
 
 tokenMetadataRegistry :: IsoValue pm => Entrypoint' TokenMetadataRegistryParam (Storage pm) s
 tokenMetadataRegistry = do
+  doc $ DDescription tokenMetadataRegistryDoc
   dip ensureNotMigrated
   swap
   getField #sTokenAddress
@@ -286,6 +290,7 @@ tokenMetadataRegistry = do
 
 updateOperators :: IsoValue pm => Entrypoint' UpdateOperatorsParam (Storage pm) s
 updateOperators = do
+  doc $ DDescription updateOperatorsDoc
   dip ensureNotMigrated
   iter $
     caseT @UpdateOperator

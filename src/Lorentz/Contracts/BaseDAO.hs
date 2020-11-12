@@ -18,10 +18,17 @@ import Lorentz
 
 import Lorentz.Contracts.BaseDAO.Management
 import Lorentz.Contracts.BaseDAO.Proposal
+import Lorentz.Contracts.BaseDAO.Doc (callFA2Doc, introductoryDoc)
 import Lorentz.Contracts.BaseDAO.Token
 import Lorentz.Contracts.BaseDAO.Token.FA2
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+
+data FA2EntrypointsKind
+instance DocItem (DEntrypoint FA2EntrypointsKind) where
+  docItemPos = 1055
+  docItemSectionName = Just "FA2 entrypoints"
+  docItemToMarkdown = diEntrypointToMarkdown
 
 baseDaoContract
   :: forall pm.
@@ -30,12 +37,14 @@ baseDaoContract
       , NicePackedValue pm
       )
   => Config pm -> Contract (BaseDAO.Parameter pm) (BaseDAO.Storage pm)
-baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
-  doc $ DDescription cDaoDescription
+baseDaoContract config@Config{..} = defaultContract $  contractName cDaoName $  do
+  contractGeneralDefault
+  doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
+  docStorage @(BaseDAO.Storage pm)
   ensureZeroTransfer
   pushFuncContext @pm $ do
     unpair
-    entryCase @(BaseDAO.Parameter pm) (Proxy @PlainEntrypointsKind)
+    finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm) (Proxy @PlainEntrypointsKind)
       ( #cCall_FA2 /-> fa2Handler
       , #cTransfer_ownership /-> transferOwnership
       , #cAccept_ownership /-> acceptOwnership
@@ -53,10 +62,11 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
       )
 
 fa2Handler
-  :: (IsoValue pm, HasFuncContext s (BaseDAO.Storage pm))
+  :: forall pm s. (IsoValue pm, HasFuncContext s (BaseDAO.Storage pm))
   => Entrypoint' FA2.Parameter (BaseDAO.Storage pm) s
-fa2Handler =
-  entryCase @FA2.Parameter (Proxy @PlainEntrypointsKind)
+fa2Handler = do
+  doc $ DDescription callFA2Doc
+  entryCase @FA2.Parameter (Proxy @FA2EntrypointsKind)
     ( #cTransfer /-> transfer
     , #cBalance_of /-> balanceOf
     , #cToken_metadata_registry /-> tokenMetadataRegistry
