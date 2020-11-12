@@ -5,6 +5,7 @@ resolver: lts-16.5
 
 packages:
   - .
+  - template
 
 extra-deps:
   - morley-1.9

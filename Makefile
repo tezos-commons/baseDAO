@@ -15,7 +15,7 @@ STACK_CI_TEST_OPTIONS = --fast --ghc-options -Werror
 # Addtional (specified by user) options passed to test executable
 TEST_ARGUMENTS ?= ""
 # Packages to apply the command (build, test, e.t.c) for.
-PACKAGE = baseDAO
+PACKAGE = baseDAO templateDAO
 
 define call_test
 	stack test $(PACKAGE) \
