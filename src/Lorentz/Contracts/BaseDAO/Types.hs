@@ -29,7 +29,6 @@ module Lorentz.Contracts.BaseDAO.Types
   , MigrateParam
   , MigrationStatus
 
-  , emptyStorage
   , mkStorage
 
   , CachedFunc (..)
@@ -51,7 +50,6 @@ import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Zip
 import Michelson.Runtime.GState (genesisAddress)
-import Named (defaults, (!))
 import Util.Markdown
 import Util.Named
 import Util.Type
@@ -281,12 +279,6 @@ mkStorage admin votingPeriod quorumThreshold =
     quorumThresholdDef = 4
     -- ^ any proposals that have less that 4 votes (by default) will be rejected
     -- regardless of upvotes
-
-emptyStorage :: Storage pm
-emptyStorage =
-  mkStorage
-    ! #admin genesisAddress
-    ! defaults
 
 ------------------------------------------------------------------------
 -- Optimizations

@@ -11,7 +11,6 @@ module Lorentz.Contracts.BaseDAO
   , Storage (..)
 
   , baseDaoContract
-  , emptyStorage
   , mkStorage
   ) where
 
