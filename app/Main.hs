@@ -17,6 +17,7 @@ import Morley.CLI (addressOption)
 import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
 import Paths_baseDAO (version)
+import Util.CLI (mkCLOptionParser)
 import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
@@ -59,7 +60,16 @@ baseDaoStorageParser = do
   adminAddress <-
     addressOption Nothing (#name .! "admin")
     (#help .! "Administrator of the BaseDAO contract")
-  pure $ DAO.mkStorage adminAddress mempty mempty
+  votingPeriod <-
+    mkCLOptionParser (Just $ 60 * 60 * 24 * 7) (#name .! "voting-period")
+    (#help .! "Period after which proposals can be finished")
+  quorumThreshold <-
+    mkCLOptionParser (Just 4) (#name .! "quorum-threshold")
+    (#help .! "Total number of votes necessary for successful proposal")
+  pure $ DAO.mkStorage
+    (#admin .! adminAddress)
+    (#votingPeriod .? Just votingPeriod)
+    (#quorumThreshold .? Just quorumThreshold)
 
 main :: IO ()
 main = withUtf8 $ do

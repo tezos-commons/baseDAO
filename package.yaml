@@ -88,10 +88,10 @@ library:
   generated-other-modules:
     - Paths_baseDAO
   dependencies:
+    - named
     - morley
     - morley-ledgers
     - lorentz
-    - containers
     - universum
 
 executables:
@@ -124,6 +124,7 @@ tests:
     - fmt
     - HUnit
     - lorentz
+    - named
     - morley
     - morley-ledgers
     - o-clock

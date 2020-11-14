@@ -627,10 +627,7 @@ handleProposalIsOver config@Config{..} = do
       unfreezeVoterToken
       drop
 
-    stackType @(store : ProposalKey : [Operation] : s)
-
-    swap
-    stDelete #sProposals
+    dip $ drop @ProposalKey
 
   else do
     -- Add the proposalId back to #sProposalKeyListSortByDate
