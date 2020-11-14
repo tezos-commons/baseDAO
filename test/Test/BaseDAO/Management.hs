@@ -19,6 +19,7 @@ import Lorentz.Contracts.BaseDAO (mkStorage)
 import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
+import Named (defaults, (!))
 import Test.Common
 import Tezos.Core (unsafeMkMutez)
 import Util.Named
@@ -81,9 +82,9 @@ test_BaseDAO_Management =
             callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
               (#newOwner .! owner)
             -- Make the accept ownership call from wallet1 and see that it fails
-            -- with 'no pending owner set' error
+            -- with 'not pending owner' error
             callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
-              & expectNoPendingOwnerSet
+              & expectNotPendingOwner
 
       , nettestScenarioCaps "Respects migration state" $
           withOriginated 3 (\(owner:_) -> initialStorage owner) $
@@ -104,21 +105,18 @@ test_BaseDAO_Management =
               callFrom (AddressResolved wallet2) baseDao (Call @"Accept_ownership") ()
                 & expectNotPendingOwner
 
-       , nettestScenarioCaps "changes the administrator to pending owner and resets pending owner" $
+       , nettestScenarioCaps "changes the administrator to pending owner" $
            withOriginated 2 (\(owner:_) -> initialStorage owner) $
              \[owner, wallet1] baseDao -> do
                callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
                  (#newOwner .! wallet1)
                callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
-               -- Make a second call and see that it fails with 'no pending owner set' error
-               callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
-                & expectNoPendingOwnerSet
 
        , nettestScenarioCaps "throws error when there is no pending owner" $
            withOriginated 2 (\(owner:_) -> initialStorage owner) $
              \[_, wallet1] baseDao -> do
                callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
-                & expectNoPendingOwnerSet
+                & expectNotPendingOwner
 
        , nettestScenarioCaps "throws error when called by current admin, when pending owner is not the same" $
            withOriginated 2 (\(owner:_) -> initialStorage owner) $
@@ -193,7 +191,7 @@ test_BaseDAO_Management =
      ]
   ]
   where
-    initialStorage admin = mkStorage admin mempty mempty
+    initialStorage admin = mkStorage ! #admin admin ! defaults
 
 expectNotAdmin
   :: (MonadNettest caps base m)
@@ -203,12 +201,7 @@ expectNotAdmin = expectCustomError_ #nOT_ADMIN
 expectNotPendingOwner
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotPendingOwner = expectCustomError_ #nOT_PENDING_ADMINISTRATOR
-
-expectNoPendingOwnerSet
-  :: (MonadNettest caps base m)
-  => m a -> m ()
-expectNoPendingOwnerSet = expectCustomError_ #nO_PENDING_ADMINISTRATOR_SET
+expectNotPendingOwner = expectCustomError_ #nOT_PENDING_ADMIN
 
 expectNotMigrating
   :: (MonadNettest caps base m)

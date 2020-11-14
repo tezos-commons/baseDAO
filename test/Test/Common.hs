@@ -15,9 +15,10 @@ import Universum
 
 -- import qualified Data.Map.Strict as Map
 import Lorentz
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Named (defaults, (!))
 -- import Util.Named ((.!))
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
@@ -77,8 +78,11 @@ originateBaseDaoWithBalance config balFunc = do
       { odFrom = nettestAddress
       , odName = "BaseDAO"
       , odBalance = toMutez 0
-      -- , odStorage = DAO.mkStorage admin bal operators
-      , odStorage = mkStorage admin mempty mempty
+      -- , odStorage = (mkStorage ! #admin ! defaults) {
+      --  sLedger = BigMap bal
+      --  sOperators = operators
+      -- }
+      , odStorage = mkStorage ! #admin admin ! defaults
       , odContract = DAO.baseDaoContract config
       }
   dao <- originate originateData

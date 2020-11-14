@@ -3,6 +3,15 @@ SPDX-FileCopyrightText: 2020 TQ Tezos
 SPDX-License-Identifier: LicenseRef-MIT-TQ
 -->
 
+# Table of contents
+
+* [Overview](#overview)
+* [General requirements](#general-requirements)
+* [Configuration](#configuration)
+* [Contract logic](#contract-logic)
+* [Errors](#errors)
+* [Entrypoints](#entrypoints)
+
 # Overview
 
 The contract described here consists of two parts:
@@ -31,9 +40,10 @@ The smart contract is implemented in Haskell eDSL Lorentz which allows us to hav
 1. Type parameters that should be instantiated to specific types by DAO creator.
 2. Michelson constants, including lambdas, that can be passed as Haskell values.
 
-BaseDAO has 1 type parameter `proposalMetadata` that defines the structure of a proposal.
-It contains fields that are required to submit a proposal.
-It can contain any fields.
+BaseDAO has 2 type parameters `proposalMetadata` and `contractMetadata` that define the structure of a proposal and contract-wide storage respectively.
+The former contains fields that are required to submit a proposal.
+The latter keeps global information like information about accepted proposals.
+They can contain any fields that can theoretically appear in storage; the only exception is that `proposalMetadata` cannot contain unpackable data like `big_map`s, since we need to be able to compute hash of every proposal.
 Here is an example of "treasury" style DAO:
 ```haskell
 data ProposalMetadata = ProposalMetadata
@@ -42,12 +52,14 @@ data ProposalMetadata = ProposalMetadata
   , agoraPostId :: Natural
   ...
   }
+
+data ContractMetadata = ContractMetadata  -- empty
 ```
 
-Compile-time value parameters are captured by the `Config` type (parameterized by `proposalMetadata`):
+Compile-time value parameters are captured by the `Config` type (parameterized by `proposalMetadata` and `contractMetadata`):
 
 ```haskell
-data Config proposalMetadata = Config
+data Config contractMetadata proposalMetadata = Config
   { daoName :: Text
   -- ^ Name of the DAO.
   , daoDescription :: Text
@@ -66,11 +78,15 @@ data Config proposalMetadata = Config
   -- For example, if Alice freezes 100 tokens to vote and this lambda divides the value by 2,
   -- only 50 tokens will be unfrozen and other 50 tokens will be burnt.
   , decisionLambda :: Lambda
-      (Proposal proposalMetadata, Storage proposalMetadata)
-      (List Operation, Storage proposalMetadata)
+      (Proposal proposalMetadata, Storage contractMetadata proposalMetadata)
+      (List Operation, contractMetadata)
   -- ^ The decision lambda is executed based on a successful proposal.
+  -- It has access to the proposal, can modify `contractMetadata` and perform aribtrary
+  -- operations.
+  -- In case if some data needs to be gathered from the accepted proposal, we suggest
+  -- adding a `BigMap ProposalKey data` to `contractMetadata` and put the data there.
   , maxProposals :: Natural
-  -- ^ Determine the maximum number of proposals that are allowed in the contract.
+  -- ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   , maxVotes :: Natural
   -- ^ Determine the maximum number of votes associated with a proposal including positive votes
   -- and negative votes.
@@ -85,12 +101,14 @@ data Config proposalMetadata = Config
   }
 ```
 
+***TODO [#29]:*** Contract metadata is not implemented yet, as well as the signature change of `decisionLambda`.
+
 The `FA2Metadata` type matches `token_metadata` defined in FA2.
 The `Proposal` type is defined below.
 `Storage` is the full storage type of the contract.
 
 ```haskell
-type ProposalId = Natural
+type ProposalKey = ByteString
 
 data Proposal proposalMetadata = Proposal
   { pUpvotes :: Natural
@@ -109,7 +127,7 @@ data Proposal proposalMetadata = Proposal
 Some configuration values are specified in runtime and can be changed during the contract lifetime.
 They must be provided on origination to construct the contract's initial storage.
 These values are:
-1. `administrator :: Address` is the address that can perform administrative actions.
+1. `admin :: Address` is the address that can perform administrative actions.
 2. `votingPeriod :: Natural` specifies how long the voting period lasts.
 3. `quorumThreshold :: Natural` specifies how many total votes are required for a successful proposal.
 
@@ -119,9 +137,10 @@ This chapter provides a high-level overview of the contract's logic.
 
 - The contract maintains a ledger of address and its balance (frozen and unfrozen tokens)
 - The contract manages a special role called "Administrator".
-- The contract stores a list of proposals with one of the states: "ongoing", "rejected", or "accepted".
-- After a successful migration, the contract `migrated` state will be `True` and all the subsequent
-  operations, except `transfer_contract_tokens`, will fail with `MIGRATED` and the updated contract address.
+- The contract stores a list of proposals that can be in one of the states: "ongoing", "rejected", or "accepted".
+- Migration form a two-step process:
+  + After migration start the contract `migrationStatus` state is set to `MigratingTo targetAddress` state.
+  + After successful migration confirmation `migrationStatus` is set to `MigratedTo newContractAddress` state. All the subsequent operations, except `transfer_contract_tokens`, will fail with `MIGRATED` tag paired with the updated contract address.
 - The contract forbids transferring XTZ to the contract, because they will be locked forever.
 
 ## Roles
@@ -132,7 +151,7 @@ whole contract (hence "global"):
 * **administrator**
   - Can re-assign this role to a new address.
   - Can perform administrative operations.
-  - Can trasfer FA2 tokens owned or operated by this contract.
+  - Can transfer FA2 tokens owned or operated by this contract.
   - There always must be exactly one administrator.
 
 Additionally, the contract inherits the **operator** role from FA2.
@@ -155,7 +174,7 @@ pair of propose entrypoint params and the proposer address.
 Once a proposal is submitted, everyone can vote on it as long as they have enough unfrozen tokens.
 One unfrozen token is required for one vote.
 The tokens are frozen for the duration of voting.
-Voting period is specified for the whole smart contract and can be updated by the administrator.
+Voting period is specified for the whole smart contract and can be updated by the administrator; on update, the existing proposals are also affected.
 It's possible to vote positively or negatively.
 After the voting ends, the contract is "flushed" by calling a dedicated entrypoint.
 
@@ -191,8 +210,7 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | Error                          | Description                                            |
 |--------------------------------|--------------------------------------------------------|
 | `NOT_ADMIN`            | The sender is not the administrator                          |
-| `NOT_PENDING_ADMINISTRATOR`    | Authorized sender is not the current pending administrator   |
-| `NO_PENDING_ADMINISTRATOR_SET` | Throws when trying to authorize as the pending administrator whilst is not set for a contract |
+| `NOT_PENDING_ADMIN`    | Authorized sender is not the current pending administrator   |
 | `NOT_TOKEN_OWNER`              | Trying to configure operators for a different wallet which sender does not own                |
 | `FAIL_TRANSFER_CONTRACT_TOKENS` | Trying to cross-transfer DAO tokens to another contract that does not exist or is not a valid FA2 contract. |
 | `FAIL_PROPOSAL_CHECK`          | Throws when trying to propose a proposal that does not pass `proposalCheck`               |
@@ -228,7 +246,6 @@ Full list:
 * [`transfer_ownership`](#transfer_ownership)
 * [`accept_ownership`](#accept_ownership)
 * [`propose`](#propose)
-* [`proposal_metadata`](#proposal_metadata)
 * [`set_voting_period`](#set_voting_period)
 * [`set_quorum_threshold`](#set_quorum_threshold)
 * [`vote`](#vote)
@@ -536,8 +553,6 @@ Parameter (in Michelson):
 That is, the list of operations returned from the baseDAO contract should contain one `TRANSFER_TOKENS` operation calling the `transfer` entrypoint.
 Otherwise the call fails.
 
-- Although the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed to this entrypoint MUST be 0.
-
 ## Role reassigning functions
 
 ### **transfer_ownership**
@@ -579,7 +594,9 @@ unit
 
 - Accept the administrator privilege.
 
-- Fails with `NOT_PENDING_ADMINISTRATOR` if the sender is not the current pending administrator or `NO_PENDING_ADMINISTRATOR_SET` if there is no pending administrator.
+- Fails with `NOT_PENDING_ADMIN` if the sender is not the current pending administrator, this also includes the case when pending administrator was not set.
+
+- When pending administrator is not set, it is considered equal to the current owner, thus administrator can accept ownership of its own contract without a prior `transfer_ownership` call.
 
 ## Proposal entrypoints
 
@@ -605,36 +622,15 @@ Parameter (in Michelson):
 )
 ```
 
-- The proposal is saved and assigned a unique numeric proposal ID.
+- The proposal is saved under `BLAKE2b` hash of proposal value and sender.
 - The `Natural` value: `proposalTokenAmount` determines how many sender's tokens will be frozen.
 - Sender MUST have enough unfrozen tokens (i. e. `≥ proposalTokenAmount`).
 - Fails with `PROPOSAL_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
   is less than `proposalTokenAmount`.
 - Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposalCheck` from the configuration.
 - Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
+- Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
 - The sender's balance in frozen tokens is increased by `proposalTokenAmount` and in unfrozen tokens is decreased by `proposalTokenAmount`.
-
-### **proposal_metadata**
-
-```haskell
-type ProposalId = Natural
-
-data Parameter proposalMetadata
-  = Proposal_metadata (View ProposalId (Proposal proposalMetadata))
-```
-
-Parameter (in Michelson):
-```
-(pair %proposal_metadata
-  (nat %requests)
-  (contract %callback <proposal_type>)
-)
-```
-
-- Return the proposal associated with the id.
-
-- Fails with `PROPOSAL_NOT_EXIST` if the proposal id is
-  not associated with any ongoing proposals.
 
 ### **set_voting_period**
 
@@ -682,12 +678,12 @@ nat
 ### **vote**
 
 ```haskell
-type ProposalId = Natural
+type ProposalKey = ByteString
 
 type VoteType = Bool
 
 data VoteParam = VoteParam
-  { proposalId :: ProposalId
+  { proposalKey :: ProposalKey
   , voteType :: Bool
   , voteAmount :: Natural
   }
@@ -701,7 +697,7 @@ Parameter (in Michelson):
 ```
 (list
   (pair %vote
-    (nat %proposal_id)
+    (nat %proposal_key)
     (pair
       (bool %vote_type)
       (nat %vote_amount)
@@ -713,8 +709,8 @@ Parameter (in Michelson):
 - Sender MUST have unfrozen tokens equal to `voteAmount` or more (1 unfrozen token is needed for 1 vote).
 - Fails with `VOTING_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
   is less than specified `vVoteAmount` .
-- Fails with `PROPOSAL_NOT_EXIST` if the proposal id is not associated with any ongoing proposals.
-- Fails with `VOTING_PERIOD_OVER` if the proposal associated with the proposa id is already ended.
+- Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
+- Fails with `VOTING_PERIOD_OVER` if the proposal associated with the proposal key is already ended.
 - Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal is already at the max value set by the configuration.
 - The sender's balance in frozen tokens is increased by `voteAmount` and in unfrozen tokens is decreased by `voteAmount`.
 - The entrypoint accepts a list of vote params. As a result, the sender can `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.

@@ -12,6 +12,7 @@ module Test.BaseDAO.Limits
 import Universum
 
 import Fmt (pretty)
+import Named (defaults, (!))
 import Test.HUnit (Assertion, assertFailure)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)
@@ -41,7 +42,7 @@ actual `opSizeIsUnder` limit =
 averageStorage :: DAO.Storage ()
 averageStorage =
   -- TODO: fill this someday
-  DAO.mkStorage dummyAddress mempty mempty
+  DAO.mkStorage ! #admin dummyAddress ! defaults
 
 test_Operation_size :: TestTree
 test_Operation_size =

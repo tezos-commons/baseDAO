@@ -29,7 +29,6 @@ module Lorentz.Contracts.BaseDAO.Types
   , MigrateParam
   , MigrationStatus
 
-  , emptyStorage
   , mkStorage
 
   , CachedFunc (..)
@@ -47,7 +46,6 @@ module Lorentz.Contracts.BaseDAO.Types
 import Universum hiding (drop, (>>))
 
 import qualified Data.Kind as Kind
-import qualified Data.Map.Internal as Map
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Zip
@@ -168,12 +166,12 @@ instance TypeHasDoc MigrationStatus where
 
 -- | Storage of the FA2 contract
 data Storage (proposalMetadata :: Kind.Type) = Storage
-  { sLedger                    :: Ledger
-  , sOperators                 :: Operators
-  , sTokenAddress              :: Address
-  , sAdmin                     :: Address
-  , sPendingOwner              :: Maybe Address
-  , sMigrationStatus           :: MigrationStatus
+  { sLedger       :: Ledger
+  , sOperators    :: Operators
+  , sTokenAddress :: Address
+  , sAdmin        :: Address
+  , sPendingOwner :: Address
+  , sMigrationStatus :: MigrationStatus
 
   , sVotingPeriod              :: VotingPeriod
   , sQuorumThreshold           :: QuorumThreshold
@@ -208,7 +206,7 @@ type StorageC store pm =
     , "sOperators" := ("owner" :! Address, "operator" :! Address) ~> ()
     , "sTokenAddress" := Address
     , "sAdmin" := Address
-    , "sPendingOwner" := Maybe Address
+    , "sPendingOwner" := Address
     , "sLedger" := Ledger
     , "sMigrationStatus" := MigrationStatus
 
@@ -257,41 +255,30 @@ type VotingPeriod = Natural
 -- (quorum_threshold >= upvote + downvote) && (upvote > downvote)
 type QuorumThreshold = Natural
 
-emptyStorage :: Storage pm
-emptyStorage = Storage
-  { sLedger =  BigMap $ Map.empty
-  , sOperators = BigMap $ Map.empty
-  , sTokenAddress = genesisAddress
-  , sPendingOwner = Nothing
-  , sAdmin = genesisAddress
-  , sMigrationStatus = NotInMigration
-  , sVotingPeriod = 60 * 60 * 24 * 7 -- 7 days
-  , sQuorumThreshold = 4
-    -- ↑ any proposals that have less that 4 votes will be rejected
-    -- regardless of upvotes
-
-  , sProposals = BigMap $ Map.empty
-  , sProposalKeyListSortByDate = []
-  }
-
 mkStorage
-  :: Address
-  -> Map (Address, FA2.TokenId) Natural
-  -> Operators
+  :: "admin" :! Address
+  -> "votingPeriod" :? Natural
+  -> "quorumThreshold" :? Natural
   -> Storage pm
-mkStorage admin balances operators = Storage
-  { sLedger = BigMap balances
-  , sOperators = operators
+mkStorage admin votingPeriod quorumThreshold =
+  Storage
+  { sLedger = mempty
+  , sOperators = mempty
   , sTokenAddress = genesisAddress
-  , sPendingOwner = Nothing
-  , sAdmin = admin
+  , sPendingOwner = arg #admin admin
+  , sAdmin = arg #admin admin
   , sMigrationStatus = NotInMigration
-  , sVotingPeriod = 60 * 60 * 24 * 7 -- days
-  , sQuorumThreshold = 4
+  , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
+  , sQuorumThreshold = argDef #quorumThreshold quorumThresholdDef quorumThreshold
 
-  , sProposals = BigMap $ Map.empty
+  , sProposals = mempty
   , sProposalKeyListSortByDate = []
   }
+  where
+    votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
+    quorumThresholdDef = 4
+    -- ^ any proposals that have less that 4 votes (by default) will be rejected
+    -- regardless of upvotes
 
 ------------------------------------------------------------------------
 -- Optimizations
@@ -516,15 +503,9 @@ instance CustomErrorHasDoc "fROZEN_TOKEN_NOT_TRANSFERABLE" where
   customErrDocMdCause =
     "The sender tries to transfer frozen token"
 
-type instance ErrorArg "nO_PENDING_ADMINISTRATOR_SET" = ()
+type instance ErrorArg "nOT_PENDING_ADMIN" = ()
 
-instance CustomErrorHasDoc "nO_PENDING_ADMINISTRATOR_SET" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause = "Received an `accept_ownership` call when no pending owner was set"
-
-type instance ErrorArg "nOT_PENDING_ADMINISTRATOR" = ()
-
-instance CustomErrorHasDoc "nOT_PENDING_ADMINISTRATOR" where
+instance CustomErrorHasDoc "nOT_PENDING_ADMIN" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Received an `accept_ownership` from an address other than what is in the pending owner field"
