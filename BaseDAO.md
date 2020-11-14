@@ -229,9 +229,7 @@
 **Possible errors:**
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
 
-* [`NO_PENDING_ADMINISTRATOR_SET`](#errors-NO_PENDING_ADMINISTRATOR_SET) — Received an `accept_ownership` call when no pending owner was set
-
-* [`NOT_PENDING_ADMINISTRATOR`](#errors-NOT_PENDING_ADMINISTRATOR) — Received an `accept_ownership` from an address other than what is in the pending owner field
+* [`NOT_PENDING_ADMIN`](#errors-NOT_PENDING_ADMIN) — Received an `accept_ownership` from an address other than what is in the pending owner field
 
 
 
@@ -1207,29 +1205,17 @@ Provided error argument will be of type [`Address (no entrypoint)`](#types-Addre
 
 **Representation:** `("NOT_OWNER", ())`.
 
-<a name="errors-NOT_PENDING_ADMINISTRATOR"></a>
+<a name="errors-NOT_PENDING_ADMIN"></a>
 
 ---
 
-### `NOT_PENDING_ADMINISTRATOR`
+### `NOT_PENDING_ADMIN`
 
 **Class:** Action exception
 
 **Fires if:** Received an `accept_ownership` from an address other than what is in the pending owner field
 
-**Representation:** `("NOT_PENDING_ADMINISTRATOR", ())`.
-
-<a name="errors-NO_PENDING_ADMINISTRATOR_SET"></a>
-
----
-
-### `NO_PENDING_ADMINISTRATOR_SET`
-
-**Class:** Action exception
-
-**Fires if:** Received an `accept_ownership` call when no pending owner was set
-
-**Representation:** `("NO_PENDING_ADMINISTRATOR_SET", ())`.
+**Representation:** `("NOT_PENDING_ADMIN", ())`.
 
 <a name="errors-OUT_OF_BOUND_QUORUM_THRESHOLD"></a>
 
