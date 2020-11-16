@@ -34,7 +34,7 @@ import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 withOriginated
   :: MonadNettest caps base m
   => Integer
-  -> ([Address] -> (Storage ()))
+  -> ([Address] -> (Storage () ()))
   -> ([Address] -> TAddress (Parameter ()) -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
@@ -51,11 +51,15 @@ withOriginated addrCount storageFn tests = do
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.
 originateBaseDaoWithConfig
-  :: ( NiceStorage (Storage pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm, MonadNettest caps base m)
-  => DAO.Config pm -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
-originateBaseDaoWithConfig config = do
-  originateBaseDaoWithBalance config
+  :: forall pm ce caps base m.
+     ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
+     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm
+     , KnownValue ce, TypeHasDoc ce
+     , MonadNettest caps base m
+     )
+  => ce -> DAO.Config ce pm -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+originateBaseDaoWithConfig contractExtra config = do
+  originateBaseDaoWithBalance contractExtra config
     (\owner1 owner2 ->
         [ ((owner1, 0), 100)
         , ((owner2, 0), 100)
@@ -63,12 +67,17 @@ originateBaseDaoWithConfig config = do
     )
 
 originateBaseDaoWithBalance
-  :: ( NiceStorage (Storage pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm, MonadNettest caps base m)
-  => DAO.Config pm
+  :: forall pm ce caps base m.
+     ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
+     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm
+     , KnownValue ce, TypeHasDoc ce
+     , MonadNettest caps base m
+     )
+  => ce
+  -> DAO.Config ce pm
   -> (Address -> Address -> [((Address, FA2.TokenId), Natural)])
   -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
-originateBaseDaoWithBalance config balFunc = do
+originateBaseDaoWithBalance contractExtra config balFunc = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
   owner2 :: Address <- newAddress "owner2"
@@ -87,7 +96,7 @@ originateBaseDaoWithBalance config balFunc = do
       { odFrom = nettestAddress
       , odName = "BaseDAO"
       , odBalance = toMutez 0
-      , odStorage = (mkStorage ! #admin admin ! defaults)
+      , odStorage = (mkStorage ! #admin admin ! #extra contractExtra ! defaults)
         { sLedger = BigMap bal
         , sOperators = BigMap operators
         }
@@ -98,10 +107,14 @@ originateBaseDaoWithBalance config balFunc = do
   pure ((owner1, operator1), (owner2, operator2), dao, admin)
 
 originateBaseDao
-  :: ( NiceStorage (Storage pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm, MonadNettest caps base m)
-  => m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
-originateBaseDao = originateBaseDaoWithConfig DAO.defaultConfig
+  :: forall pm ce caps base m.
+     ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
+     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm
+     , KnownValue ce, TypeHasDoc ce
+     , MonadNettest caps base m
+     )
+  => ce -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+originateBaseDao contractExtra = originateBaseDaoWithConfig contractExtra DAO.defaultConfig
 
 -- | Create FA2 View
 mkFA2View
@@ -113,7 +126,7 @@ mkFA2View a c = FA2.FA2View (mkView a c)
 
 -- | Helper function to check a user balance of a particular token
 checkTokenBalance
-  :: (NiceStorage (Storage pm), NiceParameterFull (Parameter pm), MonadNettest caps base m)
+  :: (NiceParameterFull (Parameter pm), MonadNettest caps base m)
   => FA2.TokenId -> TAddress (DAO.Parameter pm)
   -> Address -> Natural
   -> m ()

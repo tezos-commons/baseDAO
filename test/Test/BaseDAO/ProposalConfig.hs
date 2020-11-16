@@ -17,7 +17,7 @@ import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo)
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
-config :: forall pm. (IsoValue pm) => DAO.Config pm
+config :: forall ce pm. (IsoValue pm) => DAO.Config ce pm
 config = DAO.defaultConfig
   { DAO.cProposalCheck = do
       toFieldNamed #ppFrozenToken
@@ -31,7 +31,7 @@ config = DAO.defaultConfig
         push False
   }
 
-configWithRejectedProposal :: forall pm. (IsoValue pm) => DAO.Config pm
+configWithRejectedProposal :: forall ce pm. (IsoValue pm) => DAO.Config ce pm
 configWithRejectedProposal = DAO.defaultConfig
   { DAO.cRejectedProposalReturnValue = do
       -- ^ divide frozen value by half
@@ -44,19 +44,19 @@ configWithRejectedProposal = DAO.defaultConfig
       toNamed #slash_amount
   }
 
-badRejectedValueConfig :: forall pm. DAO.Config pm
+badRejectedValueConfig :: forall ce pm. DAO.Config ce pm
 badRejectedValueConfig = DAO.defaultConfig
   { DAO.cRejectedProposalReturnValue = do
       drop; push (9999 :: Natural)
       toNamed #slash_amount
   }
 
-decisionLambdaConfig :: forall pm. IsoValue pm => DAO.Config pm
+decisionLambdaConfig :: forall ce pm. (IsoValue pm) => DAO.Config ce pm
 decisionLambdaConfig = config
   { DAO.cDecisionLambda = decisionLambda
   }
   where
-    decisionLambda :: forall s store. (DAO.StorageC store pm, DAO.HasFuncContext s store)
+    decisionLambda :: forall s store. (DAO.StorageC store ce pm, DAO.HasFuncContext s store)
       => (DAO.Proposal pm) : store : s
       :-> (List Operation, store) : s
     decisionLambda = do

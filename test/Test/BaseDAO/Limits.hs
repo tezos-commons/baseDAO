@@ -23,7 +23,7 @@ import Tezos.Address
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 
-originationOpSize :: _ => DAO.Config pm -> DAO.Storage pm -> OpSize
+originationOpSize :: _ => DAO.Config ce pm -> DAO.Storage ce pm -> OpSize
 originationOpSize config storage = mconcat
   [ OpSize 1601  -- heuristically evaluated base origination cost
   , contractOpSize $ DAO.baseDaoContract config
@@ -39,10 +39,10 @@ actual `opSizeIsUnder` limit =
     assertFailure $ "Operation size is " <> pretty actual <> " \
                     \and that exceedes the limit " <> pretty limit
 
-averageStorage :: DAO.Storage ()
+averageStorage :: DAO.Storage () ()
 averageStorage =
   -- TODO: fill this someday
-  DAO.mkStorage ! #admin dummyAddress ! defaults
+  DAO.mkStorage ! #admin dummyAddress ! #extra () ! defaults
 
 test_Operation_size :: TestTree
 test_Operation_size =

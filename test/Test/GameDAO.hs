@@ -34,7 +34,7 @@ test_GameDAO = testGroup "GameDAO Tests"
 validProposal :: (Monad m) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ do
   (consumer :: TAddress MText) <- originateSimple "consumer" [] contractConsumer
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig config
+  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def config
 
   -- Fail due to proposing new content require 50 token.
   callFrom (AddressResolved owner1) dao (Call @"Propose") (DAO.ProposeParams
@@ -54,7 +54,7 @@ flushAcceptedProposals :: (Monad m) => NettestImpl m -> m ()
 flushAcceptedProposals = uncapsNettest $ do
   (consumer :: TAddress MText) <- originateSimple "consumer" [] contractConsumer
   ((owner1, _), (owner2, _), dao, admin)
-    <- originateBaseDaoWithConfig config
+    <- originateBaseDaoWithConfig def config
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
@@ -134,4 +134,3 @@ createSampleProposal pm owner1 dao = do
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)
-

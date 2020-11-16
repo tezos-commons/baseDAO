@@ -10,7 +10,7 @@ import Universum
 
 import qualified Data.Map as Map
 import Data.Version (showVersion)
-import Lorentz (DGitRevision, GitRepoSettings(..), mkDGitRevision)
+import Lorentz (DGitRevision, Default(..), GitRepoSettings(..), mkDGitRevision)
 import Lorentz.ContractRegistry
 import Main.Utf8 (withUtf8)
 import Morley.CLI (addressOption)
@@ -49,22 +49,21 @@ usageDoc = Just $ mconcat
 contracts :: ContractRegistry
 contracts = ContractRegistry $ Map.fromList
   [ "BaseDAO" ?:: ContractInfo
-    { ciContract = DAO.baseDaoContract DAO.defaultConfig
+    { ciContract = DAO.baseDaoContract @() @() DAO.defaultConfig
     , ciIsDocumented = True
-    , ciStorageParser = Just $ baseDaoStorageParser @()
+    , ciStorageParser = Just baseDaoStorageParserDef
     , ciStorageNotes = Nothing
     }
   , "GameDAO" ?:: ContractInfo
     { ciContract = GameDAO.gameDaoContract
     , ciIsDocumented = True
-    , ciStorageParser = Just $
-        baseDaoStorageParser @GameDAO.GameDaoProposalMetadata
+    , ciStorageParser = Just baseDaoStorageParserDef
     , ciStorageNotes = Nothing
     }
   ]
 
-baseDaoStorageParser :: forall m. Opt.Parser (DAO.Storage m)
-baseDaoStorageParser = do
+baseDaoStorageParser :: forall pm ce. Opt.Parser ce -> Opt.Parser (DAO.Storage ce pm)
+baseDaoStorageParser extraParser = do
   adminAddress <-
     addressOption Nothing (#name .! "admin")
     (#help .! "Administrator of the DAO contract")
@@ -74,10 +73,15 @@ baseDaoStorageParser = do
   quorumThreshold <-
     mkCLOptionParser (Just 4) (#name .! "quorum-threshold")
     (#help .! "Total number of votes necessary for successful proposal")
+  extra <- extraParser
   pure $ DAO.mkStorage
     (#admin .! adminAddress)
     (#votingPeriod .? Just votingPeriod)
     (#quorumThreshold .? Just quorumThreshold)
+    (#extra .! extra)
+
+baseDaoStorageParserDef :: Default ce => Opt.Parser (DAO.Storage ce pm)
+baseDaoStorageParserDef = baseDaoStorageParser (pure def)
 
 main :: IO ()
 main = withUtf8 $ do

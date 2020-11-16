@@ -18,11 +18,26 @@ module Lorentz.Contracts.GameDAO
   , config
   ) where
 
-import Universum hiding ((>>), drop, swap)
 import Lorentz
+
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
+import Universum hiding (drop, swap, (>>))
 import Util.Markdown
+
+data GameDaoContractExtra = GameDaoContractExtra
+  deriving stock (Generic)
+  deriving anyclass (IsoValue)
+
+instance HasAnnotation GameDaoContractExtra where
+  annOptions = DAO.baseDaoAnnOptions
+
+instance TypeHasDoc GameDaoContractExtra where
+  typeDocMdDescription =
+    "As part of contract global state this carries nothing"
+
+instance Default GameDaoContractExtra where
+  def = GameDaoContractExtra
 
 data GameDaoProposalMetadata = GameDaoProposalMetadata
   { pmProposalType :: ProposalType
@@ -117,7 +132,7 @@ instance CustomErrorHasDoc "fAIL_DECISION_LAMBDA" where
 ----------------------------------------------------------------------------
 
 type Parameter = DAO.Parameter GameDaoProposalMetadata
-type Storage = DAO.Storage GameDaoProposalMetadata
+type Storage = DAO.Storage GameDaoContractExtra GameDaoProposalMetadata
 
 -- | For "balance change", the proposer needs to freeze 10 tokens
 -- For "new content", the proposal needs to freeze 50 tokens
@@ -157,7 +172,7 @@ gameDaoRejectedProposalReturnValue = do
 -- description. It would be more useful to send the whole proposal itself but
 -- using just the description is simpler to test.
 decisionLambda
-  ::  forall s store. (DAO.StorageC store GameDaoProposalMetadata)
+  ::  forall s store. (DAO.StorageC store GameDaoContractExtra GameDaoProposalMetadata)
   =>  (DAO.Proposal GameDaoProposalMetadata) : store : s
   :-> (List Operation, store) : s
 decisionLambda = do
@@ -174,7 +189,7 @@ decisionLambda = do
   nil; swap; cons
   pair
 
-config :: DAO.Config GameDaoProposalMetadata
+config :: DAO.Config GameDaoContractExtra GameDaoProposalMetadata
 config = DAO.defaultConfig
   { DAO.cDaoName = "Game DAO"
   , DAO.cDaoDescription = [md|A simple DAO for a Moba-like game.|]
