@@ -21,6 +21,7 @@ import Util.CLI (mkCLOptionParser)
 import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
+import qualified Lorentz.Contracts.GameDAO as GameDAO
 
 programInfo :: DGitRevision -> Opt.ParserInfo CmdLnArgs
 programInfo gitRev = Opt.info (Opt.helper <*> versionOption <*> argParser contracts gitRev) $
@@ -50,16 +51,23 @@ contracts = ContractRegistry $ Map.fromList
   [ "BaseDAO" ?:: ContractInfo
     { ciContract = DAO.baseDaoContract DAO.defaultConfig
     , ciIsDocumented = True
-    , ciStorageParser = Just baseDaoStorageParser
+    , ciStorageParser = Just $ baseDaoStorageParser @()
+    , ciStorageNotes = Nothing
+    }
+  , "GameDAO" ?:: ContractInfo
+    { ciContract = GameDAO.gameDaoContract
+    , ciIsDocumented = True
+    , ciStorageParser = Just $
+        baseDaoStorageParser @GameDAO.GameDaoProposalMetadata
     , ciStorageNotes = Nothing
     }
   ]
 
-baseDaoStorageParser :: Opt.Parser (DAO.Storage ())
+baseDaoStorageParser :: forall m. Opt.Parser (DAO.Storage m)
 baseDaoStorageParser = do
   adminAddress <-
     addressOption Nothing (#name .! "admin")
-    (#help .! "Administrator of the BaseDAO contract")
+    (#help .! "Administrator of the DAO contract")
   votingPeriod <-
     mkCLOptionParser (Just $ 60 * 60 * 24 * 7) (#name .! "voting-period")
     (#help .! "Period after which proposals can be finished")
