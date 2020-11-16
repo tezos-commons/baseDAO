@@ -18,8 +18,8 @@ sha=$(git rev-parse --short HEAD)
 git checkout origin/$doc_branch
 git checkout -B $doc_branch
 git merge -X theirs origin/$our_branch -m "Merge $our_branch"
-mv tmp/BaseDAO.md BaseDAO.md
-git add BaseDAO.md
+mv tmp/*.md .
+git add BaseDAO.md GameDAO.md
 git commit --allow-empty -m "Documentation update for $sha"
 git push --set-upstream auth-origin $doc_branch
 git checkout @{-2}

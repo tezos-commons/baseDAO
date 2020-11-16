@@ -95,6 +95,7 @@ rec {
       mkdir $out
       cd $out
       baseDAO document --name BaseDAO --output BaseDAO.md
+      baseDAO document --name GameDAO --output GameDAO.md
     '';
 
   # nixpkgs has weeder 2, but we use weeder 1
