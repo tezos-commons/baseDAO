@@ -58,7 +58,7 @@ decisionLambdaConfig = config
   where
     decisionLambda :: forall s store. (DAO.StorageC store ce pm, DAO.HasFuncContext s store)
       => (DAO.Proposal pm) : store : s
-      :-> (List Operation, store) : s
+      :-> List Operation : store : s
     decisionLambda = do
       toField #pProposer
       dip $ do
@@ -66,4 +66,4 @@ decisionLambdaConfig = config
       dig @2
       stackType @(store : Address : (FA2.TokenId, Natural) : s)
       DAO.callCachedFunc creditTo
-      nil; pair
+      nil

@@ -84,8 +84,8 @@ data Config contractExtra proposalMetadata = Config
 
   , cDecisionLambda :: forall s store.
      (StorageC store contractExtra proposalMetadata, HasFuncContext s store)
-    => (Proposal proposalMetadata) : store : s
-    :-> (List Operation, store) : s
+    => Proposal proposalMetadata : store : s
+    :-> List Operation : store : s
   -- ^ The decision lambda is executed based on a successful proposal.
 
 
@@ -125,7 +125,7 @@ defaultConfig = Config
   , cRejectedProposalReturnValue = do
       drop; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
-      drop; nil; pair
+      drop; nil
 
   , cMaxVotingPeriod = 60 * 60 * 24 * 30
   , cMinVotingPeriod = 1 -- value between 1 second - 1 month
@@ -246,6 +246,8 @@ type StorageC store ce pm =
     , "sProposalKeyListSortByDate" := [ProposalKey]
     ]
   , StoreHasField store "sExtra" ce
+    -- TODO: remove ^^^ once we use
+    -- https://gitlab.com/morley-framework/morley/-/merge_requests/665
   )
 
 -- | Parameter of the BaseDAO contract

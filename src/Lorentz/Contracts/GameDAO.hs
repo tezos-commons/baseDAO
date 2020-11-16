@@ -182,7 +182,7 @@ gameDaoRejectedProposalReturnValue = do
 decisionLambda
   ::  forall s store. (DAO.StorageC store GameDaoContractExtra GameDaoProposalMetadata)
   =>  (DAO.Proposal GameDaoProposalMetadata) : store : s
-  :-> (List Operation, store) : s
+  :-> List Operation : store : s
 decisionLambda = do
   toField #pMetadata
   getField #pmProposalDescription
@@ -202,8 +202,6 @@ decisionLambda = do
     push @Natural 1; add
     setField #ceAcceptedProposalsNum
     stSetField #sExtra
-
-  pair
 
 config :: DAO.Config GameDaoContractExtra GameDaoProposalMetadata
 config = DAO.defaultConfig

@@ -616,7 +616,6 @@ handleProposalIsOver config@Config{..} = do
         unfreezeProposerToken config True
         unfreezeVoterToken
         cDecisionLambda
-        unpair
         stackType @([Operation] : store : ProposalKey : [Operation] : s)
         dig @3
         iter cons
