@@ -121,6 +121,7 @@ tests:
     dependencies:
     - baseDAO
     - cleveland
+    - containers
     - fmt
     - HUnit
     - lorentz
