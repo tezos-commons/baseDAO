@@ -8,20 +8,20 @@ module Test.Common
   , originateBaseDao
   , originateBaseDaoWithConfig
   , originateBaseDaoWithBalance
-  , TestProposalMetadata
+  , makeProposalKey
   ) where
 
 import Universum
 
--- import qualified Data.Map.Strict as Map
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Named (defaults, (!))
--- import Util.Named ((.!))
+import Tezos.Crypto (blake2b)
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
+import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.BaseDAO.Types
 
 -- | Function that originates the contract and also make a bunch of
@@ -45,13 +45,12 @@ withOriginated addrCount storageFn tests = do
     }
   tests addresses baseDao
 
-type TestProposalMetadata = Integer
-
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.
 originateBaseDaoWithConfig
-  :: MonadNettest caps base m
-  => DAO.Config TestProposalMetadata -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter TestProposalMetadata), Address)
+  :: ( NiceStorage (Storage pm), NiceParameterFull (Parameter pm), NiceStorage pm
+     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm, MonadNettest caps base m)
+  => DAO.Config pm -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
 originateBaseDaoWithConfig config = do
   originateBaseDaoWithBalance config
     (\owner1 owner2 ->
@@ -61,10 +60,11 @@ originateBaseDaoWithConfig config = do
     )
 
 originateBaseDaoWithBalance
-  :: MonadNettest caps base m
-  => DAO.Config TestProposalMetadata
+  :: ( NiceStorage (Storage pm), NiceParameterFull (Parameter pm), NiceStorage pm
+     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm, MonadNettest caps base m)
+  => DAO.Config pm
   -> (Address -> Address -> [((Address, FA2.TokenId), Natural)])
-  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter TestProposalMetadata), Address)
+  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
 originateBaseDaoWithBalance config balFunc = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
@@ -113,8 +113,9 @@ originateBaseDaoWithBalance config balFunc = do
   pure ((owner1, operator1), (owner2, operator2), dao, admin)
 
 originateBaseDao
-  :: MonadNettest caps base m
-  => m ((Address, Address), (Address, Address), TAddress (DAO.Parameter TestProposalMetadata), Address)
+  :: ( NiceStorage (Storage pm), NiceParameterFull (Parameter pm), NiceStorage pm
+     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm, MonadNettest caps base m)
+  => m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
 originateBaseDao = originateBaseDaoWithConfig DAO.defaultConfig
 
 -- | Create FA2 View
@@ -127,8 +128,8 @@ mkFA2View a c = FA2.FA2View (mkView a c)
 
 -- | Helper function to check a user balance of a particular token
 checkTokenBalance
-  :: MonadNettest caps base m
-  => FA2.TokenId -> TAddress (DAO.Parameter TestProposalMetadata)
+  :: (NiceStorage (Storage pm), NiceParameterFull (Parameter pm), MonadNettest caps base m)
+  => FA2.TokenId -> TAddress (DAO.Parameter pm)
   -> Address -> Natural
   -> m ()
 checkTokenBalance tokenId dao addr expectedValue = do
@@ -142,3 +143,6 @@ checkTokenBalance tokenId dao addr expectedValue = do
 
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((addr, tokenId), expectedValue)]] )
+
+makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ByteString
+makeProposalKey params owner = blake2b $ lPackValue (params, owner)
