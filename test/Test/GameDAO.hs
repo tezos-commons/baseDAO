@@ -91,6 +91,8 @@ flushAcceptedProposals = uncapsNettest $ do
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [([mt|Balance Item|] :: MText)])
 
+  -- TODO [#31]: add a check on proposals counter
+
 -------------------------------------------------------------------------------
 -- Helper
 -------------------------------------------------------------------------------

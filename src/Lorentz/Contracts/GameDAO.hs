@@ -25,7 +25,11 @@ import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Universum hiding (drop, swap, (>>))
 import Util.Markdown
 
+-- | Global metadata of the contract.
 data GameDaoContractExtra = GameDaoContractExtra
+  { ceAcceptedProposalsNum :: Natural
+    -- ^ Counts number of ever accepted proposals.
+  }
   deriving stock (Generic)
   deriving anyclass (IsoValue)
 
@@ -37,12 +41,16 @@ instance TypeHasDoc GameDaoContractExtra where
     "As part of contract global state this carries nothing"
 
 instance Default GameDaoContractExtra where
-  def = GameDaoContractExtra
+  def = GameDaoContractExtra 0
 
+-- | Metadata we keep for each proposal.
 data GameDaoProposalMetadata = GameDaoProposalMetadata
   { pmProposalType :: ProposalType
+    -- ^ Proposal type.
   , pmProposalDescription :: MText
+    -- ^ Description of the proposal in free form.
   , pmConsumerAddr :: Address
+    -- ^ Address at which the report on proposal acceptance.
   }
   deriving stock (Generic)
   deriving anyclass IsoValue
@@ -187,6 +195,14 @@ decisionLambda = do
     push zeroMutez
   transferTokens
   nil; swap; cons
+
+  dip $ do
+    stGetField #sExtra
+    getField #ceAcceptedProposalsNum
+    push @Natural 1; add
+    setField #ceAcceptedProposalsNum
+    stSetField #sExtra
+
   pair
 
 config :: DAO.Config GameDaoContractExtra GameDaoProposalMetadata
