@@ -21,7 +21,7 @@ extra-deps:
   - git:
       https://gitlab.com/morley-framework/morley.git # CI can't use SSH
     commit:
-      3de9a9467d6cc160e690bc58a58ee48e98729d27 # master
+      13b57e14390c9bf77182b23fd97d8bdbc15f6a8a # master
     subdirs:
       - code/cleveland
       - code/morley-client
