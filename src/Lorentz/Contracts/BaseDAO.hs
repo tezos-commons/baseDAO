@@ -33,7 +33,7 @@ instance DocItem (DEntrypoint FA2EntrypointsKind) where
 baseDaoContract
   :: forall ce pm.
       ( NiceParameter pm, TypeHasDoc pm
-      , HasAnnotation pm, TypeHasDoc (Proposal pm)
+      , HasAnnotation pm
       , NicePackedValue pm
       , KnownValue ce, TypeHasDoc ce
       )

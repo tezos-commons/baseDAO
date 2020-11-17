@@ -53,7 +53,7 @@ withOriginated addrCount storageFn tests = do
 originateBaseDaoWithConfig
   :: forall pm ce caps base m.
      ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm
+     , TypeHasDoc pm, NicePackedValue pm
      , KnownValue ce, TypeHasDoc ce
      , MonadNettest caps base m
      )
@@ -69,7 +69,7 @@ originateBaseDaoWithConfig contractExtra config = do
 originateBaseDaoWithBalance
   :: forall pm ce caps base m.
      ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm
+     , TypeHasDoc pm, NicePackedValue pm
      , KnownValue ce, TypeHasDoc ce
      , MonadNettest caps base m
      )
@@ -109,7 +109,7 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
 originateBaseDao
   :: forall pm ce caps base m.
      ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc (Proposal pm), TypeHasDoc pm, NicePackedValue pm
+     , TypeHasDoc pm, NicePackedValue pm
      , KnownValue ce, TypeHasDoc ce
      , MonadNettest caps base m
      )
