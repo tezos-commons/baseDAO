@@ -22,6 +22,7 @@ import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import qualified Lorentz.Contracts.GameDAO as GameDAO
+import qualified Lorentz.Contracts.TrivialDAO as TrivialDAO
 
 programInfo :: DGitRevision -> Opt.ParserInfo CmdLnArgs
 programInfo gitRev = Opt.info (Opt.helper <*> versionOption <*> argParser contracts gitRev) $
@@ -49,7 +50,7 @@ usageDoc = Just $ mconcat
 contracts :: ContractRegistry
 contracts = ContractRegistry $ Map.fromList
   [ "BaseDAO" ?:: ContractInfo
-    { ciContract = DAO.baseDaoContract @() @() DAO.defaultConfig
+    { ciContract = TrivialDAO.trivialDaoContract
     , ciIsDocumented = True
     , ciStorageParser = Just baseDaoStorageParserDef
     , ciStorageNotes = Nothing

@@ -5,9 +5,9 @@ module Test.Common
   ( mkFA2View
   , checkTokenBalance
   , withOriginated
-  , originateBaseDao
+  , originateTrivialDao
   , originateBaseDaoWithConfig
-  , originateBaseDaoWithBalance
+  , originateTrivialDaoWithBalance
   , makeProposalKey
   ) where
 
@@ -26,6 +26,7 @@ import Util.Named ((.!))
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
+import qualified Lorentz.Contracts.TrivialDAO as DAO
 
 -- | Function that originates the contract and also make a bunch of
 -- address (the `addrCount` arg determines the count) for use within
@@ -106,6 +107,13 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
 
   pure ((owner1, operator1), (owner2, operator2), dao, admin)
 
+originateTrivialDaoWithBalance
+  :: (MonadNettest caps base m)
+  => (Address -> Address -> [((Address, FA2.TokenId), Natural)])
+  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter ()), Address)
+originateTrivialDaoWithBalance =
+  originateBaseDaoWithBalance () DAO.trivialConfig
+
 originateBaseDao
   :: forall pm ce caps base m.
      ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
@@ -115,6 +123,11 @@ originateBaseDao
      )
   => ce -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
 originateBaseDao contractExtra = originateBaseDaoWithConfig contractExtra DAO.defaultConfig
+
+originateTrivialDao
+  :: (MonadNettest caps base m)
+  => m ((Address, Address), (Address, Address), TAddress (DAO.Parameter ()), Address)
+originateTrivialDao = originateBaseDao ()
 
 -- | Create FA2 View
 mkFA2View

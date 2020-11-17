@@ -22,6 +22,7 @@ import Lorentz.Value
 import Tezos.Address
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
+import qualified Lorentz.Contracts.TrivialDAO as DAO
 
 originationOpSize :: _ => DAO.Config ce pm -> DAO.Storage ce pm -> OpSize
 originationOpSize config storage = mconcat
@@ -44,6 +45,10 @@ averageStorage =
   -- TODO: fill this someday
   DAO.mkStorage ! #admin dummyAddress ! #extra () ! defaults
 
+averageConfig :: DAO.Config () ()
+averageConfig = DAO.trivialConfig
+  -- TODO: fill this someday
+
 test_Operation_size :: TestTree
 test_Operation_size =
   testGroup "Contract code is small enough"
@@ -55,13 +60,13 @@ test_Operation_size =
       -- and originating the contract with a bigger storage than expected
       -- should still succeed, thus you can temporarily disable this test.
       -- But make sure that work on optimizing the contract is planned.
-      let opSize = originationOpSize @() DAO.defaultConfig averageStorage
+      let opSize = originationOpSize @() averageConfig averageStorage
       opSize `opSizeIsUnder` OpSize 14000
 
   , testCase "Hard limit" $ do
       -- Failure of this check means that we cannot originate the contract
       -- with reasonably big storages anymore and optimizations have to be
       -- applied as fast as possible.
-      let opSize = originationOpSize @() DAO.defaultConfig averageStorage
+      let opSize = originationOpSize @() averageConfig averageStorage
       opSize `opSizeIsUnder` opSizeHardLimit
   ]

@@ -10,6 +10,7 @@ module Lorentz.Contracts.BaseDAO
   , Parameter (..)
   , Storage (..)
 
+  , DaoContract
   , baseDaoContract
   , mkStorage
   ) where
@@ -30,6 +31,9 @@ instance DocItem (DEntrypoint FA2EntrypointsKind) where
   docItemSectionName = Just "FA2 entrypoints"
   docItemToMarkdown = diEntrypointToMarkdown
 
+type DaoContract ce pm =
+  Contract (BaseDAO.Parameter pm) (BaseDAO.Storage ce pm)
+
 baseDaoContract
   :: forall ce pm.
       ( NiceParameter pm, TypeHasDoc pm
@@ -37,7 +41,7 @@ baseDaoContract
       , NicePackedValue pm
       , KnownValue ce, TypeHasDoc ce
       )
-  => Config ce pm -> Contract (BaseDAO.Parameter pm) (BaseDAO.Storage ce pm)
+  => Config ce pm -> DaoContract ce pm
 baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc

@@ -100,6 +100,7 @@ data Config contractExtra proposalMetadata = Config
   , cMinVotingPeriod :: Natural
   }
 
+-- | The default configuration with the simplest possible logic.
 defaultConfig :: Config ce pm
 defaultConfig = Config
   { cDaoName = "BaseDAO"
@@ -135,6 +136,7 @@ defaultConfig = Config
   , cMaxVotes = 1000
   , cMaxProposals = 500
   }
+
 ------------------------------------------------------------------------
 -- Operators
 ------------------------------------------------------------------------
