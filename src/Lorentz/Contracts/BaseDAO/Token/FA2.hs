@@ -120,7 +120,7 @@ transfer = do
 
 debitFrom
   :: forall store ce pm. (StorageC store ce pm, IsoValue store)
-  => CachedFunc "debitFrom" [store, Address, (TokenId, Natural)] '[store]
+  => DebitFromFunc store
 debitFrom = mkCachedFunc $ do
   dig @2
   unpair
@@ -178,7 +178,7 @@ debitFrom = mkCachedFunc $ do
 
 creditTo
   :: forall pm ce store. (StorageC store ce pm, IsoValue store)
-  => CachedFunc "creditTo" [store, Address, (TokenId, Natural)] '[store]
+  => CreditToFunc store
 creditTo = mkCachedFunc $ do
   dig @2
   unpair

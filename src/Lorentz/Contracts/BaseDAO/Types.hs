@@ -35,6 +35,9 @@ module Lorentz.Contracts.BaseDAO.Types
   , mkCachedFunc
   , pushCachedFunc
   , callCachedFunc
+
+  , DebitFromFunc
+  , CreditToFunc
   , HasFuncContext
 
   , Entrypoint'
@@ -378,16 +381,26 @@ callCachedFunc (CachedFunc l f :: CachedFunc n i o) = do
   dupL l
   execute @i @o @s
 
+-- Cached functions context of the contract
+------------------------------------------------------------------------
+
+type DebitFromFunc store =
+  CachedFunc "debitFrom" [store, Address, (FA2.TokenId, Natural)] '[store]
+
+type CreditToFunc store =
+  CachedFunc "creditTo" [store, Address, (FA2.TokenId, Natural)] '[store]
+
+type family IncludesFunc f where
+  IncludesFunc (CachedFunc n i o) = n := (i :-> o)
+
 -- | Indicates that we keep some functions on stack in order to include
 -- them only once in the contract.
 type HasFuncContext s store =
   ( IsoValue store
   , VarIsUnnamed store
   , HasNamedVars s
-    [ "creditTo"
-        := '[store, Address, (FA2.TokenId, Natural)] :-> '[store]
-    , "debitFrom"
-        := '[store, Address, (FA2.TokenId, Natural)] :-> '[store]
+    [ IncludesFunc (DebitFromFunc store)
+    , IncludesFunc (CreditToFunc store)
     ]
   )
 
