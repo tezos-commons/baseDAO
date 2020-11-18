@@ -11,6 +11,8 @@ module Lorentz.Contracts.BaseDAO.Proposal
   ) where
 
 import Lorentz
+import Lorentz.Contracts.BaseDAO.Doc
+  (proposeDoc, voteDoc, setVotingPeriodDoc, setQuorumThresholdDoc, flushDoc)
 import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
 import Lorentz.Contracts.BaseDAO.Types
@@ -206,6 +208,7 @@ propose
      (StorageC store pm, NicePackedValue pm, HasFuncContext s store)
   => Config pm -> Entrypoint' (ProposeParams pm) store s
 propose config = do
+  doc $ DDescription proposeDoc
   stackType @(ProposeParams pm : store : s)
   framed $ checkIsProposalValid config
   framed $ checkProposalLimitReached config
@@ -345,6 +348,7 @@ vote
      (StorageC store pm, NiceParameter pm, HasFuncContext s store)
   => Config pm -> Entrypoint' [VoteParam] store s
 vote config = do
+  doc $ DDescription voteDoc
   dip ensureNotMigrated
   iter $ do
     dupTop2
@@ -381,6 +385,7 @@ setVotingPeriod
   :: forall store pm s. (StorageC store pm)
   => Config pm -> Entrypoint' VotingPeriod store s
 setVotingPeriod Config{..}= do
+  doc $ DDescription setVotingPeriodDoc
   dip $ do
     ensureNotMigrated
     authorizeAdmin
@@ -406,6 +411,7 @@ setQuorumThreshold
   :: forall store pm s. (StorageC store pm)
   => Config pm -> Entrypoint' QuorumThreshold store s
 setQuorumThreshold Config{..} = do
+  doc $ DDescription setQuorumThresholdDoc
   dip $ do
     ensureNotMigrated
     authorizeAdmin
@@ -647,6 +653,7 @@ flush
      (NiceParameter pm, StorageC store pm, HasFuncContext s store)
   => Config pm -> Entrypoint' () store s
 flush config = do
+  doc $ DDescription flushDoc
   dip $ do
     ensureNotMigrated
     authorizeAdmin

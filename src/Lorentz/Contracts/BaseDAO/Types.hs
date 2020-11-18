@@ -103,7 +103,8 @@ data Config proposalMetadata = Config
 defaultConfig :: Config pm
 defaultConfig = Config
   { cDaoName = "BaseDAO"
-  , cDaoDescription = [md|"BaseDAO description"|]
+  , cDaoDescription = [md|An example of a very simple DAO contract without any custom checks,
+                          extra data and decision lambda.|]
   , cUnfrozenTokenMetadata = FA2.TokenMetadata
       { FA2.tmTokenId = unfrozenTokenId
       , FA2.tmSymbol = [mt|unfrozen_token|]
@@ -183,6 +184,14 @@ data Storage (proposalMetadata :: Kind.Type) = Storage
   }
   deriving stock (Generic, Show)
   deriving anyclass (HasAnnotation)
+
+instance (IsoValue pm, TypeHasDoc pm) => TypeHasDoc (Storage pm) where
+   typeDocMdDescription =
+     "Storage type for baseDAO contract"
+   typeDocMdReference = poly1TypeDocMdReference
+   typeDocHaskellRep = concreteTypeDocHaskellRep @(Storage Integer)
+   typeDocMichelsonRep = concreteTypeDocMichelsonRep @(Storage Integer)
+
 
 deriving anyclass instance (WellTypedIsoValue proposalMetadata) => IsoValue (Storage proposalMetadata)
 
