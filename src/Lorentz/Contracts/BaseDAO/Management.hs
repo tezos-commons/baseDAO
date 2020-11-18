@@ -11,6 +11,7 @@ module Lorentz.Contracts.BaseDAO.Management
   ) where
 
 import Lorentz
+import Lorentz.Contracts.BaseDAO.Doc (transferOwnershipDoc, acceptOwnershipDoc, migrateDoc, confirmMigrationDoc)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.ManagedLedger.Doc (DRequireRole(..))
 
@@ -19,6 +20,7 @@ import Lorentz.Contracts.ManagedLedger.Doc (DRequireRole(..))
 transferOwnership
   :: IsoValue pm => Entrypoint' TransferOwnershipParam (Storage pm) s
 transferOwnership = do
+  doc $ DDescription transferOwnershipDoc
   dip $ do
     ensureNotMigrated
     authorizeAdmin
@@ -32,6 +34,7 @@ transferOwnership = do
 acceptOwnership
   :: IsoValue pm => Entrypoint' () (Storage pm) s
 acceptOwnership = do
+  doc $ DDescription acceptOwnershipDoc
   drop @()
   ensureNotMigrated
 
@@ -46,6 +49,7 @@ acceptOwnership = do
 -- in param.
 migrate :: IsoValue pm => Entrypoint' MigrateParam (Storage pm) s
 migrate = do
+  doc $ DDescription migrateDoc
   dip $ do
     ensureNotMigrated
     authorizeAdmin
@@ -68,6 +72,7 @@ ensureNotMigrated = do
 -- Confirm that the sender is the new contract address and set `MIGRATED_TO` status
 confirmMigration :: IsoValue pm => Entrypoint' () (Storage pm) s
 confirmMigration = do
+  doc $ DDescription confirmMigrationDoc
   drop
   doc $ DRequireRole "migration target contract"
   stGetField #sMigrationStatus
