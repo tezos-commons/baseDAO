@@ -1,6 +1,136 @@
 # BaseDAO
 
-"BaseDAO description"
+**Code revision:** [506e869](https://github.com/tqtezos/baseDAO/tree/506e869179df1dc0b4e980968d40644d5f377b2d) *(Wed Nov 18 13:39:49 2020 +0300)*
+
+
+
+An example of a very simple DAO contract without any custom checks,
+                          extra data and decision lambda.
+
+It contains standard FA2 entrypoints, plus some extra ones including proposal and
+migration entrypoints. It supports two types of token_id - frozen (token_id = 1) and unfrozen (token_id = 0).
+
+
+## Table of contents
+
+- [Haskell ⇄ Michelson conversion](#haskell-⇄-Michelson-conversion)
+- [Storage](#storage)
+  - [Storage](#storage-Storage)
+- [Entrypoints](#entrypoints)
+  - [call_FA2](#entrypoints-call_FA2)
+  - [transfer_ownership](#entrypoints-transfer_ownership)
+  - [accept_ownership](#entrypoints-accept_ownership)
+  - [migrate](#entrypoints-migrate)
+  - [confirm_migration](#entrypoints-confirm_migration)
+  - [propose](#entrypoints-propose)
+  - [vote](#entrypoints-vote)
+  - [set_voting_period](#entrypoints-set_voting_period)
+  - [set_quorum_threshold](#entrypoints-set_quorum_threshold)
+  - [flush](#entrypoints-flush)
+  - [burn](#entrypoints-burn)
+  - [mint](#entrypoints-mint)
+  - [transfer_contract_tokens](#entrypoints-transfer_contract_tokens)
+  - [token_address](#entrypoints-token_address)
+- [Possible errors](#possible-errors)
+
+**[Definitions](#definitions)**
+
+- [Types](#types)
+  - [()](#types-lparenrparen)
+  - [(a, b)](#types-lparenacomma-brparen)
+  - [Address (no entrypoint)](#types-Address-lparenno-entrypointrparen)
+  - [BalanceRequestItem](#types-BalanceRequestItem)
+  - [BalanceResponseItem](#types-BalanceResponseItem)
+  - [BigMap](#types-BigMap)
+  - [Bool](#types-Bool)
+  - [BurnParam](#types-BurnParam)
+  - [ByteString](#types-ByteString)
+  - [Contract](#types-Contract)
+  - [Integer](#types-Integer)
+  - [List](#types-List)
+  - [MigrationStatus](#types-MigrationStatus)
+  - [MintParam](#types-MintParam)
+  - [Named entry](#types-Named-entry)
+  - [Natural](#types-Natural)
+  - [OperatorParam](#types-OperatorParam)
+  - [Parameter](#types-Parameter)
+  - [Proposal](#types-Proposal)
+  - [ProposeParams](#types-ProposeParams)
+  - [Text](#types-Text)
+  - [Timestamp](#types-Timestamp)
+  - [TransferContractTokensParam](#types-TransferContractTokensParam)
+  - [TransferDestination](#types-TransferDestination)
+  - [TransferItem](#types-TransferItem)
+  - [UpdateOperator](#types-UpdateOperator)
+  - [View](#types-View)
+  - [VoteParam](#types-VoteParam)
+- [Errors](#errors)
+  - [FA2_INSUFFICIENT_BALANCE](#errors-FA2_INSUFFICIENT_BALANCE)
+  - [FA2_NOT_OPERATOR](#errors-FA2_NOT_OPERATOR)
+  - [FA2_TOKEN_UNDEFINED](#errors-FA2_TOKEN_UNDEFINED)
+  - [FAIL_PROPOSAL_CHECK](#errors-FAIL_PROPOSAL_CHECK)
+  - [FAIL_TRANSFER_CONTRACT_TOKENS](#errors-FAIL_TRANSFER_CONTRACT_TOKENS)
+  - [FORBIDDEN_XTZ](#errors-FORBIDDEN_XTZ)
+  - [FROZEN_TOKEN_NOT_TRANSFERABLE](#errors-FROZEN_TOKEN_NOT_TRANSFERABLE)
+  - [InternalError](#errors-InternalError)
+  - [MAX_PROPOSALS_REACHED](#errors-MAX_PROPOSALS_REACHED)
+  - [MAX_VOTES_REACHED](#errors-MAX_VOTES_REACHED)
+  - [MIGRATED](#errors-MIGRATED)
+  - [NOT_ADMIN](#errors-NOT_ADMIN)
+  - [NOT_MIGRATING](#errors-NOT_MIGRATING)
+  - [NOT_MIGRATION_TARGET](#errors-NOT_MIGRATION_TARGET)
+  - [NOT_OWNER](#errors-NOT_OWNER)
+  - [NOT_PENDING_ADMIN](#errors-NOT_PENDING_ADMIN)
+  - [OUT_OF_BOUND_QUORUM_THRESHOLD](#errors-OUT_OF_BOUND_QUORUM_THRESHOLD)
+  - [OUT_OF_BOUND_VOTING_PERIOD](#errors-OUT_OF_BOUND_VOTING_PERIOD)
+  - [PROPOSAL_INSUFFICIENT_BALANCE](#errors-PROPOSAL_INSUFFICIENT_BALANCE)
+  - [PROPOSAL_NOT_EXIST](#errors-PROPOSAL_NOT_EXIST)
+  - [PROPOSAL_NOT_UNIQUE](#errors-PROPOSAL_NOT_UNIQUE)
+  - [PROPOSER_NOT_EXIST_IN_LEDGER](#errors-PROPOSER_NOT_EXIST_IN_LEDGER)
+  - [VOTING_INSUFFICIENT_BALANCE](#errors-VOTING_INSUFFICIENT_BALANCE)
+  - [VOTING_PERIOD_OVER](#errors-VOTING_PERIOD_OVER)
+
+
+
+## Haskell ⇄ Michelson conversion
+
+This smart contract is developed in Haskell using the [Morley framework](https://gitlab.com/morley-framework/morley). Documentation mentions Haskell types that can be used for interaction with this contract from Haskell, but for each Haskell type we also mention its Michelson representation to make interactions outside of Haskell possible.
+
+There are multiple ways to interact with this contract:
+
+* Use this contract in your Haskell application, thus all operation submissionshould be handled separately, e.g. via calling `tezos-client`, which will communicate with the `tezos-node`. In order to be able to call `tezos-client` you'll need to be able to construct Michelson values from Haskell.
+
+  The easiest way to do that is to serialize Haskell value using `lPackValue` function from [`Lorentz.Pack`](https://gitlab.com/morley-framework/morley/-/blob/2441e26bebd22ac4b30948e8facbb698d3b25c6d/code/lorentz/src/Lorentz/Pack.hs) module, encode resulting bytestring to hexadecimal representation using `encodeHex` function. Resulting hexadecimal encoded bytes sequence can be decoded back to Michelson value via `tezos-client unpack michelson data`.
+
+  Reverse conversion from Michelson value to the Haskell value can be done by serializing Michelson value using `tezos-client hash data` command, resulting `Raw packed data` should be decoded from the hexadecimal representation using `decodeHex` and deserialized to the Haskell value via `lUnpackValue` function from [`Lorentz.Pack`](https://gitlab.com/morley-framework/morley/-/blob/2441e26bebd22ac4b30948e8facbb698d3b25c6d/code/lorentz/src/Lorentz/Pack.hs).
+
+* Contruct values for this contract directly on Michelson level using types provided in the documentation.
+
+## Storage
+
+<a name="storage-Storage"></a>
+
+---
+
+### `Storage`
+
+Storage type for baseDAO contract
+
+**Structure (example):** `Storage Integer` = 
+  * ***sLedger*** :[`BigMap`](#types-BigMap) ([`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), [`Natural`](#types-Natural)) [`Natural`](#types-Natural)
+  * ***sOperators*** :[`BigMap`](#types-BigMap) (***owner*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), ***operator*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)) [`()`](#types-lparenrparen)
+  * ***sTokenAddress*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***sAdmin*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***sPendingOwner*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***sMigrationStatus*** :[`MigrationStatus`](#types-MigrationStatus)
+  * ***sVotingPeriod*** :[`Natural`](#types-Natural)
+  * ***sQuorumThreshold*** :[`Natural`](#types-Natural)
+  * ***sProposals*** :[`BigMap`](#types-BigMap) [`ByteString`](#types-ByteString) ([`Proposal`](#types-Proposal) [`Integer`](#types-Integer))
+  * ***sProposalKeyListSortByDate*** :[`List`](#types-List) [`ByteString`](#types-ByteString)
+
+**Final Michelson representation (example):** `Storage Integer` = `pair (pair (pair (big_map (pair address nat) nat) (big_map (pair address address) unit)) (pair address (pair address address))) (pair (pair (or unit (or address address)) nat) (pair nat (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair int address) (pair nat (list (pair address nat)))))) (list bytes))))`
+
+
 
 ## Entrypoints
 
@@ -9,6 +139,9 @@
 ---
 
 ### `call_FA2`
+
+Entrypoint to be called if you want to use one of FA2 entrypoints.
+
 
 **Argument:** 
   + **In Haskell:** [`Parameter`](#types-Parameter)
@@ -19,21 +152,26 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Call_FA2` constructor.
-    + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (Left (·)))`
+1. Call contract's `call_FA2` entrypoint passing the constructed argument.
 </details>
 <p>
 
 
 
-#### Entrypoints
-
-<a name="entrypoints-transfer"></a>
+#### FA2 entrypoints
 
 ---
 
 ##### `transfer`
+
+Transfer tokens between a given account and each account from the given list.
+
+It serves multiple purposes:
+* If transaction `"from"` address equals to the admin address presented in storage, then  it is allowed for
+any address and both `frozen` and `unfrozen` tokens
+* Otherwise, it is allowed to transfer money only if `from` address equals to sender address or have sender as an operator
+It is also prohibited to send frozen tokens in this case.
+
 
 **Argument:** 
   + **In Haskell:** [`List`](#types-List) [`TransferItem`](#types-TransferItem)
@@ -44,12 +182,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Transfer` constructor.
-    + **In Haskell:** `Transfer (·)`
-    + **In Michelson:** `Left (Left (·))`
-1. Wrap into `Call_FA2` constructor.
-    + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (Left (·)))`
+1. Call contract's `transfer` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -68,11 +201,13 @@
 
 
 
-<a name="entrypoints-balance_of"></a>
-
 ---
 
 ##### `balance_of`
+
+Returns the balance of specified address in ledger.
+The entrypoint supports both frozen and unfrozen tokens.
+
 
 **Argument:** 
   + **In Haskell:** [`View`](#types-View) ([`List`](#types-List) [`BalanceRequestItem`](#types-BalanceRequestItem)) ([`List`](#types-List) [`BalanceResponseItem`](#types-BalanceResponseItem))
@@ -83,12 +218,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Balance_of` constructor.
-    + **In Haskell:** `Balance_of (·)`
-    + **In Michelson:** `Left (Right (·))`
-1. Wrap into `Call_FA2` constructor.
-    + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (Left (·)))`
+1. Call contract's `balance_of` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -101,11 +231,13 @@
 
 
 
-<a name="entrypoints-token_metadata_registry"></a>
-
 ---
 
 ##### `token_metadata_registry`
+
+Returns contract address that holds token metadata.
+Token metadata will contain the DAO metadata.
+
 
 **Argument:** 
   + **In Haskell:** [`ContractRef`](#types-Contract) [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
@@ -116,12 +248,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Token_metadata_registry` constructor.
-    + **In Haskell:** `Token_metadata_registry (·)`
-    + **In Michelson:** `Right (Left (·))`
-1. Wrap into `Call_FA2` constructor.
-    + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (Left (·)))`
+1. Call contract's `token_metadata_registry` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -132,11 +259,20 @@
 
 
 
-<a name="entrypoints-update_operators"></a>
-
 ---
 
 ##### `update_operators`
+
+Updates operators. There are 2 different opportunities:
+
+* Add operator - updates operators with a new pair of `(operator, owner)`.
+If this pair already exists, this entrypoint does nothing
+* Remove operator - updates operators, removing the existing pair of `(operator, owner)`.
+If there is no such key, this entrypoint does nothing.
+
+All tokens passed to this entrypoint as a part of an argument must be unfrozen.
+Each owner must be equal to sender, or the entrypoint fails.
+
 
 **Argument:** 
   + **In Haskell:** [`List`](#types-List) [`UpdateOperator`](#types-UpdateOperator)
@@ -147,12 +283,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Update_operators` constructor.
-    + **In Haskell:** `Update_operators (·)`
-    + **In Michelson:** `Right (Right (·))`
-1. Wrap into `Call_FA2` constructor.
-    + **In Haskell:** `Call_FA2 (·)`
-    + **In Michelson:** `Left (Left (Left (·)))`
+1. Call contract's `update_operators` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -175,6 +306,10 @@
 
 ### `transfer_ownership`
 
+Asks an Address to become an admin. Can be called only by current administrator. The admin duties transfer only when the
+requested address accepts ownership. If called multiple times, only the last called address can accept ownership.
+
+
 **Argument:** 
   + **In Haskell:** ***newOwner*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
   + **In Michelson:** `(address :newOwner)`
@@ -184,9 +319,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Transfer_ownership` constructor.
-    + **In Haskell:** `Transfer_ownership (·)`
-    + **In Michelson:** `Left (Left (Right (Left (·))))`
+1. Call contract's `transfer_ownership` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -207,6 +340,10 @@
 
 ### `accept_ownership`
 
+Accepts the administrator privelege.
+Only works when the sender was asked to become an admin and only if it was asked by the current admin.
+
+
 **Argument:** 
   + **In Haskell:** [`()`](#types-lparenrparen)
   + **In Michelson:** `unit`
@@ -216,9 +353,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Accept_ownership` constructor.
-    + **In Haskell:** `Accept_ownership (·)`
-    + **In Michelson:** `Left (Left (Right (Right (·))))`
+1. Call contract's `accept_ownership` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -239,6 +374,10 @@
 
 ### `migrate`
 
+Asks an address to migrate the contract to it.
+The contract is not considered migrated, until it receives confirm_migration call.
+
+
 **Argument:** 
   + **In Haskell:** ***newAddress*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
   + **In Michelson:** `(address :newAddress)`
@@ -248,9 +387,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Migrate` constructor.
-    + **In Haskell:** `Migrate (·)`
-    + **In Michelson:** `Left (Right (Left (Left (·))))`
+1. Call contract's `migrate` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -271,6 +408,10 @@
 
 ### `confirm_migration`
 
+Confirms migration of a contract to the sender address.
+After a successful call the contract will be set to migrated state where no operations are possible.
+
+
 **Argument:** 
   + **In Haskell:** [`()`](#types-lparenrparen)
   + **In Michelson:** `unit`
@@ -280,9 +421,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Confirm_migration` constructor.
-    + **In Haskell:** `Confirm_migration (·)`
-    + **In Michelson:** `Left (Right (Left (Right (·))))`
+1. Call contract's `confirm_migration` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -305,6 +444,12 @@
 
 ### `propose`
 
+Saves the proposal with specific id and freezes the amount of sender tokens equal to the given amount.
+The sender must have enough unfrozen tokens.
+The sender's amount of frozen tokens is increased by proposal ammount. And the amount of unfrozen one
+is decreased by the same value.
+
+
 **Argument:** 
   + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`()`](#types-lparenrparen)
   + **In Michelson:** `(pair (nat %frozen_token) (unit %proposal_metadata))`
@@ -314,9 +459,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Propose` constructor.
-    + **In Haskell:** `Propose (·)`
-    + **In Michelson:** `Left (Right (Right (Left (·))))`
+1. Call contract's `propose` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -341,6 +484,11 @@
 
 ### `vote`
 
+For each vote params in a given list vote for the proposal with that id. Thus the sender can vote many proposals
+(or one proposal multiple times) in a single call.
+The sender must have an amount required for all votings.
+
+
 **Argument:** 
   + **In Haskell:** [`List`](#types-List) [`VoteParam`](#types-VoteParam)
   + **In Michelson:** `(list (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))))`
@@ -350,9 +498,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Vote` constructor.
-    + **In Haskell:** `Vote (·)`
-    + **In Michelson:** `Left (Right (Right (Right (·))))`
+1. Call contract's `vote` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -379,6 +525,10 @@
 
 ### `set_voting_period`
 
+Updates how long the voting period would last.
+It affects all ongoing proposals and all created afterwards.
+
+
 **Argument:** 
   + **In Haskell:** [`Natural`](#types-Natural)
   + **In Michelson:** `nat`
@@ -388,9 +538,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Set_voting_period` constructor.
-    + **In Haskell:** `Set_voting_period (·)`
-    + **In Michelson:** `Right (Left (Left (·)))`
+1. Call contract's `set_voting_period` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -413,6 +561,10 @@
 
 ### `set_quorum_threshold`
 
+Updates the quorum threshold with a given value.
+It affects all ongoing proposals and all created afterwards.
+
+
 **Argument:** 
   + **In Haskell:** [`Natural`](#types-Natural)
   + **In Michelson:** `nat`
@@ -422,9 +574,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Set_quorum_threshold` constructor.
-    + **In Haskell:** `Set_quorum_threshold (·)`
-    + **In Michelson:** `Right (Left (Right (Left (·))))`
+1. Call contract's `set_quorum_threshold` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -447,6 +597,13 @@
 
 ### `flush`
 
+Finish voting process on all proposals where the voting period is over.
+Returns an amount to the proposer, determined by the result of voting.
+There is a possibility of some tokens being lost due to administrator perform
+of burn or transfer operation.
+If the proposal is accepted, the decision lambda is called.
+
+
 **Argument:** 
   + **In Haskell:** [`()`](#types-lparenrparen)
   + **In Michelson:** `unit`
@@ -456,9 +613,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Flush` constructor.
-    + **In Haskell:** `Flush (·)`
-    + **In Michelson:** `Right (Left (Right (Right (·))))`
+1. Call contract's `flush` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -485,6 +640,10 @@
 
 ### `burn`
 
+Reduces the amount of tokens of the given address. Can be performed only
+only if the given address has enough tokens to burn.
+
+
 **Argument:** 
   + **In Haskell:** [`BurnParam`](#types-BurnParam)
   + **In Michelson:** `(pair (address %from_) (pair (nat %token_id) (nat %amount)))`
@@ -494,9 +653,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Burn` constructor.
-    + **In Haskell:** `Burn (·)`
-    + **In Michelson:** `Right (Right (Left (Left (·))))`
+1. Call contract's `burn` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -519,6 +676,9 @@
 
 ### `mint`
 
+Provides the amount of tokens of the given address.
+
+
 **Argument:** 
   + **In Haskell:** [`MintParam`](#types-MintParam)
   + **In Michelson:** `(pair (address %to_) (pair (nat %token_id) (nat %amount)))`
@@ -528,9 +688,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Mint` constructor.
-    + **In Haskell:** `Mint (·)`
-    + **In Michelson:** `Right (Right (Left (Right (·))))`
+1. Call contract's `mint` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -551,6 +709,11 @@
 
 ### `transfer_contract_tokens`
 
+This entrypoint can be used by the administrator
+to transfer tokens owned (or operated) by this contract in another FA2 contract.
+Unlike the others, this entrypoint can be used after contract is migrated.
+
+
 **Argument:** 
   + **In Haskell:** [`TransferContractTokensParam`](#types-TransferContractTokensParam)
   + **In Michelson:** `(pair (address %contract_address) (list %params (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))`
@@ -560,9 +723,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Transfer_contract_tokens` constructor.
-    + **In Haskell:** `Transfer_contract_tokens (·)`
-    + **In Michelson:** `Right (Right (Right (Left (·))))`
+1. Call contract's `transfer_contract_tokens` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -583,6 +744,10 @@
 
 ### `token_address`
 
+Returns the address of the associated FA2 contract.
+Since FA2 logic is embedded into this contract, this entrypoint always returns SELF.
+
+
 **Argument:** 
   + **In Haskell:** [`ContractRef`](#types-Contract) [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
   + **In Michelson:** `(contract address)`
@@ -592,9 +757,7 @@
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Wrap into `Token_address` constructor.
-    + **In Haskell:** `Token_address (·)`
-    + **In Michelson:** `Right (Right (Right (Right (·))))`
+1. Call contract's `token_address` entrypoint passing the constructed argument.
 </details>
 <p>
 
@@ -686,6 +849,18 @@ Describes a response to a request for an owner's balance
 
 
 
+<a name="types-BigMap"></a>
+
+---
+
+### `BigMap`
+
+BigMap primitive.
+
+**Final Michelson representation (example):** `BigMap Integer Natural` = `big_map int nat`
+
+
+
 <a name="types-Bool"></a>
 
 ---
@@ -760,6 +935,26 @@ Signed number.
 List primitive.
 
 **Final Michelson representation (example):** `[Integer]` = `list int`
+
+
+
+<a name="types-MigrationStatus"></a>
+
+---
+
+### `MigrationStatus`
+
+Migration status of the contract
+
+**Structure:** *one of* 
++ **NotInMigration**()
++ **MigratingTo**
+[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
++ **MigratedTo**
+[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+
+
+**Final Michelson representation:** `or unit (or address address)`
 
 
 
@@ -846,6 +1041,27 @@ Describes the FA2 operations.
 
 
 
+<a name="types-Proposal"></a>
+
+---
+
+### `Proposal`
+
+Contract's storage holding a big_map with all balances and the operators.
+
+**Structure (example):** `Proposal ()` = 
+  * ***pUpvotes*** :[`Natural`](#types-Natural)
+  * ***pDownvotes*** :[`Natural`](#types-Natural)
+  * ***pStartDate*** :[`Timestamp`](#types-Timestamp)
+  * ***pMetadata*** :[`()`](#types-lparenrparen)
+  * ***pProposer*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***pProposerFrozenToken*** :[`Natural`](#types-Natural)
+  * ***pVoters*** :[`List`](#types-List) ([`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), [`Natural`](#types-Natural))
+
+**Final Michelson representation (example):** `Proposal ()` = `pair (pair nat (pair nat timestamp)) (pair (pair unit address) (pair nat (list (pair address nat))))`
+
+
+
 <a name="types-ProposeParams"></a>
 
 ---
@@ -873,6 +1089,18 @@ Michelson string.
 This has to contain only ASCII characters with codes from [32; 126] range; additionally, newline feed character is allowed.
 
 **Final Michelson representation:** `string`
+
+
+
+<a name="types-Timestamp"></a>
+
+---
+
+### `Timestamp`
+
+Timestamp primitive.
+
+**Final Michelson representation:** `timestamp`
 
 
 
