@@ -38,8 +38,9 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
           voteMultiProposals
       , nettestScenario "cannot vote if the vote amounts exceeds token balance"
           insufficientTokenVote
-      , nettestScenario "cannot vote on outdated proposal" $
-          voteOutdatedProposal
+      -- TODO [#47]: Disable running in real network due to time-sensitive operations
+      , nettestScenarioOnEmulator "cannot vote on outdated proposal" $
+          \_emulated -> voteOutdatedProposal
       ]
   , testGroup "Admin:"
       [ nettestScenario "can set voting period" setVotingPeriod
