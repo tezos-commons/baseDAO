@@ -19,7 +19,7 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 burn
-  :: forall store pm s. (StorageC store pm, HasFuncContext s store)
+  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
   => Entrypoint' BurnParam store s
 burn = do
   doc $ DDescription burnDoc
@@ -38,7 +38,7 @@ burn = do
   nil; pair
 
 mint
-  :: forall store pm s. (StorageC store pm, HasFuncContext s store)
+  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
   => Entrypoint' MintParam store s
 mint = do
   doc $ DDescription mintDoc
@@ -57,7 +57,7 @@ mint = do
   nil; pair
 
 transferContractTokens
-  :: forall store pm s. StorageC store pm
+  :: forall store ce pm s. StorageC store ce pm
   => Entrypoint' TransferContractTokensParam store s
 transferContractTokens = do
   doc $ DDescription transferContractTokensDoc
@@ -76,7 +76,7 @@ transferContractTokens = do
   pair
 
 tokenAddress
-  :: forall store pm s. (HasAnnotation pm, NiceParameter pm, StorageC store pm)
+  :: forall store ce pm s. (HasAnnotation pm, NiceParameter pm, StorageC store ce pm)
   => Entrypoint' TokenAddressParam store s
 tokenAddress = do
   doc $ DDescription tokenAddressDoc

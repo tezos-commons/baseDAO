@@ -61,7 +61,7 @@ import Util.TypeLits
 -- Configuration
 ------------------------------------------------------------------------
 
-data Config proposalMetadata = Config
+data Config contractExtra proposalMetadata = Config
   { cDaoName :: Text
   , cDaoDescription :: Markdown
   , cUnfrozenTokenMetadata :: FA2.TokenMetadata
@@ -83,9 +83,9 @@ data Config proposalMetadata = Config
   -- only 50 tokens will be unfrozen and other 50 tokens will be burnt.
 
   , cDecisionLambda :: forall s store.
-     (StorageC store proposalMetadata, HasFuncContext s store)
-    => (Proposal proposalMetadata) : store : s
-    :-> (List Operation, store) : s
+     (StorageC store contractExtra proposalMetadata, HasFuncContext s store)
+    => Proposal proposalMetadata : store : s
+    :-> List Operation : store : s
   -- ^ The decision lambda is executed based on a successful proposal.
 
 
@@ -100,7 +100,8 @@ data Config proposalMetadata = Config
   , cMinVotingPeriod :: Natural
   }
 
-defaultConfig :: Config pm
+-- | The default configuration with the simplest possible logic.
+defaultConfig :: Config ce pm
 defaultConfig = Config
   { cDaoName = "BaseDAO"
   , cDaoDescription = [md|An example of a very simple DAO contract without any custom checks,
@@ -124,7 +125,7 @@ defaultConfig = Config
   , cRejectedProposalReturnValue = do
       drop; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
-      drop; nil; pair
+      drop; nil
 
   , cMaxVotingPeriod = 60 * 60 * 24 * 30
   , cMinVotingPeriod = 1 -- value between 1 second - 1 month
@@ -135,6 +136,7 @@ defaultConfig = Config
   , cMaxVotes = 1000
   , cMaxProposals = 500
   }
+
 ------------------------------------------------------------------------
 -- Operators
 ------------------------------------------------------------------------
@@ -167,8 +169,21 @@ instance TypeHasDoc MigrationStatus where
   typeDocMdDescription =
     "Migration status of the contract"
 
--- | Storage of the FA2 contract
-data Storage (proposalMetadata :: Kind.Type) = Storage
+{- | Storage of a DAO contract.
+
+It has two type parameters that determine DAO-custom pieces that will be stored:
+
+* @contractExtra@ type parameter stands for a contract-global state.
+  It can be used, for instance, to collect data about accepted proposals.
+  In case you don't have use case for this, initialize it to @'()'@.
+
+* @proposalMetadata@ type parameter defines the data that participants of the
+  contract have to include into their proposals.
+  This part is initialized when the proposal is created and offered and cannot
+  be changed afterwards.
+
+-}
+data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Storage
   { sLedger       :: Ledger
   , sOperators    :: Operators
   , sTokenAddress :: Address
@@ -179,39 +194,41 @@ data Storage (proposalMetadata :: Kind.Type) = Storage
   , sVotingPeriod              :: VotingPeriod
   , sQuorumThreshold           :: QuorumThreshold
 
+  , sExtra                     :: contractExtra
   , sProposals                 :: BigMap ProposalKey (Proposal proposalMetadata)
   , sProposalKeyListSortByDate :: [ProposalKey] -- Newest first
   }
   deriving stock (Generic, Show)
   deriving anyclass (HasAnnotation)
 
-instance (IsoValue pm, TypeHasDoc pm) => TypeHasDoc (Storage pm) where
+deriving anyclass instance
+  (WellTypedIsoValue ce, WellTypedIsoValue pm) =>
+  IsoValue (Storage ce  pm)
+
+instance Each [IsoValue, TypeHasDoc] [ce, pm] => TypeHasDoc (Storage ce pm) where
    typeDocMdDescription =
      "Storage type for baseDAO contract"
-   typeDocMdReference = poly1TypeDocMdReference
-   typeDocHaskellRep = concreteTypeDocHaskellRep @(Storage Integer)
-   typeDocMichelsonRep = concreteTypeDocMichelsonRep @(Storage Integer)
+   typeDocMdReference = poly2TypeDocMdReference
+   typeDocHaskellRep = concreteTypeDocHaskellRep @(Storage Natural MText)
+   typeDocMichelsonRep = concreteTypeDocMichelsonRep @(Storage Natural MText)
 
-
-deriving anyclass instance (WellTypedIsoValue proposalMetadata) => IsoValue (Storage proposalMetadata)
-
-instance HasFieldOfType (Storage pm) name field =>
-         StoreHasField (Storage pm) name field where
+instance HasFieldOfType (Storage ce pm) name field =>
+         StoreHasField (Storage ce pm) name field where
   storeFieldOps = storeFieldOpsADT
 
-instance IsoValue pm =>
-    StoreHasSubmap (Storage pm) "sLedger" LedgerKey LedgerValue where
+instance (IsoValue ce, IsoValue pm) =>
+    StoreHasSubmap (Storage ce pm) "sLedger" LedgerKey LedgerValue where
   storeSubmapOps = storeSubmapOpsDeeper #sLedger
 
-instance IsoValue pm =>
-    StoreHasSubmap (Storage pm) "sOperators" ("owner" :! Address, "operator" :! Address) () where
+instance (IsoValue ce, IsoValue pm) =>
+    StoreHasSubmap (Storage ce pm) "sOperators" ("owner" :! Address, "operator" :! Address) () where
   storeSubmapOps = storeSubmapOpsDeeper #sOperators
 
-instance IsoValue pm =>
-    StoreHasSubmap (Storage pm) "sProposals" ProposalKey (Proposal pm) where
+instance (IsoValue ce, IsoValue pm) =>
+    StoreHasSubmap (Storage ce pm) "sProposals" ProposalKey (Proposal pm) where
   storeSubmapOps = storeSubmapOpsDeeper #sProposals
 
-type StorageC store pm =
+type StorageC store ce pm =
   ( StorageContains store
     [ "sLedger" := LedgerKey ~> LedgerValue
     , "sOperators" := ("owner" :! Address, "operator" :! Address) ~> ()
@@ -224,9 +241,13 @@ type StorageC store pm =
     , "sVotingPeriod" := VotingPeriod
     , "sQuorumThreshold" := QuorumThreshold
 
+    -- , "sExtra" := Identity ce
     , "sProposals" := ProposalKey ~> Proposal pm
     , "sProposalKeyListSortByDate" := [ProposalKey]
     ]
+  , StoreHasField store "sExtra" ce
+    -- TODO: remove ^^^ once we use
+    -- https://gitlab.com/morley-framework/morley/-/merge_requests/665
   )
 
 -- | Parameter of the BaseDAO contract
@@ -270,8 +291,9 @@ mkStorage
   :: "admin" :! Address
   -> "votingPeriod" :? Natural
   -> "quorumThreshold" :? Natural
-  -> Storage pm
-mkStorage admin votingPeriod quorumThreshold =
+  -> "extra" :! ce
+  -> Storage ce pm
+mkStorage admin votingPeriod quorumThreshold extra =
   Storage
   { sLedger = mempty
   , sOperators = mempty
@@ -282,6 +304,7 @@ mkStorage admin votingPeriod quorumThreshold =
   , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
   , sQuorumThreshold = argDef #quorumThreshold quorumThresholdDef quorumThreshold
 
+  , sExtra = arg #extra extra
   , sProposals = mempty
   , sProposalKeyListSortByDate = []
   }

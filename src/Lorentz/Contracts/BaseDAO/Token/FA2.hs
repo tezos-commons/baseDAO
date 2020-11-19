@@ -26,15 +26,16 @@ defaultPermissionsDescriptor = PermissionsDescriptor
   }
 
 transfer
-  :: forall pm s. (IsoValue pm, HasFuncContext s (Storage pm))
-  => Entrypoint' TransferParams (Storage pm) s
+  :: forall ce pm s.
+     (IsoValue ce, IsoValue pm, HasFuncContext s (Storage ce pm))
+  => Entrypoint' TransferParams (Storage ce pm) s
 transfer = do
   doc $ DDescription transferDoc
   dip ensureNotMigrated
   iter transferItem
   nil; pair
   where
-    transferItem :: (TransferItem : Storage pm : s) :-> (Storage pm : s)
+    transferItem :: (TransferItem : Storage ce pm : s) :-> (Storage ce pm : s)
     transferItem = do
       swap
       getField #sAdmin
@@ -50,7 +51,7 @@ transfer = do
       iter transferOne
       dropN @2
 
-    transferOne :: TransferDestination : Bool : "from" :! Address : Storage pm : s :-> Bool : "from" :! Address : Storage pm : s
+    transferOne :: TransferDestination : Bool : "from" :! Address : Storage ce pm : s :-> Bool : "from" :! Address : Storage ce pm : s
     transferOne = do
       swap
       dup
@@ -96,8 +97,8 @@ transfer = do
       swap
 
     checkSender
-      :: forall f. ("from" :! Address) : Storage pm : f
-      :-> ("from" :! Address) : Storage pm : f
+      :: forall f. ("from" :! Address) : Storage ce pm : f
+      :-> ("from" :! Address) : Storage ce pm : f
     checkSender = do
       dup; fromNamed #from
       Lorentz.sender
@@ -117,7 +118,7 @@ transfer = do
         if_ nop (failCustom_ #fA2_NOT_OPERATOR)
 
 debitFrom
-  :: forall store pm. (StorageC store pm, IsoValue store)
+  :: forall store ce pm. (StorageC store ce pm, IsoValue store)
   => CachedFunc "debitFrom" [store, Address, (TokenId, Natural)] '[store]
 debitFrom = mkCachedFunc $ do
   dig @2
@@ -175,7 +176,7 @@ debitFrom = mkCachedFunc $ do
       else (dropN @2)
 
 creditTo
-  :: forall pm store. (StorageC store pm, IsoValue store)
+  :: forall pm ce store. (StorageC store ce pm, IsoValue store)
   => CachedFunc "creditTo" [store, Address, (TokenId, Natural)] '[store]
 creditTo = mkCachedFunc $ do
   dig @2
@@ -212,8 +213,8 @@ creditTo = mkCachedFunc $ do
 
 
 balanceOf
-  :: forall pm s. IsoValue pm
-  => Entrypoint' BalanceRequestParams (Storage pm) s
+  :: forall ce pm s. (IsoValue ce, IsoValue pm)
+  => Entrypoint' BalanceRequestParams (Storage ce pm) s
 balanceOf = do
   doc $ DDescription balanceOfDoc
   dip ensureNotMigrated
@@ -222,17 +223,17 @@ balanceOf = do
     @(View [BalanceRequestItem] [BalanceResponseItem])
   view_ checkAll
   where
-    checkAll :: [BalanceRequestItem] : Storage pm : s0 :-> [BalanceResponseItem] : s0
+    checkAll :: [BalanceRequestItem] : Storage ce pm : s0 :-> [BalanceResponseItem] : s0
     checkAll = do
       nil @BalanceResponseItem
       swap
       iter checkOne
       swap
-      drop @(Storage pm)
+      drop @(Storage ce pm)
 
     checkOne
-      :: BalanceRequestItem : [BalanceResponseItem] : Storage pm : s0
-      :-> [BalanceResponseItem] : Storage pm : s0
+      :: BalanceRequestItem : [BalanceResponseItem] : Storage ce pm : s0
+      :-> [BalanceResponseItem] : Storage ce pm : s0
     checkOne = do
       getField #briOwner
       swap
@@ -260,23 +261,25 @@ balanceOf = do
       ifSome ifKeyExists ifKeyDoesntExist
 
     ifKeyExists
-      :: Natural : BalanceRequestItem : [BalanceResponseItem] : Storage pm : s0
-      :-> [BalanceResponseItem] : Storage pm : s0
+      :: Natural : BalanceRequestItem : [BalanceResponseItem] : Storage ce pm : s0
+      :-> [BalanceResponseItem] : Storage ce pm : s0
     ifKeyExists = do
       swap
       constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
 
     ifKeyDoesntExist
-      :: BalanceRequestItem : [BalanceResponseItem] : Storage pm : s0
-      :-> [BalanceResponseItem] : Storage pm : s0
+      :: BalanceRequestItem : [BalanceResponseItem] : Storage ce pm : s0
+      :-> [BalanceResponseItem] : Storage ce pm : s0
     ifKeyDoesntExist = do
       push @Natural 0
       swap
       constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
 
-tokenMetadataRegistry :: IsoValue pm => Entrypoint' TokenMetadataRegistryParam (Storage pm) s
+tokenMetadataRegistry
+  :: (IsoValue ce, IsoValue pm)
+  => Entrypoint' TokenMetadataRegistryParam (Storage ce pm) s
 tokenMetadataRegistry = do
   doc $ DDescription tokenMetadataRegistryDoc
   dip ensureNotMigrated
@@ -288,7 +291,9 @@ tokenMetadataRegistry = do
   swap
   transferTokens # nil # swap # cons # pair
 
-updateOperators :: IsoValue pm => Entrypoint' UpdateOperatorsParam (Storage pm) s
+updateOperators
+  :: (IsoValue ce, IsoValue pm)
+  => Entrypoint' UpdateOperatorsParam (Storage ce pm) s
 updateOperators = do
   doc $ DDescription updateOperatorsDoc
   dip ensureNotMigrated
@@ -299,13 +304,16 @@ updateOperators = do
       )
   nil; pair
 
-addOperator :: forall pm s. IsoValue pm => (OperatorParam : Storage pm : s) :-> (Storage pm : s)
+addOperator
+  :: forall ce pm s.
+     (IsoValue ce, IsoValue pm)
+  => (OperatorParam : Storage ce pm : s) :-> (Storage ce pm : s)
 addOperator = do
   getField #opTokenId
   dip do
     getField #opOperator; toNamed #operator
     dip $ do toField #opOwner; toNamed #owner
-  stackType @(TokenId : "operator" :! Address : "owner" :! Address : Storage pm : s)
+  stackType @(TokenId : "operator" :! Address : "owner" :! Address : Storage ce pm : s)
   assertEq0or1
   swap
   dup; fromNamed #owner
@@ -313,21 +321,21 @@ addOperator = do
   if IsEq
   then nop
   else failCustom_ #nOT_OWNER
-  stackType @("owner" :! Address : "operator" :! Address : Storage pm : s)
+  stackType @("owner" :! Address : "operator" :! Address : Storage ce pm : s)
   pair
   swap
   getField #sOperators
   stackType @( BigMap ("owner" :! Address, "operator" :! Address) ()
-             : Storage pm : ("owner" :! Address, "operator" :! Address) : s)
+             : Storage ce pm : ("owner" :! Address, "operator" :! Address) : s)
   dig @2
   dupTop2
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists :: ("owner" :! Address, "operator" :! Address) : Operators : Storage pm : s :-> Storage pm : s
+    ifKeyExists :: ("owner" :! Address, "operator" :! Address) : Operators : Storage ce pm : s :-> Storage ce pm : s
     ifKeyExists = dropN @2
 
-    ifKeyDoesntExist :: ("owner" :! Address, "operator" :! Address) : Operators : Storage pm : s :-> Storage pm : s
+    ifKeyDoesntExist :: ("owner" :! Address, "operator" :! Address) : Operators : Storage ce pm : s :-> Storage ce pm : s
     ifKeyDoesntExist = do
       unit
       some
@@ -335,13 +343,16 @@ addOperator = do
       update
       setField #sOperators
 
-removeOperator :: forall pm s. IsoValue pm => (OperatorParam : Storage pm : s) :-> (Storage pm : s)
+removeOperator
+  :: forall ce pm s.
+     (IsoValue ce, IsoValue pm)
+  => (OperatorParam : Storage ce pm : s) :-> (Storage ce pm : s)
 removeOperator = do
   getField #opTokenId
   dip do
     getField #opOperator; toNamed #operator
     dip $ do toField #opOwner; toNamed #owner
-  stackType @(TokenId : "operator" :! Address : "owner" :! Address : Storage pm : s)
+  stackType @(TokenId : "operator" :! Address : "owner" :! Address : Storage ce pm : s)
   assertEq0or1
   swap
   dup; fromNamed #owner
@@ -349,18 +360,18 @@ removeOperator = do
   if IsEq
   then nop
   else failCustom_ #nOT_OWNER
-  stackType @("owner" :! Address : "operator" :! Address : Storage pm : s)
+  stackType @("owner" :! Address : "operator" :! Address : Storage ce pm : s)
   pair
   swap
   getField #sOperators
   stackType @( BigMap ("owner" :! Address, "operator" :! Address) ()
-             : Storage pm : ("owner" :! Address, "operator" :! Address) : s)
+             : Storage ce pm : ("owner" :! Address, "operator" :! Address) : s)
   dig @2
   dupTop2
   mem
   if_ ifKeyExists ifKeyDoesntExist
   where
-    ifKeyExists :: ("owner" :! Address, "operator" :! Address) : Operators : Storage pm : s :-> Storage pm : s
+    ifKeyExists :: ("owner" :! Address, "operator" :! Address) : Operators : Storage ce pm : s :-> Storage ce pm : s
     ifKeyExists = do
       push Nothing
       swap
@@ -368,7 +379,7 @@ removeOperator = do
       setField #sOperators
 
 
-    ifKeyDoesntExist :: ("owner" :! Address, "operator" :! Address) : Operators : Storage pm : s :-> Storage pm : s
+    ifKeyDoesntExist :: ("owner" :! Address, "operator" :! Address) : Operators : Storage ce pm : s :-> Storage ce pm : s
     ifKeyDoesntExist = dropN @2
 
 -- | TODO: Probably this one can be moved to Lorentz as well
