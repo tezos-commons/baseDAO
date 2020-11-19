@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [506e869](https://github.com/tqtezos/baseDAO/tree/506e869179df1dc0b4e980968d40644d5f377b2d) *(Wed Nov 18 13:39:49 2020 +0300)*
+**Code revision:** [3f8ffbf](https://github.com/tqtezos/baseDAO/tree/3f8ffbf77e5acae496d7c979c45e8808b31c5f02) *(Thu Nov 19 17:53:42 2020 +0300)*
 
 
 
@@ -46,6 +46,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [BurnParam](#types-BurnParam)
   - [ByteString](#types-ByteString)
   - [Contract](#types-Contract)
+  - [GameDaoContractExtra](#types-GameDaoContractExtra)
   - [GameDaoProposalMetadata](#types-GameDaoProposalMetadata)
   - [HeroChange](#types-HeroChange)
   - [Integer](#types-Integer)
@@ -122,7 +123,7 @@ There are multiple ways to interact with this contract:
 
 Storage type for baseDAO contract
 
-**Structure (example):** `Storage Integer` = 
+**Structure (example):** `Storage Natural MText` = 
   * ***sLedger*** :[`BigMap`](#types-BigMap) ([`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), [`Natural`](#types-Natural)) [`Natural`](#types-Natural)
   * ***sOperators*** :[`BigMap`](#types-BigMap) (***owner*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), ***operator*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)) [`()`](#types-lparenrparen)
   * ***sTokenAddress*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
@@ -131,10 +132,11 @@ Storage type for baseDAO contract
   * ***sMigrationStatus*** :[`MigrationStatus`](#types-MigrationStatus)
   * ***sVotingPeriod*** :[`Natural`](#types-Natural)
   * ***sQuorumThreshold*** :[`Natural`](#types-Natural)
-  * ***sProposals*** :[`BigMap`](#types-BigMap) [`ByteString`](#types-ByteString) ([`Proposal`](#types-Proposal) [`Integer`](#types-Integer))
+  * ***sExtra*** :[`Natural`](#types-Natural)
+  * ***sProposals*** :[`BigMap`](#types-BigMap) [`ByteString`](#types-ByteString) ([`Proposal`](#types-Proposal) [`Text`](#types-Text))
   * ***sProposalKeyListSortByDate*** :[`List`](#types-List) [`ByteString`](#types-ByteString)
 
-**Final Michelson representation (example):** `Storage Integer` = `pair (pair (pair (big_map (pair address nat) nat) (big_map (pair address address) unit)) (pair address (pair address address))) (pair (pair (or unit (or address address)) nat) (pair nat (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair int address) (pair nat (list (pair address nat)))))) (list bytes))))`
+**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (big_map (pair address address) unit)) (pair address (pair address address))) (pair (pair (or unit (or address address)) (pair nat nat)) (pair nat (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (list bytes))))`
 
 
 
@@ -935,6 +937,21 @@ Bytes primitive.
 Contract primitive with given type of parameter.
 
 **Final Michelson representation (example):** `ContractRef Integer` = `contract int`
+
+
+
+<a name="types-GameDaoContractExtra"></a>
+
+---
+
+### `GameDaoContractExtra`
+
+As part of contract global state this carries nothing
+
+**Structure:** 
+  * ***acceptedProposalsNum*** :[`Natural`](#types-Natural)
+
+**Final Michelson representation:** `nat`
 
 
 
