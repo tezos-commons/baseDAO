@@ -10,15 +10,16 @@ module Lorentz.Contracts.BaseDAO
   , Parameter (..)
   , Storage (..)
 
+  , DaoContract
   , baseDaoContract
   , mkStorage
   ) where
 
 import Lorentz
 
+import Lorentz.Contracts.BaseDAO.Doc (callFA2Doc, introductoryDoc)
 import Lorentz.Contracts.BaseDAO.Management
 import Lorentz.Contracts.BaseDAO.Proposal
-import Lorentz.Contracts.BaseDAO.Doc (callFA2Doc, introductoryDoc)
 import Lorentz.Contracts.BaseDAO.Token
 import Lorentz.Contracts.BaseDAO.Token.FA2
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
@@ -30,19 +31,23 @@ instance DocItem (DEntrypoint FA2EntrypointsKind) where
   docItemSectionName = Just "FA2 entrypoints"
   docItemToMarkdown = diEntrypointToMarkdown
 
+type DaoContract ce pm =
+  Contract (BaseDAO.Parameter pm) (BaseDAO.Storage ce pm)
+
 baseDaoContract
-  :: forall pm.
+  :: forall ce pm.
       ( NiceParameter pm, TypeHasDoc pm
-      , HasAnnotation pm, TypeHasDoc (Proposal pm)
+      , HasAnnotation pm
       , NicePackedValue pm
+      , KnownValue ce, TypeHasDoc ce
       )
-  => Config pm -> Contract (BaseDAO.Parameter pm) (BaseDAO.Storage pm)
-baseDaoContract config@Config{..} = defaultContract $  contractName cDaoName $  do
+  => Config ce pm -> DaoContract ce pm
+baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
-  docStorage @(BaseDAO.Storage pm)
+  docStorage @(BaseDAO.Storage ce pm)
   ensureZeroTransfer
-  pushFuncContext @pm $ do
+  pushFuncContext @ce @pm $ do
     unpair
     finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm) (Proxy @PlainEntrypointsKind)
       ( #cCall_FA2 /-> fa2Handler
@@ -62,8 +67,8 @@ baseDaoContract config@Config{..} = defaultContract $  contractName cDaoName $  
       )
 
 fa2Handler
-  :: forall pm s. (IsoValue pm, HasFuncContext s (BaseDAO.Storage pm))
-  => Entrypoint' FA2.Parameter (BaseDAO.Storage pm) s
+  :: (IsoValue ce, IsoValue pm, HasFuncContext s (BaseDAO.Storage ce pm))
+  => Entrypoint' FA2.Parameter (BaseDAO.Storage ce pm) s
 fa2Handler = do
   doc $ DDescription callFA2Doc
   entryCase @FA2.Parameter (Proxy @FA2EntrypointsKind)
@@ -80,8 +85,8 @@ ensureZeroTransfer = do
   if IsEq then nop else failCustom_ #fORBIDDEN_XTZ
 
 pushFuncContext
-  :: (KnownValue pm)
-  => (forall s. HasFuncContext s (BaseDAO.Storage pm) =>
+  :: (KnownValue ce, KnownValue pm)
+  => (forall s. HasFuncContext s (BaseDAO.Storage ce pm) =>
       (inp : s) :-> (out : s)
      )
   -> Lambda inp out

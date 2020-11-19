@@ -18,16 +18,39 @@ module Lorentz.Contracts.GameDAO
   , config
   ) where
 
-import Universum hiding ((>>), drop, swap)
 import Lorentz
+
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
+import Universum hiding (drop, swap, (>>))
 import Util.Markdown
 
+-- | Global metadata of the contract.
+data GameDaoContractExtra = GameDaoContractExtra
+  { ceAcceptedProposalsNum :: Natural
+    -- ^ Counts number of ever accepted proposals.
+  }
+  deriving stock (Generic)
+  deriving anyclass (IsoValue)
+
+instance HasAnnotation GameDaoContractExtra where
+  annOptions = DAO.baseDaoAnnOptions
+
+instance TypeHasDoc GameDaoContractExtra where
+  typeDocMdDescription =
+    "As part of contract global state this carries nothing"
+
+instance Default GameDaoContractExtra where
+  def = GameDaoContractExtra 0
+
+-- | Metadata we keep for each proposal.
 data GameDaoProposalMetadata = GameDaoProposalMetadata
   { pmProposalType :: ProposalType
+    -- ^ Proposal type.
   , pmProposalDescription :: MText
+    -- ^ Description of the proposal in free form.
   , pmConsumerAddr :: Address
+    -- ^ Address at which the report on proposal acceptance.
   }
   deriving stock (Generic)
   deriving anyclass IsoValue
@@ -117,7 +140,7 @@ instance CustomErrorHasDoc "fAIL_DECISION_LAMBDA" where
 ----------------------------------------------------------------------------
 
 type Parameter = DAO.Parameter GameDaoProposalMetadata
-type Storage = DAO.Storage GameDaoProposalMetadata
+type Storage = DAO.Storage GameDaoContractExtra GameDaoProposalMetadata
 
 -- | For "balance change", the proposer needs to freeze 10 tokens
 -- For "new content", the proposal needs to freeze 50 tokens
@@ -157,9 +180,9 @@ gameDaoRejectedProposalReturnValue = do
 -- description. It would be more useful to send the whole proposal itself but
 -- using just the description is simpler to test.
 decisionLambda
-  ::  forall s store. (DAO.StorageC store GameDaoProposalMetadata)
+  ::  forall s store. (DAO.StorageC store GameDaoContractExtra GameDaoProposalMetadata)
   =>  (DAO.Proposal GameDaoProposalMetadata) : store : s
-  :-> (List Operation, store) : s
+  :-> List Operation : store : s
 decisionLambda = do
   toField #pMetadata
   getField #pmProposalDescription
@@ -172,9 +195,15 @@ decisionLambda = do
     push zeroMutez
   transferTokens
   nil; swap; cons
-  pair
 
-config :: DAO.Config GameDaoProposalMetadata
+  dip $ do
+    stGetField #sExtra
+    getField #ceAcceptedProposalsNum
+    push @Natural 1; add
+    setField #ceAcceptedProposalsNum
+    stSetField #sExtra
+
+config :: DAO.Config GameDaoContractExtra GameDaoProposalMetadata
 config = DAO.defaultConfig
   { DAO.cDaoName = "Game DAO"
   , DAO.cDaoDescription = [md|A simple DAO for a Moba-like game.|]
