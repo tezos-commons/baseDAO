@@ -17,7 +17,7 @@ module Lorentz.Contracts.BaseDAO
 
 import Lorentz
 
-import Lorentz.Contracts.BaseDAO.Doc (callFA2Doc, introductoryDoc)
+import Lorentz.Contracts.BaseDAO.Doc
 import Lorentz.Contracts.BaseDAO.Management
 import Lorentz.Contracts.BaseDAO.Proposal
 import Lorentz.Contracts.BaseDAO.Token
@@ -63,6 +63,10 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
       , #cMint /-> mint
       , #cTransfer_contract_tokens /-> transferContractTokens
       , #cToken_address /-> tokenAddress
+
+      , #cGetVotePermitCounter /-> view_ $ do
+          doc $ DDescription getVotePermitCounterDoc
+          drop @(); stToField #sPermitsCounter
       )
 
 fa2Handler

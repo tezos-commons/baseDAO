@@ -9,6 +9,8 @@ module Test.Common
   , originateBaseDaoWithConfig
   , originateTrivialDaoWithBalance
   , makeProposalKey
+  , addDataToSign
+  , permitProtect
   ) where
 
 import Universum
@@ -156,3 +158,26 @@ checkTokenBalance tokenId dao addr expectedValue = do
 
 makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ProposalKey pm
 makeProposalKey params owner = toHashHs $ lPackValue (params, owner)
+
+addDataToSign
+  :: (MonadNettest caps base m)
+  => TAddress (Parameter pm)
+  -> Nonce
+  -> d
+  -> m (DataToSign d, d)
+addDataToSign (toAddress -> dsContract) dsNonce dsData = do
+  dsChainId <- getChainId
+  return (DataToSign{..}, dsData)
+
+-- | Add a permit from given user.
+permitProtect
+  :: (MonadNettest caps base m, NicePackedValue a)
+  => AddressOrAlias -> (DataToSign a, a) -> m (PermitProtected a)
+permitProtect author (toSign, a) = do
+  authorAlias <- getAlias author
+  pKey <- getPublicKey author
+  pSignature <- signBinary (lPackValue toSign) authorAlias
+  return PermitProtected
+    { ppArgument = a
+    , ppPermit = Just Permit{..}
+    }

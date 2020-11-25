@@ -383,7 +383,6 @@ removeOperator = do
     ifKeyDoesntExist :: ("owner" :! Address, "operator" :! Address) : Operators : Storage ce pm : s :-> Storage ce pm : s
     ifKeyDoesntExist = dropN @2
 
--- | TODO: Probably this one can be moved to Lorentz as well
 assertEq0or1 :: TokenId : f :-> f
 assertEq0or1 = do
   dup

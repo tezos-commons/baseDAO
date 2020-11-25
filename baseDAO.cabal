@@ -4,7 +4,7 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ac81ebe2db072ca09cf1331eb45df29d8279881c629d3d5ec9c171578f19a0b8
+-- hash: 42a0fb564d1e9e5dfbc142ce0ee4e038a6b84214b4b5b2079e263206f27c45dc
 
 name:           baseDAO
 version:        0.1.0.0
@@ -28,6 +28,7 @@ library
       Lorentz.Contracts.BaseDAO
       Lorentz.Contracts.BaseDAO.Doc
       Lorentz.Contracts.BaseDAO.Management
+      Lorentz.Contracts.BaseDAO.Permit
       Lorentz.Contracts.BaseDAO.Proposal
       Lorentz.Contracts.BaseDAO.Token
       Lorentz.Contracts.BaseDAO.Token.FA2

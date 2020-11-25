@@ -39,19 +39,31 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , Entrypoint'
 
+  , Nonce (..)
+  , DataToSign (..)
+  , Permit (..)
+  , pSender
+  , PermitProtected (..)
+  , pattern NoPermit
+
   , unfrozenTokenId
   , frozenTokenId
 
   , baseDaoAnnOptions
   ) where
 
-import Universum hiding (drop, (>>))
+import Universum (Each, Num(..), Show)
 
 import qualified Data.Kind as Kind
+
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Zip
 import Michelson.Runtime.GState (genesisAddress)
+import Michelson.Typed.Annotation
+import Michelson.Typed.T
+import Michelson.Untyped.Annotation
+import Tezos.Address
 import Util.Markdown
 import Util.Named
 import Util.Type
@@ -197,6 +209,8 @@ data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Stor
   , sExtra                     :: contractExtra
   , sProposals                 :: BigMap (ProposalKey proposalMetadata) (Proposal proposalMetadata)
   , sProposalKeyListSortByDate :: [ProposalKey proposalMetadata] -- Newest first
+
+  , sPermitsCounter :: Nonce
   }
   deriving stock (Generic, Show)
   deriving anyclass (HasAnnotation)
@@ -244,6 +258,8 @@ type StorageC store ce pm =
     -- , "sExtra" := Identity ce
     , "sProposals" := ProposalKey pm ~> Proposal pm
     , "sProposalKeyListSortByDate" := [ProposalKey pm]
+
+    , "sPermitsCounter" := Nonce
     ]
   , StoreHasField store "sExtra" ce
     -- TODO: remove ^^^ once we use
@@ -258,7 +274,7 @@ data Parameter proposalMetadata
   | Migrate MigrateParam
   | Confirm_migration ()
   | Propose (ProposeParams proposalMetadata)
-  | Vote [VoteParam proposalMetadata]
+  | Vote [PermitProtected $ VoteParam proposalMetadata]
   -- Admin
   | Set_voting_period VotingPeriod
   | Set_quorum_threshold QuorumThreshold
@@ -267,6 +283,7 @@ data Parameter proposalMetadata
   | Mint MintParam
   | Transfer_contract_tokens TransferContractTokensParam
   | Token_address TokenAddressParam
+  | GetVotePermitCounter (View () Nonce)
   deriving stock (Generic, Show)
 
 instance (HasAnnotation pm, NiceParameter pm) => ParameterHasEntrypoints (Parameter pm) where
@@ -307,6 +324,7 @@ mkStorage admin votingPeriod quorumThreshold extra =
   , sExtra = arg #extra extra
   , sProposals = mempty
   , sProposalKeyListSortByDate = []
+  , sPermitsCounter = Nonce 0
   }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
@@ -380,6 +398,134 @@ type HasFuncContext s store =
 type Entrypoint' cp st s = (cp : st : s) :-> (([Operation], st) : s)
 
 ------------------------------------------------------------------------
+-- Permissions
+------------------------------------------------------------------------
+
+newtype Nonce = Nonce { unNonce :: Natural }
+  deriving stock (Generic, Show)
+  deriving newtype (IsoValue, HasAnnotation)
+
+instance TypeHasDoc Nonce where
+  typeDocMdDescription =
+    "Contract-local nonce used to make some data unique."
+
+-- | When singing something, you usually want to use this wrapper over your data.
+-- It ensures that replay attack is not possible.
+data DataToSign d = DataToSign
+  { dsChainId :: ChainId
+  , dsContract :: Address
+  , dsNonce :: Nonce
+  , dsData :: d
+  } deriving stock (Generic)
+    deriving anyclass (IsoValue)
+
+instance HasAnnotation d => HasAnnotation (DataToSign d) where
+  annOptions = baseDaoAnnOptions
+
+instance TypeHasDoc d => TypeHasDoc (DataToSign d) where
+  typeDocMdDescription = [md|
+    A wrapper over data that is to be signed.
+
+    Aside from the original data, this contains elements that ensure the result
+    to be globally unique in order to avoid replay attacks:
+    * Chain id
+    * Address of the contract
+    * Nonce - suitable nonce can be fetched using the dedicated endpoint.
+    |]
+  typeDocMdReference = poly1TypeDocMdReference
+  typeDocHaskellRep = concreteTypeDocHaskellRep @(DataToSign MText)
+  typeDocMichelsonRep = concreteTypeDocMichelsonRep @(DataToSign MText)
+
+instance CanCastTo a b => DataToSign a `CanCastTo` DataToSign b where
+  castDummy = castDummyG
+
+-- | Information about permit.
+--
+-- Following TZIP-17, this allows a service to execute an entrypoint from
+-- user's behalf securely.
+--
+-- Type argument @a@ stands for argument of entrypoint protected by permit.
+data Permit a = Permit
+  { pKey :: PublicKey
+    -- ^ Key of the user.
+  , pSignature :: TSignature $ Packed (DataToSign a)
+    -- ^ Parameter signature.
+  } deriving stock (Generic, Show)
+    deriving anyclass (IsoValue)
+
+instance HasAnnotation (Permit a) where
+  annOptions = baseDaoAnnOptions
+
+instance TypeHasDoc a => TypeHasDoc (Permit a) where
+  typeDocMdDescription = [md|
+    Permission for executing an action from another user's behalf.
+
+    This contains public key of that user and signed argument for the entrypoint.
+    Type parameter of `Permit` stands for the entrypoint argument type.
+    |]
+  typeDocMdReference = poly1TypeDocMdReference
+  typeDocHaskellRep = concreteTypeDocHaskellRep @(Permit Integer)
+  typeDocMichelsonRep = concreteTypeDocMichelsonRep @(Permit Integer)
+
+-- | Getter for address of permission's author.
+pSender :: Permit a -> Address
+pSender = mkKeyAddress . pKey
+
+-- | Parameter, optionally protected with permission.
+--
+-- If permit is not provided, we treat the current sender as
+-- original author of this call.
+-- Otherwise we ensure that parameter is indeed signed by the
+-- author of the key in permit.
+data PermitProtected a = PermitProtected
+  { ppArgument :: a
+  , ppPermit :: Maybe (Permit a)
+  } deriving stock (Generic, Show)
+    deriving anyclass (IsoValue)
+
+-- | Perform operation from sender behalf.
+pattern NoPermit :: a -> PermitProtected a
+pattern NoPermit a = PermitProtected a Nothing
+
+instance HasAnnotation a => HasAnnotation (PermitProtected a) where
+  getAnnotation _ =
+    NTPair
+      (ann @TypeTag "permit_protected")
+      (noAnn @FieldTag)
+      (ann @FieldTag "permit")
+      (getAnnotation @a NotFollowEntrypoint)
+      (getAnnotation @(Maybe (Permit a)) NotFollowEntrypoint)
+    -- TODO: propably it is not assumed to look this way,
+    --       rewrite in a prettier way somehow?
+
+instance TypeHasDoc a => TypeHasDoc (PermitProtected a) where
+  typeDocMdDescription = [md|
+    Marks an entrypoint with given argument type as callable from another
+    user's behalf.
+
+    * If `permit` part is present, we use the supplied information to identify
+    the original author of the request and validate that it is constructed by
+    them.
+    * If `permit` part is absent, we assume that entrypoint is called from the
+    current sender's behalf.
+    |]
+  typeDocMdReference = poly1TypeDocMdReference
+  typeDocHaskellRep = concreteTypeDocHaskellRep @(PermitProtected Integer)
+  typeDocMichelsonRep = concreteTypeDocMichelsonRep @(PermitProtected Integer)
+
+-- | Type which we know nothing about.
+data SomeType
+
+instance TypeHasDoc SomeType where
+  typeDocName _ = "SomeType"
+  typeDocMdDescription = "Some type, may differ in various situations."
+  typeDocDependencies _ = []
+  typeDocHaskellRep _ _ = Nothing
+  typeDocMichelsonRep _ = (Just "SomeType", TUnit)
+
+instance a `CanCastTo` SomeType
+
+------------------------------------------------------------------------
 -- Proposal
 ------------------------------------------------------------------------
 
@@ -437,8 +583,9 @@ instance HasAnnotation pm => HasAnnotation (ProposeParams pm) where
   annOptions = baseDaoAnnOptions
 
 ------------------------------------------------------------------------
--- Propose
+-- Vote
 ------------------------------------------------------------------------
+
 type VoteType = Bool
 
 data VoteParam pm = VoteParam
@@ -658,3 +805,9 @@ type instance ErrorArg "fAIL_TRANSFER_CONTRACT_TOKENS" = ()
 instance CustomErrorHasDoc "fAIL_TRANSFER_CONTRACT_TOKENS" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract."
+
+type instance ErrorArg "mISSIGNED" = Packed (DataToSign SomeType)
+
+instance CustomErrorHasDoc "mISSIGNED" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause = "Invalid signature provided."

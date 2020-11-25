@@ -14,6 +14,7 @@ import Lorentz
 import Lorentz.Contracts.BaseDAO.Doc
   (flushDoc, proposeDoc, setQuorumThresholdDoc, setVotingPeriodDoc, voteDoc)
 import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
+import Lorentz.Contracts.BaseDAO.Permit
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface (TokenId)
@@ -229,11 +230,12 @@ propose config = do
 ------------------------------------------------------------------------
 
 checkVoterUnfrozenToken
-  :: forall store ce pm. (StorageC store ce pm)
-   => '[VoteParam pm, store] :-> '[VoteParam pm, store]
+  :: forall store ce pm s.
+     (StorageC store ce pm, HasNamedVar s "author" Address, VarIsUnnamed store)
+   => VoteParam pm : store : s :-> VoteParam pm : store : s
 checkVoterUnfrozenToken = do
   duupX @2
-  push unfrozenTokenId; sender; pair
+  push unfrozenTokenId; dupL #author; pair
 
   stGet #sLedger; ifSome nop
     ( do
@@ -245,7 +247,7 @@ checkVoterUnfrozenToken = do
     )
 
   toNamed #currentBalance
-  stackType @["currentBalance" :! Natural, VoteParam pm, store]
+  stackType @("currentBalance" :! Natural : VoteParam pm : store : s)
   duupX @2
   toFieldNamed #vVoteAmount
   if #vVoteAmount >. #currentBalance then
@@ -256,53 +258,53 @@ checkVoterUnfrozenToken = do
 submitVote
   :: forall store ce pm s.
      (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => VoteParam pm : store : s :-> store : s
+  => VoteParam pm : store : "author" :! Address : s :-> store : s
 submitVote = do
   dupTop2
   toField #vProposalKey
 
   stGet #sProposals
   ifSome nop (failCustom_ #pROPOSAL_NOT_EXIST)
-  stackType @(Proposal pm : VoteParam pm : store : s)
+  stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
   dig @2
-  duupX @3; toField #vVoteAmount; sender; swap
+  duupX @3; toField #vVoteAmount; dupL #author; swap
   freeze; dig @2; dig @2
-  stackType @(Proposal pm : VoteParam pm : store : s)
+  stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
   constructT @(Proposal pm)
     ( fieldCtor $ do
         -- Update upvote
         duupX @2;
-        stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : s)
+        stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
         toField #vVoteType;
-        stackType @(Bool : Proposal pm : VoteParam pm : store : s)
+        stackType @(Bool : Proposal pm : VoteParam pm : store : "author" :! _ : s)
         if Holds then do
           duupX @2
-          stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : s)
+          stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
           toField #vVoteAmount
           duupX @2
-          stackType @(Proposal pm : Natural : Proposal pm : VoteParam pm : store : s)
+          stackType @(Proposal pm : Natural : Proposal pm : VoteParam pm : store : "author" :! _ : s)
           toField #pUpvotes
           add
         else do
-          stackType @(Proposal pm : VoteParam pm : store : s)
+          stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
           getField #pUpvotes
     , fieldCtor $ do
         -- Update downvote
         duupX @2
-        stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : s)
+        stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
         toField #vVoteType;
-        stackType @(Bool : Proposal pm : VoteParam pm : store : s)
+        stackType @(Bool : Proposal pm : VoteParam pm : store : "author" :! _ : s)
         if Holds then do
-          stackType @(Proposal pm : VoteParam pm : store : s)
+          stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
           getField #pDownvotes
         else do
           duupX @2
-          stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : s)
+          stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
           toField #vVoteAmount
           duupX @2
-          stackType @(Proposal pm : Natural : Proposal pm : VoteParam pm : store : s)
+          stackType @(Proposal pm : Natural : Proposal pm : VoteParam pm : store : "author" :! _ : s)
           toField #pDownvotes
           add
 
@@ -312,20 +314,22 @@ submitVote = do
     , fieldCtor $ getField #pProposerFrozenToken
     , fieldCtor $ do
         duupX @2; toField #vVoteAmount
-        sender; pair
+        dupL #author; pair
         dip $ getField #pVoters
-        stackType @((Address, Natural) : [(Address, Natural)] : Proposal pm : VoteParam pm : store : s)
+        stackType @((Address, Natural) : [(Address, Natural)] : Proposal pm
+                   : VoteParam pm : store : "author" :! _ : s)
         cons
     )
 
-  stackType @(Proposal pm : Proposal pm : VoteParam pm : store : s)
+  stackType @(Proposal pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
   dip drop
-  stackType @(Proposal pm : VoteParam pm : store : s)
+  stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
   some
   swap; toField #vProposalKey
-  stackType @(ProposalKey pm : Maybe (Proposal pm) : store : s)
+  stackType @(ProposalKey pm : Maybe (Proposal pm) : store : "author" :! _ : s)
   stUpdate #sProposals
+  dip $ drop @("author" :! _)
 
 checkVoteLimitReached
   :: forall store ce pm. (IsoValue pm, StorageC store ce pm)
@@ -346,31 +350,36 @@ checkVoteLimitReached Config{..} = do
 vote
   :: forall store ce pm s.
      (StorageC store ce pm, NiceParameter pm, HasFuncContext s store)
-  => Config ce pm -> Entrypoint' [VoteParam pm] store s
+  => Config ce pm -> Entrypoint' [PermitProtected $ VoteParam pm] store s
 vote config = do
   doc $ DDescription voteDoc
   dip ensureNotMigrated
   iter $ do
+    verifyPermitProtected #sPermitsCounter
+    dip swap
+
+    stackType @(VoteParam pm : store : "author" :! Address : s)
+
     dupTop2
-    stackType @(VoteParam pm : store : VoteParam pm : store : s)
+    stackType @(VoteParam pm : store : VoteParam pm : store : "author" :! _ : s)
 
     toField #vProposalKey
 
     checkIfProposalExist
-    stackType @(Proposal pm : VoteParam pm : store : s)
+    stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
     framed $ checkVoteLimitReached config
-    stackType @(Proposal pm : VoteParam pm : store : s)
+    stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
     duupX @3
     swap
-    stackType @(Proposal pm : store : VoteParam pm : store : s)
+    stackType @(Proposal pm : store : VoteParam pm : store : "author" :! _ : s)
 
     ensureVotingPeriodIsNotOver
-    stackType @(VoteParam pm : store : s)
+    stackType @(VoteParam pm : store : "author" :! _ : s)
 
-    framed checkVoterUnfrozenToken
-    stackType @(VoteParam pm : store : s)
+    checkVoterUnfrozenToken
+    stackType @(VoteParam pm : store : "author" :! _ : s)
 
     submitVote
 

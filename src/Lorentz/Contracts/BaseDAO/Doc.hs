@@ -25,6 +25,8 @@ module Lorentz.Contracts.BaseDAO.Doc
    , mintDoc
    , transferContractTokensDoc
    , tokenAddressDoc
+
+   , getVotePermitCounterDoc
    ) where
 
 import Lorentz
@@ -161,4 +163,12 @@ tokenAddressDoc :: Markdown
 tokenAddressDoc = [md|
   Returns the address of the associated FA2 contract.
   Since FA2 logic is embedded into this contract, this entrypoint always returns SELF.
+  |]
+
+getVotePermitCounterDoc :: Markdown
+getVotePermitCounterDoc = [md|
+  Returns the next nonce value with which a permit should be created.
+
+  Return value increases by number of votes where a permit was provided
+  with each successful call of an entrypoint.
   |]

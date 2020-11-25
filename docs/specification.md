@@ -231,6 +231,7 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `FORBIDDEN_XTZ`                | Throws when some XTZ was received as part of the contract call |
 | `PROPOSER_NOT_EXIST_IN_LEDGER` | Expect a proposer address to exist in Ledger but it is not found         |
 | `PROPOSAL_NOT_UNIQUE`          | Trying to propose a proposal that is already existed in the Storage.         |
+| `MISSIGNED`                    | Parameter signature does not match the expected one - for permits.   |
 
 
 # Entrypoints
@@ -688,32 +689,48 @@ data VoteParam = VoteParam
   , voteAmount :: Natural
   }
 
+data Permit = Permit
+  { key :: PublicKey
+  , signature :: Signature
+  }
+
 data Parameter proposalMetadata
-  = Vote [VoteParam]
+  = Vote [(VoteParam, Maybe Permit)]
 ```
 
 Parameter (in Michelson):
 
 ```
-(list
-  (pair %vote
-    (nat %proposal_key)
+(list %vote
+  (pair :permit_protected
     (pair
-      (bool %vote_type)
-      (nat %vote_amount)
+      (nat %proposal_key)
+      (pair
+        (bool %vote_type)
+        (nat %vote_amount)
+      )
+    )
+    (option %permit
+      (pair
+        (key %key)
+        (signature %signature)
+      )
     )
   )
 )
 ```
 
-- Sender MUST have unfrozen tokens equal to `voteAmount` or more (1 unfrozen token is needed for 1 vote).
-- Fails with `VOTING_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
-  is less than specified `vVoteAmount` .
+- This implements permits mechanism similar to the one in TZIP-17 but injected directly to the entrypoint.
+- Vote author is identified by permit information, or if it is absent - `sender` is taken.
+- Author MUST have unfrozen tokens equal to `voteAmount` or more (1 unfrozen token is needed for 1 vote).
+- Fails with `VOTING_INSUFFICIENT_BALANCE` if the unfrozen token balance of the author
+  is less than specified `voteAmount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
 - Fails with `VOTING_PERIOD_OVER` if the proposal associated with the proposal key is already ended.
 - Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal is already at the max value set by the configuration.
-- The sender's balance in frozen tokens is increased by `voteAmount` and in unfrozen tokens is decreased by `voteAmount`.
-- The entrypoint accepts a list of vote params. As a result, the sender can `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
+- Fails with `MISSIGNED` if permit is incorrect with respect to the provided vote parameter and contract state.
+- The author's balance in frozen tokens is increased by `voteAmount` and in unfrozen tokens is decreased by `voteAmount`.
+- The entrypoint accepts a list of vote params. As a result, it is possible to `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
 
 ### **token_address**
 
@@ -798,3 +815,19 @@ unit
 - Fails with `NOT_MIGRATION_TARGET` if the sender of this call is not the address of the new version.
 
 [FA2]: https://gitlab.com/tzip/tzip/-/blob/3a6464b1e641008b77a83807a0c102e7602c6af4/proposals/tzip-12/tzip-12.md
+
+## Views
+
+### **GetVotePermitCounter**
+
+```haskell
+data Parameter proposalMetadata
+  = GetVotePermitCounter (View () Natural)
+```
+
+Parameter (in Michelson):
+```
+nat
+```
+
+- For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
