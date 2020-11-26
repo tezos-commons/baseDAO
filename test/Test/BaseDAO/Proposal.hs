@@ -142,7 +142,7 @@ voteNonExistingProposal = uncapsNettest $ do
   let params = DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 2
-        , vProposalKey = ("\11\12\13" :: ByteString)
+        , vProposalKey = HashUnsafe "\11\12\13"
         }
 
   callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
@@ -502,7 +502,7 @@ votingPeriodBound = uncapsNettest $ do
 
 createSampleProposal
   :: MonadNettest caps base m
-  => Integer -> Address -> TAddress (DAO.Parameter Integer) -> m ByteString
+  => Integer -> Address -> TAddress (DAO.Parameter Integer) -> m (DAO.ProposalKey Integer)
 createSampleProposal counter owner1 dao = do
   let params = DAO.ProposeParams
         { ppFrozenToken = 10

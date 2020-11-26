@@ -127,7 +127,10 @@ sampleMetadataContent consumerAddr = GameDaoProposalMetadata
 
 createSampleProposal
   :: MonadNettest caps base m
-  => GameDaoProposalMetadata -> Address -> TAddress Parameter -> m ByteString
+  => GameDaoProposalMetadata
+  -> Address
+  -> TAddress Parameter
+  -> m (DAO.ProposalKey GameDaoProposalMetadata)
 createSampleProposal pm owner1 dao = do
   let params = DAO.ProposeParams
         { ppFrozenToken = 10

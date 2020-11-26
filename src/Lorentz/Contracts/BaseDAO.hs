@@ -26,10 +26,9 @@ import Lorentz.Contracts.BaseDAO.Types as BaseDAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 data FA2EntrypointsKind
-instance DocItem (DEntrypoint FA2EntrypointsKind) where
-  docItemPos = 1055
-  docItemSectionName = Just "FA2 entrypoints"
-  docItemToMarkdown = diEntrypointToMarkdown
+instance EntrypointKindHasDoc FA2EntrypointsKind where
+  entrypointKindPos = 1055
+  entrypointKindSectionName = "FA2 entrypoints"
 
 type DaoContract ce pm =
   Contract (BaseDAO.Parameter pm) (BaseDAO.Storage ce pm)
@@ -67,7 +66,7 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
       )
 
 fa2Handler
-  :: (IsoValue ce, IsoValue pm, HasFuncContext s (BaseDAO.Storage ce pm))
+  :: (IsoValue ce, KnownValue pm, HasFuncContext s (BaseDAO.Storage ce pm))
   => Entrypoint' FA2.Parameter (BaseDAO.Storage ce pm) s
 fa2Handler = do
   doc $ DDescription callFA2Doc

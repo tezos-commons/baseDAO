@@ -3,6 +3,8 @@ cabal-version: 2.2
 -- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: 858742e4582acdb2d63d4c75d20a0b5dbb6f20a96ea45e0d189a2d65dd0db670
 
 name:           templateDAO
 version:        0.0.0.0

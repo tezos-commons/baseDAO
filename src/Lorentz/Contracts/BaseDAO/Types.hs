@@ -195,8 +195,8 @@ data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Stor
   , sQuorumThreshold           :: QuorumThreshold
 
   , sExtra                     :: contractExtra
-  , sProposals                 :: BigMap ProposalKey (Proposal proposalMetadata)
-  , sProposalKeyListSortByDate :: [ProposalKey] -- Newest first
+  , sProposals                 :: BigMap (ProposalKey proposalMetadata) (Proposal proposalMetadata)
+  , sProposalKeyListSortByDate :: [ProposalKey proposalMetadata] -- Newest first
   }
   deriving stock (Generic, Show)
   deriving anyclass (HasAnnotation)
@@ -224,8 +224,8 @@ instance (IsoValue ce, IsoValue pm) =>
     StoreHasSubmap (Storage ce pm) "sOperators" ("owner" :! Address, "operator" :! Address) () where
   storeSubmapOps = storeSubmapOpsDeeper #sOperators
 
-instance (IsoValue ce, IsoValue pm) =>
-    StoreHasSubmap (Storage ce pm) "sProposals" ProposalKey (Proposal pm) where
+instance (IsoValue ce, KnownValue pm) =>
+    StoreHasSubmap (Storage ce pm) "sProposals" (ProposalKey pm) (Proposal pm) where
   storeSubmapOps = storeSubmapOpsDeeper #sProposals
 
 type StorageC store ce pm =
@@ -242,8 +242,8 @@ type StorageC store ce pm =
     , "sQuorumThreshold" := QuorumThreshold
 
     -- , "sExtra" := Identity ce
-    , "sProposals" := ProposalKey ~> Proposal pm
-    , "sProposalKeyListSortByDate" := [ProposalKey]
+    , "sProposals" := ProposalKey pm ~> Proposal pm
+    , "sProposalKeyListSortByDate" := [ProposalKey pm]
     ]
   , StoreHasField store "sExtra" ce
     -- TODO: remove ^^^ once we use
@@ -258,7 +258,7 @@ data Parameter proposalMetadata
   | Migrate MigrateParam
   | Confirm_migration ()
   | Propose (ProposeParams proposalMetadata)
-  | Vote [VoteParam]
+  | Vote [VoteParam proposalMetadata]
   -- Admin
   | Set_voting_period VotingPeriod
   | Set_quorum_threshold QuorumThreshold
@@ -383,7 +383,7 @@ type Entrypoint' cp st s = (cp : st : s) :-> (([Operation], st) : s)
 -- Proposal
 ------------------------------------------------------------------------
 
-type ProposalKey = ByteString
+type ProposalKey pm = Hash Blake2b $ Packed (ProposeParams pm, Address)
 
 -- | Proposal type which will be stored in 'Storage' `sProposals`
 -- `pVoters` is needed due to we need to keep track of voters to be able to
@@ -441,18 +441,21 @@ instance HasAnnotation pm => HasAnnotation (ProposeParams pm) where
 ------------------------------------------------------------------------
 type VoteType = Bool
 
-data VoteParam = VoteParam
-  { vProposalKey :: ProposalKey
+data VoteParam pm = VoteParam
+  { vProposalKey :: ProposalKey pm
   , vVoteType    :: VoteType
   , vVoteAmount  :: Natural
   }
   deriving stock (Generic, Show)
   deriving anyclass IsoValue
 
-instance TypeHasDoc VoteParam where
+instance (TypeHasDoc pm, IsoValue pm) => TypeHasDoc (VoteParam pm) where
   typeDocMdDescription = "Describes target proposal id, vote type and vote amount"
+  typeDocMdReference = poly1TypeDocMdReference
+  typeDocHaskellRep = concreteTypeDocHaskellRep @(VoteParam MText)
+  typeDocMichelsonRep = concreteTypeDocMichelsonRep @(VoteParam MText)
 
-instance HasAnnotation VoteParam where
+instance HasAnnotation (VoteParam pm) where
   annOptions = baseDaoAnnOptions
 
 ------------------------------------------------------------------------
@@ -507,10 +510,10 @@ type TokenAddressParam = ContractRef Address
 ------------------------------------------------------------------------
 
 unfrozenTokenId :: FA2.TokenId
-unfrozenTokenId = 0
+unfrozenTokenId = FA2.TokenId 0
 
 frozenTokenId :: FA2.TokenId
-frozenTokenId = 1
+frozenTokenId = FA2.TokenId 1
 
 ------------------------------------------------------------------------
 -- Helper

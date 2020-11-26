@@ -12,7 +12,8 @@ module Lorentz.Contracts.BaseDAO.Token.FA2
    ) where
 
 import Lorentz
-import Lorentz.Contracts.BaseDAO.Doc (transferDoc, balanceOfDoc, tokenMetadataRegistryDoc, updateOperatorsDoc)
+import Lorentz.Contracts.BaseDAO.Doc
+  (balanceOfDoc, tokenMetadataRegistryDoc, transferDoc, updateOperatorsDoc)
 import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface
@@ -27,7 +28,7 @@ defaultPermissionsDescriptor = PermissionsDescriptor
 
 transfer
   :: forall ce pm s.
-     (IsoValue ce, IsoValue pm, HasFuncContext s (Storage ce pm))
+     (IsoValue ce, KnownValue pm, HasFuncContext s (Storage ce pm))
   => Entrypoint' TransferParams (Storage ce pm) s
 transfer = do
   doc $ DDescription transferDoc
@@ -70,12 +71,12 @@ transfer = do
       swap
       drop @TransferDestination
       dup
-      push @Natural 0
+      push unfrozenTokenId
       if IsEq
       then nop
       else do
         dup
-        push @Natural 1
+        push frozenTokenId
         if IsEq
         then do
           dig @5
@@ -213,7 +214,7 @@ creditTo = mkCachedFunc $ do
 
 
 balanceOf
-  :: forall ce pm s. (IsoValue ce, IsoValue pm)
+  :: forall ce pm s. (IsoValue ce, KnownValue pm)
   => Entrypoint' BalanceRequestParams (Storage ce pm) s
 balanceOf = do
   doc $ DDescription balanceOfDoc
@@ -241,12 +242,12 @@ balanceOf = do
       swap
       dug @2
       dup
-      push @Natural 0
+      push unfrozenTokenId
       if IsEq
       then nop
       else do
         dup
-        push @Natural 1
+        push frozenTokenId
         if IsEq
         then nop
         else failCustom_ #fA2_TOKEN_UNDEFINED
@@ -278,7 +279,7 @@ balanceOf = do
       cons
 
 tokenMetadataRegistry
-  :: (IsoValue ce, IsoValue pm)
+  :: (IsoValue ce, KnownValue pm)
   => Entrypoint' TokenMetadataRegistryParam (Storage ce pm) s
 tokenMetadataRegistry = do
   doc $ DDescription tokenMetadataRegistryDoc
@@ -292,7 +293,7 @@ tokenMetadataRegistry = do
   transferTokens # nil # swap # cons # pair
 
 updateOperators
-  :: (IsoValue ce, IsoValue pm)
+  :: (IsoValue ce, KnownValue pm)
   => Entrypoint' UpdateOperatorsParam (Storage ce pm) s
 updateOperators = do
   doc $ DDescription updateOperatorsDoc
@@ -306,7 +307,7 @@ updateOperators = do
 
 addOperator
   :: forall ce pm s.
-     (IsoValue ce, IsoValue pm)
+     (IsoValue ce, KnownValue pm)
   => (OperatorParam : Storage ce pm : s) :-> (Storage ce pm : s)
 addOperator = do
   getField #opTokenId
@@ -345,7 +346,7 @@ addOperator = do
 
 removeOperator
   :: forall ce pm s.
-     (IsoValue ce, IsoValue pm)
+     (IsoValue ce, KnownValue pm)
   => (OperatorParam : Storage ce pm : s) :-> (Storage ce pm : s)
 removeOperator = do
   getField #opTokenId
@@ -383,15 +384,15 @@ removeOperator = do
     ifKeyDoesntExist = dropN @2
 
 -- | TODO: Probably this one can be moved to Lorentz as well
-assertEq0or1 :: Natural : f :-> f
+assertEq0or1 :: TokenId : f :-> f
 assertEq0or1 = do
   dup
-  push @Natural 0
+  push unfrozenTokenId
   if IsEq
-  then drop @Natural
+  then drop @TokenId
   else do
     dup
-    push @Natural 1
+    push frozenTokenId
     if IsEq
     then failUsing [mt|OPERATION_PROHIBITED|]
     else failCustom_ #fA2_TOKEN_UNDEFINED

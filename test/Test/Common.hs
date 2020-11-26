@@ -20,7 +20,6 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Named (defaults, (!))
-import Tezos.Crypto (blake2b)
 import Util.Named ((.!))
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
@@ -62,8 +61,8 @@ originateBaseDaoWithConfig
 originateBaseDaoWithConfig contractExtra config = do
   originateBaseDaoWithBalance contractExtra config
     (\owner1 owner2 ->
-        [ ((owner1, 0), 100)
-        , ((owner2, 0), 100)
+        [ ((owner1, unfrozenTokenId), 100)
+        , ((owner2, unfrozenTokenId), 100)
         ]
     )
 
@@ -155,5 +154,5 @@ checkTokenBalance tokenId dao addr expectedValue = do
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((addr, tokenId), expectedValue)]] )
 
-makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ByteString
-makeProposalKey params owner = blake2b $ lPackValue (params, owner)
+makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ProposalKey pm
+makeProposalKey params owner = toHashHs $ lPackValue (params, owner)
