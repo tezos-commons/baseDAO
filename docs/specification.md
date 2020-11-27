@@ -207,31 +207,31 @@ We start with standard FA2 errors which are part of the FA2 specification.
 The next group consists of the errors that are not part of the FA2 specification.
 The list of erros may be inaccurate and incomplete, it will be updated during the implementation.
 
-| Error                          | Description                                            |
-|--------------------------------|--------------------------------------------------------|
-| `NOT_ADMIN`            | The sender is not the administrator                          |
-| `NOT_PENDING_ADMIN`    | Authorized sender is not the current pending administrator   |
-| `NOT_TOKEN_OWNER`              | Trying to configure operators for a different wallet which sender does not own                |
+| Error                           | Description                                                                                                 |
+|---------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `NOT_ADMIN`                     | The sender is not the administrator                                                                         |
+| `NOT_PENDING_ADMIN`             | Authorized sender is not the current pending administrator                                                  |
+| `NOT_TOKEN_OWNER`               | Trying to configure operators for a different wallet which sender does not own                              |
 | `FAIL_TRANSFER_CONTRACT_TOKENS` | Trying to cross-transfer DAO tokens to another contract that does not exist or is not a valid FA2 contract. |
-| `FAIL_PROPOSAL_CHECK`          | Throws when trying to propose a proposal that does not pass `proposalCheck`               |
-| `FROZEN_TOKEN_NOT_TRANSFERABLE`| Transfer entrypoint is called for frozen token by a non-admin sender|
-| `PROPOSAL_INSUFFICIENT_BALANCE`| Throws when trying to propose a proposal without having enough unfrozen token                |
-| `VOTING_INSUFFICIENT_BALANCE`  | Throws when trying to vote on a proposal without having enough unfrozen token                |
-| `PROPOSAL_NOT_EXIST`           | Throws when trying to vote on a proposal that does not exist |
-| `QUORUM_NOT_MET`               | A proposal is flushed, but there are not enough votes        |
-| `VOTING_PERIOD_OVER`           | Throws when trying to vote on a proposal that is already ended        |
-| `OUT_OF_BOUND_VOTING_PERIOD`   | Throws when trying to set voting period that is out of bound from what is specified in the `Config`        |
-| `OUT_OF_BOUND_QUORUM_THRESHOLD`| Throws when trying to set quorum threshold that is out of bound from what is specified in the `Config`        |
-| `MAX_PROPOSALS_REACHED`        | Throws when trying to propose a proposal when proposals max amount is already reached |
-| `MAX_VOTES_REACHED`            | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached |
-| `CONTRACT_MIGRATED`            | Throw when conract has been migrated        |
-| `MIGRATED`                     | Throw when conract has been migrated        |
-| `NOT_MIGRATING`                | Throw when `confirm_migration` is called and contract is not in migration |
-| `NOT_MIGRATION_TARGET`         | Throw when `confirm_migration` is called by address other than the new address |
-| `FORBIDDEN_XTZ`                | Throws when some XTZ was received as part of the contract call |
-| `PROPOSER_NOT_EXIST_IN_LEDGER` | Expect a proposer address to exist in Ledger but it is not found         |
-| `PROPOSAL_NOT_UNIQUE`          | Trying to propose a proposal that is already existed in the Storage.         |
-| `MISSIGNED`                    | Parameter signature does not match the expected one - for permits.   |
+| `FAIL_PROPOSAL_CHECK`           | Throws when trying to propose a proposal that does not pass `proposalCheck`                                 |
+| `FROZEN_TOKEN_NOT_TRANSFERABLE` | Transfer entrypoint is called for frozen token by a non-admin sender                                        |
+| `PROPOSAL_INSUFFICIENT_BALANCE` | Throws when trying to propose a proposal without having enough unfrozen token                               |
+| `VOTING_INSUFFICIENT_BALANCE`   | Throws when trying to vote on a proposal without having enough unfrozen token                               |
+| `PROPOSAL_NOT_EXIST`            | Throws when trying to vote on a proposal that does not exist                                                |
+| `QUORUM_NOT_MET`                | A proposal is flushed, but there are not enough votes                                                       |
+| `VOTING_PERIOD_OVER`            | Throws when trying to vote on a proposal that is already ended                                              |
+| `OUT_OF_BOUND_VOTING_PERIOD`    | Throws when trying to set voting period that is out of bound from what is specified in the `Config`         |
+| `OUT_OF_BOUND_QUORUM_THRESHOLD` | Throws when trying to set quorum threshold that is out of bound from what is specified in the `Config`      |
+| `MAX_PROPOSALS_REACHED`         | Throws when trying to propose a proposal when proposals max amount is already reached                       |
+| `MAX_VOTES_REACHED`             | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
+| `CONTRACT_MIGRATED`             | Throw when conract has been migrated                                                                        |
+| `MIGRATED`                      | Throw when conract has been migrated                                                                        |
+| `NOT_MIGRATING`                 | Throw when `confirm_migration` is called and contract is not in migration                                   |
+| `NOT_MIGRATION_TARGET`          | Throw when `confirm_migration` is called by address other than the new address                              |
+| `FORBIDDEN_XTZ`                 | Throws when some XTZ was received as part of the contract call                                              |
+| `PROPOSER_NOT_EXIST_IN_LEDGER`  | Expect a proposer address to exist in Ledger but it is not found                                            |
+| `PROPOSAL_NOT_UNIQUE`           | Trying to propose a proposal that is already existed in the Storage.                                        |
+| `MISSIGNED`                     | Parameter signature does not match the expected one - for permits.                                          |
 
 
 # Entrypoints
