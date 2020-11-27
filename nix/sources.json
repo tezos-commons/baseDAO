@@ -24,15 +24,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "haskell.nix": {
-        "branch": "master",
+        "branch": "zhenya/ops1122-fix-snapshot-path-pin",
         "description": "Alternative Haskell Infrastructure for Nixpkgs",
         "homepage": "https://input-output-hk.github.io/haskell.nix",
-        "owner": "input-output-hk",
+        "owner": "serokell",
         "repo": "haskell.nix",
-        "rev": "565db5410605db0135c229336eea7f906ab1253f",
-        "sha256": "09lmcixsw6dbwc93672np8dkvy2yq3qfrfhwl9v6v06bgvbmg7x6",
+        "rev": "c427aeda2bc82fe4f8ff9354e70bdb4ecb5121b2",
+        "sha256": "1l2n46n5ym42ksyk7mvsh1a89ccdf4kc6k3vn4nvf22rvwm5v0w5",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/haskell.nix/archive/565db5410605db0135c229336eea7f906ab1253f.tar.gz",
+        "url": "https://github.com/serokell/haskell.nix/archive/c427aeda2bc82fe4f8ff9354e70bdb4ecb5121b2.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
