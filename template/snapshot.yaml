@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2020 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+name: dao-snapshot
+
 resolver: lts-16.5
 
 packages:
