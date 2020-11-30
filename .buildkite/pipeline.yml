@@ -92,7 +92,7 @@ steps:
     - nix-build ci.nix -A contracts-doc --arg release false
     - ln -s ./result/*.md .
     artifact_paths:
-      - BaseDAO.md
+      - TrivialDAO.md
       - GameDAO.md
 
   - label: contract doc release
@@ -103,7 +103,7 @@ steps:
         --argstr commitDate "$(git log HEAD -1 --format=%cd)"
     - ln -s ./result/*.md .
     artifact_paths:
-      - BaseDAO.md
+      - TrivialDAO.md
       - GameDAO.md
 
   - label: xrefcheck generated doc
