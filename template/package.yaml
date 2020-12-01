@@ -1,18 +1,18 @@
 # SPDX-FileCopyrightText: 2020 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-name:                baseDAO
-version:             0.1.0.0
+# TODO: fill this section with information about your package
+name:                templateDAO
+version:             0.0.0.0
 license:             MIT
 license-file:        LICENSE
-author:              Serokell, Tocqueville Group
-git:                 git@github.com:tqtezos/baseDAO.git
-copyright:           2020 TQ Tezos
+# description:
+# author:
+# git:                 git@github.com:username/reponame.git
+# copyright:
 
 extra-source-files:
 - README.md
-
-description:         Please see the README on GitHub at <https://github.com/tqtezos/baseDAO#readme>
 
 verbatim:
   cabal-version: 2.2
@@ -80,55 +80,16 @@ ghc-options:
 dependencies:
   - base >= 4.7 && < 5
 
-library:
-  source-dirs: src
-  default-extensions: [ RebindableSyntax ]
-  ghc-options: [ -Wno-unused-do-bind ]
-
-  generated-other-modules:
-    - Paths_baseDAO
-  dependencies:
-    - containers
-    - named
-    - morley
-    - morley-ledgers
-    - lorentz
-    - optparse-applicative
-    - universum
-    - with-utf8
-
 executables:
-  baseDAO:
+  templateDAO:
     main:                Main.hs
     source-dirs:         app
     dependencies:
     - baseDAO
     - morley
     - lorentz
+    - optparse-applicative
     - universum
-
-tests:
-  baseDAO-test:
-    main:        Main.hs
-    source-dirs: test
-    build-tools: tasty-discover:tasty-discover
-
-    ghc-options:
-    - -threaded
-    - -eventlog
-    - '"-with-rtsopts=-N -A64m -AL256m"'
-
-    dependencies:
-    - baseDAO
-    - cleveland
-    - containers
-    - fmt
-    - HUnit
-    - lorentz
-    - named
-    - morley
-    - morley-ledgers
-    - o-clock
-    - tasty
-    - tasty-hunit-compat
-    - universum
+    - with-utf8
+    generated-other-modules:
+    - Paths_templateDAO
