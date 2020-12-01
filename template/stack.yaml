@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
+
+resolver: snapshot.yaml
+
+packages:
+  - .
+
+extra-deps:
+- git:
+    https://github.com/tqtezos/baseDAO.git
+  commit:
+    # TODO: specify commit in BaseDAO repository that you want to depend on
+    f035b53879e5f900e4211c778b1de26499a4261d
