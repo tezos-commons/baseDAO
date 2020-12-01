@@ -10,7 +10,7 @@ The [specification](docs/specification.md) document is the specification used as
 
 Documentation of the actually implemented smart contract is generated automatically.
 * [BaseDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/BaseDAO.md)
-* [GaseDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/GameDAO.md)
+* [GameDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/GameDAO.md)
 
 ## Build Instructions
 
