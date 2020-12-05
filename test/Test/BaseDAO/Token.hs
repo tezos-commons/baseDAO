@@ -34,7 +34,7 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
 
 adminBurnScenario :: (Monad m) => NettestImpl m -> m ()
 adminBurnScenario = uncapsNettest $ do
-  ((owner1, _), _, dao, admin)
+  dao :/ (owner1, ()) :/ TestSetup{ tsAdmin = admin }
     <- originateTrivialDaoWithBalance
           (\o1 _ ->
               [ ((o1, 0), 10)
@@ -54,7 +54,7 @@ adminBurnScenario = uncapsNettest $ do
 
 adminMintScenario :: (Monad m) => NettestImpl m -> m ()
 adminMintScenario = uncapsNettest $ do
-  ((owner1, _), _, dao, admin)
+  dao :/ (owner1, ()) :/ TestSetup{ tsAdmin = admin }
     <- originateTrivialDaoWithBalance
           (\o1 _ ->
               [ ((o1, 0), 0)
@@ -69,8 +69,8 @@ adminMintScenario = uncapsNettest $ do
 
 transferContractTokensScenario :: (Monad m) => NettestImpl m -> m ()
 transferContractTokensScenario = uncapsNettest $ do
-  (_, _, dao, admin) <- originateTrivialDao
-  ((owner1, _), (owner2, _), fa2Contract, _) <- originateTrivialDao
+  dao :/ TestSetup { tsAdmin = admin } <- originateTrivialDao
+  fa2Contract :/ (owner1, owner2) <- originateTrivialDao
   let addParams = FA2.OperatorParam
         { opOwner = owner1
         , opOperator = toAddress dao
@@ -97,7 +97,7 @@ transferContractTokensScenario = uncapsNettest $ do
 
 tokenAddressScenario :: (Monad m) => NettestImpl m -> m ()
 tokenAddressScenario = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateTrivialDao
+  dao :/ (owner1, ()) <- originateTrivialDao
   consumer <- originateSimple "consumer" [] contractConsumer
   callFrom (AddressResolved owner1) dao (Call @"Token_address") (toContractRef consumer)
 

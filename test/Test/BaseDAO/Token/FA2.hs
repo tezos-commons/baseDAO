@@ -75,7 +75,7 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
 zeroTransferScenario :: (Monad m) => NettestImpl m -> m ()
 zeroTransferScenario = uncapsNettest $ do
   nonexistent :: Address <- newAddress "nonexistent"
-  ((owner1, _), _, dao, _) <- originateTrivialDao
+  dao :/ (owner1, ()) <- originateTrivialDao
   let params = [ FA2.TransferItem
         { tiFrom = nonexistent
         , tiTxs = [ FA2.TransferDestination
@@ -89,7 +89,7 @@ zeroTransferScenario = uncapsNettest $ do
 
 validTransferScenario :: (Monad m) => NettestImpl m -> m ()
 validTransferScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ ((owner1, op1), owner2) <- originateTrivialDao
   let params = [ FA2.TransferItem
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
@@ -114,7 +114,7 @@ validTransferScenario = uncapsNettest $ do
 
 validTransferOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 validTransferOwnerScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ (owner1, owner2) <- originateTrivialDao
   let params = [ FA2.TransferItem
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
@@ -139,7 +139,8 @@ validTransferOwnerScenario = uncapsNettest $ do
 
 updatingOperatorAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
 updatingOperatorAfterMigrationScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, newAddress1), dao, admin) <- originateTrivialDao
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin } <- originateTrivialDao
+  newAddress1 <- newAddress "migration target"
   let params = FA2.OperatorParam
         { opOwner = owner1
         , opOperator = owner2
@@ -153,7 +154,7 @@ updatingOperatorAfterMigrationScenario = uncapsNettest $ do
 
 updatingOperatorScenario :: (Monad m) => NettestImpl m -> m ()
 updatingOperatorScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ (owner1, owner2) <- originateTrivialDao
   let params = FA2.OperatorParam
         { opOwner = owner1
         , opOperator = owner2
@@ -188,7 +189,7 @@ updatingOperatorScenario = uncapsNettest $ do
 
 lowBalanceScenario :: (Monad m) => NettestImpl m -> m ()
 lowBalanceScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ ((owner1, op1), owner2) <- originateTrivialDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner1
@@ -203,7 +204,7 @@ lowBalanceScenario = uncapsNettest $ do
 
 lowBalanceOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 lowBalanceOwnerScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ (owner1, owner2) <- originateTrivialDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner1
@@ -219,7 +220,7 @@ lowBalanceOwnerScenario = uncapsNettest $ do
 noSourceAccountScenario :: (Monad m) => NettestImpl m -> m ()
 noSourceAccountScenario = uncapsNettest $ do
   nonexistent :: Address <- newAddress "nonexistent"
-  ((owner1, _), _, dao, _) <- originateTrivialDao
+  dao :/ (owner1, ()) <- originateTrivialDao
 
   let params = [ FA2.TransferItem
         { tiFrom = nonexistent
@@ -238,7 +239,7 @@ noSourceAccountScenario = uncapsNettest $ do
 badOperatorScenario :: (Monad m) => NettestImpl m -> m ()
 badOperatorScenario = uncapsNettest $ do
   op3  :: Address <- newAddress "operator3"
-  ((owner1, _), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ (owner1, owner2) <- originateTrivialDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -253,12 +254,12 @@ badOperatorScenario = uncapsNettest $ do
 
 emptyTransferListScenario :: (Monad m) => NettestImpl m -> m ()
 emptyTransferListScenario = uncapsNettest $ do
-  ((_, op1), _, dao, _) <- originateTrivialDao
+  dao :/ ((_, op1), ()) <- originateTrivialDao
   callFrom (AddressResolved op1) dao (Call @"Transfer") []
 
 validateTokenScenario :: (Monad m) => NettestImpl m -> m ()
 validateTokenScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ ((owner1, op1), owner2) <- originateTrivialDao
 
   let params tokenId = [ FA2.TransferItem
         { tiFrom = owner1
@@ -278,7 +279,7 @@ validateTokenScenario = uncapsNettest $ do
 
 validateTokenOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 validateTokenOwnerScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ (owner1, owner2) <- originateTrivialDao
 
   let params tokenId = [ FA2.TransferItem
         { tiFrom = owner1
@@ -298,7 +299,7 @@ validateTokenOwnerScenario = uncapsNettest $ do
 
 noForeignMoneyScenario :: (Monad m) => NettestImpl m -> m ()
 noForeignMoneyScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ ((owner1, op1), owner2) <- originateTrivialDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -313,7 +314,7 @@ noForeignMoneyScenario = uncapsNettest $ do
 
 noForeignMoneyOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 noForeignMoneyOwnerScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateTrivialDao
+  dao :/ (owner1, owner2) <- originateTrivialDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -328,7 +329,7 @@ noForeignMoneyOwnerScenario = uncapsNettest $ do
 
 balanceOfOwnerScenario :: (Monad m) => NettestImpl m -> m ()
 balanceOfOwnerScenario = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateTrivialDao
+  dao :/ (owner1, ()) <- originateTrivialDao
   consumer <- originateSimple "consumer" [] contractConsumer
   let
     params requestItems = mkFA2View requestItems consumer
@@ -342,7 +343,7 @@ balanceOfOwnerScenario = uncapsNettest $ do
 
 adminTransferScenario :: (Monad m) => NettestImpl m -> m ()
 adminTransferScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateTrivialDao
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin } <- originateTrivialDao
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -357,7 +358,7 @@ adminTransferScenario = uncapsNettest $ do
 
 adminTransferFrozenScenario :: (Monad m) => NettestImpl m -> m ()
 adminTransferFrozenScenario = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin)
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin }
     <- originateTrivialDaoWithBalance
         (\owner1 owner2 ->
             [ ((owner1, 1), 100)
@@ -377,7 +378,10 @@ adminTransferFrozenScenario = uncapsNettest $ do
 
 transferAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
 transferAfterMigrationScenario = uncapsNettest $ do
-  ((owner1, op1), (owner2, newAddress1), dao, admin) <- originateTrivialDao
+  dao :/ ((owner1, op1), owner2) :/ TestSetup{ tsAdmin = admin }
+     <- originateTrivialDao
+
+  newAddress1 <- newAddress "migration target"
 
   let params = [ FA2.TransferItem
         { tiFrom = owner2
@@ -395,8 +399,9 @@ transferAfterMigrationScenario = uncapsNettest $ do
 
 balanceOfRequestAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
 balanceOfRequestAfterMigrationScenario = uncapsNettest $ do
-  ((owner1, newAddress1), _, dao, admin) <- originateTrivialDao
+  dao :/ (owner1, ()) :/ TestSetup{ tsAdmin = admin } <- originateTrivialDao
   consumer <- originateSimple "consumer" [] contractConsumer
+  newAddress1 <- newAddress "migration target"
   let
     params requestItems = mkFA2View requestItems consumer
     callWith = callFrom (AddressResolved owner1) dao (Call @"Balance_of")
@@ -409,8 +414,9 @@ balanceOfRequestAfterMigrationScenario = uncapsNettest $ do
 
 tokenMetadataRegistryRequestAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()
 tokenMetadataRegistryRequestAfterMigrationScenario = uncapsNettest $ do
-  ((owner1, newAddress1), _, dao, admin) <- originateTrivialDao
+  dao :/ (owner1, ()) :/ TestSetup{ tsAdmin = admin } <- originateTrivialDao
   consumer <- originateSimple "consumer" [] (contractConsumer @Address)
+  newAddress1 <- newAddress "migration target"
 
   callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
   callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()

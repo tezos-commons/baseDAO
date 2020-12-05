@@ -34,7 +34,7 @@ test_GameDAO = testGroup "GameDAO Tests"
 validProposal :: (Monad m) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ do
   (consumer :: TAddress MText) <- originateSimple "consumer" [] contractConsumer
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def config
+  dao :/ (owner1, ()) <- originateBaseDaoWithConfig def config
 
   -- Fail due to proposing new content require 50 token.
   callFrom (AddressResolved owner1) dao (Call @"Propose") (DAO.ProposeParams
@@ -53,7 +53,7 @@ validProposal = uncapsNettest $ do
 flushAcceptedProposals :: (Monad m) => NettestImpl m -> m ()
 flushAcceptedProposals = uncapsNettest $ do
   (consumer :: TAddress MText) <- originateSimple "consumer" [] contractConsumer
-  ((owner1, _), (owner2, _), dao, admin)
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin }
     <- originateBaseDaoWithConfig def config
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20

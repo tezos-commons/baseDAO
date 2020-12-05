@@ -5,6 +5,11 @@ module Test.Common
   ( mkFA2View
   , checkTokenBalance
   , withOriginated
+
+  , TestSetup (..)
+  , TestOwnerSetup (..)
+  , (:/)(..)
+
   , originateTrivialDao
   , originateBaseDaoWithConfig
   , originateTrivialDaoWithBalance
@@ -49,16 +54,76 @@ withOriginated addrCount storageFn tests = do
     }
   tests addresses baseDao
 
+-- | Keeps all the parameters of the current test.
+data TestSetup pm = TestSetup
+  { tsDao :: TAddress (Parameter pm)
+  , tsAdmin :: Address
+  , tsOwners :: (TestOwnerSetup, TestOwnerSetup)
+  }
+
+data TestOwnerSetup = TestOwnerSetup
+  { tosAddress :: Address
+    -- ^ Owner address
+  , tosOperator :: Address
+    -- ^ Related operator address
+  }
+
+{- Note about producing test setup:
+
+There seems to be no way to work with TestSetup datatype directly in a
+non-verbose way, so further we try to make is possible to pick only the
+necessary parts of test setup with ease.
+-}
+
+-- | Injection from @a@ to @b@.
+infix 0 >->
+class a >-> b where
+  inj :: a -> b
+
+instance a >-> () where
+  inj _ = ()
+
+-- | Product of two types.
+infixr 1 :/
+data a :/ b = a :/ b
+
+instance (a >-> b, a >-> c) => a >-> b :/ c where
+  inj a = inj a :/ inj a
+
+-- | Extract test setup itself.
+instance (pm ~ pm') => TestSetup pm >-> TestSetup pm' where
+  inj = id
+
+-- | Extract DAO address.
+instance (cp ~ Parameter pm) => TestSetup pm >-> TAddress cp where
+  inj = tsDao
+
+-- | Extract owners.
+instance (TestOwnerSetup >-> e1, TestOwnerSetup >-> e2) =>
+          TestSetup pm >-> (e1, e2) where
+  inj tos = case tsOwners tos of
+    (o1, o2) -> (inj o1, inj o2)
+
+instance TestOwnerSetup >-> TestOwnerSetup where
+  inj = id
+
+instance TestOwnerSetup >-> Address where
+  inj = tosAddress
+
+instance (e1 ~ Address, e2 ~ Address) => TestOwnerSetup >-> (e1, e2) where
+  inj = tosAddress &&& tosOperator
+
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.
 originateBaseDaoWithConfig
-  :: forall pm ce caps base m.
+  :: forall pm ce setup caps base m.
      ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
      , TypeHasDoc pm, NicePackedValue pm
      , KnownValue ce, TypeHasDoc ce
      , MonadNettest caps base m
+     , TestSetup pm >-> setup
      )
-  => ce -> DAO.Config ce pm -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+  => ce -> DAO.Config ce pm -> m (TAddress (Parameter pm) :/ setup)
 originateBaseDaoWithConfig contractExtra config = do
   originateBaseDaoWithBalance contractExtra config
     (\owner1 owner2 ->
@@ -68,16 +133,17 @@ originateBaseDaoWithConfig contractExtra config = do
     )
 
 originateBaseDaoWithBalance
-  :: forall pm ce caps base m.
+  :: forall pm ce setup caps base m.
      ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
      , TypeHasDoc pm, NicePackedValue pm
      , KnownValue ce, TypeHasDoc ce
      , MonadNettest caps base m
+     , TestSetup pm >-> setup
      )
   => ce
   -> DAO.Config ce pm
   -> (Address -> Address -> [((Address, FA2.TokenId), Natural)])
-  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+  -> m (TAddress (Parameter pm) :/ setup)
 originateBaseDaoWithBalance contractExtra config balFunc = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
@@ -105,28 +171,36 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
       }
   dao <- originate originateData
 
-  pure ((owner1, operator1), (owner2, operator2), dao, admin)
+  pure $ inj TestSetup
+    { tsDao = dao
+    , tsAdmin = admin
+    , tsOwners =
+        ( TestOwnerSetup owner1 operator1
+        , TestOwnerSetup owner2 operator2
+        )
+    }
 
 originateTrivialDaoWithBalance
-  :: (MonadNettest caps base m)
+  :: (MonadNettest caps base m, TestSetup () >-> setup)
   => (Address -> Address -> [((Address, FA2.TokenId), Natural)])
-  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter ()), Address)
+  -> m (TAddress (Parameter ()) :/ setup)
 originateTrivialDaoWithBalance =
   originateBaseDaoWithBalance () DAO.trivialConfig
 
 originateBaseDao
-  :: forall pm ce caps base m.
+  :: forall pm ce setup caps base m.
      ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
      , TypeHasDoc pm, NicePackedValue pm
      , KnownValue ce, TypeHasDoc ce
      , MonadNettest caps base m
+     , TestSetup pm >-> setup
      )
-  => ce -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+  => ce -> m (TAddress (Parameter pm) :/ setup)
 originateBaseDao contractExtra = originateBaseDaoWithConfig contractExtra DAO.defaultConfig
 
 originateTrivialDao
-  :: (MonadNettest caps base m)
-  => m ((Address, Address), (Address, Address), TAddress (DAO.Parameter ()), Address)
+  :: (MonadNettest caps base m, TestSetup () >-> setup)
+  => m (TAddress (Parameter ()) :/ setup)
 originateTrivialDao = originateBaseDao ()
 
 -- | Create FA2 View

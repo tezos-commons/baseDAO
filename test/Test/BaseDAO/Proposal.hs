@@ -73,7 +73,7 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
 
 validProposal :: (Monad m) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, ()) <- originateBaseDaoWithConfig @Integer () config
   let params = DAO.ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = 1
@@ -89,7 +89,7 @@ validProposal = uncapsNettest $ do
 
 rejectProposal :: (Monad m) => NettestImpl m -> m ()
 rejectProposal = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, ()) <- originateBaseDaoWithConfig @Integer () config
   let params = DAO.ProposeParams
         { ppFrozenToken = 9
         , ppProposalMetadata = 1
@@ -100,7 +100,7 @@ rejectProposal = uncapsNettest $ do
 
 insufficientTokenProposal :: (Monad m) => NettestImpl m -> m ()
 insufficientTokenProposal = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, ()) <- originateBaseDaoWithConfig @Integer () config
   let params = DAO.ProposeParams
         { ppFrozenToken = 101
         , ppProposalMetadata = 1
@@ -111,14 +111,14 @@ insufficientTokenProposal = uncapsNettest $ do
 
 nonUniqueProposal :: (Monad m) => NettestImpl m -> m ()
 nonUniqueProposal = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, ()) <- originateBaseDaoWithConfig @Integer () config
   _ <- createSampleProposal 1 owner1 dao
   createSampleProposal 1 owner1 dao
     & expectCustomError_ #pROPOSAL_NOT_UNIQUE
 
 voteValidProposal :: (Monad m) => NettestImpl m -> m ()
 voteValidProposal = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, owner2) <- originateBaseDaoWithConfig @Integer () config
 
   -- | Create sample proposal (first proposal has id = 0)
   key1 <- createSampleProposal 1 owner1 dao
@@ -135,7 +135,7 @@ voteValidProposal = uncapsNettest $ do
 
 voteNonExistingProposal :: (Monad m) => NettestImpl m -> m ()
 voteNonExistingProposal = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, owner2) <- originateBaseDaoWithConfig @Integer () config
 
   -- | Create sample proposal
   _ <- createSampleProposal 1 owner1 dao
@@ -150,7 +150,7 @@ voteNonExistingProposal = uncapsNettest $ do
 
 voteMultiProposals :: (Monad m) => NettestImpl m -> m ()
 voteMultiProposals = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, owner2) <- originateBaseDaoWithConfig @Integer () config
 
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -175,7 +175,7 @@ voteMultiProposals = uncapsNettest $ do
 
 insufficientTokenVote :: (Monad m) => NettestImpl m -> m ()
 insufficientTokenVote = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, owner2) <- originateBaseDaoWithConfig @Integer () config
 
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -197,7 +197,8 @@ insufficientTokenVote = uncapsNettest $ do
 
 voteOutdatedProposal :: (Monad m) => NettestImpl m -> m ()
 voteOutdatedProposal = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, owner2)
+      :/ TestSetup{ tsAdmin = admin } <- originateBaseDaoWithConfig @Integer () config
 
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -218,7 +219,8 @@ voteOutdatedProposal = uncapsNettest $ do
 
 setVotingPeriod :: (Monad m) => NettestImpl m -> m ()
 setVotingPeriod = uncapsNettest $ do
-  ((owner1, _), _, dao, admin) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, ()) :/ TestSetup{ tsAdmin = admin }
+    <- originateBaseDaoWithConfig @Integer () config
 
   let param = 60 * 60 -- 1 hour
 
@@ -230,7 +232,8 @@ setVotingPeriod = uncapsNettest $ do
 
 setQuorumThreshold :: (Monad m) => NettestImpl m -> m ()
 setQuorumThreshold = uncapsNettest $ do
-  ((owner1, _), _, dao, admin) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, ()) :/ TestSetup{ tsAdmin = admin }
+    <- originateBaseDaoWithConfig @Integer () config
 
   let param = 100
 
@@ -242,7 +245,8 @@ setQuorumThreshold = uncapsNettest $ do
 
 flushNotAffectOngoingProposals :: (Monad m) => NettestImpl m -> m ()
 flushNotAffectOngoingProposals = uncapsNettest $ do
-  ((owner1, _), _, dao, admin) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, ()) :/ TestSetup{ tsAdmin = admin }
+    <- originateBaseDaoWithConfig @Integer () config
 
   -- Note: Cannot set to few seconds, since in real network, each
   -- calls takes some times to run. 20 seconds seem to be the ideal.
@@ -262,7 +266,8 @@ flushNotAffectOngoingProposals = uncapsNettest $ do
 
 flushAcceptedProposals :: (Monad m) => NettestImpl m -> m ()
 flushAcceptedProposals = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig @Integer () config
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin }
+    <- originateBaseDaoWithConfig @Integer () config
 
   -- Use 60s for voting period, since in real network by the time we call
   -- vote entrypoint 30s is already passed.
@@ -305,7 +310,7 @@ flushAcceptedProposals = uncapsNettest $ do
 flushRejectProposalQuorum :: (Monad m) => NettestImpl m -> m ()
 flushRejectProposalQuorum =
   uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin)
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin }
     <- originateBaseDaoWithConfig @Integer () configWithRejectedProposal
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
@@ -342,7 +347,7 @@ flushRejectProposalQuorum =
 
 flushRejectProposalNegativeVotes :: (Monad m) => NettestImpl m -> m ()
 flushRejectProposalNegativeVotes = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin)
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin }
     <- originateBaseDaoWithConfig @Integer () configWithRejectedProposal
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
@@ -387,7 +392,8 @@ flushRejectProposalNegativeVotes = uncapsNettest $ do
 
 flushWithBadConfig :: (Monad m) => NettestImpl m -> m ()
 flushWithBadConfig = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig @Integer () badRejectedValueConfig
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin }
+    <- originateBaseDaoWithConfig @Integer () badRejectedValueConfig
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 2
@@ -416,7 +422,8 @@ flushWithBadConfig = uncapsNettest $ do
 
 flushDecisionLambda :: (Monad m) => NettestImpl m -> m ()
 flushDecisionLambda = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig @Integer () decisionLambdaConfig
+  dao :/ (owner1, owner2) :/ TestSetup{ tsAdmin = admin }
+    <- originateBaseDaoWithConfig @Integer () decisionLambdaConfig
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 60
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
@@ -439,7 +446,7 @@ flushDecisionLambda = uncapsNettest $ do
 
 proposalBoundedValue :: (Monad m) => NettestImpl m -> m ()
 proposalBoundedValue = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig @Integer () (config { DAO.cMaxProposals = 1})
+  dao :/ (owner1, ()) <- originateBaseDaoWithConfig @Integer () (config { DAO.cMaxProposals = 1})
 
   let params = DAO.ProposeParams
         { ppFrozenToken = 10
@@ -452,7 +459,8 @@ proposalBoundedValue = uncapsNettest $ do
 
 votesBoundedValue :: (Monad m) => NettestImpl m -> m ()
 votesBoundedValue = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer () (config { DAO.cMaxVotes = 1})
+  dao :/ (owner1, owner2)
+    <- originateBaseDaoWithConfig @Integer () (config { DAO.cMaxVotes = 1})
 
   key1 <- createSampleProposal 1 owner2 dao
   let upvote = DAO.VoteParam
@@ -472,7 +480,7 @@ votesBoundedValue = uncapsNettest $ do
 
 quorumThresholdBound :: (Monad m) => NettestImpl m -> m ()
 quorumThresholdBound = uncapsNettest $ do
-  (_, _, dao, admin) <- originateBaseDaoWithConfig @Integer ()
+  dao :/ TestSetup{ tsAdmin = admin } <- originateBaseDaoWithConfig @Integer ()
                                           (config { DAO.cMinQuorumThreshold = 1
                                                   , DAO.cMaxQuorumThreshold = 2
                                                   })
@@ -485,7 +493,7 @@ quorumThresholdBound = uncapsNettest $ do
 
 votingPeriodBound :: (Monad m) => NettestImpl m -> m ()
 votingPeriodBound = uncapsNettest $ do
-  (_, _, dao, admin) <- originateBaseDaoWithConfig @Integer ()
+  dao :/ TestSetup{ tsAdmin = admin } <- originateBaseDaoWithConfig @Integer ()
                                           (config { DAO.cMinVotingPeriod = 1
                                                   , DAO.cMaxVotingPeriod = 2
                                                   })
