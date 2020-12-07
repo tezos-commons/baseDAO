@@ -94,7 +94,7 @@ rec {
     } ''
       mkdir $out
       cd $out
-      baseDAO document --name BaseDAO --output BaseDAO.md
+      baseDAO document --name TrivialDAO --output TrivialDAO.md
       baseDAO document --name GameDAO --output GameDAO.md
     '';
 

@@ -23,7 +23,7 @@ repoSettings = GitRepoSettings $ \commit ->
 contracts :: ContractRegistry
 contracts = daoContractRegistry
   [ DaoContractInfo
-    { dciName = "BaseDAO"
+    { dciName = "TrivialDAO"
     , dciConfig = TrivialDAO.trivialConfig
     , dciExtraParser = pure def
     }

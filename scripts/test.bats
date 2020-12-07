@@ -18,13 +18,13 @@ exe="baseDAO"
 }
 
 @test "Print BaseDAO" {
-  "$exe" print -n BaseDAO
+  "$exe" print -n TrivialDAO
 }
 
 @test "Print initial BaseDAO storage" {
-  "$exe" storage-BaseDAO --admin KT1VdyhR9JsmfpxdGf2hMBo1f4Z2TCogp8Th
+  "$exe" storage-TrivialDAO --admin KT1VdyhR9JsmfpxdGf2hMBo1f4Z2TCogp8Th
 }
 
 @test "Document BaseDAO" {
-  "$exe" document -n BaseDAO
+  "$exe" document -n TrivialDAO
 }
