@@ -1,10 +1,11 @@
-# Game DAO
+# BaseDAO
 
 **Code revision:** [6263105](https://github.com/tqtezos/baseDAO/tree/62631057d64595ee3cd13fcdcac1abaf1ca49afe) *(Mon Dec 7 20:25:58 2020 +0300)*
 
 
 
-A simple DAO for a Moba-like game.
+An example of a very simple DAO contract without any custom checks,
+                          extra data and decision lambda.
 
 It contains standard FA2 entrypoints, plus some extra ones including proposal and
 migration entrypoints. It supports two types of token_id - frozen (token_id = 1) and unfrozen (token_id = 0).
@@ -38,7 +39,6 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [()](#types-lparenrparen)
   - [(a, b)](#types-lparenacomma-brparen)
   - [Address (no entrypoint)](#types-Address-lparenno-entrypointrparen)
-  - [BalanceChange](#types-BalanceChange)
   - [BalanceRequestItem](#types-BalanceRequestItem)
   - [BalanceResponseItem](#types-BalanceResponseItem)
   - [BigMap](#types-BigMap)
@@ -46,21 +46,15 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [BurnParam](#types-BurnParam)
   - [ByteString](#types-ByteString)
   - [Contract](#types-Contract)
-  - [GameDaoContractExtra](#types-GameDaoContractExtra)
-  - [GameDaoProposalMetadata](#types-GameDaoProposalMetadata)
-  - [HeroChange](#types-HeroChange)
   - [Integer](#types-Integer)
-  - [ItemChange](#types-ItemChange)
   - [List](#types-List)
   - [MigrationStatus](#types-MigrationStatus)
   - [MintParam](#types-MintParam)
   - [Named entry](#types-Named-entry)
   - [Natural](#types-Natural)
-  - [NewContent](#types-NewContent)
   - [OperatorParam](#types-OperatorParam)
   - [Parameter](#types-Parameter)
   - [Proposal](#types-Proposal)
-  - [ProposalType](#types-ProposalType)
   - [ProposeParams](#types-ProposeParams)
   - [Text](#types-Text)
   - [Timestamp](#types-Timestamp)
@@ -74,7 +68,6 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [FA2_INSUFFICIENT_BALANCE](#errors-FA2_INSUFFICIENT_BALANCE)
   - [FA2_NOT_OPERATOR](#errors-FA2_NOT_OPERATOR)
   - [FA2_TOKEN_UNDEFINED](#errors-FA2_TOKEN_UNDEFINED)
-  - [FAIL_DECISION_LAMBDA](#errors-FAIL_DECISION_LAMBDA)
   - [FAIL_PROPOSAL_CHECK](#errors-FAIL_PROPOSAL_CHECK)
   - [FAIL_TRANSFER_CONTRACT_TOKENS](#errors-FAIL_TRANSFER_CONTRACT_TOKENS)
   - [FORBIDDEN_XTZ](#errors-FORBIDDEN_XTZ)
@@ -459,9 +452,9 @@ is decreased by the same value.
 
 
 **Argument:** 
-  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`GameDaoProposalMetadata`](#types-GameDaoProposalMetadata)
-  + **In Michelson:** `(pair (nat %frozen_token) (pair %proposal_metadata (or %proposal_type (pair %balance_type (list %item_changes (pair (string %item_name) (list %changelogs string))) (list %hero_changes (pair (string %hero_name) (list %changelogs string)))) (list %new_type (pair (string %content_name) (list %content_description string)))) (pair (string %proposal_description) (address %consumer_addr))))`
-    + **Example:** <span id="example-id">`Pair 0 (Pair (Left (Pair { Pair "hello" { "hello" } } { Pair "hello" { "hello" } })) (Pair "hello" "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"))`</span>
+  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`()`](#types-lparenrparen)
+  + **In Michelson:** `(pair (nat %frozen_token) (unit %proposal_metadata))`
+    + **Example:** <span id="example-id">`Pair 0 Unit`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -639,8 +632,6 @@ If the proposal is accepted, the decision lambda is called.
 * [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
 
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
-
-* [`FAIL_DECISION_LAMBDA`](#errors-FAIL_DECISION_LAMBDA) — Trying to execute decision lambda but result in errors.
 
 
 
@@ -827,22 +818,6 @@ This is similar to Michelson Address, but does not retain entrypoint name if it 
 
 
 
-<a name="types-BalanceChange"></a>
-
----
-
-### `BalanceChange`
-
-Describe the update of all items and heroes in the proposal.
-
-**Structure:** 
-  * ***itemChanges*** :[`List`](#types-List) [`ItemChange`](#types-ItemChange)
-  * ***heroChanges*** :[`List`](#types-List) [`HeroChange`](#types-HeroChange)
-
-**Final Michelson representation:** `pair (list (pair string (list string))) (list (pair string (list string)))`
-
-
-
 <a name="types-BalanceRequestItem"></a>
 
 ---
@@ -940,54 +915,6 @@ Contract primitive with given type of parameter.
 
 
 
-<a name="types-GameDaoContractExtra"></a>
-
----
-
-### `GameDaoContractExtra`
-
-As part of contract global state this carries nothing
-
-**Structure:** 
-  * ***acceptedProposalsNum*** :[`Natural`](#types-Natural)
-
-**Final Michelson representation:** `nat`
-
-
-
-<a name="types-GameDaoProposalMetadata"></a>
-
----
-
-### `GameDaoProposalMetadata`
-
-GameDAO's metadata. This fields affect how proposal got accepted and how many tokens will be frozen
-
-**Structure:** 
-  * ***proposalType*** :[`ProposalType`](#types-ProposalType)
-  * ***proposalDescription*** :[`Text`](#types-Text)
-  * ***consumerAddr*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-
-**Final Michelson representation:** `pair (or (pair (list (pair string (list string))) (list (pair string (list string)))) (list (pair string (list string)))) (pair string address)`
-
-
-
-<a name="types-HeroChange"></a>
-
----
-
-### `HeroChange`
-
-Describe the update of a specific hero.
-
-**Structure:** 
-  * ***heroName*** :[`Text`](#types-Text)
-  * ***changelogs*** :[`List`](#types-List) [`Text`](#types-Text)
-
-**Final Michelson representation:** `pair string (list string)`
-
-
-
 <a name="types-Integer"></a>
 
 ---
@@ -997,22 +924,6 @@ Describe the update of a specific hero.
 Signed number.
 
 **Final Michelson representation:** `int`
-
-
-
-<a name="types-ItemChange"></a>
-
----
-
-### `ItemChange`
-
-Describe the update of a specific item.
-
-**Structure:** 
-  * ***itemName*** :[`Text`](#types-Text)
-  * ***changelogs*** :[`List`](#types-List) [`Text`](#types-Text)
-
-**Final Michelson representation:** `pair string (list string)`
 
 
 
@@ -1091,22 +1002,6 @@ Unsigned number.
 
 
 
-<a name="types-NewContent"></a>
-
----
-
-### `NewContent`
-
-Describe a new content. The content should have a name and detail description.
-
-**Structure:** 
-  * ***contentName*** :[`Text`](#types-Text)
-  * ***contentDescription*** :[`List`](#types-List) [`Text`](#types-Text)
-
-**Final Michelson representation:** `pair string (list string)`
-
-
-
 <a name="types-OperatorParam"></a>
 
 ---
@@ -1165,25 +1060,6 @@ Contract's storage holding a big_map with all balances and the operators.
   * ***pVoters*** :[`List`](#types-List) ([`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), [`Natural`](#types-Natural))
 
 **Final Michelson representation (example):** `Proposal ()` = `pair (pair nat (pair nat timestamp)) (pair (pair unit address) (pair nat (list (pair address nat))))`
-
-
-
-<a name="types-ProposalType"></a>
-
----
-
-### `ProposalType`
-
-There are 2 types of proposal that Game DAO supports. 'balance_type' is for small update to existing mechanic, items and heroes. 'new_type' is for proposing new contents all together.
-
-**Structure:** *one of* 
-+ **BalanceType**
-[`BalanceChange`](#types-BalanceChange)
-+ **NewType**
-([`List`](#types-List) [`NewContent`](#types-NewContent))
-
-
-**Final Michelson representation:** `or (pair (list (pair string (list string))) (list (pair string (list string)))) (list (pair string (list string)))`
 
 
 
@@ -1411,18 +1287,6 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 **Fires if:** Contract received an unsupported token id
 
 **Representation:** `("FA2_TOKEN_UNDEFINED", ())`.
-
-<a name="errors-FAIL_DECISION_LAMBDA"></a>
-
----
-
-### `FAIL_DECISION_LAMBDA`
-
-**Class:** Action exception
-
-**Fires if:** Trying to execute decision lambda but result in errors.
-
-**Representation:** `("FAIL_DECISION_LAMBDA", ())`.
 
 <a name="errors-FAIL_PROPOSAL_CHECK"></a>
 
