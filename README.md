@@ -41,8 +41,10 @@ Run `stack exec -- baseDAO --help` to see available commands.
 
 You can dump the entire contract code into a `BaseDAO.tz` file using the following command:
 
+<!-- TODO: remove `--oneline` once morley:#442 is resolved -->
+
 ```sh
-stack exec baseDAO -- print -n baseDAO
+stack exec baseDAO -- print -n baseDAO --oneline
 ```
 
 This will produce a contract with empty proposal metadata and the simplest possible configuration.
