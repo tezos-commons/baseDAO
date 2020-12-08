@@ -42,8 +42,9 @@ rec {
             # produce *.dump-hi files, required for weeder:
             ++ optionals (!release) ["-ddump-to-file" "-ddump-hi"]
           );
-          dontStrip = !release;  # strip in release mode, reduces closure size
-          doHaddock = !release;  # don't haddock in release mode
+
+          # don't haddock in release mode
+          doHaddock = !release;
 
           # in non-release mode collect all *.dump-hi files (required for weeder)
           postInstall = if release then null else weeder-hacks.collect-dump-hi-files;
