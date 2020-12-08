@@ -34,8 +34,8 @@ rec {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
 
     modules = [
-      # common options for all local packages:
       {
+        # common options for all local packages:
         packages = pkgs.lib.genAttrs local-packages-names (packageName: {
           package.ghcOptions = with pkgs.lib; concatStringsSep " " (
             ["-O0" "-Werror"]
@@ -43,12 +43,15 @@ rec {
             ++ optionals (!release) ["-ddump-to-file" "-ddump-hi"]
           );
 
-          # don't haddock in release mode
-          doHaddock = !release;
+          # enable haddock for local packages
+          doHaddock = true;
 
           # in non-release mode collect all *.dump-hi files (required for weeder)
           postInstall = if release then null else weeder-hacks.collect-dump-hi-files;
         });
+
+        # disable haddock for dependencies
+        doHaddock = false;
       }
 
       # provide commit sha and date for tezos-nbit in release mode:
