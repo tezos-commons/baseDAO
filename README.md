@@ -17,10 +17,8 @@ and Haskell programming language.
 The [specification](docs/specification.md) document is the specification used as a basis for the smart contract development.
 
 Documentation of the actually implemented smart contract is generated automatically.
-* [BaseDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/BaseDAO.md)
+* [TrivialDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/TrivialDAO.md)
 * [GameDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/GameDAO.md)
-
-<!-- TODO: Refer to `TrivialDAO` above -->
 
 ## Prerequisites
 
