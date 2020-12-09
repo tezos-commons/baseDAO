@@ -3,6 +3,7 @@
 
 module Lorentz.Contracts.BaseDAO.Doc
    ( introductoryDoc
+   , priorChecksDoc
 
    , callFA2Doc
    , transferDoc
@@ -37,6 +38,11 @@ introductoryDoc :: Markdown
 introductoryDoc = [md|
   It contains standard FA2 entrypoints, plus some extra ones including proposal and
   migration entrypoints. It supports two types of token_id - frozen (token_id = 1) and unfrozen (token_id = 0).
+  |]
+
+priorChecksDoc :: Markdown
+priorChecksDoc = [md|
+  These properties belong to all entrypoints of the contract.
   |]
 
 callFA2Doc :: Markdown

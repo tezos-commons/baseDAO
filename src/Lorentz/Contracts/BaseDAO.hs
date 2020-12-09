@@ -45,7 +45,11 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
   docStorage @(BaseDAO.Storage ce pm)
-  ensureZeroTransfer
+
+  entrypointSection "Prior checks" (Proxy @CommonContractBehaviourKind) $ do
+    doc $ DDescription priorChecksDoc
+    ensureZeroTransfer
+
   pushFuncContext @ce @pm $ do
     unpair
     finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm) (Proxy @PlainEntrypointsKind)
