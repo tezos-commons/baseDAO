@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [a2a20c6](https://github.com/tqtezos/baseDAO/tree/a2a20c6f293b5e4860e90e38cf8be864f29495d8) *(Wed Dec 9 01:34:53 2020 +0300)*
+**Code revision:** [c92d29d](https://github.com/tqtezos/baseDAO/tree/c92d29dcf064df6512fd2867b9c14044e573d582) *(Wed Dec 9 15:50:52 2020 +0300)*
 
 
 
