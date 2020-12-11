@@ -56,7 +56,9 @@ decisionLambdaConfig = config
   { DAO.cDecisionLambda = decisionLambda
   }
   where
-    decisionLambda :: forall s store. (DAO.StorageC store ce pm, DAO.HasFuncContext s store)
+    decisionLambda
+      :: forall s store.
+         (DAO.StorageC store ce pm, DAO.HasFuncContext s store (DAO.AllFuncs store ce pm))
       => (DAO.Proposal pm) : store : s
       :-> List Operation : store : s
     decisionLambda = do
