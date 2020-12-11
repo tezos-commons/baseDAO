@@ -79,7 +79,7 @@ data Config contractExtra proposalMetadata = Config
   -- only 50 tokens will be unfrozen and other 50 tokens will be burnt.
   , decisionLambda :: Lambda
       (Proposal proposalMetadata, Storage contractExtra proposalMetadata)
-      (List Operation, contractExtra)
+      (List Operation, Storage contractExtra proposalMetadata)
   -- ^ The decision lambda is executed based on a successful proposal.
   -- It has access to the proposal, can modify `contractExtra` and perform aribtrary
   -- operations.
@@ -100,8 +100,6 @@ data Config contractExtra proposalMetadata = Config
   -- ^ Determine the minimum value of voting period that is allowed to be set.
   }
 ```
-
-***TODO [#29]:*** Contract metadata is not implemented yet, as well as the signature change of `decisionLambda`.
 
 The `FA2Metadata` type matches `token_metadata` defined in FA2.
 The `Proposal` type is defined below.
