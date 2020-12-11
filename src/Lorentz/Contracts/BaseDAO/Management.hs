@@ -11,14 +11,15 @@ module Lorentz.Contracts.BaseDAO.Management
   ) where
 
 import Lorentz
-import Lorentz.Contracts.BaseDAO.Doc (transferOwnershipDoc, acceptOwnershipDoc, migrateDoc, confirmMigrationDoc)
+import Lorentz.Contracts.BaseDAO.Doc
+  (acceptOwnershipDoc, confirmMigrationDoc, migrateDoc, transferOwnershipDoc)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.ManagedLedger.Doc (DRequireRole(..))
 
 -- | Set the value of pending owner in storage
 -- using the address in parameter.
 transferOwnership
-  :: (IsoValue ce, IsoValue pm)
+  :: (IsoValue ce, KnownValue pm)
   => Entrypoint' TransferOwnershipParam (Storage ce pm) s
 transferOwnership = do
   doc $ DDescription transferOwnershipDoc
@@ -33,7 +34,7 @@ transferOwnership = do
 
 -- | Checks if pending owner is set and set the value of new administrator
 acceptOwnership
-  :: (IsoValue ce, IsoValue pm)
+  :: (IsoValue ce, KnownValue pm)
   => Entrypoint' () (Storage ce pm) s
 acceptOwnership = do
   doc $ DDescription acceptOwnershipDoc
@@ -49,7 +50,7 @@ acceptOwnership = do
 
 -- Authorises admin and set the migration status using the new address
 -- in param.
-migrate :: (IsoValue ce, IsoValue pm) => Entrypoint' MigrateParam (Storage ce pm) s
+migrate :: (IsoValue ce, KnownValue pm) => Entrypoint' MigrateParam (Storage ce pm) s
 migrate = do
   doc $ DDescription migrateDoc
   dip $ do

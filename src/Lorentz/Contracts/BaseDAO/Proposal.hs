@@ -12,8 +12,9 @@ module Lorentz.Contracts.BaseDAO.Proposal
 
 import Lorentz
 import Lorentz.Contracts.BaseDAO.Doc
-  (proposeDoc, voteDoc, setVotingPeriodDoc, setQuorumThresholdDoc, flushDoc)
+  (flushDoc, proposeDoc, setQuorumThresholdDoc, setVotingPeriodDoc, voteDoc)
 import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
+import Lorentz.Contracts.BaseDAO.Permit
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface (TokenId)
@@ -26,7 +27,7 @@ import Lorentz.Contracts.Spec.FA2Interface (TokenId)
 
 checkIfProposalExist
   :: forall store ce pm s. (NiceParameter pm, StorageC store ce pm)
-  => (ProposalKey : store : s) :-> (Proposal pm : s)
+  => (ProposalKey pm : store : s) :-> (Proposal pm : s)
 checkIfProposalExist = do
   stGet #sProposals
   ifSome nop (failCustom_ #pROPOSAL_NOT_EXIST)
@@ -53,7 +54,7 @@ ensureProposalIsUnique = do
   dupTop2
   sender; swap; pair; toProposalKey
   swap; stToField #sProposalKeyListSortByDate
-  stackType @([ByteString] : ByteString : ProposeParams pm : store : s)
+  stackType @([ProposalKey pm] : ProposalKey pm : ProposeParams pm : store : s)
   iter $ do
     dip dup
     if IsEq then
@@ -64,7 +65,7 @@ ensureProposalIsUnique = do
 
 toProposalKey
   :: forall pm s. NicePackedValue pm
-  => (ProposeParams pm, Address) : s :-> ByteString : s
+  => (ProposeParams pm, Address) : s :-> ProposalKey pm : s
 toProposalKey = do
   pack @(ProposeParams pm, Address)
   blake2B
@@ -192,14 +193,14 @@ addProposal = do
   stackType @[Proposal pm, store, ProposeParams pm]
   some
   duupX @3; sender; swap; pair; toProposalKey
-  stackType @[ProposalKey, Maybe (Proposal pm), store, ProposeParams pm]
+  stackType @[ProposalKey pm, Maybe (Proposal pm), store, ProposeParams pm]
   stUpdate #sProposals
 
   stGetField #sProposalKeyListSortByDate
   duupX @3; sender; swap; pair; toProposalKey
-  stackType @[ProposalKey, [ProposalKey], store, ProposeParams pm]
+  stackType @[ProposalKey pm, [ProposalKey pm], store, ProposeParams pm]
   cons -- Assuming passed proposal start immediately
-  stackType @[[ProposalKey], store, ProposeParams pm]
+  stackType @[[ProposalKey pm], store, ProposeParams pm]
   stSetField #sProposalKeyListSortByDate
   swap
 
@@ -229,11 +230,12 @@ propose config = do
 ------------------------------------------------------------------------
 
 checkVoterUnfrozenToken
-  :: forall store ce pm. (StorageC store ce pm)
-   => '[VoteParam, store] :-> '[VoteParam, store]
+  :: forall store ce pm s.
+     (StorageC store ce pm, HasNamedVar s "author" Address, VarIsUnnamed store)
+   => VoteParam pm : store : s :-> VoteParam pm : store : s
 checkVoterUnfrozenToken = do
   duupX @2
-  push unfrozenTokenId; sender; pair
+  push unfrozenTokenId; dupL #author; pair
 
   stGet #sLedger; ifSome nop
     ( do
@@ -245,7 +247,7 @@ checkVoterUnfrozenToken = do
     )
 
   toNamed #currentBalance
-  stackType @["currentBalance" :! Natural, VoteParam, store]
+  stackType @("currentBalance" :! Natural : VoteParam pm : store : s)
   duupX @2
   toFieldNamed #vVoteAmount
   if #vVoteAmount >. #currentBalance then
@@ -256,53 +258,53 @@ checkVoterUnfrozenToken = do
 submitVote
   :: forall store ce pm s.
      (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => VoteParam : store : s :-> store : s
+  => VoteParam pm : store : "author" :! Address : s :-> store : s
 submitVote = do
   dupTop2
   toField #vProposalKey
 
   stGet #sProposals
   ifSome nop (failCustom_ #pROPOSAL_NOT_EXIST)
-  stackType @(Proposal pm : VoteParam : store : s)
+  stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
   dig @2
-  duupX @3; toField #vVoteAmount; sender; swap
+  duupX @3; toField #vVoteAmount; dupL #author; swap
   freeze; dig @2; dig @2
-  stackType @(Proposal pm : VoteParam : store : s)
+  stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
   constructT @(Proposal pm)
     ( fieldCtor $ do
         -- Update upvote
         duupX @2;
-        stackType @(VoteParam : Proposal pm : VoteParam : store : s)
+        stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
         toField #vVoteType;
-        stackType @(Bool : Proposal pm : VoteParam : store : s)
+        stackType @(Bool : Proposal pm : VoteParam pm : store : "author" :! _ : s)
         if Holds then do
           duupX @2
-          stackType @(VoteParam : Proposal pm : VoteParam : store : s)
+          stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
           toField #vVoteAmount
           duupX @2
-          stackType @(Proposal pm : Natural : Proposal pm : VoteParam : store : s)
+          stackType @(Proposal pm : Natural : Proposal pm : VoteParam pm : store : "author" :! _ : s)
           toField #pUpvotes
           add
         else do
-          stackType @(Proposal pm : VoteParam : store : s)
+          stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
           getField #pUpvotes
     , fieldCtor $ do
         -- Update downvote
         duupX @2
-        stackType @(VoteParam : Proposal pm : VoteParam : store : s)
+        stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
         toField #vVoteType;
-        stackType @(Bool : Proposal pm : VoteParam : store : s)
+        stackType @(Bool : Proposal pm : VoteParam pm : store : "author" :! _ : s)
         if Holds then do
-          stackType @(Proposal pm : VoteParam : store : s)
+          stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
           getField #pDownvotes
         else do
           duupX @2
-          stackType @(VoteParam : Proposal pm : VoteParam : store : s)
+          stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
           toField #vVoteAmount
           duupX @2
-          stackType @(Proposal pm : Natural : Proposal pm : VoteParam : store : s)
+          stackType @(Proposal pm : Natural : Proposal pm : VoteParam pm : store : "author" :! _ : s)
           toField #pDownvotes
           add
 
@@ -312,24 +314,26 @@ submitVote = do
     , fieldCtor $ getField #pProposerFrozenToken
     , fieldCtor $ do
         duupX @2; toField #vVoteAmount
-        sender; pair
+        dupL #author; pair
         dip $ getField #pVoters
-        stackType @((Address, Natural) : [(Address, Natural)] : Proposal pm : VoteParam : store : s)
+        stackType @((Address, Natural) : [(Address, Natural)] : Proposal pm
+                   : VoteParam pm : store : "author" :! _ : s)
         cons
     )
 
-  stackType @(Proposal pm : Proposal pm : VoteParam : store : s)
+  stackType @(Proposal pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
   dip drop
-  stackType @(Proposal pm : VoteParam : store : s)
+  stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
   some
   swap; toField #vProposalKey
-  stackType @(ProposalKey : Maybe (Proposal pm) : store : s)
+  stackType @(ProposalKey pm : Maybe (Proposal pm) : store : "author" :! _ : s)
   stUpdate #sProposals
+  dip $ drop @("author" :! _)
 
 checkVoteLimitReached
   :: forall store ce pm. (IsoValue pm, StorageC store ce pm)
-  => Config ce pm -> '[Proposal pm, VoteParam, store] :-> '[Proposal pm, VoteParam, store]
+  => Config ce pm -> '[Proposal pm, VoteParam pm, store] :-> '[Proposal pm, VoteParam pm, store]
 checkVoteLimitReached Config{..} = do
   dupTop2
 
@@ -346,31 +350,36 @@ checkVoteLimitReached Config{..} = do
 vote
   :: forall store ce pm s.
      (StorageC store ce pm, NiceParameter pm, HasFuncContext s store)
-  => Config ce pm -> Entrypoint' [VoteParam] store s
+  => Config ce pm -> Entrypoint' [PermitProtected $ VoteParam pm] store s
 vote config = do
   doc $ DDescription voteDoc
   dip ensureNotMigrated
   iter $ do
+    verifyPermitProtected #sPermitsCounter
+    dip swap
+
+    stackType @(VoteParam pm : store : "author" :! Address : s)
+
     dupTop2
-    stackType @(VoteParam : store : VoteParam : store : s)
+    stackType @(VoteParam pm : store : VoteParam pm : store : "author" :! _ : s)
 
     toField #vProposalKey
 
     checkIfProposalExist
-    stackType @(Proposal pm : VoteParam : store : s)
+    stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
     framed $ checkVoteLimitReached config
-    stackType @(Proposal pm : VoteParam : store : s)
+    stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
     duupX @3
     swap
-    stackType @(Proposal pm : store : VoteParam : store : s)
+    stackType @(Proposal pm : store : VoteParam pm : store : "author" :! _ : s)
 
     ensureVotingPeriodIsNotOver
-    stackType @(VoteParam : store : s)
+    stackType @(VoteParam pm : store : "author" :! _ : s)
 
-    framed checkVoterUnfrozenToken
-    stackType @(VoteParam : store : s)
+    checkVoterUnfrozenToken
+    stackType @(VoteParam pm : store : "author" :! _ : s)
 
     submitVote
 
@@ -433,15 +442,15 @@ setQuorumThreshold Config{..} = do
 
 checkIfProposalIsOver
   :: forall store ce pm s. (NiceParameter pm, StorageC store ce pm)
-  => ProposalKey : store : s :-> ((Bool, ProposalKey), Proposal pm) : store : s
+  => ProposalKey pm : store : s :-> ((Bool, ProposalKey pm), Proposal pm) : store : s
 checkIfProposalIsOver = do
   dupTop2
 
   checkIfProposalExist
-  stackType @(Proposal pm : ProposalKey : store : s)
+  stackType @(Proposal pm : ProposalKey pm : store : s)
 
   dup; dip swap; dip $ dip swap;
-  stackType @(Proposal pm : ProposalKey : store : Proposal pm : s)
+  stackType @(Proposal pm : ProposalKey pm : store : Proposal pm : s)
   toField #pStartDate
   duupX @3
 
@@ -465,22 +474,22 @@ checkIfProposalIsOver = do
 -- This function ensures that the "unfreeze" function will use the correct amount
 -- to unfreeze.
 checkBalanceLessThanFrozenValue :: forall store ce pm. (StorageC store ce pm)
-  => [Natural, Address, store, Proposal pm, ProposalKey, [Operation]]
-  :-> [Natural, Address, store, Proposal pm, ProposalKey, [Operation]]
+  => [Natural, Address, store, Proposal pm, ProposalKey pm, [Operation]]
+  :-> [Natural, Address, store, Proposal pm, ProposalKey pm, [Operation]]
 checkBalanceLessThanFrozenValue = do
   toNamed #unfreeze_value
   swap; dip swap
-  stackType @[Address, store, "unfreeze_value" :! Natural, Proposal pm, ProposalKey, [Operation]]
+  stackType @[Address, store, "unfreeze_value" :! Natural, Proposal pm, ProposalKey pm, [Operation]]
   dupTop2
   push frozenTokenId; swap; pair
 
   stGet #sLedger; ifSome nop $ do
     failCustom_ #pROPOSER_NOT_EXIST_IN_LEDGER
 
-  stackType @[Natural, Address, store, "unfreeze_value" :! Natural, Proposal pm, ProposalKey, [Operation]]
+  stackType @[Natural, Address, store, "unfreeze_value" :! Natural, Proposal pm, ProposalKey pm, [Operation]]
   toNamed #actual_frozen_value
   dig @3
-  stackType @["unfreeze_value" :! Natural, "actual_frozen_value" :! Natural, Address, store, Proposal pm, ProposalKey, [Operation]]
+  stackType @["unfreeze_value" :! Natural, "actual_frozen_value" :! Natural, Address, store, Proposal pm, ProposalKey pm, [Operation]]
 
   dupTop2
   if #unfreeze_value >. #actual_frozen_value then do
@@ -531,37 +540,37 @@ burnSlashAmount = do
 unfreezeProposerToken
   :: forall store ce pm s.
      (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => Config ce pm -> Bool -> Proposal pm : store : ProposalKey : [Operation] : s
-  :-> Proposal pm : store : ProposalKey : [Operation] : s
+  => Config ce pm -> Bool -> Proposal pm : store : ProposalKey pm : [Operation] : s
+  :-> Proposal pm : store : ProposalKey pm : [Operation] : s
 unfreezeProposerToken Config{..} isAccepted = do
 
   handleSlashed
-  stackType @(Natural : Address : store : Proposal pm : ProposalKey : [Operation] : s)
+  stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
 
   framed checkBalanceLessThanFrozenValue
   unfreeze
 
-  stackType @(store : Proposal pm : ProposalKey : [Operation] : s)
+  stackType @(store : Proposal pm : ProposalKey pm : [Operation] : s)
   swap
   where
     handleSlashed =
       case isAccepted of
         True -> do
-          stackType @(Proposal pm : store : ProposalKey : [Operation] : s)
+          stackType @(Proposal pm : store : ProposalKey pm : [Operation] : s)
           getField #pProposerFrozenToken
           dip $ getField #pProposer
           dip $ dip swap
-          stackType @(Natural : Address : store : Proposal pm : ProposalKey : [Operation] : s)
+          stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
 
         False -> do
           dup
           cRejectedProposalReturnValue
-          stackType @("slash_amount" :! Natural : Proposal pm : store : ProposalKey : [Operation] : s)
+          stackType @("slash_amount" :! Natural : Proposal pm : store : ProposalKey pm : [Operation] : s)
           dip $ do
             getField #pProposerFrozenToken
             dip $ getField #pProposer
             dip $ dip swap
-          stackType @("slash_amount" :! Natural : Natural : Address : store : Proposal pm : ProposalKey : [Operation] : s)
+          stackType @("slash_amount" :! Natural : Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
           burnSlashAmount
 
           -- Calculate unfreeze amount
@@ -572,13 +581,13 @@ unfreezeProposerToken Config{..} isAccepted = do
             -- The frozen token balance associated with that proposal will be burn
             -- via 'burnSlashAmount'
             push (0 :: Natural)
-            stackType @(Natural : Address : store : Proposal pm : ProposalKey : [Operation] : s)
+            stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
 
 unfreezeVoterToken
   :: forall store ce pm s.
      (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => Proposal pm : store : ProposalKey : [Operation] : s
-  :-> Proposal pm : store : ProposalKey : [Operation] : s
+  => Proposal pm : store : ProposalKey pm : [Operation] : s
+  :-> Proposal pm : store : ProposalKey pm : [Operation] : s
 unfreezeVoterToken = do
   dup; dig @2; swap
   toField #pVoters
@@ -592,7 +601,7 @@ handleProposalIsOver
   :: forall store ce pm s.
      (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
   => Config ce pm
-  -> ((Bool, ProposalKey), Proposal pm) : store : [Operation] : s
+  -> ((Bool, ProposalKey pm), Proposal pm) : store : [Operation] : s
   :-> store : [Operation] : s
 handleProposalIsOver config@Config{..} = do
   unpair; unpair
@@ -600,7 +609,7 @@ handleProposalIsOver config@Config{..} = do
   if Holds then do
     -- start unfreezing process
     swap; dip swap
-    stackType @(Proposal pm : store : ProposalKey : [Operation] : s)
+    stackType @(Proposal pm : store : ProposalKey pm : [Operation] : s)
 
     getField #pUpvotes
     dip $ getField #pDownvotes
@@ -616,7 +625,7 @@ handleProposalIsOver config@Config{..} = do
         unfreezeProposerToken config True
         unfreezeVoterToken
         cDecisionLambda
-        stackType @([Operation] : store : ProposalKey : [Operation] : s)
+        stackType @([Operation] : store : ProposalKey pm : [Operation] : s)
         dig @3
         iter cons
         swap; dip swap
@@ -632,7 +641,7 @@ handleProposalIsOver config@Config{..} = do
       unfreezeVoterToken
       drop
 
-    dip $ drop @ProposalKey
+    dip $ drop @(ProposalKey pm)
 
   else do
     -- Add the proposalId back to #sProposalKeyListSortByDate
@@ -659,18 +668,18 @@ flush config = do
   drop
   dup
   stToField #sProposalKeyListSortByDate
-  stackType @([ProposalKey] : store : s)
+  stackType @([ProposalKey pm] : store : s)
 
   map checkIfProposalIsOver
 
-  stackType @([((Bool, ProposalKey), Proposal pm)] : store : s)
+  stackType @([((Bool, ProposalKey pm), Proposal pm)] : store : s)
 
   swap; push []; stSetField #sProposalKeyListSortByDate -- set to empty list
   swap
 
-  stackType @([((Bool, ProposalKey), Proposal pm)] : store : s)
+  stackType @([((Bool, ProposalKey pm), Proposal pm)] : store : s)
   nil; swap; dip swap
-  stackType @([((Bool, ProposalKey), Proposal pm)] : store : [Operation] : s)
+  stackType @([((Bool, ProposalKey pm), Proposal pm)] : store : [Operation] : s)
 
   iter (handleProposalIsOver config)
   swap; pair

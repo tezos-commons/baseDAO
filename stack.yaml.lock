@@ -5,26 +5,26 @@
 
 packages:
 - completed:
-    hackage: morley-1.9@sha256:efc951744a30deb50f138247146f5d713b195c87c6dd166321548db9cefc0e07,7767
+    hackage: morley-1.10.0@sha256:fb2421fe377230167e33e36717b9f7a49de1c2c824e24d98d3258bb24a394631,7864
     pantry-tree:
-      size: 8957
-      sha256: 375b62d6ebfb15150be7abf3e915e0c1124796106c7cf4b9e94d03c7de0b04ec
+      size: 9083
+      sha256: fe796e0a634d60c37944edc6bd552e5979d3e9cf69457d75760e217db4de50e2
   original:
-    hackage: morley-1.9
+    hackage: morley-1.10.0
 - completed:
-    hackage: lorentz-0.7.1@sha256:05916ede8abebe9893afc7718e5a3d716ec68221c28a4dc62015f37661ce4848,3661
+    hackage: lorentz-0.8.0@sha256:63ac88285577c966e4cebda11c328564e2ea19bca7f7435abd65010e8c03cc83,3765
     pantry-tree:
-      size: 3090
-      sha256: 9c4e1c469061e8b26bcaa8a2bd62c7b96957786f41b4611e90f393664d2c52ce
+      size: 3339
+      sha256: e592b94b86409029287c9a802944be73ab9fcbdbc1f02f40ac4935e5a0da37bd
   original:
-    hackage: lorentz-0.7.1
+    hackage: lorentz-0.8.0
 - completed:
-    hackage: indigo-0.3.1@sha256:e090fdba2749591a2f3e0037659a581267a33e9ed4372fa5d90484061b6fdcc8,6564
+    hackage: indigo-0.4@sha256:e7128ea85dacf02f0543433396ff71a7ff456a0d38a42298c9fc48f12d465e57,6738
     pantry-tree:
-      size: 3622
-      sha256: 15b4d6f0f3f9686a4fd4d80258d70f2d5ee4bfc3d1d4b677d08d518ae6373a2f
+      size: 3834
+      sha256: 2fb36989c2dd262199df179ae52413fc5eaf0c59b335bf8ce2781285536c9716
   original:
-    hackage: indigo-0.3.1
+    hackage: indigo-0.4
 - completed:
     hackage: base58-bytestring-0.1.0@sha256:a1da72ee89d5450bac1c792d9fcbe95ed7154ab7246f2172b57bd4fd9b5eab79,1913
     pantry-tree:
@@ -82,18 +82,25 @@ packages:
   original:
     hackage: tasty-hunit-compat-0.2@sha256:71e077ae5c514fadd4586efc19315f10fa5f3c94770820f68f63768441d665f7,1199
 - completed:
+    hackage: uncaught-exception-0.1.0@sha256:a03f8c2a1a8b2fc40ca9477599f2d8bcf46ce06465ab42c121b4d2481effc21e,2046
+    pantry-tree:
+      size: 343
+      sha256: 401f9ba4729db9533ecb554a698d8c87bec4ea5382e3de335acf4d1d67c4362d
+  original:
+    hackage: uncaught-exception-0.1.0
+- completed:
     subdir: code/cleveland
     name: cleveland
     version: 0.1.0
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 10694
-      sha256: 2207d58305e20f66c36e579bfad1e1c67e7562f7427d2150388b154c4acccfe2
-    commit: 13b57e14390c9bf77182b23fd97d8bdbc15f6a8a
+      size: 11445
+      sha256: 32e8fb6125fde8c03b34956343b2554b7c4ced85e8c6e7c1562cba4729c257b2
+    commit: 8e6568b0f0839b0dd9c0e99a3a299be4627aece8
   original:
     subdir: code/cleveland
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 13b57e14390c9bf77182b23fd97d8bdbc15f6a8a
+    commit: 8e6568b0f0839b0dd9c0e99a3a299be4627aece8
 - completed:
     subdir: code/morley-client
     name: morley-client
@@ -101,12 +108,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
       size: 2818
-      sha256: 0f8be7c7d90f415caba2aa0358600605b8bd03d92e2b6c134955ff048333ab80
-    commit: 13b57e14390c9bf77182b23fd97d8bdbc15f6a8a
+      sha256: 4027f4c6fb870a0d203c2417fe8bbb7d7bdee942f8319ddcb1663963b63f1ba7
+    commit: 8e6568b0f0839b0dd9c0e99a3a299be4627aece8
   original:
     subdir: code/morley-client
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 13b57e14390c9bf77182b23fd97d8bdbc15f6a8a
+    commit: 8e6568b0f0839b0dd9c0e99a3a299be4627aece8
 - completed:
     name: caps
     version: '0'
@@ -125,12 +132,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley-ledgers.git
     pantry-tree:
       size: 1422
-      sha256: 4055db68b10b2f8c0fd2332f38ace6bc0c0dd1f84513f2a523acc3388b052d4f
-    commit: 552774ec4fe8a9da6afc77bbae31c30483402b9a
+      sha256: e0c466132226636869cc7cd07fa04297fb837c69d7c69fcbf95997cee7082a8e
+    commit: 1a1f1caab12e051d0c930c2f9bde4b5a0bca1d60
   original:
     subdir: code/morley-ledgers
     git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 552774ec4fe8a9da6afc77bbae31c30483402b9a
+    commit: 1a1f1caab12e051d0c930c2f9bde4b5a0bca1d60
 snapshots:
 - completed:
     size: 531707

@@ -63,12 +63,12 @@ flushAcceptedProposals = uncapsNettest $ do
   key1 <- createSampleProposal (sampleMetadataBalance $ toAddress consumer) owner1 dao
   checkTokenBalance (DAO.frozenTokenId) dao owner1 10
 
-  let upvote = DAO.VoteParam
+  let upvote = DAO.NoPermit DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
         }
-      downvote = DAO.VoteParam
+      downvote = DAO.NoPermit DAO.VoteParam
         { vVoteType = False
         , vVoteAmount = 1
         , vProposalKey = key1
@@ -127,7 +127,10 @@ sampleMetadataContent consumerAddr = GameDaoProposalMetadata
 
 createSampleProposal
   :: MonadNettest caps base m
-  => GameDaoProposalMetadata -> Address -> TAddress Parameter -> m ByteString
+  => GameDaoProposalMetadata
+  -> Address
+  -> TAddress Parameter
+  -> m (DAO.ProposalKey GameDaoProposalMetadata)
 createSampleProposal pm owner1 dao = do
   let params = DAO.ProposeParams
         { ppFrozenToken = 10
