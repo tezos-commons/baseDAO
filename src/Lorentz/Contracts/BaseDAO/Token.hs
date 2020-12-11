@@ -10,7 +10,7 @@ module Lorentz.Contracts.BaseDAO.Token
   ) where
 
 import Lorentz
-import Lorentz.Contracts.BaseDAO.Doc(burnDoc, mintDoc, transferContractTokensDoc, tokenAddressDoc)
+import Lorentz.Contracts.BaseDAO.Doc (burnDoc, mintDoc, tokenAddressDoc, transferContractTokensDoc)
 import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
 import Lorentz.Contracts.BaseDAO.Types
@@ -19,7 +19,8 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 burn
-  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
+  :: forall store ce pm s.
+     (StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
   => Entrypoint' BurnParam store s
 burn = do
   doc $ DDescription burnDoc
@@ -38,7 +39,8 @@ burn = do
   nil; pair
 
 mint
-  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
+  :: forall store ce pm s.
+     (StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
   => Entrypoint' MintParam store s
 mint = do
   doc $ DDescription mintDoc

@@ -8,6 +8,9 @@ module Lorentz.Contracts.BaseDAO.Proposal
   , setVotingPeriod
   , setQuorumThreshold
   , flush
+
+    -- * Internals
+  , unfreezeProposerToken
   ) where
 
 import Lorentz
@@ -18,6 +21,7 @@ import Lorentz.Contracts.BaseDAO.Permit
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface (TokenId)
+import Util.Named
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -127,7 +131,8 @@ checkProposalLimitReached Config{..} = do
 
 -- | Freeze the account's unfrozen token associated with the address
 freeze
-  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
+  :: forall store ce pm s.
+     (StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
   => Natural : Address : store : s :-> store : s
 freeze = do
   dig @2
@@ -152,7 +157,8 @@ freeze = do
 
 -- | Unfreeze the account's frozen token associated with the address
 unfreeze
-  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
+  :: forall store ce pm s.
+     (StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
   => Natural : Address : store : s :-> store : s
 unfreeze = do
   dig @2
@@ -206,7 +212,7 @@ addProposal = do
 
 propose
   :: forall store ce pm s.
-     (StorageC store ce pm, NicePackedValue pm, HasFuncContext s store)
+     (StorageC store ce pm, NicePackedValue pm, HasFuncContext s store (TransferFuncs store))
   => Config ce pm -> Entrypoint' (ProposeParams pm) store s
 propose config = do
   doc $ DDescription proposeDoc
@@ -257,7 +263,7 @@ checkVoterUnfrozenToken = do
 
 submitVote
   :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
+     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
   => VoteParam pm : store : "author" :! Address : s :-> store : s
 submitVote = do
   dupTop2
@@ -349,7 +355,7 @@ checkVoteLimitReached Config{..} = do
 -- | Vote
 vote
   :: forall store ce pm s.
-     (StorageC store ce pm, NiceParameter pm, HasFuncContext s store)
+     (StorageC store ce pm, NiceParameter pm, HasFuncContext s store (TransferFuncs store))
   => Config ce pm -> Entrypoint' [PermitProtected $ VoteParam pm] store s
 vote config = do
   doc $ DDescription voteDoc
@@ -498,7 +504,7 @@ checkBalanceLessThanFrozenValue = do
     dip drop; fromNamed #unfreeze_value
 
 burnFrozenToken
-  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
+  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
   => (Address : Natural : store : s)
   :-> store : s
 burnFrozenToken = do
@@ -512,7 +518,7 @@ burnFrozenToken = do
 -- This is to avoid 'slash_amount' being abitrary large value, and we could burn
 -- the whole proposer frozen balance.
 burnSlashAmount
-  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
+  :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
   => ("slash_amount" :! Natural) : Natural : Address : store : s
   :-> ("slash_amount" :! Natural) : Natural : Address : store : s
 burnSlashAmount = do
@@ -538,39 +544,40 @@ burnSlashAmount = do
   swap; dip $ do swap; dip swap
 
 unfreezeProposerToken
-  :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => Config ce pm -> Bool -> Proposal pm : store : ProposalKey pm : [Operation] : s
-  :-> Proposal pm : store : ProposalKey pm : [Operation] : s
-unfreezeProposerToken Config{..} isAccepted = do
+  :: forall store ce pm.
+     (NiceParameter pm, StorageC store ce pm, KnownValue store, VarIsUnnamed store)
+  => Config ce pm
+  -> UnfreezeProposerTokenFunc store pm
+unfreezeProposerToken Config{..} = mkCachedFunc $ do
 
   handleSlashed
-  stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
+  stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : _)
 
   framed checkBalanceLessThanFrozenValue
   unfreeze
 
-  stackType @(store : Proposal pm : ProposalKey pm : [Operation] : s)
+  stackType @(store : Proposal pm : ProposalKey pm : [Operation] : _)
   swap
   where
-    handleSlashed =
-      case isAccepted of
-        True -> do
-          stackType @(Proposal pm : store : ProposalKey pm : [Operation] : s)
+    handleSlashed = do
+      fromNamed #isAccepted
+      if Holds
+        then do
+          stackType @(Proposal pm : store : ProposalKey pm : [Operation] : _)
           getField #pProposerFrozenToken
           dip $ getField #pProposer
           dip $ dip swap
-          stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
+          stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : _)
 
-        False -> do
+        else do
           dup
           cRejectedProposalReturnValue
-          stackType @("slash_amount" :! Natural : Proposal pm : store : ProposalKey pm : [Operation] : s)
+          stackType @("slash_amount" :! Natural : Proposal pm : store : ProposalKey pm : [Operation] : _)
           dip $ do
             getField #pProposerFrozenToken
             dip $ getField #pProposer
             dip $ dip swap
-          stackType @("slash_amount" :! Natural : Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
+          stackType @("slash_amount" :! Natural : Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : _)
           burnSlashAmount
 
           -- Calculate unfreeze amount
@@ -581,11 +588,11 @@ unfreezeProposerToken Config{..} isAccepted = do
             -- The frozen token balance associated with that proposal will be burn
             -- via 'burnSlashAmount'
             push (0 :: Natural)
-            stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
+            stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : _)
 
 unfreezeVoterToken
   :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
+     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
   => Proposal pm : store : ProposalKey pm : [Operation] : s
   :-> Proposal pm : store : ProposalKey pm : [Operation] : s
 unfreezeVoterToken = do
@@ -599,7 +606,7 @@ unfreezeVoterToken = do
 
 handleProposalIsOver
   :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
+     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store (AllFuncs store ce pm))
   => Config ce pm
   -> ((Bool, ProposalKey pm), Proposal pm) : store : [Operation] : s
   :-> store : [Operation] : s
@@ -622,7 +629,8 @@ handleProposalIsOver config@Config{..} = do
       getFieldNamed #pUpvotes
       dip $ getFieldNamed #pDownvotes
       if #pUpvotes >. #pDownvotes then do
-        unfreezeProposerToken config True
+        push (#isAccepted .! True)
+        callCachedFunc $ unfreezeProposerToken config
         unfreezeVoterToken
         cDecisionLambda
         stackType @([Operation] : store : ProposalKey pm : [Operation] : s)
@@ -631,13 +639,15 @@ handleProposalIsOver config@Config{..} = do
         swap; dip swap
       else do
         -- Reject proposal if (upvote <= downvote)
-        unfreezeProposerToken config False
+        push (#isAccepted .! False)
+        callCachedFunc $ unfreezeProposerToken config
         unfreezeVoterToken
         drop
 
     else do
       -- Reject proposal regardless of upvotes
-      unfreezeProposerToken config False
+      push (#isAccepted .! False)
+      callCachedFunc $ unfreezeProposerToken config
       unfreezeVoterToken
       drop
 
@@ -658,7 +668,7 @@ handleProposalIsOver config@Config{..} = do
 -- Otherwise it will be rejected.
 flush
   :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
+     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store (AllFuncs store ce pm))
   => Config ce pm -> Entrypoint' () store s
 flush config = do
   doc $ DDescription flushDoc
