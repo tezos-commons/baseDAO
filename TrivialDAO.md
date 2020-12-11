@@ -1,6 +1,6 @@
 # BaseDAO
 
-**Code revision:** [c92d29d](https://github.com/tqtezos/baseDAO/tree/c92d29dcf064df6512fd2867b9c14044e573d582) *(Wed Dec 9 15:50:52 2020 +0300)*
+**Code revision:** [49687eb](https://github.com/tqtezos/baseDAO/tree/49687eb41482e5b929be0ea91e840cfb237eb788) *(Fri Dec 11 14:40:00 2020 +0300)*
 
 
 
@@ -11,12 +11,14 @@ It contains standard FA2 entrypoints, plus some extra ones including proposal an
 migration entrypoints. It supports two types of token_id - frozen (token_id = 1) and unfrozen (token_id = 0).
 
 
+<a name="section-Table-of-contents"></a>
+
 ## Table of contents
 
-- [Haskell ⇄ Michelson conversion](#haskell-⇄-Michelson-conversion)
-- [Storage](#storage)
+- [Haskell ⇄ Michelson conversion](#section-Haskell-c8644-Michelson-conversion)
+- [Storage](#section-Storage)
   - [Storage](#storage-Storage)
-- [Entrypoints](#entrypoints)
+- [Entrypoints](#section-Entrypoints)
   - [call_FA2](#entrypoints-call_FA2)
   - [transfer_ownership](#entrypoints-transfer_ownership)
   - [accept_ownership](#entrypoints-accept_ownership)
@@ -31,40 +33,55 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [mint](#entrypoints-mint)
   - [transfer_contract_tokens](#entrypoints-transfer_contract_tokens)
   - [token_address](#entrypoints-token_address)
-- [Possible errors](#possible-errors)
+  - [getVotePermitCounter](#entrypoints-getVotePermitCounter)
+- [Common for all contract's entrypoints](#section-Common-for-all-contract's-entrypoints)
+  - [prior checks](#entrypoints-prior-checks)
 
 **[Definitions](#definitions)**
 
-- [Types](#types)
+- [Types](#section-Types)
   - [()](#types-lparenrparen)
   - [(a, b)](#types-lparenacomma-brparen)
-  - [Address (no entrypoint)](#types-Address-lparenno-entrypointrparen)
+  - [Address](#types-Address)
   - [BalanceRequestItem](#types-BalanceRequestItem)
   - [BalanceResponseItem](#types-BalanceResponseItem)
   - [BigMap](#types-BigMap)
   - [Bool](#types-Bool)
   - [BurnParam](#types-BurnParam)
   - [ByteString](#types-ByteString)
+  - [ChainId](#types-ChainId)
   - [Contract](#types-Contract)
+  - [DataToSign](#types-DataToSign)
+  - [Hash](#types-Hash)
   - [Integer](#types-Integer)
   - [List](#types-List)
+  - [Maybe](#types-Maybe)
   - [MigrationStatus](#types-MigrationStatus)
   - [MintParam](#types-MintParam)
   - [Named entry](#types-Named-entry)
   - [Natural](#types-Natural)
+  - [Nonce](#types-Nonce)
   - [OperatorParam](#types-OperatorParam)
+  - [Packed](#types-Packed)
   - [Parameter](#types-Parameter)
+  - [Permit](#types-Permit)
+  - [PermitProtected](#types-PermitProtected)
   - [Proposal](#types-Proposal)
   - [ProposeParams](#types-ProposeParams)
+  - [PublicKey](#types-PublicKey)
+  - [Signature](#types-Signature)
+  - [SomeType](#types-SomeType)
+  - [TSignature](#types-TSignature)
   - [Text](#types-Text)
   - [Timestamp](#types-Timestamp)
+  - [TokenId](#types-TokenId)
   - [TransferContractTokensParam](#types-TransferContractTokensParam)
   - [TransferDestination](#types-TransferDestination)
   - [TransferItem](#types-TransferItem)
   - [UpdateOperator](#types-UpdateOperator)
   - [View](#types-View)
   - [VoteParam](#types-VoteParam)
-- [Errors](#errors)
+- [Errors](#section-Errors)
   - [FA2_INSUFFICIENT_BALANCE](#errors-FA2_INSUFFICIENT_BALANCE)
   - [FA2_NOT_OPERATOR](#errors-FA2_NOT_OPERATOR)
   - [FA2_TOKEN_UNDEFINED](#errors-FA2_TOKEN_UNDEFINED)
@@ -76,6 +93,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [MAX_PROPOSALS_REACHED](#errors-MAX_PROPOSALS_REACHED)
   - [MAX_VOTES_REACHED](#errors-MAX_VOTES_REACHED)
   - [MIGRATED](#errors-MIGRATED)
+  - [MISSIGNED](#errors-MISSIGNED)
   - [NOT_ADMIN](#errors-NOT_ADMIN)
   - [NOT_MIGRATING](#errors-NOT_MIGRATING)
   - [NOT_MIGRATION_TARGET](#errors-NOT_MIGRATION_TARGET)
@@ -89,8 +107,11 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [PROPOSER_NOT_EXIST_IN_LEDGER](#errors-PROPOSER_NOT_EXIST_IN_LEDGER)
   - [VOTING_INSUFFICIENT_BALANCE](#errors-VOTING_INSUFFICIENT_BALANCE)
   - [VOTING_PERIOD_OVER](#errors-VOTING_PERIOD_OVER)
+- [Referenced hash algorithms](#section-Referenced-hash-algorithms)
 
 
+
+<a name="section-Haskell-c8644-Michelson-conversion"></a>
 
 ## Haskell ⇄ Michelson conversion
 
@@ -98,13 +119,15 @@ This smart contract is developed in Haskell using the [Morley framework](https:/
 
 There are multiple ways to interact with this contract:
 
-* Use this contract in your Haskell application, thus all operation submissionshould be handled separately, e.g. via calling `tezos-client`, which will communicate with the `tezos-node`. In order to be able to call `tezos-client` you'll need to be able to construct Michelson values from Haskell.
+* Use this contract in your Haskell application, thus all operation submissions should be handled separately, e.g. via calling `tezos-client`, which will communicate with the `tezos-node`. In order to be able to call `tezos-client` you'll need to be able to construct Michelson values from Haskell.
 
   The easiest way to do that is to serialize Haskell value using `lPackValue` function from [`Lorentz.Pack`](https://gitlab.com/morley-framework/morley/-/blob/2441e26bebd22ac4b30948e8facbb698d3b25c6d/code/lorentz/src/Lorentz/Pack.hs) module, encode resulting bytestring to hexadecimal representation using `encodeHex` function. Resulting hexadecimal encoded bytes sequence can be decoded back to Michelson value via `tezos-client unpack michelson data`.
 
   Reverse conversion from Michelson value to the Haskell value can be done by serializing Michelson value using `tezos-client hash data` command, resulting `Raw packed data` should be decoded from the hexadecimal representation using `decodeHex` and deserialized to the Haskell value via `lUnpackValue` function from [`Lorentz.Pack`](https://gitlab.com/morley-framework/morley/-/blob/2441e26bebd22ac4b30948e8facbb698d3b25c6d/code/lorentz/src/Lorentz/Pack.hs).
 
-* Contruct values for this contract directly on Michelson level using types provided in the documentation.
+* Construct values for this contract directly on Michelson level using types provided in the documentation.
+
+<a name="section-Storage"></a>
 
 ## Storage
 
@@ -117,21 +140,24 @@ There are multiple ways to interact with this contract:
 Storage type for baseDAO contract
 
 **Structure (example):** `Storage Natural MText` = 
-  * ***sLedger*** :[`BigMap`](#types-BigMap) ([`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), [`Natural`](#types-Natural)) [`Natural`](#types-Natural)
-  * ***sOperators*** :[`BigMap`](#types-BigMap) (***owner*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), ***operator*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)) [`()`](#types-lparenrparen)
-  * ***sTokenAddress*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***sAdmin*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***sPendingOwner*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***sLedger*** :[`BigMap`](#types-BigMap) ([`Address`](#types-Address), [`TokenId`](#types-TokenId)) [`Natural`](#types-Natural)
+  * ***sOperators*** :[`BigMap`](#types-BigMap) (***owner*** : [`Address`](#types-Address), ***operator*** : [`Address`](#types-Address)) [`()`](#types-lparenrparen)
+  * ***sTokenAddress*** :[`Address`](#types-Address)
+  * ***sAdmin*** :[`Address`](#types-Address)
+  * ***sPendingOwner*** :[`Address`](#types-Address)
   * ***sMigrationStatus*** :[`MigrationStatus`](#types-MigrationStatus)
   * ***sVotingPeriod*** :[`Natural`](#types-Natural)
   * ***sQuorumThreshold*** :[`Natural`](#types-Natural)
   * ***sExtra*** :[`Natural`](#types-Natural)
-  * ***sProposals*** :[`BigMap`](#types-BigMap) [`ByteString`](#types-ByteString) ([`Proposal`](#types-Proposal) [`Text`](#types-Text))
-  * ***sProposalKeyListSortByDate*** :[`List`](#types-List) [`ByteString`](#types-ByteString)
+  * ***sProposals*** :[`BigMap`](#types-BigMap) ([`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address)))) ([`Proposal`](#types-Proposal) [`Text`](#types-Text))
+  * ***sProposalKeyListSortByDate*** :[`List`](#types-List) ([`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address))))
+  * ***sPermitsCounter*** :[`Nonce`](#types-Nonce)
 
-**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (big_map (pair address address) unit)) (pair address (pair address address))) (pair (pair (or unit (or address address)) (pair nat nat)) (pair nat (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (list bytes))))`
+**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair address (pair address (or unit (or address address))))) (pair (pair nat (pair nat nat)) (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (pair (list bytes) nat)))`
 
 
+
+<a name="section-Entrypoints"></a>
 
 ## Entrypoints
 
@@ -159,7 +185,11 @@ Entrypoint to be called if you want to use one of FA2 entrypoints.
 
 
 
+<a name="section-FA2-entrypoints"></a>
+
 #### FA2 entrypoints
+
+<a name="entrypoints-transfer"></a>
 
 ---
 
@@ -202,6 +232,8 @@ It is also prohibited to send frozen tokens in this case.
 
 
 
+<a name="entrypoints-balance_of"></a>
+
 ---
 
 ##### `balance_of`
@@ -232,6 +264,8 @@ The entrypoint supports both frozen and unfrozen tokens.
 
 
 
+<a name="entrypoints-token_metadata_registry"></a>
+
 ---
 
 ##### `token_metadata_registry`
@@ -241,7 +275,7 @@ Token metadata will contain the DAO metadata.
 
 
 **Argument:** 
-  + **In Haskell:** [`ContractRef`](#types-Contract) [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  + **In Haskell:** [`ContractRef`](#types-Contract) [`Address`](#types-Address)
   + **In Michelson:** `(contract address)`
     + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
@@ -259,6 +293,8 @@ Token metadata will contain the DAO metadata.
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
 
 
+
+<a name="entrypoints-update_operators"></a>
 
 ---
 
@@ -312,7 +348,7 @@ requested address accepts ownership. If called multiple times, only the last cal
 
 
 **Argument:** 
-  + **In Haskell:** ***newOwner*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  + **In Haskell:** ***newOwner*** : [`Address`](#types-Address)
   + **In Michelson:** `(address :newOwner)`
     + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
@@ -380,7 +416,7 @@ The contract is not considered migrated, until it receives confirm_migration cal
 
 
 **Argument:** 
-  + **In Haskell:** ***newAddress*** : [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  + **In Haskell:** ***newAddress*** : [`Address`](#types-Address)
   + **In Michelson:** `(address :newAddress)`
     + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
@@ -491,9 +527,9 @@ The sender must have an amount required for all votings.
 
 
 **Argument:** 
-  + **In Haskell:** [`List`](#types-List) [`VoteParam`](#types-VoteParam)
-  + **In Michelson:** `(list (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))))`
-    + **Example:** <span id="example-id">`{ Pair 0x0a (Pair True 0) }`</span>
+  + **In Haskell:** [`List`](#types-List) ([`PermitProtected`](#types-PermitProtected) ([`VoteParam`](#types-VoteParam) [`()`](#types-lparenrparen)))
+  + **In Michelson:** `(list (pair :permit_protected (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))) (option %permit (pair (key %key) (signature %signature)))))`
+    + **Example:** <span id="example-id">`{ Pair (Pair 0x0a (Pair True 0)) (Some (Pair "edpkuwTWKgQNnhR5v17H2DYHbfcxYepARyrPGbf1tbMoGQAj8Ljr3V" "edsigtrs8bK7vNfiR4Kd9dWasVa1bAWaQSu2ipnmLGZuwQa8ktCEMYVKqbWsbJ7zTS8dgYT9tiSUKorWCPFHosL5zPsiDwBQ6vb")) }`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -507,6 +543,8 @@ The sender must have an amount required for all votings.
 
 **Possible errors:**
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`MISSIGNED`](#errors-MISSIGNED) — Invalid signature provided.
 
 * [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
 
@@ -750,7 +788,7 @@ Since FA2 logic is embedded into this contract, this entrypoint always returns S
 
 
 **Argument:** 
-  + **In Haskell:** [`ContractRef`](#types-Contract) [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  + **In Haskell:** [`ContractRef`](#types-Contract) [`Address`](#types-Address)
   + **In Michelson:** `(contract address)`
     + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
@@ -769,6 +807,48 @@ Since FA2 logic is embedded into this contract, this entrypoint always returns S
 
 
 
+<a name="entrypoints-getVotePermitCounter"></a>
+
+---
+
+### `getVotePermitCounter`
+
+Returns the next nonce value with which a permit should be created.
+
+Return value increases by number of votes where a permit was provided
+with each successful call of an entrypoint.
+
+
+**Argument:** 
+  + **In Haskell:** [`View`](#types-View) [`()`](#types-lparenrparen) [`Nonce`](#types-Nonce)
+  + **In Michelson:** `(pair (unit %viewParam) (contract %viewCallbackTo nat))`
+    + **Example:** <span id="example-id">`Pair Unit "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `getVotePermitCounter` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+
+
+<a name="section-Common-for-all-contract's-entrypoints"></a>
+
+## Common for all contract's entrypoints
+
+<a name="entrypoints-prior-checks"></a>
+
+---
+
+### `prior checks`
+
+These properties belong to all entrypoints of the contract.
+
+
 **Possible errors:**
 * [`FORBIDDEN_XTZ`](#errors-FORBIDDEN_XTZ) — Received some XTZ as part of a contract call, which is forbidden
 
@@ -776,7 +856,11 @@ Since FA2 logic is embedded into this contract, this entrypoint always returns S
 
 
 
+
+
 # Definitions
+
+<a name="section-Types"></a>
 
 ## Types
 
@@ -806,13 +890,18 @@ Pair primitive.
 
 
 
-<a name="types-Address-lparenno-entrypointrparen"></a>
+<a name="types-Address"></a>
 
 ---
 
-### `Address (no entrypoint)`
+### `Address`
 
-This is similar to Michelson Address, but does not retain entrypoint name if it refers to a contract.
+Address primitive.
+
+Unlike Michelson's `address`, it is assumed not to contain an entrypoint name,
+even if it refers to a contract; this won't be checked, so passing an entrypoint
+name may result in unexpected errors.
+
 
 **Final Michelson representation:** `address`
 
@@ -827,8 +916,8 @@ This is similar to Michelson Address, but does not retain entrypoint name if it 
 Describes a request for an owner's balance
 
 **Structure:** 
-  * ***owner*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***tokenId*** :[`Natural`](#types-Natural)
+  * ***owner*** :[`Address`](#types-Address)
+  * ***tokenId*** :[`TokenId`](#types-TokenId)
 
 **Final Michelson representation:** `pair address nat`
 
@@ -883,8 +972,8 @@ Bool primitive.
 Describes whose account, which token id and in what amount to burn
 
 **Structure:** 
-  * ***from_*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***tokenId*** :[`Natural`](#types-Natural)
+  * ***from_*** :[`Address`](#types-Address)
+  * ***tokenId*** :[`TokenId`](#types-TokenId)
   * ***amount*** :[`Natural`](#types-Natural)
 
 **Final Michelson representation:** `pair address (pair nat nat)`
@@ -903,6 +992,18 @@ Bytes primitive.
 
 
 
+<a name="types-ChainId"></a>
+
+---
+
+### `ChainId`
+
+Identifier of the current chain.
+
+**Final Michelson representation:** `chain_id`
+
+
+
 <a name="types-Contract"></a>
 
 ---
@@ -912,6 +1013,50 @@ Bytes primitive.
 Contract primitive with given type of parameter.
 
 **Final Michelson representation (example):** `ContractRef Integer` = `contract int`
+
+
+
+<a name="types-DataToSign"></a>
+
+---
+
+### `DataToSign`
+
+A wrapper over data that is to be signed.
+
+Aside from the original data, this contains elements that ensure the result
+to be globally unique in order to avoid replay attacks:
+* Chain id
+* Address of the contract
+* Nonce - suitable nonce can be fetched using the dedicated endpoint.
+
+
+**Structure (example):** `DataToSign MText` = 
+  * ***dsChainId*** :[`ChainId`](#types-ChainId)
+  * ***dsContract*** :[`Address`](#types-Address)
+  * ***dsNonce*** :[`Nonce`](#types-Nonce)
+  * ***dsData*** :[`Text`](#types-Text)
+
+**Final Michelson representation (example):** `DataToSign MText` = `pair (pair chain_id address) (pair nat string)`
+
+
+
+<a name="types-Hash"></a>
+
+---
+
+### `Hash`
+
+Hash of a value.
+
+First type argument denotes algorithm used to compute the hash, and the second
+argument describes the data being hashed.
+
+
+**Structure (example):** `Hash Blake2b ByteString` = 
+[`ByteString`](#types-ByteString)
+
+**Final Michelson representation (example):** `Hash Blake2b ByteString` = `bytes`
 
 
 
@@ -939,6 +1084,18 @@ List primitive.
 
 
 
+<a name="types-Maybe"></a>
+
+---
+
+### `Maybe`
+
+Option primitive.
+
+**Final Michelson representation (example):** `Maybe Integer` = `option int`
+
+
+
 <a name="types-MigrationStatus"></a>
 
 ---
@@ -950,9 +1107,9 @@ Migration status of the contract
 **Structure:** *one of* 
 + **NotInMigration**()
 + **MigratingTo**
-[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+[`Address`](#types-Address)
 + **MigratedTo**
-[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+[`Address`](#types-Address)
 
 
 **Final Michelson representation:** `or unit (or address address)`
@@ -968,8 +1125,8 @@ Migration status of the contract
 Describes whose account, which token id and in what amount to mint
 
 **Structure:** 
-  * ***to_*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***tokenId*** :[`Natural`](#types-Natural)
+  * ***to_*** :[`Address`](#types-Address)
+  * ***tokenId*** :[`TokenId`](#types-TokenId)
   * ***amount*** :[`Natural`](#types-Natural)
 
 **Final Michelson representation:** `pair address (pair nat nat)`
@@ -1002,6 +1159,21 @@ Unsigned number.
 
 
 
+<a name="types-Nonce"></a>
+
+---
+
+### `Nonce`
+
+Contract-local nonce used to make some data unique.
+
+**Structure:** 
+[`Natural`](#types-Natural)
+
+**Final Michelson representation:** `nat`
+
+
+
 <a name="types-OperatorParam"></a>
 
 ---
@@ -1011,11 +1183,29 @@ Unsigned number.
 Describes an address authorized to transfer tokens on behalf of a token owner
 
 **Structure:** 
-  * ***owner*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***operator*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***tokenId*** :[`Natural`](#types-Natural)
+  * ***owner*** :[`Address`](#types-Address)
+  * ***operator*** :[`Address`](#types-Address)
+  * ***tokenId*** :[`TokenId`](#types-TokenId)
 
 **Final Michelson representation:** `pair address (pair address nat)`
+
+
+
+<a name="types-Packed"></a>
+
+---
+
+### `Packed`
+
+Packed value of the given type.
+This exactly matches the result of Michelson `PACK` instruction application
+to the given value.
+
+
+**Structure (example):** `Packed (MText,Integer)` = 
+[`ByteString`](#types-ByteString)
+
+**Final Michelson representation (example):** `Packed (MText,Integer)` = `bytes`
 
 
 
@@ -1033,12 +1223,56 @@ Describes the FA2 operations.
 + **Balance_of**
 ([`View`](#types-View) ([`List`](#types-List) [`BalanceRequestItem`](#types-BalanceRequestItem)) ([`List`](#types-List) [`BalanceResponseItem`](#types-BalanceResponseItem)))
 + **Token_metadata_registry**
-([`ContractRef`](#types-Contract) [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen))
+([`ContractRef`](#types-Contract) [`Address`](#types-Address))
 + **Update_operators**
 ([`List`](#types-List) [`UpdateOperator`](#types-UpdateOperator))
 
 
 **Final Michelson representation:** `or (or (list (pair address (list (pair address (pair nat nat))))) (pair (list (pair address nat)) (contract (list (pair (pair address nat) nat))))) (or (contract address) (list (or (pair address (pair address nat)) (pair address (pair address nat)))))`
+
+
+
+<a name="types-Permit"></a>
+
+---
+
+### `Permit`
+
+Permission for executing an action from another user's behalf.
+
+This contains public key of that user and signed argument for the entrypoint.
+Type parameter of `Permit` stands for the entrypoint argument type.
+
+
+**Structure (example):** `Permit Integer` = 
+  * ***pKey*** :[`PublicKey`](#types-PublicKey)
+  * ***pSignature*** :[`TSignature`](#types-TSignature) ([`Packed`](#types-Packed) ([`DataToSign`](#types-DataToSign) [`Integer`](#types-Integer)))
+
+**Final Michelson representation (example):** `Permit Integer` = `pair key signature`
+
+
+
+<a name="types-PermitProtected"></a>
+
+---
+
+### `PermitProtected`
+
+Marks an entrypoint with given argument type as callable from another
+user's behalf.
+
+* If `permit` part is present, we use the supplied information to identify
+the original author of the request and validate that it is constructed by
+them.
+* If `permit` part is absent, we assume that entrypoint is called from the
+current sender's behalf.
+
+
+**Structure (example):** `PermitProtected Integer` = 
+  * ***ppArgument*** :[`Integer`](#types-Integer)
+  * ***ppPermit*** :[`Maybe`](#types-Maybe) ([`Permit`](#types-Permit) [`Integer`](#types-Integer))
+
+**Final Michelson representation (example):** `PermitProtected Integer` = `pair int (option (pair key signature))`
 
 
 
@@ -1055,9 +1289,9 @@ Contract's storage holding a big_map with all balances and the operators.
   * ***pDownvotes*** :[`Natural`](#types-Natural)
   * ***pStartDate*** :[`Timestamp`](#types-Timestamp)
   * ***pMetadata*** :[`()`](#types-lparenrparen)
-  * ***pProposer*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***pProposer*** :[`Address`](#types-Address)
   * ***pProposerFrozenToken*** :[`Natural`](#types-Natural)
-  * ***pVoters*** :[`List`](#types-List) ([`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen), [`Natural`](#types-Natural))
+  * ***pVoters*** :[`List`](#types-List) ([`Address`](#types-Address), [`Natural`](#types-Natural))
 
 **Final Michelson representation (example):** `Proposal ()` = `pair (pair nat (pair nat timestamp)) (pair (pair unit address) (pair nat (list (pair address nat))))`
 
@@ -1076,6 +1310,57 @@ Describes the how many proposer's frozen tokens will be frozen and the proposal 
   * ***ppProposalMetadata*** :[`()`](#types-lparenrparen)
 
 **Final Michelson representation (example):** `ProposeParams ()` = `pair nat unit`
+
+
+
+<a name="types-PublicKey"></a>
+
+---
+
+### `PublicKey`
+
+PublicKey primitive.
+
+**Final Michelson representation:** `key`
+
+
+
+<a name="types-Signature"></a>
+
+---
+
+### `Signature`
+
+Signature primitive.
+
+**Final Michelson representation:** `signature`
+
+
+
+<a name="types-SomeType"></a>
+
+---
+
+### `SomeType`
+
+Some type, may differ in various situations.
+
+**Final Michelson representation (example):** `SomeType` = `unit`
+
+
+
+<a name="types-TSignature"></a>
+
+---
+
+### `TSignature`
+
+Signature for data of the given type.
+
+**Structure (example):** `TSignature (MText,Integer)` = 
+[`Signature`](#types-Signature)
+
+**Final Michelson representation (example):** `TSignature (MText,Integer)` = `signature`
 
 
 
@@ -1105,6 +1390,21 @@ Timestamp primitive.
 
 
 
+<a name="types-TokenId"></a>
+
+---
+
+### `TokenId`
+
+Token identifier as defined by [TZIP-12](https://gitlab.com/tzip/tzip/-/blob/eb1da57684599a266334a73babd7ba82dbbbce66/proposals/tzip-12/tzip-12.md#general).
+
+**Structure:** 
+[`Natural`](#types-Natural)
+
+**Final Michelson representation:** `nat`
+
+
+
 <a name="types-TransferContractTokensParam"></a>
 
 ---
@@ -1114,7 +1414,7 @@ Timestamp primitive.
 TODO
 
 **Structure:** 
-  * ***contractAddress*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***contractAddress*** :[`Address`](#types-Address)
   * ***params*** :[`List`](#types-List) [`TransferItem`](#types-TransferItem)
 
 **Final Michelson representation:** `pair address (list (pair address (list (pair address (pair nat nat)))))`
@@ -1130,8 +1430,8 @@ TODO
 Describes the amount of tokens to transfer and to whom
 
 **Structure:** 
-  * ***to*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
-  * ***tokenId*** :[`Natural`](#types-Natural)
+  * ***to*** :[`Address`](#types-Address)
+  * ***tokenId*** :[`TokenId`](#types-TokenId)
   * ***amount*** :[`Natural`](#types-Natural)
 
 **Final Michelson representation:** `pair address (pair nat nat)`
@@ -1147,7 +1447,7 @@ Describes the amount of tokens to transfer and to whom
 Describes a transfer operation
 
 **Structure:** 
-  * ***from*** :[`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen)
+  * ***from*** :[`Address`](#types-Address)
   * ***txs*** :[`List`](#types-List) [`TransferDestination`](#types-TransferDestination)
 
 **Final Michelson representation:** `pair address (list (pair address (pair nat nat)))`
@@ -1198,14 +1498,16 @@ Read more in [A1 conventions document](https://gitlab.com/tzip/tzip/-/blob/c42e3
 
 Describes target proposal id, vote type and vote amount
 
-**Structure:** 
-  * ***proposalKey*** :[`ByteString`](#types-ByteString)
-  * ***voteType*** :[`Bool`](#types-Bool)
-  * ***voteAmount*** :[`Natural`](#types-Natural)
+**Structure (example):** `VoteParam MText` = 
+  * ***vProposalKey*** :[`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address)))
+  * ***vVoteType*** :[`Bool`](#types-Bool)
+  * ***vVoteAmount*** :[`Natural`](#types-Natural)
 
-**Final Michelson representation:** `pair bytes (pair bool nat)`
+**Final Michelson representation (example):** `VoteParam MText` = `pair bytes (pair bool nat)`
 
 
+
+<a name="section-Errors"></a>
 
 ## Errors
 
@@ -1384,7 +1686,21 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Representation:** `("MIGRATED", <error argument>)`.
 
-Provided error argument will be of type [`Address (no entrypoint)`](#types-Address-lparenno-entrypointrparen).
+Provided error argument will be of type [`Address`](#types-Address).
+
+<a name="errors-MISSIGNED"></a>
+
+---
+
+### `MISSIGNED`
+
+**Class:** Action exception
+
+**Fires if:** Invalid signature provided.
+
+**Representation:** `("MISSIGNED", <error argument>)`.
+
+Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`](#types-DataToSign) [`SomeType`](#types-SomeType)).
 
 <a name="errors-NOT_ADMIN"></a>
 
@@ -1541,3 +1857,11 @@ Provided error argument will be of type [`Address (no entrypoint)`](#types-Addre
 **Fires if:** Trying to vote on a proposal that is already ended
 
 **Representation:** `("VOTING_PERIOD_OVER", ())`.
+
+<a name="section-Referenced-hash-algorithms"></a>
+
+## Referenced hash algorithms
+
+<a name="hash-alg-Blake2b"></a>
+
+* Blake2b
