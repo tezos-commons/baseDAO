@@ -17,7 +17,7 @@ module Lorentz.Contracts.BaseDAO
 
 import Lorentz
 
-import Lorentz.Contracts.BaseDAO.Doc (callFA2Doc, introductoryDoc)
+import Lorentz.Contracts.BaseDAO.Doc
 import Lorentz.Contracts.BaseDAO.Management
 import Lorentz.Contracts.BaseDAO.Proposal
 import Lorentz.Contracts.BaseDAO.Token
@@ -26,10 +26,9 @@ import Lorentz.Contracts.BaseDAO.Types as BaseDAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 data FA2EntrypointsKind
-instance DocItem (DEntrypoint FA2EntrypointsKind) where
-  docItemPos = 1055
-  docItemSectionName = Just "FA2 entrypoints"
-  docItemToMarkdown = diEntrypointToMarkdown
+instance EntrypointKindHasDoc FA2EntrypointsKind where
+  entrypointKindPos = 1055
+  entrypointKindSectionName = "FA2 entrypoints"
 
 type DaoContract ce pm =
   Contract (BaseDAO.Parameter pm) (BaseDAO.Storage ce pm)
@@ -46,7 +45,11 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
   docStorage @(BaseDAO.Storage ce pm)
-  ensureZeroTransfer
+
+  entrypointSection "Prior checks" (Proxy @CommonContractBehaviourKind) $ do
+    doc $ DDescription priorChecksDoc
+    ensureZeroTransfer
+
   pushFuncContext @ce @pm $ do
     unpair
     finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm) (Proxy @PlainEntrypointsKind)
@@ -64,10 +67,14 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
       , #cMint /-> mint
       , #cTransfer_contract_tokens /-> transferContractTokens
       , #cToken_address /-> tokenAddress
+
+      , #cGetVotePermitCounter /-> view_ $ do
+          doc $ DDescription getVotePermitCounterDoc
+          drop @(); stToField #sPermitsCounter
       )
 
 fa2Handler
-  :: (IsoValue ce, IsoValue pm, HasFuncContext s (BaseDAO.Storage ce pm))
+  :: (IsoValue ce, KnownValue pm, HasFuncContext s (BaseDAO.Storage ce pm))
   => Entrypoint' FA2.Parameter (BaseDAO.Storage ce pm) s
 fa2Handler = do
   doc $ DDescription callFA2Doc

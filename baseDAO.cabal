@@ -3,6 +3,8 @@ cabal-version: 2.2
 -- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: 42a0fb564d1e9e5dfbc142ce0ee4e038a6b84214b4b5b2079e263206f27c45dc
 
 name:           baseDAO
 version:        0.1.0.0
@@ -26,6 +28,7 @@ library
       Lorentz.Contracts.BaseDAO
       Lorentz.Contracts.BaseDAO.Doc
       Lorentz.Contracts.BaseDAO.Management
+      Lorentz.Contracts.BaseDAO.Permit
       Lorentz.Contracts.BaseDAO.Proposal
       Lorentz.Contracts.BaseDAO.Token
       Lorentz.Contracts.BaseDAO.Token.FA2
@@ -43,7 +46,6 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
-    , data-default
     , lorentz
     , morley
     , morley-ledgers
@@ -66,7 +68,6 @@ executable baseDAO
     , baseDAO
     , lorentz
     , morley
-    , optparse-applicative
     , universum
   default-language: Haskell2010
 

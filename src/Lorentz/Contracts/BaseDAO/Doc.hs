@@ -3,6 +3,7 @@
 
 module Lorentz.Contracts.BaseDAO.Doc
    ( introductoryDoc
+   , priorChecksDoc
 
    , callFA2Doc
    , transferDoc
@@ -25,6 +26,8 @@ module Lorentz.Contracts.BaseDAO.Doc
    , mintDoc
    , transferContractTokensDoc
    , tokenAddressDoc
+
+   , getVotePermitCounterDoc
    ) where
 
 import Lorentz
@@ -35,6 +38,11 @@ introductoryDoc :: Markdown
 introductoryDoc = [md|
   It contains standard FA2 entrypoints, plus some extra ones including proposal and
   migration entrypoints. It supports two types of token_id - frozen (token_id = 1) and unfrozen (token_id = 0).
+  |]
+
+priorChecksDoc :: Markdown
+priorChecksDoc = [md|
+  These properties belong to all entrypoints of the contract.
   |]
 
 callFA2Doc :: Markdown
@@ -161,4 +169,12 @@ tokenAddressDoc :: Markdown
 tokenAddressDoc = [md|
   Returns the address of the associated FA2 contract.
   Since FA2 logic is embedded into this contract, this entrypoint always returns SELF.
+  |]
+
+getVotePermitCounterDoc :: Markdown
+getVotePermitCounterDoc = [md|
+  Returns the next nonce value with which a permit should be created.
+
+  Return value increases by number of votes where a permit was provided
+  with each successful call of an entrypoint.
   |]

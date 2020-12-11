@@ -37,8 +37,8 @@ adminBurnScenario = uncapsNettest $ do
   ((owner1, _), _, dao, admin)
     <- originateTrivialDaoWithBalance
           (\o1 _ ->
-              [ ((o1, 0), 10)
-              , ((o1, 1), 10)
+              [ ((o1, DAO.unfrozenTokenId), 10)
+              , ((o1, DAO.frozenTokenId), 10)
               ]
           )
 
@@ -57,8 +57,8 @@ adminMintScenario = uncapsNettest $ do
   ((owner1, _), _, dao, admin)
     <- originateTrivialDaoWithBalance
           (\o1 _ ->
-              [ ((o1, 0), 0)
-              , ((o1, 1), 0)
+              [ ((o1, DAO.unfrozenTokenId), 0)
+              , ((o1, DAO.frozenTokenId), 0)
               ]
           )
 

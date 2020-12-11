@@ -14,6 +14,7 @@ import Morley.Nettest.Tasty (nettestScenario)
 import Test.Tasty (TestTree, testGroup)
 import Util.Named
 
+import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.BaseDAO.Management (expectMigrated)
 import Test.Common
@@ -80,7 +81,7 @@ zeroTransferScenario = uncapsNettest $ do
         { tiFrom = nonexistent
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 0
             } ]
         } ]
@@ -94,7 +95,7 @@ validTransferScenario = uncapsNettest $ do
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner2
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 10
             } ]
         } ]
@@ -106,7 +107,7 @@ validTransferScenario = uncapsNettest $ do
   callFrom (AddressResolved owner2) dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = owner2
-      , briTokenId = 0
+      , briTokenId = unfrozenTokenId
       } ] consumer)
 
   checkStorage (AddressResolved $ toAddress consumer)
@@ -119,7 +120,7 @@ validTransferOwnerScenario = uncapsNettest $ do
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner2
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 10
             } ]
         } ]
@@ -131,7 +132,7 @@ validTransferOwnerScenario = uncapsNettest $ do
   callFrom (AddressResolved owner2) dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = owner2
-      , briTokenId = 0
+      , briTokenId = unfrozenTokenId
       } ] consumer)
 
   checkStorage (AddressResolved $ toAddress consumer)
@@ -143,7 +144,7 @@ updatingOperatorAfterMigrationScenario = uncapsNettest $ do
   let params = FA2.OperatorParam
         { opOwner = owner1
         , opOperator = owner2
-        , opTokenId = 0
+        , opTokenId = unfrozenTokenId
         }
 
   callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
@@ -157,13 +158,13 @@ updatingOperatorScenario = uncapsNettest $ do
   let params = FA2.OperatorParam
         { opOwner = owner1
         , opOperator = owner2
-        , opTokenId = 0
+        , opTokenId = unfrozenTokenId
         }
       transferParams = [ FA2.TransferItem
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner2
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 10
             } ]
         } ]
@@ -177,7 +178,7 @@ updatingOperatorScenario = uncapsNettest $ do
   let notOwnerParams = FA2.OperatorParam
         { opOwner = owner2
         , opOperator = owner1
-        , opTokenId = 0
+        , opTokenId = unfrozenTokenId
         }
 
   callFrom (AddressResolved owner1) dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
@@ -194,7 +195,7 @@ lowBalanceScenario = uncapsNettest $ do
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner2
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 200
             } ]
         } ]
@@ -209,7 +210,7 @@ lowBalanceOwnerScenario = uncapsNettest $ do
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner2
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 200
             } ]
         } ]
@@ -225,7 +226,7 @@ noSourceAccountScenario = uncapsNettest $ do
         { tiFrom = nonexistent
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 1
             } ]
         } ]
@@ -244,7 +245,7 @@ badOperatorScenario = uncapsNettest $ do
         { tiFrom = owner2
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 0
             } ]
         } ]
@@ -255,6 +256,9 @@ emptyTransferListScenario :: (Monad m) => NettestImpl m -> m ()
 emptyTransferListScenario = uncapsNettest $ do
   ((_, op1), _, dao, _) <- originateTrivialDao
   callFrom (AddressResolved op1) dao (Call @"Transfer") []
+
+unknownTokenId :: FA2.TokenId
+unknownTokenId = FA2.TokenId 2
 
 validateTokenScenario :: (Monad m) => NettestImpl m -> m ()
 validateTokenScenario = uncapsNettest $ do
@@ -270,10 +274,10 @@ validateTokenScenario = uncapsNettest $ do
         } ]
       callWith = callFrom (AddressResolved op1) dao (Call @"Transfer")
 
-  callWith (params 0)
-  callWith (params 1)
+  callWith (params unfrozenTokenId)
+  callWith (params frozenTokenId)
     & expectCustomError_ #fROZEN_TOKEN_NOT_TRANSFERABLE
-  callWith (params 2)
+  callWith (params unknownTokenId)
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 
 validateTokenOwnerScenario :: (Monad m) => NettestImpl m -> m ()
@@ -290,10 +294,10 @@ validateTokenOwnerScenario = uncapsNettest $ do
         } ]
       callWith = callFrom (AddressResolved owner1) dao (Call @"Transfer")
 
-  callWith (params 0)
-  callWith (params 1)
+  callWith (params unfrozenTokenId)
+  callWith (params frozenTokenId)
     & expectCustomError_ #fROZEN_TOKEN_NOT_TRANSFERABLE
-  callWith (params 2)
+  callWith (params unknownTokenId)
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 
 noForeignMoneyScenario :: (Monad m) => NettestImpl m -> m ()
@@ -304,7 +308,7 @@ noForeignMoneyScenario = uncapsNettest $ do
         { tiFrom = owner2
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 10
             } ]
         } ]
@@ -319,7 +323,7 @@ noForeignMoneyOwnerScenario = uncapsNettest $ do
         { tiFrom = owner2
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 10
             } ]
         } ]
@@ -334,10 +338,10 @@ balanceOfOwnerScenario = uncapsNettest $ do
     params requestItems = mkFA2View requestItems consumer
     callWith = callFrom (AddressResolved owner1) dao (Call @"Balance_of")
 
-  callWith (params [ FA2.BalanceRequestItem owner1 0 ])
-  callWith (params [ FA2.BalanceRequestItem owner1 1 ])
+  callWith (params [ FA2.BalanceRequestItem owner1 unfrozenTokenId ])
+  callWith (params [ FA2.BalanceRequestItem owner1 frozenTokenId ])
   callWith (params [])
-  callWith (params [ FA2.BalanceRequestItem owner1 2 ])
+  callWith (params [ FA2.BalanceRequestItem owner1 unknownTokenId ])
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 
 adminTransferScenario :: (Monad m) => NettestImpl m -> m ()
@@ -348,7 +352,7 @@ adminTransferScenario = uncapsNettest $ do
         { tiFrom = owner2
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 10
             } ]
         } ]
@@ -360,8 +364,8 @@ adminTransferFrozenScenario = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin)
     <- originateTrivialDaoWithBalance
         (\owner1 owner2 ->
-            [ ((owner1, 1), 100)
-            , ((owner2, 1), 100)
+            [ ((owner1, frozenTokenId), 100)
+            , ((owner2, frozenTokenId), 100)
             ]
         )
 
@@ -369,7 +373,7 @@ adminTransferFrozenScenario = uncapsNettest $ do
         { tiFrom = owner2
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
-            , tdTokenId = 1
+            , tdTokenId = frozenTokenId
             , tdAmount = 10
             } ]
         } ]
@@ -383,7 +387,7 @@ transferAfterMigrationScenario = uncapsNettest $ do
         { tiFrom = owner2
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner1
-            , tdTokenId = 0
+            , tdTokenId = unfrozenTokenId
             , tdAmount = 10
             } ]
         } ]
@@ -404,7 +408,7 @@ balanceOfRequestAfterMigrationScenario = uncapsNettest $ do
   callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
   callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
 
-  callWith (params [ FA2.BalanceRequestItem owner1 0 ])
+  callWith (params [ FA2.BalanceRequestItem owner1 unfrozenTokenId ])
     & expectMigrated newAddress1
 
 tokenMetadataRegistryRequestAfterMigrationScenario :: (Monad m) => NettestImpl m -> m ()

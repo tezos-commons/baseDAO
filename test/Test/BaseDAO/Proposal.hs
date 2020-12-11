@@ -14,6 +14,7 @@ import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
+import Lorentz.Test.Consumer
 import Test.BaseDAO.ProposalConfig
 import Test.Common
 
@@ -41,6 +42,12 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
       -- TODO [#47]: Disable running in real network due to time-sensitive operations
       , nettestScenarioOnEmulator "cannot vote on outdated proposal" $
           \_emulated -> voteOutdatedProposal
+      , testGroup "Permit:"
+          [ nettestScenario "can vote from another user's behalf"
+              voteWithPermit
+          , nettestScenario "counter works properly in permits"
+              voteWithPermitNonce
+          ]
       ]
   , testGroup "Admin:"
       [ nettestScenario "can set voting period" setVotingPeriod
@@ -122,7 +129,7 @@ voteValidProposal = uncapsNettest $ do
 
   -- | Create sample proposal (first proposal has id = 0)
   key1 <- createSampleProposal 1 owner1 dao
-  let params = DAO.VoteParam
+  let params = DAO.NoPermit DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
@@ -139,10 +146,10 @@ voteNonExistingProposal = uncapsNettest $ do
 
   -- | Create sample proposal
   _ <- createSampleProposal 1 owner1 dao
-  let params = DAO.VoteParam
+  let params = DAO.NoPermit DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 2
-        , vProposalKey = ("\11\12\13" :: ByteString)
+        , vProposalKey = HashUnsafe "\11\12\13"
         }
 
   callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
@@ -155,7 +162,7 @@ voteMultiProposals = uncapsNettest $ do
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
   key2 <- createSampleProposal 2 owner1 dao
-  let params =
+  let params = fmap DAO.NoPermit
         [ DAO.VoteParam
             { vVoteType = True
             , vVoteAmount = 2
@@ -179,7 +186,7 @@ insufficientTokenVote = uncapsNettest $ do
 
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
-  let params =
+  let params = fmap DAO.NoPermit
         [ DAO.VoteParam
             { vVoteType = True
             , vVoteAmount = 51
@@ -204,7 +211,7 @@ voteOutdatedProposal = uncapsNettest $ do
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
 
-  let params = DAO.VoteParam
+  let params = DAO.NoPermit DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
@@ -215,6 +222,63 @@ voteOutdatedProposal = uncapsNettest $ do
   callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
     & expectCustomError_ #vOTING_PERIOD_OVER
 
+voteWithPermit :: (Monad m) => NettestImpl m -> m ()
+voteWithPermit = uncapsNettest $ do
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer () config
+
+  -- | Create sample proposal
+  key1 <- createSampleProposal 1 owner1 dao
+
+  params <- permitProtect (AddressResolved owner1) =<< addDataToSign dao (DAO.Nonce 0)
+        DAO.VoteParam
+        { vVoteType = True
+        , vVoteAmount = 2
+        , vProposalKey = key1
+        }
+
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
+  checkTokenBalance DAO.frozenTokenId dao owner1 12
+
+voteWithPermitNonce :: (Monad m) => NettestImpl m -> m ()
+voteWithPermitNonce = uncapsNettest $ do
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer () config
+
+  -- | Create sample proposal
+  key1 <- createSampleProposal 1 owner1 dao
+
+  let voteParam = DAO.VoteParam
+        { vVoteType = True
+        , vVoteAmount = 2
+        , vProposalKey = key1
+        }
+
+  -- Going to try calls with different nonces
+  signed1@(_          , _) <- addDataToSign dao (DAO.Nonce 0) voteParam
+  signed2@(dataToSign2, _) <- addDataToSign dao (DAO.Nonce 1) voteParam
+  signed3@(_          , _) <- addDataToSign dao (DAO.Nonce 2) voteParam
+
+  params1 <- permitProtect (AddressResolved owner1) signed1
+  params2 <- permitProtect (AddressResolved owner1) signed2
+  params3 <- permitProtect (AddressResolved owner1) signed3
+
+  -- Good nonce
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [params1]
+
+  -- Outdated nonce
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [params1]
+    & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
+
+  -- Nonce from future
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [params3]
+    & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
+
+  -- Good nonce after the previous successful entrypoint call
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [params2]
+
+  -- Check counter
+  consumer <- originateSimple "consumer" [] contractConsumer
+  callFrom (AddressResolved owner1) dao (Call @"GetVotePermitCounter") (mkView () consumer)
+  checkStorage (AddressResolved $ toAddress consumer) (toVal [2 :: Natural])
 
 setVotingPeriod :: (Monad m) => NettestImpl m -> m ()
 setVotingPeriod = uncapsNettest $ do
@@ -272,12 +336,12 @@ flushAcceptedProposals = uncapsNettest $ do
   -- | Accepted Proposals
   key1 <- createSampleProposal 1 owner1 dao
 
-  let upvote = DAO.VoteParam
+  let upvote = DAO.NoPermit DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
         }
-      downvote = DAO.VoteParam
+      downvote = DAO.NoPermit DAO.VoteParam
         { vVoteType = False
         , vVoteAmount = 1
         , vProposalKey = key1
@@ -314,7 +378,7 @@ flushRejectProposalQuorum =
   -- | Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao
 
-  let votes =
+  let votes = fmap DAO.NoPermit
         [ DAO.VoteParam
           { vVoteType = True
           , vVoteAmount = 1
@@ -351,7 +415,7 @@ flushRejectProposalNegativeVotes = uncapsNettest $ do
   -- | Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao
 
-  let votes =
+  let votes = fmap DAO.NoPermit
         [ DAO.VoteParam
           { vVoteType = True
           , vVoteAmount = 1
@@ -394,7 +458,7 @@ flushWithBadConfig = uncapsNettest $ do
 
   key1 <- createSampleProposal 1 owner1 dao
 
-  let upvote = DAO.VoteParam
+  let upvote = DAO.NoPermit DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 1
         , vProposalKey = key1
@@ -423,7 +487,7 @@ flushDecisionLambda = uncapsNettest $ do
 
   key1 <- createSampleProposal 1 owner1 dao
 
-  let upvote = DAO.VoteParam
+  let upvote = DAO.NoPermit DAO.VoteParam
         { vVoteType = True
         , vVoteAmount = 1
         , vProposalKey = key1
@@ -455,12 +519,12 @@ votesBoundedValue = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer () (config { DAO.cMaxVotes = 1})
 
   key1 <- createSampleProposal 1 owner2 dao
-  let upvote = DAO.VoteParam
+  let upvote = DAO.NoPermit DAO.VoteParam
         { vVoteType = False
         , vVoteAmount = 1
         , vProposalKey = key1
         }
-      downvote= DAO.VoteParam
+      downvote = DAO.NoPermit DAO.VoteParam
         { vVoteType = False
         , vVoteAmount = 1
         , vProposalKey = key1
@@ -502,7 +566,7 @@ votingPeriodBound = uncapsNettest $ do
 
 createSampleProposal
   :: MonadNettest caps base m
-  => Integer -> Address -> TAddress (DAO.Parameter Integer) -> m ByteString
+  => Integer -> Address -> TAddress (DAO.Parameter Integer) -> m (DAO.ProposalKey Integer)
 createSampleProposal counter owner1 dao = do
   let params = DAO.ProposeParams
         { ppFrozenToken = 10
