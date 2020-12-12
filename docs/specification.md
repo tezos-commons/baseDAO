@@ -11,6 +11,7 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 * [Contract logic](#contract-logic)
 * [Errors](#errors)
 * [Entrypoints](#entrypoints)
+* [TZIP-16 metadata](#tzip-16-metadata)
 
 # Overview
 
@@ -829,3 +830,9 @@ nat
 ```
 
 - For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
+
+# TZIP-16 metadata
+
+We do not provide a proper support for contract metadata until [the proposal](https://gitlab.com/tzip/tzip/-/merge_requests/94) is finalized and merged.
+
+Except for basic fields, we are going to include `GetCounter` off-chain view.
