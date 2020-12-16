@@ -27,19 +27,19 @@ defaultPermissionsDescriptor = PermissionsDescriptor
   }
 
 transfer
-  :: forall store ce pm s.
-     (StorageC store ce pm, HasFuncContext s store (TransferFuncs store))
-  => Entrypoint' TransferParams store s
+  :: forall ce pm s.
+     (IsoValue ce, KnownValue pm, HasFuncContext s (Storage ce pm))
+  => Entrypoint' TransferParams (Storage ce pm) s
 transfer = do
   doc $ DDescription transferDoc
   dip ensureNotMigrated
   iter transferItem
   nil; pair
   where
-    transferItem :: (TransferItem : store : s) :-> (store : s)
+    transferItem :: (TransferItem : Storage ce pm : s) :-> (Storage ce pm : s)
     transferItem = do
       swap
-      stGetField #sAdmin
+      getField #sAdmin
       Lorentz.sender
       eq
       dig @2
@@ -52,7 +52,7 @@ transfer = do
       iter transferOne
       dropN @2
 
-    transferOne :: TransferDestination : Bool : "from" :! Address : store : s :-> Bool : "from" :! Address : store : s
+    transferOne :: TransferDestination : Bool : "from" :! Address : Storage ce pm : s :-> Bool : "from" :! Address : Storage ce pm : s
     transferOne = do
       swap
       dup
@@ -98,20 +98,24 @@ transfer = do
       swap
 
     checkSender
-      :: forall f. ("from" :! Address) : store : f
-      :-> ("from" :! Address) : store : f
+      :: forall f. ("from" :! Address) : Storage ce pm : f
+      :-> ("from" :! Address) : Storage ce pm : f
     checkSender = do
       dup; fromNamed #from
       Lorentz.sender
       if IsEq
       then nop
       else do
-        dupTop2
-        fromNamed #from; toNamed #owner
+        dup
+        dig @2
+        getField #sOperators
+        swap
+        dug @3
+        swap; fromNamed #from; toNamed #owner
         Lorentz.sender; toNamed #operator
         swap
         pair
-        stMem #sOperators
+        mem
         if_ nop (failCustom_ #fA2_NOT_OPERATOR)
 
 debitFrom
