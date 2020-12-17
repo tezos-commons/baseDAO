@@ -14,6 +14,7 @@ import Paths_baseDAO (version)
 
 import BaseDAO.CLI
 import qualified Lorentz.Contracts.GameDAO as GameDAO
+import qualified Lorentz.Contracts.RegistryDAO as RegistryDAO
 import qualified Lorentz.Contracts.TrivialDAO as TrivialDAO
 
 repoSettings :: GitRepoSettings
@@ -32,6 +33,13 @@ contracts = daoContractRegistry
     , dciConfig = GameDAO.config
     , dciExtraParser = pure def
     }
+  , DaoContractInfo
+    { dciName = "RegistryDAO"
+    , dciConfig = RegistryDAO.config @ByteString @ByteString
+    , dciExtraParser = pure def
+    }
+  -- Note: When adding a new contract, CI needs to be updated to
+  -- upload the new contract's documentation.
   ]
 
 main :: IO ()

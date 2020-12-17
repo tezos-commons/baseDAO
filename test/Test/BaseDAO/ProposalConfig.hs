@@ -20,6 +20,7 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 config :: forall ce pm. (IsoValue pm) => DAO.Config ce pm
 config = DAO.defaultConfig
   { DAO.cProposalCheck = do
+      dip drop
       toFieldNamed #ppFrozenToken
       -- Submitted proposal must freeze more than 10 tokens
       push (10 :: Natural)
@@ -34,7 +35,8 @@ config = DAO.defaultConfig
 configWithRejectedProposal :: forall ce pm. (IsoValue pm) => DAO.Config ce pm
 configWithRejectedProposal = DAO.defaultConfig
   { DAO.cRejectedProposalReturnValue = do
-      -- ^ divide frozen value by half
+      dip drop
+      -- divide frozen value by half
       toField #pProposerFrozenToken
       push (2 :: Natural)
       swap
@@ -47,7 +49,7 @@ configWithRejectedProposal = DAO.defaultConfig
 badRejectedValueConfig :: forall ce pm. DAO.Config ce pm
 badRejectedValueConfig = DAO.defaultConfig
   { DAO.cRejectedProposalReturnValue = do
-      drop; push (9999 :: Natural)
+      drop; drop; push (9999 :: Natural)
       toNamed #slash_amount
   }
 

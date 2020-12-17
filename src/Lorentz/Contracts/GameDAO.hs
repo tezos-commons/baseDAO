@@ -145,9 +145,10 @@ type Storage = DAO.Storage GameDaoContractExtra GameDaoProposalMetadata
 -- | For "balance change", the proposer needs to freeze 10 tokens
 -- For "new content", the proposal needs to freeze 50 tokens
 gameDaoProposalCheck
-  :: forall s. (DAO.ProposeParams GameDaoProposalMetadata) : s
+  :: forall s store. (DAO.ProposeParams GameDaoProposalMetadata) : store : s
   :-> Bool : s
 gameDaoProposalCheck = do
+  dip drop
   getFieldNamed #ppFrozenToken; swap
   toField #ppProposalMetadata
   toField #pmProposalType
@@ -165,9 +166,10 @@ gameDaoProposalCheck = do
 
 -- | In case of a proposal got rejected, the proposer loses half of the tokens.
 gameDaoRejectedProposalReturnValue
-  :: forall s. (DAO.Proposal GameDaoProposalMetadata) : s
+  :: forall s store. (DAO.Proposal GameDaoProposalMetadata) : store : s
   :-> ("slash_amount" :! Natural) : s
 gameDaoRejectedProposalReturnValue = do
+  dip drop
   toField #pProposerFrozenToken
   push (2 :: Natural)
   swap
