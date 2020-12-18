@@ -62,6 +62,7 @@ import qualified Data.Kind as Kind
 
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 import Lorentz.Zip
 import Michelson.Runtime.GState (genesisAddress)
 import Michelson.Typed.Annotation
@@ -224,6 +225,8 @@ data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Stor
   , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKey proposalMetadata) -- Oldest first
 
   , sPermitsCounter :: Nonce
+
+  , sMetadata :: "metadata" :! TZIP16.MetadataMap BigMap
   }
   deriving stock (Generic, Show)
   deriving anyclass (HasAnnotation)
@@ -330,8 +333,9 @@ mkStorage
   -> "votingPeriod" :? Natural
   -> "quorumThreshold" :? Natural
   -> "extra" :! ce
+  -> "metadata" :! TZIP16.MetadataMap BigMap
   -> Storage ce pm
-mkStorage admin votingPeriod quorumThreshold extra =
+mkStorage admin votingPeriod quorumThreshold extra metadata =
   Storage
   { sLedger = mempty
   , sOperators = mempty
@@ -346,6 +350,8 @@ mkStorage admin votingPeriod quorumThreshold extra =
   , sProposals = mempty
   , sProposalKeyListSortByDate = mempty
   , sPermitsCounter = Nonce 0
+
+  , sMetadata = metadata
   }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days

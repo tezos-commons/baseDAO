@@ -100,6 +100,7 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
           ! #extra contractExtra
           ! #votingPeriod 20
           ! #quorumThreshold 1
+          ! #metadata mempty
           ! defaults
           ) { sLedger = BigMap bal
             , sOperators = BigMap operators

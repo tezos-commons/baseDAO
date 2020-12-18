@@ -19,6 +19,7 @@ import Universum
 
 import qualified Data.Map as Map
 import Data.Version (Version, showVersion)
+import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 import Main.Utf8 (withUtf8)
 import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
@@ -49,11 +50,14 @@ daoStorageParser extraParser = do
     (#help .! "Total number of votes necessary for successful proposal")
   extra <-
     extraParser
+  metadata <-
+    tzip16MetadataParser
   pure $ DAO.mkStorage
     (#admin .! adminAddress)
     (#votingPeriod .? Just votingPeriod)
     (#quorumThreshold .? Just quorumThreshold)
     (#extra .! extra)
+    (#metadata .! metadata)
 
 daoStorageParserDef :: Default ce => Opt.Parser (DAO.Storage ce pm)
 daoStorageParserDef = daoStorageParser (pure def)
@@ -75,6 +79,34 @@ daoContractRegistry contracts = ContractRegistry . Map.fromList $
       , ciStorageParser = Just $ daoStorageParser dciExtraParser
       , ciStorageNotes = Nothing
       }
+
+------------------------------------------------------------------------
+-- TZIP-16 metadata
+------------------------------------------------------------------------
+
+tzip16MetadataParser :: Opt.Parser (TZIP16.MetadataMap BigMap)
+tzip16MetadataParser = do
+  -- The primary scenario we support - reference to a contract
+  -- with actual metadata
+  contract <- contractHostParser
+  key <- metadataKeyParser
+  return $ TZIP16.metadataURI (TZIP16.tezosStorageUri contract key)
+  where
+    contractHostParser :: Opt.Parser TZIP16.ContractHost
+    contractHostParser = do
+      address <-
+        mkCLOptionParser Nothing (#name .! "metadata-host-address")
+        (#help .! "Address of the contract storing actual metadata")
+      mChainId <- Opt.optional . fmap fromString $
+        mkCLOptionParser Nothing (#name .! "metadata-host-chain")
+        (#help .! "Chain where the contract storing actual metadata resides")
+      return $
+        maybe TZIP16.contractHost TZIP16.foreignContractHost mChainId address
+
+    metadataKeyParser :: Opt.Parser MText
+    metadataKeyParser =
+      mkCLOptionParser Nothing (#name .! "metadata-key")
+        (#help .! "Key in metadata host contract where baseDAO's metadata is located")
 
 ------------------------------------------------------------------------
 -- Contract registry

@@ -44,7 +44,7 @@ actual `opSizeIsUnder` limit =
 averageStorage :: DAO.Storage () ()
 averageStorage =
   -- TODO: fill this someday
-  DAO.mkStorage ! #admin dummyAddress ! #extra () ! defaults
+  DAO.mkStorage ! #admin dummyAddress ! #extra () ! #metadata mempty ! defaults
 
 averageConfig :: DAO.Config () () Empty
 averageConfig = DAO.trivialConfig

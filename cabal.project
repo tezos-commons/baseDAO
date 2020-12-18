@@ -29,5 +29,10 @@ source-repository-package
     tag: 1a1f1caab12e051d0c930c2f9bde4b5a0bca1d60
     subdir: code/morley-ledgers
 
+source-repository-package
+    type: git
+    location: https://gitlab.com/morley-framework/morley-metadata.git
+    tag: 7b3ee35067f368e627029d71f3b5453b430bac0d
+
 allow-older: *
 allow-newer: *
