@@ -167,7 +167,9 @@ defaultConfig = Config
 -- Operators
 ------------------------------------------------------------------------
 
-type Operators = BigMap ("owner" :! Address, "operator" :! Address) ()
+type Operator = ("owner" :! Address, "operator" :! Address)
+
+type Operators = BigMap Operator ()
 
 ------------------------------------------------------------------------
 -- Ledger
