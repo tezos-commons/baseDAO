@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-License-Identifier: MIT
+
+# Ligo executable
+LIGO ?= ligo
+
+# Compile code
+BUILD = $(LIGO) compile-contract --syntax cameligo
+
+# Where to put build files
+OUT ?= out
+
+.PHONY: all clean test
+
+all: build
+
+# Compile LIGO contract into its michelson representation.
+build: src
+	mkdir -p $(OUT)
+	# ============== Compiling contract ============== #
+	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/baseDAO.tz
+	# ============== Compilation successful ============== #
+	# See "$(OUT)/baseDAO.tz" for compilation result #
+
+	# strip the surrounding braces and indentation,
+	# note that dollar char is escaped as part of Makefile
+	sed -i '/^ *$$/d' $(OUT)/baseDAO.tz
+	sed -i 's/^[{ ] //g' $(OUT)/baseDAO.tz
+	sed -i '$$s/[}] *$$//' $(OUT)/baseDAO.tz
+
+clean:
+	rm -rf $(OUT)
