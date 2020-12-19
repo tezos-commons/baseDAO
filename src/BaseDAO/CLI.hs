@@ -26,6 +26,7 @@ import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
 
 import Lorentz.ContractRegistry
+import Lorentz.Contracts.MetadataCarrier (metadataCarrierContract)
 import Lorentz.Doc
 import Lorentz.Value
 import Morley.CLI (addressOption)
@@ -72,14 +73,22 @@ data DaoContractInfo =
   }
 
 daoContractRegistry :: [DaoContractInfo] -> ContractRegistry
-daoContractRegistry contracts = ContractRegistry . Map.fromList $
-  contracts <&> \DaoContractInfo{..} ->
+daoContractRegistry contracts = ContractRegistry $ mconcat
+  [ Map.fromList $ contracts <&> \DaoContractInfo{..} ->
     dciName ?:: ContractInfo
       { ciContract = DAO.baseDaoContract dciConfig
       , ciIsDocumented = True
       , ciStorageParser = Just $ daoStorageParser dciExtraParser
       , ciStorageNotes = Nothing
       }
+
+  , one $ "MetadataCarrier" ?:: ContractInfo
+      { ciContract = metadataCarrierContract
+      , ciIsDocumented = False
+      , ciStorageParser = Nothing
+      , ciStorageNotes = Nothing
+      }
+  ]
 
 ------------------------------------------------------------------------
 -- TZIP-16 metadata

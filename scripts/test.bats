@@ -34,3 +34,7 @@ exe="baseDAO"
 @test "Print metadata" {
   "$exe" print-metadata > metadata.json
 }
+
+@test "Print MetadataCarrier" {
+  "$exe" print -n MetadataCarrier
+}
