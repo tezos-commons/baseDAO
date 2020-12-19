@@ -35,6 +35,12 @@
         "url": "https://github.com/serokell/haskell.nix/archive/c427aeda2bc82fe4f8ff9354e70bdb4ecb5121b2.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "ligo": {
+        "ref": "dev",
+        "repo": "https://gitlab.com/ligolang/ligo",
+        "rev": "b6c3a9d4257bda78af46250a447ce78c5d2291a4",
+        "type": "git"
+    },
     "nixpkgs": {
         "branch": "master",
         "description": "Pinned Nixpkgs tree (master follows nixos-unstable-small, only tags have stable history)",
