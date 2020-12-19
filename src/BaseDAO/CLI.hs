@@ -17,6 +17,7 @@ module BaseDAO.CLI
 
 import Universum
 
+import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.Map as Map
 import Data.Version (Version, showVersion)
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
@@ -112,23 +113,49 @@ tzip16MetadataParser = do
 -- Contract registry
 ------------------------------------------------------------------------
 
+data AllCmdLnArgs
+  = ContractRegistryCmd CmdLnArgs
+  | PrintMetadata
+
+allArgsParser :: DGitRevision -> ContractRegistry -> Opt.Parser AllCmdLnArgs
+allArgsParser gitRev registry = asum
+  [ ContractRegistryCmd <$>
+      argParser registry gitRev
+
+  , Opt.hsubparser $
+      mkCommandParser "print-metadata" (pure PrintMetadata)
+        "Print known part of TZIP-16 metadata."
+  ]
+
+mkCommandParser
+  :: String
+  -> Opt.Parser a
+  -> String
+  -> Opt.Mod Opt.CommandFields a
+mkCommandParser commandName parser desc =
+  Opt.command commandName $ Opt.info parser $ Opt.progDesc desc
+
 -- | Put this to @main@ to make the executable serve given contracts.
 serveContractRegistry :: String -> DGitRevision -> ContractRegistry -> Version -> IO ()
 serveContractRegistry execName gitRev contracts version =
   withUtf8 $ do
-    cmdLnArgs <-
+    allCmdLnArgs <-
       Opt.execParser $
       contractRegistryProgramInfo version gitRev execName contracts
-    runContractRegistry contracts cmdLnArgs `catchAny` (die . displayException)
+    case allCmdLnArgs of
+      ContractRegistryCmd cmdLnArgs ->
+        runContractRegistry contracts cmdLnArgs `catchAny` (die . displayException)
+      PrintMetadata ->
+        putTextLn . decodeUtf8 $ encodePretty DAO.knownBaseDAOMetadata
 
 contractRegistryProgramInfo
   :: Version
   -> DGitRevision
   -> String
   -> ContractRegistry
-  -> Opt.ParserInfo CmdLnArgs
+  -> Opt.ParserInfo AllCmdLnArgs
 contractRegistryProgramInfo version gitRev execName registry =
-  Opt.info (Opt.helper <*> versionOption <*> argParser registry gitRev) $
+  Opt.info (Opt.helper <*> versionOption <*> allArgsParser gitRev registry) $
     mconcat
     [ Opt.fullDesc
     , Opt.progDesc $ execName <> " contracts registry"

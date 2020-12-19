@@ -88,6 +88,7 @@ library:
   generated-other-modules:
     - Paths_baseDAO
   dependencies:
+    - aeson-pretty
     - containers
     - named
     - morley

@@ -14,6 +14,8 @@ module Lorentz.Contracts.BaseDAO
   , DaoC
   , baseDaoContract
   , mkStorage
+
+  , knownBaseDAOMetadata
   ) where
 
 import Lorentz
@@ -25,6 +27,7 @@ import Lorentz.Contracts.BaseDAO.Proposal
 import Lorentz.Contracts.BaseDAO.Token
 import Lorentz.Contracts.BaseDAO.Token.FA2
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
+import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Michelson.Optimizer (OptimizerConf (..))
 

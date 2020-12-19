@@ -30,3 +30,7 @@ exe="baseDAO"
 @test "Document BaseDAO" {
   "$exe" document -n TrivialDAO
 }
+
+@test "Print metadata" {
+  "$exe" print-metadata > metadata.json
+}
