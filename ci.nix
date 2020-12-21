@@ -115,4 +115,12 @@ rec {
     hs-pkgs = hs-pkgs-development;
     local-packages = local-packages;
   };
+  # nixpkgs has an older version of stack2cabal which doesn't build
+  # with new libraries, use a newer version
+  stack2cabal = pkgs.haskellPackages.callHackageDirect {
+    pkg = "stack2cabal";
+    ver = "1.0.11";
+    sha256 = "00vn1sjrsgagqhdzswh9jg0cgzdgwadnh02i2fcif9kr5h0khfw9";
+  } { };
+
 }
