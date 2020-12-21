@@ -34,6 +34,11 @@ steps:
       automatic:
         limit: 1
 
+  - label: check cabal files
+    if: *not_scheduled
+    commands:
+    - nix run -f ci.nix stack2cabal -c ./scripts/ci/validate-cabal-files.sh
+
   - label: build
     if: *not_scheduled
     commands:
