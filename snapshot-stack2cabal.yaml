@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2020 Tocqueville Group
+#
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
+
+# snapshot used for ./scripts/generate-cabal-files.sh script
+name: stack2cabal-snapshot
+
+resolver: lts-16.5
+packages:
+  # the versions must be the same that ci uses, to make sure `stack2cabal` output is identical
+  - stack2cabal-1.0.11
+  - hpack-0.34.2
