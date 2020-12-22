@@ -372,9 +372,6 @@ flushAcceptedProposalsWithAnAmount :: (Monad m) => NettestImpl m -> m ()
 flushAcceptedProposalsWithAnAmount = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig @Integer () config
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
-
   -- | Accepted Proposals
   key1 <- createSampleProposal 1 owner1 dao
   key2 <- createSampleProposal 2 owner1 dao

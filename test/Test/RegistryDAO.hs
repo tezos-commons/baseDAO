@@ -1,8 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-{-# LANGUAGE NumericUnderscores #-}
-
 module Test.RegistryDAO
   ( test_RegistryDAO
   ) where
@@ -71,8 +69,6 @@ validConfigProposal = uncapsNettest $ do
 
   sendXtz owner1 -- fixes "Balance is too low" error in CI.
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
 
   let
     (configMetadata :: RegistryDaoProposalMetadata ByteString ByteString) = ConfigProposalType $ ConfigProposal
@@ -144,17 +140,6 @@ longNormalProposalMetadata = NormalProposalType $ NormalProposal
         }
       ]
   }
-
-sendXtz :: MonadNettest caps base m => Address -> m ()
-sendXtz addr = do
-  let transferData = TransferData
-        { tdFrom = nettestAddress
-        , tdTo = AddressResolved addr
-        , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
-        , tdEntrypoint = DefEpName
-        , tdParameter = ()
-        }
-  transfer transferData
 
 getTokensAmount :: RegistryDaoProposalMetadata ByteString ByteString -> Natural
 getTokensAmount pm = fromInteger $ toInteger $ length $ lPackValueRaw pm

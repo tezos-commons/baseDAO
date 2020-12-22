@@ -1,16 +1,20 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+{-# LANGUAGE NumericUnderscores #-}
+
 module Test.Common
   ( mkFA2View
   , checkTokenBalance
   , withOriginated
   , originateTrivialDao
   , originateBaseDaoWithConfig
+  , originateBaseDaoWithBalance
   , originateTrivialDaoWithBalance
   , makeProposalKey
   , addDataToSign
   , permitProtect
+  , sendXtz
   ) where
 
 import Universum
@@ -90,10 +94,16 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
       { odFrom = nettestAddress
       , odName = "BaseDAO"
       , odBalance = toMutez 0
-      , odStorage = (mkStorage ! #admin admin ! #extra contractExtra ! defaults)
-        { sLedger = BigMap bal
-        , sOperators = BigMap operators
-        }
+      , odStorage =
+          ( mkStorage
+          ! #admin admin
+          ! #extra contractExtra
+          ! #votingPeriod 20
+          ! #quorumThreshold 1
+          ! defaults
+          ) { sLedger = BigMap bal
+            , sOperators = BigMap operators
+            }
       , odContract = DAO.baseDaoContract config
       }
   dao <- originate originateData
@@ -169,3 +179,14 @@ permitProtect author (toSign, a) = do
     { ppArgument = a
     , ppPermit = Just Permit{..}
     }
+
+sendXtz :: MonadNettest caps base m => Address -> m ()
+sendXtz addr = do
+  let transferData = TransferData
+        { tdFrom = nettestAddress
+        , tdTo = AddressResolved addr
+        , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
+        , tdEntrypoint = DefEpName
+        , tdParameter = ()
+        }
+  transfer transferData

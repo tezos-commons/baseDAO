@@ -35,6 +35,9 @@ library
       Lorentz.Contracts.RegistryDAO
       Lorentz.Contracts.RegistryDAO.Doc
       Lorentz.Contracts.RegistryDAO.Types
+      Lorentz.Contracts.TreasuryDAO
+      Lorentz.Contracts.TreasuryDAO.Doc
+      Lorentz.Contracts.TreasuryDAO.Types
       Lorentz.Contracts.TrivialDAO
   other-modules:
       Paths_baseDAO
@@ -88,6 +91,7 @@ test-suite baseDAO-test
       Test.Integrational.Common
       Test.Integrational.RegistryDAO
       Test.RegistryDAO
+      Test.TreasuryDAO
       Paths_baseDAO
   hs-source-dirs:
       test
