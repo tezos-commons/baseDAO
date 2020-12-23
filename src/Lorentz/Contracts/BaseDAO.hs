@@ -50,7 +50,7 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
     doc $ DDescription priorChecksDoc
     ensureZeroTransfer
 
-  pushFuncContext config $ do
+  pushFuncContext @ce @pm $ do
     unpair
     finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm) (Proxy @PlainEntrypointsKind)
       ( #cCall_FA2 /-> fa2Handler
@@ -74,9 +74,7 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
       )
 
 fa2Handler
-  :: ( IsoValue ce, KnownValue pm
-     , HasFuncContext s (BaseDAO.Storage ce pm) (TransferFuncs (BaseDAO.Storage ce pm))
-     )
+  :: (IsoValue ce, KnownValue pm, HasFuncContext s (BaseDAO.Storage ce pm))
   => Entrypoint' FA2.Parameter (BaseDAO.Storage ce pm) s
 fa2Handler = do
   doc $ DDescription callFA2Doc
@@ -94,22 +92,14 @@ ensureZeroTransfer = do
   if IsEq then nop else failCustom_ #fORBIDDEN_XTZ
 
 pushFuncContext
-  :: (KnownValue ce, KnownValue pm, NiceParameter pm, store ~ BaseDAO.Storage ce pm)
-  => Config ce pm
-  -> (forall s. HasFuncContext s store (AllFuncs store ce pm) =>
+  :: (KnownValue ce, KnownValue pm)
+  => (forall s. HasFuncContext s (BaseDAO.Storage ce pm) =>
       (inp : s) :-> (out : s)
      )
   -> Lambda inp out
-pushFuncContext config action = do
+pushFuncContext action = do
   dip $ do
-    pushCachedFuncSimple creditTo
-    pushCachedFuncSimple debitFrom
-    pushCachedFunc (unfreezeProposerToken config)
-      do dupLNamed #creditTo; applicate
-         dupLNamed #debitFrom; applicate
-      do dug @6; dug @6
-      do dipN @4 $ dropN @2
-
+    pushCachedFunc creditTo
+    pushCachedFunc debitFrom
   action
-
-  dip $ dropN @3
+  dip $ dropN @2
