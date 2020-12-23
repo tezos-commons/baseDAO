@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [c12f20c](https://github.com/tqtezos/baseDAO/tree/c12f20c7fbaf5ec906bccb6d72791895528727bb) *(Tue Dec 22 18:32:13 2020 +0300)*
+**Code revision:** [f945bb0](https://github.com/tqtezos/baseDAO/tree/f945bb0cd39ec6ae31639ede65aec860628da5de) *(Wed Dec 23 19:17:31 2020 +0300)*
 
 
 
@@ -674,9 +674,9 @@ If the proposal is accepted, the decision lambda is called.
 
 * [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
 
-* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
-
 * [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
 
 * [`FAIL_DECISION_LAMBDA`](#errors-FAIL_DECISION_LAMBDA) — Trying to execute decision lambda but result in errors.
 
