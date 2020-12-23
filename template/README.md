@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2020 TQ Tezos
+
+SPDX-License-Identifier: LicenseRef-MIT-TQ
+-->
+
 # DAO template
 
 This package serves as a template for writing new DAO contracts.
