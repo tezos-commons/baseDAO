@@ -32,18 +32,13 @@ module Lorentz.Contracts.BaseDAO.Types
   , mkStorage
 
   , CachedFunc (..)
-  , PushedFunc
   , mkCachedFunc
   , pushCachedFunc
-  , pushCachedFuncSimple
   , callCachedFunc
 
   , DebitFromFunc
   , CreditToFunc
-  , UnfreezeProposerTokenFunc
   , HasFuncContext
-  , TransferFuncs
-  , AllFuncs
 
   , Entrypoint'
 
@@ -73,6 +68,7 @@ import Michelson.Typed.T
 import Michelson.Untyped.Annotation
 import Tezos.Address
 import Util.Markdown
+import Util.Named
 import Util.Type
 import Util.TypeLits
 
@@ -102,9 +98,7 @@ data Config contractExtra proposalMetadata = Config
   -- only 50 tokens will be unfrozen and other 50 tokens will be burnt.
 
   , cDecisionLambda :: forall s store.
-     ( StorageC store contractExtra proposalMetadata
-     , HasFuncContext s store (AllFuncs store contractExtra proposalMetadata)
-     )
+     (StorageC store contractExtra proposalMetadata, HasFuncContext s store)
     => Proposal proposalMetadata : store : s
     :-> List Operation : store : s
   -- ^ The decision lambda is executed based on a successful proposal.
@@ -352,55 +346,23 @@ mkStorage admin votingPeriod quorumThreshold extra =
 --
 -- We also attach a name to the function, so that we don't not need
 -- to remember the names.
---
--- @f@ type argument stands for other cached functions this function
--- would like to call. If you don't care, use @'[]@.
-data CachedFunc n f i o =
+data CachedFunc n i o =
   (Each [KnownList, ZipInstr] [i, o]) =>
-  CachedFunc (Label n) ((i ++ f) :-> (o ++ f))
-
--- | How function is represented when pushed on stack.
-type family PushedFunc f where
-  PushedFunc (CachedFunc n _ i o) = n :! (i :-> o)
+  CachedFunc (Label n) (i :-> o)
 
 -- | Construct a 'CachedFunc' object.
 mkCachedFunc
   :: (KnownSymbol n, Each [KnownList, ZipInstr] [i, o])
-  => (i ++ f) :-> (o ++ f) -> CachedFunc n f i o
+  => i :-> o -> CachedFunc n i o
 mkCachedFunc = CachedFunc fromLabel
 
 -- | Push 'CachedFunc' on stack so that it is later accessible by
 -- 'callCachedFunc'.
 pushCachedFunc
-  :: ( func ~ CachedFunc n f i o
-     , NiceConstant (i :-> o), KnownValue (f ++ i :-> o)
-     )
-  => func
-  -> ((f ++ i) :-> o) : s :-> (i :-> o) : s
-     -- ^ Feed our function with all functions it wants to call.
-     -- This is usually a sequence of 'dupL's and 'applicate's.
-  -> (f ++ i) :-> (i ++ f)
-     -- ^ Drop cached functions to the bottom of the stack.
-     -- Usually this is a sequence of 'dug's.
-  -> (o ++ f :-> o)
-    -- ^ Remove pushed functions in the end.
-    -- Use: dipN @oLen (dropN @fLen)
-  -> s :-> PushedFunc func : s
-pushCachedFunc (CachedFunc Label f) injectFuncs pullFuncsDown cleanupFuncs = do
-  push (pullFuncsDown # f # cleanupFuncs)
-  injectFuncs
-  toNamed fromLabel
-
--- | 'pushCachedFunc' specialized to case when given function
--- does not need to call any other function.
-pushCachedFuncSimple
- :: ( func ~ CachedFunc n f i o, f ~ '[]
-    , NiceConstant (i :-> o)
-    , (i ++ '[]) ~ i, (o ++ '[]) ~ o
-    )
-  => func
-  -> s :-> PushedFunc func : s
-pushCachedFuncSimple f = pushCachedFunc f nop nop nop
+  :: (NiceConstant (i :-> o))
+  => CachedFunc n i o
+  -> s :-> n :! (i :-> o) : s
+pushCachedFunc (CachedFunc Label f) = push (fromLabel .! f)
 
 -- | Call a function that previously was pushed on stack.
 --
@@ -409,14 +371,12 @@ pushCachedFuncSimple f = pushCachedFunc f nop nop nop
 --
 -- You have to provide the original 'CachedFunc' object here,
 -- this is necessary to inherit the documentation of the function.
--- Calling cached functions bypassing this method is dangerous as
--- it documentation related to the called lambda may got lost.
 callCachedFunc
-  :: forall i o f n s.
+  :: forall i o n s.
      (HasNamedVar (i ++ s) n (i :-> o))
-  => CachedFunc n f i o
+  => CachedFunc n i o
   -> (i ++ s) :-> (o ++ s)
-callCachedFunc (CachedFunc l f :: CachedFunc n f i o) = do
+callCachedFunc (CachedFunc l f :: CachedFunc n i o) = do
   cutLorentzNonDoc f
   dupL l
   execute @i @o @s
@@ -425,44 +385,24 @@ callCachedFunc (CachedFunc l f :: CachedFunc n f i o) = do
 ------------------------------------------------------------------------
 
 type DebitFromFunc store =
-  CachedFunc "debitFrom" '[] [store, Address, (FA2.TokenId, Natural)] '[store]
+  CachedFunc "debitFrom" [store, Address, (FA2.TokenId, Natural)] '[store]
 
 type CreditToFunc store =
-  CachedFunc "creditTo" '[] [store, Address, (FA2.TokenId, Natural)] '[store]
-
-type UnfreezeProposerTokenFunc store pm =
-  CachedFunc "unfreezeProposerToken"
-    [PushedFunc (CreditToFunc store), PushedFunc (DebitFromFunc store)]
-    ["isAccepted" :! Bool, Proposal pm, store, ProposalKey pm, [Operation]]
-    [Proposal pm, store, ProposalKey pm, [Operation]]
+  CachedFunc "creditTo" [store, Address, (FA2.TokenId, Natural)] '[store]
 
 type family IncludesFunc f where
-  IncludesFunc (CachedFunc n _ i o) = n := (i :-> o)
-
-type family IncludesFuncs f where
-  IncludesFuncs '[] = '[]
-  IncludesFuncs (f : fs) = IncludesFunc f ': IncludesFuncs fs
+  IncludesFunc (CachedFunc n i o) = n := (i :-> o)
 
 -- | Indicates that we keep some functions on stack in order to include
 -- them only once in the contract.
-type HasFuncContext s store funcs =
-  ( KnownValue store
+type HasFuncContext s store =
+  ( IsoValue store
   , VarIsUnnamed store
-  , HasNamedVars s (IncludesFuncs funcs)
+  , HasNamedVars s
+    [ IncludesFunc (DebitFromFunc store)
+    , IncludesFunc (CreditToFunc store)
+    ]
   )
-
--- | Pass this to 'HasFuncContext' to require transfers-related functions.
-type TransferFuncs store =
-  [ DebitFromFunc store
-  , CreditToFunc store
-  ]
-
--- | Pass this to 'HasFuncContext' to require all cached functions.
-type AllFuncs store ce pm =
-  [ DebitFromFunc store
-  , CreditToFunc store
-  , UnfreezeProposerTokenFunc store pm
-  ]
 
 ------------------------------------------------------------------------
 -- Misc
