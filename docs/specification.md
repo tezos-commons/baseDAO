@@ -297,7 +297,7 @@ data TransferParam = TransferParam
 
 type TransferParams = [TransferParam]
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Transfer TransferParam
 ```
 
@@ -351,7 +351,7 @@ data BalanceResponseItem = BalanceResponseItem
 type BalanceRequestParams =
   View [BalanceRequestItem] [BalanceResponseItem]
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Balance_of BalanceRequestParams
 ```
 
@@ -387,7 +387,7 @@ Parameter (in Michelson):
 ```haskell
 type TokenMetadataRegistryParam = ContractRef Address
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Token_metadata_registry TokenMetadataRegistryParam
 ```
 Parameter (in Michelson)
@@ -460,7 +460,7 @@ data MintParam = MintParam
   , token_id :: TokenId
   }
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Mint MintParam
 ```
 
@@ -487,7 +487,7 @@ data BurnParam = BurnParam
   , token_id :: TokenId
   }
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Burn BurnParam
 ```
 
@@ -525,7 +525,7 @@ data TransferParam = TransferParam
 
 type TransferParams = [TransferParam]
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Transfer_contract_tokens Address TransferParams
 ```
 
@@ -563,7 +563,7 @@ Otherwise the call fails.
 ```haskell
 type TransferOwnershipParam = Address
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Transfer_ownership TransferOwnershipParam
 ```
 
@@ -586,7 +586,7 @@ address
 ### **accept_ownership**
 
 ```haskell
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Accept_ownership
 ```
 
@@ -613,7 +613,7 @@ data ProposeParams proposalMetadata = ProposeParams
   , proposalMetadata :: proposalMetadata
   }
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Propose (ProposeParams proposalMetadata)
 ```
 
@@ -641,7 +641,7 @@ Parameter (in Michelson):
 -- | Voting period in seconds
 type VotingPeriod = Natural
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Set_voting_period VotingPeriod
 ```
 
@@ -663,7 +663,7 @@ nat
 -- quorum_threshold = upvote + downvote
 type QuorumThreshold = Natural
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Set_quorum_threshold QuorumThreshold
 ```
 
@@ -696,7 +696,7 @@ data Permit = Permit
   , signature :: Signature
   }
 
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Vote [(VoteParam, Maybe Permit)]
 ```
 
@@ -737,7 +737,7 @@ Parameter (in Michelson):
 ### **token_address**
 
 ```haskell
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Token_address (ContractRef Address)
 ```
 
@@ -752,7 +752,7 @@ Parameter (in Michelson)
 ### **flush**
 
 ```haskell
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Flush (Maybe Natural)
 ```
 
@@ -800,7 +800,7 @@ failing decision lambda.
 ### **migrate**
 
 ```haskell
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Migrate Address
 ```
 
@@ -820,7 +820,7 @@ address
 ### **confirm_migration**
 
 ```haskell
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Confirm_migration ()
 ```
 
@@ -845,7 +845,7 @@ unit
 ### **GetVotePermitCounter**
 
 ```haskell
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = GetVotePermitCounter (View () Natural)
 ```
 
@@ -855,6 +855,20 @@ nat
 ```
 
 - For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
+
+## Custom entrypoints
+
+BaseDAO allows DAOs to define their own additional entrypoints.
+
+```haskell
+data Parameter proposalMetadata otherParam
+  = CallCustom otherParam
+```
+
+By default, no custom entrypoints are defined (call of `CallCustom` will fail; in Edo it won't be callable at all).
+
+DAO developer can provide arbitrary entrypoints that will be callable by their names.
+* For instance, TreasuryDAO may define `data OtherParam = Default ()` entrypoint that will be used to provide mutez to the contract.
 
 # TZIP-16 metadata
 

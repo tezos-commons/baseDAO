@@ -23,8 +23,6 @@ import Main.Utf8 (withUtf8)
 import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
 
-import Lorentz.Annotation
-import Lorentz.Constraints
 import Lorentz.ContractRegistry
 import Lorentz.Doc
 import Lorentz.Value
@@ -61,14 +59,10 @@ daoStorageParserDef :: Default ce => Opt.Parser (DAO.Storage ce pm)
 daoStorageParserDef = daoStorageParser (pure def)
 
 data DaoContractInfo =
-  forall ce pm.
-    ( NiceParameter (DAO.Parameter pm), NiceStorage (DAO.Storage ce pm), NicePackedValue pm
-    , HasAnnotation pm, TypeHasDoc pm
-    , IsoValue ce, TypeHasDoc ce
-    ) =>
+  forall ce pm op. DAO.DaoC ce pm op =>
   DaoContractInfo
   { dciName :: Text
-  , dciConfig :: DAO.Config ce pm
+  , dciConfig :: DAO.Config ce pm op
   , dciExtraParser :: Opt.Parser ce
   }
 

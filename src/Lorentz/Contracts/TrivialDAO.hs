@@ -7,12 +7,14 @@ module Lorentz.Contracts.TrivialDAO
   , trivialDaoContract
   ) where
 
+import Lorentz
+
 import Lorentz.Contracts.BaseDAO
 
 -- | The default configuration that is specialized to a contract
 -- without any user-defined metadata and extras.
-trivialConfig :: Config () ()
+trivialConfig :: Config () () Empty
 trivialConfig = defaultConfig
 
-trivialDaoContract :: DaoContract () ()
+trivialDaoContract :: DaoContract () () Empty
 trivialDaoContract = baseDaoContract trivialConfig
