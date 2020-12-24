@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2020 TQ Tezos
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 # Ligo executable
 LIGO ?= ligo
@@ -27,6 +27,10 @@ build: src
 	sed -i '/^ *$$/d' $(OUT)/baseDAO.tz
 	sed -i 's/^[{ ] //g' $(OUT)/baseDAO.tz
 	sed -i '$$s/[}] *$$//' $(OUT)/baseDAO.tz
+
+test: build
+	$(MAKE) -C .. test PACKAGE=baseDAO-ligo-tests \
+    BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz
 
 clean:
 	rm -rf $(OUT)
