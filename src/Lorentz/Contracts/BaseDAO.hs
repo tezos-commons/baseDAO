@@ -62,27 +62,26 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractN
   pushFuncContext @ce @pm $ do
     unpair
     finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm op) (Proxy @PlainEntrypointsKind)
-      ( #cCall_FA2 /-> fa2Handler
-      , #cTransfer_ownership /-> transferOwnership
-      , #cAccept_ownership /-> acceptOwnership
-      , #cMigrate /-> migrate
-      , #cConfirm_migration /-> confirmMigration
-      , #cPropose /-> propose config
-      , #cVote /-> vote config
-      , #cSet_voting_period /-> setVotingPeriod config
-      , #cSet_quorum_threshold /-> setQuorumThreshold config
-      , #cFlush /-> flush config
+      ( #cAccept_ownership /-> acceptOwnership
       , #cBurn /-> burn
-      , #cMint /-> mint
-      , #cTransfer_contract_tokens /-> transferContractTokens
-
-      , #cGetVotePermitCounter /-> view_ $ do
-          doc $ DDescription getVotePermitCounterDoc
-          drop @(); stToField #sPermitsCounter
-      , #cDrop_proposal /-> dropProposal config
+      , #cCall_FA2 /-> fa2Handler
       , #cCallCustom /-> do
           doc $ DDescription callCustomDoc
           cCustomCall # pair
+      , #cConfirm_migration /-> confirmMigration
+      , #cDrop_proposal /-> dropProposal config
+      , #cFlush /-> flush config
+      , #cGetVotePermitCounter /-> view_ $ do
+          doc $ DDescription getVotePermitCounterDoc
+          drop @(); stToField #sPermitsCounter
+      , #cMigrate /-> migrate
+      , #cMint /-> mint
+      , #cPropose /-> propose config
+      , #cSet_quorum_threshold /-> setQuorumThreshold config
+      , #cSet_voting_period /-> setVotingPeriod config
+      , #cTransfer_contract_tokens /-> transferContractTokens
+      , #cTransfer_ownership /-> transferOwnership
+      , #cVote /-> vote config
       )
   where
     -- By default we insert the CAST instruction at the beginning of

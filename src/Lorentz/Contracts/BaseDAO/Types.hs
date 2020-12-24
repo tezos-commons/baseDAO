@@ -287,35 +287,23 @@ type StorageC store ce pm =
 
 -- | Parameter of the BaseDAO contract
 data Parameter proposalMetadata otherParam
-  = Call_FA2 FA2.Parameter
-  | Transfer_ownership TransferOwnershipParam
-  | Accept_ownership ()
-  | Migrate MigrateParam
-  | Confirm_migration ()
-  | Propose (ProposeParams proposalMetadata)
-  | Vote [PermitProtected $ VoteParam proposalMetadata]
-  -- Admin
-  | Set_voting_period VotingPeriod
-  | Set_quorum_threshold QuorumThreshold
-  | Flush Natural
+  = Accept_ownership ()
   | Burn BurnParam
-  | Mint MintParam
-  | Transfer_contract_tokens TransferContractTokensParam
-  | GetVotePermitCounter (View () Nonce)
-  | Drop_proposal (ProposalKey proposalMetadata)
+  | Call_FA2 FA2.Parameter
   | CallCustom otherParam
+  | Confirm_migration ()
+  | Drop_proposal (ProposalKey proposalMetadata)
+  | Flush Natural
+  | GetVotePermitCounter (View () Nonce)
+  | Migrate MigrateParam
+  | Mint MintParam
+  | Propose (ProposeParams proposalMetadata)
+  | Set_quorum_threshold QuorumThreshold
+  | Set_voting_period VotingPeriod
+  | Transfer_contract_tokens TransferContractTokensParam
+  | Transfer_ownership TransferOwnershipParam
+  | Vote [PermitProtected $ VoteParam proposalMetadata]
   deriving stock (Generic, Show)
-
-instance ( HasAnnotation pm, NiceParameter pm
-         , ParameterDeclaresEntrypoints op
-         , RequireAllUniqueEntrypoints (Parameter pm op)
-         ) =>
-         ParameterHasEntrypoints (Parameter pm op) where
-  type ParameterEntrypointsDerivation (Parameter pm op) = EpdDelegate
-
-deriving anyclass instance
-  (WellTypedIsoValue pm, WellTypedIsoValue op) =>
-  IsoValue (Parameter pm op)
 
 type TransferOwnershipParam = ("newOwner" :! Address)
 type MigrateParam = ("newAddress" :! Address)
@@ -873,3 +861,20 @@ instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "An error occurred why trying to drop a proposal due to the proposal is not an accepted proposal"
+
+------------------------------------------------
+-- Instances
+------------------------------------------------
+
+--customGeneric "Parameter" leftBalanced
+
+instance ( HasAnnotation pm, NiceParameter pm
+         , ParameterDeclaresEntrypoints op
+         , RequireAllUniqueEntrypoints (Parameter pm op)
+         ) =>
+         ParameterHasEntrypoints (Parameter pm op) where
+  type ParameterEntrypointsDerivation (Parameter pm op) = EpdDelegate
+
+deriving anyclass instance
+  (WellTypedIsoValue pm, WellTypedIsoValue op) =>
+  IsoValue (Parameter pm op)
