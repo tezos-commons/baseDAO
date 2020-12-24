@@ -102,9 +102,9 @@ fa2Handler
 fa2Handler = do
   doc $ DDescription callFA2Doc
   entryCase @FA2.Parameter (Proxy @FA2EntrypointsKind)
-    ( #cTransfer /-> transfer
-    , #cBalance_of /-> balanceOf
+    ( #cBalance_of /-> balanceOf
     , #cToken_metadata_registry /-> tokenMetadataRegistry
+    , #cTransfer /-> transfer
     , #cUpdate_operators /-> updateOperators
     )
 

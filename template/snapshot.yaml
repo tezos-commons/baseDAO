@@ -28,7 +28,7 @@ packages:
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 1a1f1caab12e051d0c930c2f9bde4b5a0bca1d60 # master
+    commit: 817ef36927679743409dc7260f1d3a63ed7d8ad5 # master
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git
