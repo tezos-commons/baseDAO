@@ -24,6 +24,7 @@ import Lorentz.Contracts.BaseDAO.Token
 import Lorentz.Contracts.BaseDAO.Token.FA2
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Michelson.Optimizer (OptimizerConf (..))
 
 data FA2EntrypointsKind
 instance EntrypointKindHasDoc FA2EntrypointsKind where
@@ -41,7 +42,7 @@ baseDaoContract
       , KnownValue ce, TypeHasDoc ce
       )
   => Config ce pm -> DaoContract ce pm
-baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
+baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractName cDaoName $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
   docStorage @(BaseDAO.Storage ce pm)
@@ -73,6 +74,18 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
           drop @(); stToField #sPermitsCounter
       , #cDrop_proposal /-> dropProposal config
       )
+  where
+    -- By default we insert the CAST instruction at the beginning of
+    -- the contract and do not optimize lambdas in code.
+    -- In our case CAST is redundant and optimizing lambdas is harmless, so
+    -- let's do it.
+    optimizeBetter :: Contract cp st -> Contract cp st
+    optimizeBetter c = c
+      { cDisableInitialCast = True
+      , cCompilationOptions = (cCompilationOptions c)
+        { coOptimizerConf = Just $ def {gotoValues = True}
+        }
+      }
 
 fa2Handler
   :: (IsoValue ce, KnownValue pm, HasFuncContext s (BaseDAO.Storage ce pm))
