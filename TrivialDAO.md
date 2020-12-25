@@ -1,6 +1,6 @@
 # BaseDAO
 
-**Code revision:** [f945bb0](https://github.com/tqtezos/baseDAO/tree/f945bb0cd39ec6ae31639ede65aec860628da5de) *(Wed Dec 23 19:17:31 2020 +0300)*
+**Code revision:** [560c95d](https://github.com/tqtezos/baseDAO/tree/560c95d737f0aa01c969ac9c5ffb29b7dca9cc98) *(Fri Dec 25 15:42:40 2020 +0700)*
 
 
 
@@ -34,6 +34,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [transfer_contract_tokens](#entrypoints-transfer_contract_tokens)
   - [token_address](#entrypoints-token_address)
   - [getVotePermitCounter](#entrypoints-getVotePermitCounter)
+  - [drop_proposal](#entrypoints-drop_proposal)
 - [Common for all contract's entrypoints](#section-Common-for-all-contract's-entrypoints)
   - [prior checks](#entrypoints-prior-checks)
 
@@ -69,6 +70,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [Proposal](#types-Proposal)
   - [ProposeParams](#types-ProposeParams)
   - [PublicKey](#types-PublicKey)
+  - [Set](#types-Set)
   - [Signature](#types-Signature)
   - [SomeType](#types-SomeType)
   - [TSignature](#types-TSignature)
@@ -82,9 +84,12 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [View](#types-View)
   - [VoteParam](#types-VoteParam)
 - [Errors](#section-Errors)
+  - [BAD_ENTRYPOINT_PARAMETER](#errors-BAD_ENTRYPOINT_PARAMETER)
   - [FA2_INSUFFICIENT_BALANCE](#errors-FA2_INSUFFICIENT_BALANCE)
   - [FA2_NOT_OPERATOR](#errors-FA2_NOT_OPERATOR)
   - [FA2_TOKEN_UNDEFINED](#errors-FA2_TOKEN_UNDEFINED)
+  - [FAIL_DROP_PROPOSAL_NOT_ACCEPTED](#errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED)
+  - [FAIL_DROP_PROPOSAL_NOT_OVER](#errors-FAIL_DROP_PROPOSAL_NOT_OVER)
   - [FAIL_PROPOSAL_CHECK](#errors-FAIL_PROPOSAL_CHECK)
   - [FAIL_TRANSFER_CONTRACT_TOKENS](#errors-FAIL_TRANSFER_CONTRACT_TOKENS)
   - [FORBIDDEN_XTZ](#errors-FORBIDDEN_XTZ)
@@ -150,10 +155,10 @@ Storage type for baseDAO contract
   * ***sQuorumThreshold*** :[`Natural`](#types-Natural)
   * ***sExtra*** :[`Natural`](#types-Natural)
   * ***sProposals*** :[`BigMap`](#types-BigMap) ([`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address)))) ([`Proposal`](#types-Proposal) [`Text`](#types-Text))
-  * ***sProposalKeyListSortByDate*** :[`List`](#types-List) ([`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address))))
+  * ***sProposalKeyListSortByDate*** :[`Set`](#types-Set) ([`Timestamp`](#types-Timestamp), [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address))))
   * ***sPermitsCounter*** :[`Nonce`](#types-Nonce)
 
-**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair address (pair address (or unit (or address address))))) (pair (pair nat (pair nat nat)) (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (pair (list bytes) nat)))`
+**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair address (pair address (or unit (or address address))))) (pair (pair nat (pair nat nat)) (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (pair (set (pair timestamp bytes)) nat)))`
 
 
 
@@ -644,9 +649,9 @@ If the proposal is accepted, the decision lambda is called.
 
 
 **Argument:** 
-  + **In Haskell:** [`()`](#types-lparenrparen)
-  + **In Michelson:** `unit`
-    + **Example:** <span id="example-id">`Unit`</span>
+  + **In Haskell:** [`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
+  + **In Michelson:** `(option nat)`
+    + **Example:** <span id="example-id">`Some 0`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -658,12 +663,10 @@ If the proposal is accepted, the decision lambda is called.
 
 
 
-**Authorization:** The sender has to be `administrator`.
-
 **Possible errors:**
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
 
-* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+* [`BAD_ENTRYPOINT_PARAMETER`](#errors-BAD_ENTRYPOINT_PARAMETER) — Value passed to the entrypoint is not valid
 
 * [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
 
@@ -833,6 +836,53 @@ with each successful call of an entrypoint.
 <p>
 
 
+
+
+
+<a name="entrypoints-drop_proposal"></a>
+
+---
+
+### `drop_proposal`
+
+Delete a finished and accepted proposal that is not flushed. Tokens frozen for this
+proposal are returned to the proposer and voters in full. The decision lambda is skipped.
+
+This entrypoint should only be used when there is a proposal that is stuck due to having a
+failing decision lambda.
+
+
+**Argument:** 
+  + **In Haskell:** [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`()`](#types-lparenrparen), [`Address`](#types-Address)))
+  + **In Michelson:** `bytes`
+    + **Example:** <span id="example-id">`0x0a`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `drop_proposal` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
+
+* [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`FAIL_DROP_PROPOSAL_NOT_ACCEPTED`](#errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED) — An error occurred why trying to drop a proposal due to the proposal is not an accepted proposal
+
+* [`FAIL_DROP_PROPOSAL_NOT_OVER`](#errors-FAIL_DROP_PROPOSAL_NOT_OVER) — An error occurred why trying to drop a proposal due to the proposal's voting period is not over
 
 
 
@@ -1325,6 +1375,18 @@ PublicKey primitive.
 
 
 
+<a name="types-Set"></a>
+
+---
+
+### `Set`
+
+Set primitive.
+
+**Final Michelson representation (example):** `Set Integer` = `set int`
+
+
+
 <a name="types-Signature"></a>
 
 ---
@@ -1552,6 +1614,18 @@ We distinquish several error classes:
   If an internal error is thrown, please report it to the author of this contract.
 
 
+<a name="errors-BAD_ENTRYPOINT_PARAMETER"></a>
+
+---
+
+### `BAD_ENTRYPOINT_PARAMETER`
+
+**Class:** Action exception
+
+**Fires if:** Value passed to the entrypoint is not valid
+
+**Representation:** `("BAD_ENTRYPOINT_PARAMETER", ())`.
+
 <a name="errors-FA2_INSUFFICIENT_BALANCE"></a>
 
 ---
@@ -1589,6 +1663,30 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 **Fires if:** Contract received an unsupported token id
 
 **Representation:** `("FA2_TOKEN_UNDEFINED", ())`.
+
+<a name="errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED"></a>
+
+---
+
+### `FAIL_DROP_PROPOSAL_NOT_ACCEPTED`
+
+**Class:** Action exception
+
+**Fires if:** An error occurred why trying to drop a proposal due to the proposal is not an accepted proposal
+
+**Representation:** `("FAIL_DROP_PROPOSAL_NOT_ACCEPTED", ())`.
+
+<a name="errors-FAIL_DROP_PROPOSAL_NOT_OVER"></a>
+
+---
+
+### `FAIL_DROP_PROPOSAL_NOT_OVER`
+
+**Class:** Action exception
+
+**Fires if:** An error occurred why trying to drop a proposal due to the proposal's voting period is not over
+
+**Representation:** `("FAIL_DROP_PROPOSAL_NOT_OVER", ())`.
 
 <a name="errors-FAIL_PROPOSAL_CHECK"></a>
 
