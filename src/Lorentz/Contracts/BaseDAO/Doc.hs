@@ -21,6 +21,7 @@ module Lorentz.Contracts.BaseDAO.Doc
    , setVotingPeriodDoc
    , setQuorumThresholdDoc
    , flushDoc
+   , dropProposalDoc
 
    , burnDoc
    , mintDoc
@@ -145,6 +146,15 @@ flushDoc = [md|
   There is a possibility of some tokens being lost due to administrator perform
   of burn or transfer operation.
   If the proposal is accepted, the decision lambda is called.
+  |]
+
+dropProposalDoc :: Markdown
+dropProposalDoc = [md|
+  Delete a finished and accepted proposal that is not flushed. Tokens frozen for this
+  proposal are returned to the proposer and voters in full. The decision lambda is skipped.
+
+  This entrypoint should only be used when there is a proposal that is stuck due to having a
+  failing decision lambda.
   |]
 
 burnDoc :: Markdown

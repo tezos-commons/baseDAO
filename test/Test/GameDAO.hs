@@ -78,7 +78,7 @@ flushAcceptedProposals = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 97
 
   advanceTime (sec 21)
-  callFrom (AddressResolved admin) dao (Call @"Flush") ()
+  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100 -- proposer

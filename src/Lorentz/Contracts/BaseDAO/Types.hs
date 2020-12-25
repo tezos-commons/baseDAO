@@ -52,6 +52,7 @@ module Lorentz.Contracts.BaseDAO.Types
   , unfrozenTokenId
   , frozenTokenId
 
+  , Counter
   , baseDaoAnnOptions
   ) where
 
@@ -211,7 +212,7 @@ data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Stor
 
   , sExtra                     :: contractExtra
   , sProposals                 :: BigMap (ProposalKey proposalMetadata) (Proposal proposalMetadata)
-  , sProposalKeyListSortByDate :: [ProposalKey proposalMetadata] -- Newest first
+  , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKey proposalMetadata) -- Oldest first
 
   , sPermitsCounter :: Nonce
   }
@@ -260,7 +261,7 @@ type StorageC store ce pm =
 
     -- , "sExtra" := Identity ce
     , "sProposals" := ProposalKey pm ~> Proposal pm
-    , "sProposalKeyListSortByDate" := [ProposalKey pm]
+    , "sProposalKeyListSortByDate" := Set (Timestamp, ProposalKey pm)
 
     , "sPermitsCounter" := Nonce
     ]
@@ -281,12 +282,13 @@ data Parameter proposalMetadata
   -- Admin
   | Set_voting_period VotingPeriod
   | Set_quorum_threshold QuorumThreshold
-  | Flush ()
+  | Flush (Maybe Natural)
   | Burn BurnParam
   | Mint MintParam
   | Transfer_contract_tokens TransferContractTokensParam
   | Token_address TokenAddressParam
   | GetVotePermitCounter (View () Nonce)
+  | Drop_proposal (ProposalKey proposalMetadata)
   deriving stock (Generic, Show)
 
 instance (HasAnnotation pm, NiceParameter pm) => ParameterHasEntrypoints (Parameter pm) where
@@ -326,7 +328,7 @@ mkStorage admin votingPeriod quorumThreshold extra =
 
   , sExtra = arg #extra extra
   , sProposals = mempty
-  , sProposalKeyListSortByDate = []
+  , sProposalKeyListSortByDate = mempty
   , sPermitsCounter = Nonce 0
   }
   where
@@ -679,6 +681,9 @@ frozenTokenId = FA2.TokenId 1
 -- Helper
 ------------------------------------------------------------------------
 
+-- Useful type when `iter` with a counter
+type Counter = (("currentCount" :! Natural), Maybe Natural)
+
 baseDaoAnnOptions :: AnnOptions
 baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnake }
 
@@ -824,3 +829,23 @@ type instance ErrorArg "mISSIGNED" = Packed (DataToSign SomeType)
 instance CustomErrorHasDoc "mISSIGNED" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Invalid signature provided."
+
+type instance ErrorArg "bAD_ENTRYPOINT_PARAMETER" = ()
+
+instance CustomErrorHasDoc "bAD_ENTRYPOINT_PARAMETER" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause = "Value passed to the entrypoint is not valid"
+
+type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_OVER" = ()
+
+instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_OVER" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "An error occurred why trying to drop a proposal due to the proposal's voting period is not over"
+
+type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" = ()
+
+instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "An error occurred why trying to drop a proposal due to the proposal is not an accepted proposal"
