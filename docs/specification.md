@@ -251,6 +251,7 @@ Full list:
 * [`vote`](#vote)
 * [`token_address`](#token_address)
 * [`flush`](#flush)
+* [`drop_proposal`](#drop_proposal)
 * [`migrate`](#migrate)
 * [`confirm_migration`](#confirm_migration)
 
@@ -750,15 +751,19 @@ Parameter (in Michelson)
 
 ```haskell
 data Parameter proposalMetadata
-  = Flush ()
+  = Flush (Maybe Natural)
 ```
 
 Parameter (in Michelson):
 ```
-unit
+option nat
 ```
 
-- Finish voting process on all proposals for which voting period is over.
+- Finish voting process on an amount of proposals:
+  - If the parameter is `None`, process on all the proposals for which voting period is over.
+  - If the paramter is `Just n`, process `n` proposals for which voting period is over.
+- The order of processing proposals are from 'the oldest' to 'the newest'. The proposals which
+have the same timestamp due to being in the same block, are processed in the order of their proposal keys.
 - Frozen tokens from voters and proposal submitter associated with those proposals are returned
   in form of unfrozen tokens:
   - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
@@ -769,6 +774,24 @@ unit
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
 - The lost of frozen tokens is due to the fact that the administrator has the right to `burn` or `transfer` frozen tokens of any proposers or voters.
 - If proposal is accepted, decision lambda is called.
+
+### **drop_proposal**
+
+```haskell
+data Parameter proposalMetadata
+  = Drop_proposal ProposalKey
+```
+
+Parameter (in Michelson):
+```
+bytes
+```
+
+- Delete a finished and accepted proposal that is not flushed. Tokens frozen for this
+proposal are returned to the proposer and voters in full. The decision lambda is skipped.
+- This entrypoint should only be used when there is a proposal that is stuck due to having a
+failing decision lambda.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 
 ## Migrating functions
 

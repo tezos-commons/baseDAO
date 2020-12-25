@@ -8,11 +8,13 @@ module Lorentz.Contracts.BaseDAO.Proposal
   , setVotingPeriod
   , setQuorumThreshold
   , flush
+  , dropProposal
   ) where
 
 import Lorentz
 import Lorentz.Contracts.BaseDAO.Doc
-  (flushDoc, proposeDoc, setQuorumThresholdDoc, setVotingPeriodDoc, voteDoc)
+  ( flushDoc, proposeDoc, setQuorumThresholdDoc, setVotingPeriodDoc, voteDoc
+  , dropProposalDoc )
 import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Permit
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
@@ -53,15 +55,10 @@ ensureProposalIsUnique
 ensureProposalIsUnique = do
   dupTop2
   sender; swap; pair; toProposalKey
-  swap; stToField #sProposalKeyListSortByDate
-  stackType @([ProposalKey pm] : ProposalKey pm : ProposeParams pm : store : s)
-  iter $ do
-    dip dup
-    if IsEq then
-      failCustom_ #pROPOSAL_NOT_UNIQUE
-    else
-      nop
-  drop
+  stMem #sProposals
+  if Holds then
+    failCustom_ #pROPOSAL_NOT_UNIQUE
+  else nop
 
 toProposalKey
   :: forall pm s. NicePackedValue pm
@@ -180,29 +177,29 @@ addProposal
   => '[ProposeParams pm, store] :-> '[ProposeParams pm, store]
 addProposal = do
   ensureProposalIsUnique
+  now; pair -- pStartDate
   constructT @(Proposal pm)
     ( fieldCtor $ push (0 :: Natural) -- initial upvote
     , fieldCtor $ push (0 :: Natural) -- initial downvote
-    , fieldCtor $ now -- pStartDate
-    , fieldCtor $ getField #ppProposalMetadata
+    , fieldCtor $ do dup; car
+    , fieldCtor $ do dup; cdr; toField #ppProposalMetadata
     , fieldCtor $ sender
-    , fieldCtor $ getField #ppFrozenToken
+    , fieldCtor $ do dup; cdr; toField #ppFrozenToken
     , fieldCtor $ push []
     )
+  stackType @[Proposal pm, (Timestamp, ProposeParams pm), store]
   dip swap
-  stackType @[Proposal pm, store, ProposeParams pm]
   some
-  duupX @3; sender; swap; pair; toProposalKey
-  stackType @[ProposalKey pm, Maybe (Proposal pm), store, ProposeParams pm]
-  stUpdate #sProposals
-
-  stGetField #sProposalKeyListSortByDate
-  duupX @3; sender; swap; pair; toProposalKey
-  stackType @[ProposalKey pm, [ProposalKey pm], store, ProposeParams pm]
-  cons -- Assuming passed proposal start immediately
-  stackType @[[ProposalKey pm], store, ProposeParams pm]
+  duupX @3; cdr; sender; swap; pair; toProposalKey
+  stackType @[ProposalKey pm, Maybe (Proposal pm), store, (Timestamp, ProposeParams pm)]
+  dup; dip $ stUpdate #sProposals
+  stackType @[ProposalKey pm, store, (Timestamp, ProposeParams pm)]
+  dip $ stGetField #sProposalKeyListSortByDate -- Assuming passed proposal start immediately
+  duupX @4; car; pair; -- create (timestamp, propsalKey)
+  push True; swap; update
   stSetField #sProposalKeyListSortByDate
-  swap
+  stackType @[store, (Timestamp, ProposeParams pm)]
+  swap; cdr
 
 propose
   :: forall store ce pm s.
@@ -440,34 +437,6 @@ setQuorumThreshold Config{..} = do
       stSetField #sQuorumThreshold
       nil; pair
 
-checkIfProposalIsOver
-  :: forall store ce pm s. (NiceParameter pm, StorageC store ce pm)
-  => ProposalKey pm : store : s :-> ((Bool, ProposalKey pm), Proposal pm) : store : s
-checkIfProposalIsOver = do
-  dupTop2
-
-  checkIfProposalExist
-  stackType @(Proposal pm : ProposalKey pm : store : s)
-
-  dup; dip swap; dip $ dip swap;
-  stackType @(Proposal pm : ProposalKey pm : store : Proposal pm : s)
-  toField #pStartDate
-  duupX @3
-
-  stToField #sVotingPeriod; int
-  add -- add to the start_date
-  toNamed #expectedEndDate
-  now; toNamed #currentDate
-
-  if #currentDate >=. #expectedEndDate then
-    push True
-  else
-    push False
-
-  dip $ dip swap
-
-  pair; pair
-
 -- Used in "flush". When unfreezing the tokens of voters/proposers
 -- It is possible that the currentBalance is less than the frozenValue due to
 -- the fact that admin can burn/transfer frozen token.
@@ -597,60 +566,134 @@ unfreezeVoterToken = do
     unfreeze
   swap
 
+isVotingPeriodOver
+  :: forall store ce pm s.
+     (NiceParameter pm, StorageC store ce pm)
+  => Proposal pm : store : s
+  :-> Bool : s
+isVotingPeriodOver = do
+  toField #pStartDate
+  swap; stToField #sVotingPeriod; int
+  add -- add to the start_date
+  toNamed #expectedEndDate
+  now; toNamed #currentDate
+
+  if #currentDate >=. #expectedEndDate then
+    push True
+  else
+    push False
+
+isCounterMet
+  :: forall s. Counter : s
+  :-> Bool : Counter : s
+isCounterMet = do
+  unpair
+  swap; dup
+  stackType @(Maybe Natural : Maybe Natural : "currentCount" :! Natural : s)
+  if IsSome then do
+    toNamed #counter
+    stackType @("counter" :! Natural : Maybe Natural : "currentCount" :! Natural : s)
+    duupX @3
+    if #currentCount >=. #counter  then do -- currentCount should never be bigger than counter
+      swap; pair
+      push True
+    else do
+      -- increment
+      swap
+      fromNamed #currentCount; push (1 :: Natural); add; toNamed #currentCount
+      pair
+      push False
+  else do
+    -- if counter is nothing, loop until the last element.
+    swap
+    pair
+    push False
+
+doTotalVoteMeetQuorumThreshold
+  :: forall store ce pm s.
+     (NiceParameter pm, StorageC store ce pm)
+  => Proposal pm : store : s
+  :-> Bool : s
+doTotalVoteMeetQuorumThreshold = do
+  getField #pUpvotes
+  dip $ toField #pDownvotes
+  add; toNamed #proposalTotalVote
+
+  swap
+  stToField #sQuorumThreshold; toNamed #sQuorumThreshold
+  if #sQuorumThreshold <=. #proposalTotalVote then
+    push True
+  else
+    push False
+
 handleProposalIsOver
   :: forall store ce pm s.
      (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
   => Config ce pm
-  -> ((Bool, ProposalKey pm), Proposal pm) : store : [Operation] : s
-  :-> store : [Operation] : s
+  -> (Timestamp, ProposalKey pm) : store : [Operation] : Counter : s
+  :-> store : [Operation] : Counter : s
 handleProposalIsOver config@Config{..} = do
-  unpair; unpair
-
+  cdr; dupTop2; checkIfProposalExist
+  stackType @(Proposal pm : ProposalKey pm : store : [Operation] : Counter : s)
+  dip swap
+  dupTop2; isVotingPeriodOver
   if Holds then do
-    -- start unfreezing process
-    swap; dip swap
-    stackType @(Proposal pm : store : ProposalKey pm : [Operation] : s)
+    dig @4
+    isCounterMet; not
+    if Holds then do
+      dug @4
+      dupTop2; doTotalVoteMeetQuorumThreshold
+      if Holds then do
+        getFieldNamed #pUpvotes
+        dip $ getFieldNamed #pDownvotes
+        if #pUpvotes >. #pDownvotes then do
+          stackType @(Proposal pm : store : ProposalKey pm : [Operation] : Counter : s)
+          unfreezeProposerToken config True
+          unfreezeVoterToken
 
-    getField #pUpvotes
-    dip $ getField #pDownvotes
-    add; toNamed #proposalTotalVote
+          dup; dip swap
+          cDecisionLambda
 
-    duupX @3
-    stToField #sQuorumThreshold; toNamed #sQuorumThreshold
-
-    if #sQuorumThreshold <=. #proposalTotalVote then do
-      getFieldNamed #pUpvotes
-      dip $ getFieldNamed #pDownvotes
-      if #pUpvotes >. #pDownvotes then do
-        unfreezeProposerToken config True
-        unfreezeVoterToken
-        cDecisionLambda
-        stackType @([Operation] : store : ProposalKey pm : [Operation] : s)
-        dig @3
-        iter cons
-        swap; dip swap
+          stackType @([Operation] : store : Proposal pm : ProposalKey pm : [Operation] : Counter : s)
+          dig @4
+          iter cons; swap
+          stackType @(store : [Operation] : Proposal pm : ProposalKey pm : Counter: s)
+          dig @3; dig @3
+          toField #pStartDate; deleteProposal
+        else do
+          -- Reject proposal if (upvote <= downvote)
+          stackType @(Proposal pm : store : ProposalKey pm : [Operation] : Counter : s)
+          unfreezeProposerToken config False
+          unfreezeVoterToken
+          dip swap; toField #pStartDate; deleteProposal
       else do
-        -- Reject proposal if (upvote <= downvote)
+        -- Reject proposal regardless of upvote
+        stackType @(Proposal pm : store : ProposalKey pm : [Operation] : Counter : s)
         unfreezeProposerToken config False
         unfreezeVoterToken
-        drop
-
+        dip swap; toField #pStartDate; deleteProposal
     else do
-      -- Reject proposal regardless of upvotes
-      unfreezeProposerToken config False
-      unfreezeVoterToken
-      drop
-
-    dip $ drop @(ProposalKey pm)
-
+      -- if counter is meet, we don't do anything
+      dug @4
+      drop; dip drop
   else do
-    -- Add the proposalId back to #sProposalKeyListSortByDate
-    -- since we initially set this to []
-    dip drop
+    -- Do nothing
+    drop; dip drop
 
-    dip $ stGetField #sProposalKeyListSortByDate
-    cons
-    stSetField #sProposalKeyListSortByDate
+-- | Delete a proposal from 'sProposalKeyListSortByDate'
+deleteProposal
+  :: forall store ce pm s.
+    (NiceParameter pm, StorageC store ce pm)
+  => Timestamp : ProposalKey pm : store : s
+  :-> store : s
+deleteProposal = do
+  -- Delete from 'sProposalKeyListSortByDate'
+  pair
+  dip $ stGetField #sProposalKeyListSortByDate
+  dip $ push False
+  update
+  stSetField #sProposalKeyListSortByDate
+
 
 -- | Flush all proposals that passed their voting period
 -- If the proposal's total vote >= quorum_theshold and it's upvote > downvote
@@ -659,27 +702,78 @@ handleProposalIsOver config@Config{..} = do
 flush
   :: forall store ce pm s.
      (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => Config ce pm -> Entrypoint' () store s
+  => Config ce pm -> Entrypoint' (Maybe Natural) store s
 flush config = do
   doc $ DDescription flushDoc
+
+  -- guards
+  dip $ do
+    ensureNotMigrated
+  ensureMaybeIsNot (Just 0 :: Maybe Natural)
+  push 0; toNamed #currentCount; pair
+  nil
+  dig @2; stGetField #sProposalKeyListSortByDate
+  iter (handleProposalIsOver config)
+  dip $ dip $ drop @Counter
+  swap; pair
+
+-- | 'dropProposal' accept a proposal key. It will remove a finished proposal from
+-- `sProposalKeyListSortByDate`. This is mean to be used when `flush` get stuck on
+-- a proposal that has fail `decisionLambda`. In other word, it is alike `flush` a
+-- proposal without executing decision lambda.
+dropProposal
+  :: forall store ce pm s. (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
+  => Config ce pm -> Entrypoint' (ProposalKey pm) store s
+dropProposal config = do
+  doc $ DDescription dropProposalDoc
+
+  -- guards
   dip $ do
     ensureNotMigrated
     authorizeAdmin
-  drop
-  dup
-  stToField #sProposalKeyListSortByDate
-  stackType @([ProposalKey pm] : store : s)
 
-  map checkIfProposalIsOver
+  dupTop2; checkIfProposalExist
+  stackType @(Proposal pm : ProposalKey pm : store : s)
+  dip swap
+  dupTop2; isVotingPeriodOver
+  if Holds then do
+    dupTop2; doTotalVoteMeetQuorumThreshold
+    if Holds then do
+      getFieldNamed #pUpvotes
+      dip $ getFieldNamed #pDownvotes
+      if #pUpvotes >. #pDownvotes then do
+        nil; dug @3
+        stackType @(Proposal pm : store : ProposalKey pm : [Operation] : s)
+        unfreezeProposerToken config True
+        unfreezeVoterToken
+        stackType @(Proposal pm : store : ProposalKey pm : [Operation] : s)
+        dip swap
+        toField #pStartDate; deleteProposal
+        swap; pair
+      else do
+        failCustom_ #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
+    else do
+      failCustom_ #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
+  else do
+    failCustom_ #fAIL_DROP_PROPOSAL_NOT_OVER
 
-  stackType @([((Bool, ProposalKey pm), Proposal pm)] : store : s)
-
-  swap; push []; stSetField #sProposalKeyListSortByDate -- set to empty list
-  swap
-
-  stackType @([((Bool, ProposalKey pm), Proposal pm)] : store : s)
-  nil; swap; dip swap
-  stackType @([((Bool, ProposalKey pm), Proposal pm)] : store : [Operation] : s)
-
-  iter (handleProposalIsOver config)
-  swap; pair
+-- Have to be divided like this due to Maybe a is not comparable
+ensureMaybeIsNot :: forall a s.
+  ( NiceParameter a, NiceStorage a
+  , NicePackedValue a, NiceComparable a
+  ) => Maybe a -> (Maybe a : s) :-> (Maybe a : s)
+ensureMaybeIsNot input =
+  let
+    (someCase, nothingCase) = case input of
+      Nothing -> (do drop; nop, failCustom_ #bAD_ENTRYPOINT_PARAMETER)
+      Just a -> ((do
+          toNamed #val
+          push a; toNamed #input
+          if #input ==. #val then
+            failCustom_ #bAD_ENTRYPOINT_PARAMETER
+          else
+            nop
+        ), nop)
+  in do
+    dup
+    ifSome someCase nothingCase

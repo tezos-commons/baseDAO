@@ -71,6 +71,7 @@ baseDaoContract config@Config{..} = defaultContract $ contractName cDaoName $ do
       , #cGetVotePermitCounter /-> view_ $ do
           doc $ DDescription getVotePermitCounterDoc
           drop @(); stToField #sPermitsCounter
+      , #cDrop_proposal /-> dropProposal config
       )
 
 fa2Handler

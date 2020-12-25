@@ -56,6 +56,8 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
       -- TODO [#47]: Disable running in real network due to time-sensitive operations
       , nettestScenarioOnEmulator "can flush proposals that got accepted" $
           \_emulated -> flushAcceptedProposals
+      , nettestScenarioOnEmulator "can flush 2 proposals that got accepted" $
+          \_emulated -> flushAcceptedProposalsWithAnAmount
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
           \_emulated -> flushRejectProposalQuorum
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
@@ -69,6 +71,8 @@ test_BaseDAO_Proposal = testGroup "BaseDAO propose/vote entrypoints tests:"
       -- TODO [#38]: Improve this when contract size is smaller
       , nettestScenarioOnEmulator "flush and run decision lambda" $
           \_emulated -> flushDecisionLambda
+      , nettestScenarioOnEmulator "can drop proposals" $
+          \_emulated -> dropProposal
       ]
   , testGroup "Bounded Value"
       [ nettestScenario "bounded value on proposals" proposalBoundedValue
@@ -313,12 +317,10 @@ flushNotAffectOngoingProposals = uncapsNettest $ do
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") (2 * 60)
 
   advanceTime (sec 3)
-  callFrom (AddressResolved owner1) dao (Call @"Flush") ()
-    & expectCustomError_ #nOT_ADMIN
 
   _key1 <- createSampleProposal 1 owner1 dao
   _key2 <- createSampleProposal 2 owner1 dao
-  callFrom (AddressResolved admin) dao (Call @"Flush") ()
+  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -354,7 +356,7 @@ flushAcceptedProposals = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 97
 
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") ()
+  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -365,6 +367,52 @@ flushAcceptedProposals = uncapsNettest $ do
 
   checkTokenBalance (DAO.frozenTokenId) dao owner2 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 100 -- voter
+
+flushAcceptedProposalsWithAnAmount :: (Monad m) => NettestImpl m -> m ()
+flushAcceptedProposalsWithAnAmount = uncapsNettest $ do
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig @Integer () config
+
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
+  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
+
+  -- | Accepted Proposals
+  key1 <- createSampleProposal 1 owner1 dao
+  key2 <- createSampleProposal 2 owner1 dao
+  advanceTime (sec 1)
+  key3 <- createSampleProposal 3 owner1 dao
+
+
+  let vote key = DAO.NoPermit DAO.VoteParam
+        { vVoteType = True
+        , vVoteAmount = 2
+        , vProposalKey = key
+        }
+
+  advanceTime (sec 21)
+
+  key4 <- createSampleProposal 4 owner1 dao
+
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 40
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 60
+
+  callFrom (AddressResolved admin) dao (Call @"Flush") (Just 2)
+
+  -- Proposals are flushed
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [vote key1]
+    & expectCustomError_ #vOTING_PERIOD_OVER
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [vote key2]
+    & expectCustomError_ #vOTING_PERIOD_OVER
+
+  -- Proposal is over but not affected
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [vote key3]
+    & expectCustomError_ #vOTING_PERIOD_OVER
+
+  -- Proposal is not yet over
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [vote key4]
+
+  -- Only 2 proposals are flush, so only 20 tokens are unfrozen back.
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 20
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 80
 
 flushRejectProposalQuorum :: (Monad m) => NettestImpl m -> m ()
 flushRejectProposalQuorum =
@@ -393,7 +441,7 @@ flushRejectProposalQuorum =
   callFrom (AddressResolved owner2) dao (Call @"Vote") votes
 
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") ()
+  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -438,7 +486,7 @@ flushRejectProposalNegativeVotes = uncapsNettest $ do
   checkTokenBalance (DAO.frozenTokenId) dao owner1 10
 
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") ()
+  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -467,7 +515,7 @@ flushWithBadConfig = uncapsNettest $ do
 
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 90
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") ()
+  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -495,7 +543,7 @@ flushDecisionLambda = uncapsNettest $ do
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
 
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") ()
+  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
 
   -- | Credit the proposer 10 tokens when the proposal is accepted
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
@@ -559,6 +607,37 @@ votingPeriodBound = uncapsNettest $ do
     & expectCustomError_ #oUT_OF_BOUND_VOTING_PERIOD
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 3
     & expectCustomError_ #oUT_OF_BOUND_VOTING_PERIOD
+
+dropProposal :: (Monad m) => NettestImpl m -> m ()
+dropProposal = uncapsNettest $ do
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig @Integer () badRejectedValueConfig
+
+  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
+  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 2
+
+  key1 <- createSampleProposal 1 owner1 dao
+  key2 <- createSampleProposal 2 owner1 dao
+
+  let params key = DAO.NoPermit DAO.VoteParam
+        { vVoteType = True
+        , vVoteAmount = 2
+        , vProposalKey = key
+        }
+  callFrom (AddressResolved owner2) dao (Call @"Vote") [params key1]
+  advanceTime (sec 20)
+
+  key3 <- createSampleProposal 3 owner1 dao
+
+  callFrom (AddressResolved admin) dao (Call @"Drop_proposal") key1
+  callFrom (AddressResolved admin) dao (Call @"Drop_proposal") key2
+    & expectCustomError_ #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
+  callFrom (AddressResolved admin) dao (Call @"Drop_proposal") key3
+    & expectCustomError_ #fAIL_DROP_PROPOSAL_NOT_OVER
+
+  -- 30 tokens are frozen in total, but 10 tokens are returned after drop_proposal
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 20
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 80
+
 
 -------------------------------------------------------------------------------
 -- Helper
