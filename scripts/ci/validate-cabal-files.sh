@@ -37,14 +37,16 @@ stack2cabal
 for file in "${files_to_verify[@]}"; do
     set +e
     diff_res=$(diff "$file" "${file}_backup")
-    if [ "$diff_res" != "" ]; then
+    diff_exit_code="$?"
+    set -e
+    if [ $diff_exit_code -ne 0 ]; then
         echo "file \"$file\" has changed"
         echo "$diff_res"
         echo "run ./scripts/generate-cabal-files.sh locally"
         echo "and update cabal related fiels"
         exit 1
     fi
-    set -e
 done
 
 find . -name "*_backup" -type f -delete
+echo "cabal files are up to date"
