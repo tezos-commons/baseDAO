@@ -231,11 +231,13 @@ data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Stor
   , sMetadata :: "metadata" :! TZIP16.MetadataMap BigMap
   }
   deriving stock (Generic, Show)
-  deriving anyclass (HasAnnotation)
 
 deriving anyclass instance
   (WellTypedIsoValue ce, WellTypedIsoValue pm) =>
   IsoValue (Storage ce  pm)
+
+instance (HasAnnotation ce, HasAnnotation pm) => HasAnnotation (Storage ce pm) where
+  annOptions = baseDaoAnnOptions
 
 instance Each [IsoValue, TypeHasDoc] [ce, pm] => TypeHasDoc (Storage ce pm) where
    typeDocMdDescription =
