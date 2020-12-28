@@ -1,11 +1,14 @@
-# BaseDAO
+# Registry DAO
 
 **Code revision:** [0afd899](https://github.com/tqtezos/baseDAO/tree/0afd8997193ea7cf788778199aeefb954fdba2cb) *(Mon Dec 28 14:52:21 2020 +0700)*
 
 
 
-An example of a very simple DAO contract without any custom checks,
-                          extra data and decision lambda.
+Registry DAO is a decentralized key-value storage of arbitrary data.
+It's parameterized by two types: `k` (for key) and `v` (for value).
+In UI, these `k` and `v` parameters both will be `bytes` and will be converted to application-level types externally.
+Application-level types can be stored as part of the contract's metadata as specified in TZIP-16.
+
 
 It contains standard FA2 entrypoints, plus some extra ones including proposal and
 migration entrypoints. It supports two types of token_id - frozen (token_id = 1) and unfrozen (token_id = 0).
@@ -44,6 +47,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [()](#types-lparenrparen)
   - [(a, b)](#types-lparenacomma-brparen)
   - [Address](#types-Address)
+  - [AgoraPostId](#types-AgoraPostId)
   - [BalanceRequestItem](#types-BalanceRequestItem)
   - [BalanceResponseItem](#types-BalanceResponseItem)
   - [BigMap](#types-BigMap)
@@ -51,6 +55,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [BurnParam](#types-BurnParam)
   - [ByteString](#types-ByteString)
   - [ChainId](#types-ChainId)
+  - [ConfigProposal](#types-ConfigProposal)
   - [Contract](#types-Contract)
   - [DataToSign](#types-DataToSign)
   - [Hash](#types-Hash)
@@ -62,6 +67,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [Named entry](#types-Named-entry)
   - [Natural](#types-Natural)
   - [Nonce](#types-Nonce)
+  - [NormalProposal](#types-NormalProposal)
   - [OperatorParam](#types-OperatorParam)
   - [Packed](#types-Packed)
   - [Parameter](#types-Parameter)
@@ -70,6 +76,10 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [Proposal](#types-Proposal)
   - [ProposeParams](#types-ProposeParams)
   - [PublicKey](#types-PublicKey)
+  - [RegistryDaoContractExtra](#types-RegistryDaoContractExtra)
+  - [RegistryDaoProposalMetadata](#types-RegistryDaoProposalMetadata)
+  - [RegistryEntry](#types-RegistryEntry)
+  - [RegistryUpdate](#types-RegistryUpdate)
   - [Set](#types-Set)
   - [Signature](#types-Signature)
   - [SomeType](#types-SomeType)
@@ -493,9 +503,9 @@ is decreased by the same value.
 
 
 **Argument:** 
-  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`()`](#types-lparenrparen)
-  + **In Michelson:** `(pair (nat %frozen_token) (unit %proposal_metadata))`
-    + **Example:** <span id="example-id">`Pair 0 Unit`</span>
+  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
+  + **In Michelson:** `(pair (nat %frozen_token) (or %proposal_metadata (pair %proposal_type (nat %agora_post_id) (list %diff (pair (bytes %key) (option %new_value bytes)))) (pair %proposal_type (pair (option %frozen_scale_value nat) (option %frozen_extra_value nat)) (pair (option %slash_scale_value nat) (pair (option %slash_division_value nat) (option %max_proposal_size nat))))))`
+    + **Example:** <span id="example-id">`Pair 0 (Left (Pair 0 { Pair 0x0a (Some 0x0a) }))`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -532,7 +542,7 @@ The sender must have an amount required for all votings.
 
 
 **Argument:** 
-  + **In Haskell:** [`List`](#types-List) ([`PermitProtected`](#types-PermitProtected) ([`VoteParam`](#types-VoteParam) [`()`](#types-lparenrparen)))
+  + **In Haskell:** [`List`](#types-List) ([`PermitProtected`](#types-PermitProtected) ([`VoteParam`](#types-VoteParam) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))))
   + **In Michelson:** `(list (pair :permit_protected (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))) (option %permit (pair (key %key) (signature %signature)))))`
     + **Example:** <span id="example-id">`{ Pair (Pair 0x0a (Pair True 0)) (Some (Pair "edpkuwTWKgQNnhR5v17H2DYHbfcxYepARyrPGbf1tbMoGQAj8Ljr3V" "edsigtrs8bK7vNfiR4Kd9dWasVa1bAWaQSu2ipnmLGZuwQa8ktCEMYVKqbWsbJ7zTS8dgYT9tiSUKorWCPFHosL5zPsiDwBQ6vb")) }`</span>
 
@@ -853,7 +863,7 @@ failing decision lambda.
 
 
 **Argument:** 
-  + **In Haskell:** [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`()`](#types-lparenrparen), [`Address`](#types-Address)))
+  + **In Haskell:** [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString)), [`Address`](#types-Address)))
   + **In Michelson:** `bytes`
     + **Example:** <span id="example-id">`0x0a`</span>
 
@@ -957,6 +967,21 @@ name may result in unexpected errors.
 
 
 
+<a name="types-AgoraPostId"></a>
+
+---
+
+### `AgoraPostId`
+
+Describe an Agora post ID.
+
+**Structure:** 
+[`Natural`](#types-Natural)
+
+**Final Michelson representation:** `nat`
+
+
+
 <a name="types-BalanceRequestItem"></a>
 
 ---
@@ -1051,6 +1076,25 @@ Bytes primitive.
 Identifier of the current chain.
 
 **Final Michelson representation:** `chain_id`
+
+
+
+<a name="types-ConfigProposal"></a>
+
+---
+
+### `ConfigProposal`
+
+Describe a configuration proposal in Registry DAO. It is used to update the configuration values in contract extra that affect the process of checking if a proposal is valid or not and how tokens are slash when a proposal is rejected.
+
+**Structure:** 
+  * ***frozenScaleValue*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
+  * ***frozenExtraValue*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
+  * ***slashScaleValue*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
+  * ***slashDivisionValue*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
+  * ***maxProposalSize*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
+
+**Final Michelson representation:** `pair (pair (option nat) (option nat)) (pair (option nat) (pair (option nat) (option nat)))`
 
 
 
@@ -1224,6 +1268,22 @@ Contract-local nonce used to make some data unique.
 
 
 
+<a name="types-NormalProposal"></a>
+
+---
+
+### `NormalProposal`
+
+Describe a proposal for add/update/delete an item in the registry.
+
+**Structure (example):** `NormalProposal ByteString ByteString` = 
+  * ***npAgoraPostId*** :[`AgoraPostId`](#types-AgoraPostId)
+  * ***npDiff*** :[`List`](#types-List) ([`RegistryUpdate`](#types-RegistryUpdate) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
+
+**Final Michelson representation (example):** `NormalProposal ByteString ByteString` = `pair nat (list (pair bytes (option bytes)))`
+
+
+
 <a name="types-OperatorParam"></a>
 
 ---
@@ -1372,6 +1432,78 @@ Describes the how many proposer's frozen tokens will be frozen and the proposal 
 PublicKey primitive.
 
 **Final Michelson representation:** `key`
+
+
+
+<a name="types-RegistryDaoContractExtra"></a>
+
+---
+
+### `RegistryDaoContractExtra`
+
+Describe the contract extra fields of a registry DAO. It contain a registry as a `BigMap` of a key `k` and a value of `RegistryEntry v`. It also contains various configurable values that can  be updated via `ConfigProposal`
+
+**Structure (example):** `RegistryDaoContractExtra ByteString ByteString` = 
+  * ***ceRegistry*** :[`BigMap`](#types-BigMap) [`ByteString`](#types-ByteString) ([`RegistryEntry`](#types-RegistryEntry) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
+  * ***ceFrozenScaleValue*** :[`Natural`](#types-Natural)
+  * ***ceFrozenExtraValue*** :[`Natural`](#types-Natural)
+  * ***ceSlashScaleValue*** :[`Natural`](#types-Natural)
+  * ***ceSlashDivisionValue*** :[`Natural`](#types-Natural)
+  * ***ceMaxProposalSize*** :[`Natural`](#types-Natural)
+
+**Final Michelson representation (example):** `RegistryDaoContractExtra ByteString ByteString` = `pair (pair (big_map bytes (pair (option bytes) (pair bytes timestamp))) (pair nat nat)) (pair nat (pair nat nat))`
+
+
+
+<a name="types-RegistryDaoProposalMetadata"></a>
+
+---
+
+### `RegistryDaoProposalMetadata`
+
+Describe the metadata of a proposal in Registry DAO. In Registry DAO, there are 2 types of proposals: a registry proposal, represented as `NormalProposal k v` and a configuration proposal represented as `ConfigProposal`.
+
+**Structure (example):** `RegistryDaoProposalMetadata ByteString ByteString` = *one of* 
++ **NormalProposalType**
+([`NormalProposal`](#types-NormalProposal) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
++ **ConfigProposalType**
+[`ConfigProposal`](#types-ConfigProposal)
+
+
+**Final Michelson representation (example):** `RegistryDaoProposalMetadata ByteString ByteString` = `or (pair nat (list (pair bytes (option bytes)))) (pair (pair (option nat) (option nat)) (pair (option nat) (pair (option nat) (option nat))))`
+
+
+
+<a name="types-RegistryEntry"></a>
+
+---
+
+### `RegistryEntry`
+
+Describe the value in registry map. It represents the actual item of the registry as `Maybe v`. `None` represents the deletion of item and `Some v` represents the existence of an item.It also contains the last proposal's agora post id that affects this item and its last updated time.
+
+**Structure (example):** `RegistryEntry ByteString ByteString` = 
+  * ***reValue*** :[`Maybe`](#types-Maybe) [`ByteString`](#types-ByteString)
+  * ***reAffectedProposalKey*** :[`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString)), [`Address`](#types-Address)))
+  * ***reLastUpdated*** :[`Timestamp`](#types-Timestamp)
+
+**Final Michelson representation (example):** `RegistryEntry ByteString ByteString` = `pair (option bytes) (pair bytes timestamp)`
+
+
+
+<a name="types-RegistryUpdate"></a>
+
+---
+
+### `RegistryUpdate`
+
+Describe a proposed change to an items in the registry.
+
+**Structure (example):** `RegistryUpdate ByteString ByteString` = 
+  * ***ruKey*** :[`ByteString`](#types-ByteString)
+  * ***ruNewValue*** :[`Maybe`](#types-Maybe) [`ByteString`](#types-ByteString)
+
+**Final Michelson representation (example):** `RegistryUpdate ByteString ByteString` = `pair bytes (option bytes)`
 
 
 
