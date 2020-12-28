@@ -75,6 +75,8 @@ config = Config
       cFrozenTokenMetadata defaultConfig
 
   , cProposalCheck = do
+      -- storage is not needed
+      dip drop
       -- Verification at proposal stage.
       -- Here we implement a simple predicate that ensures our payload to be
       -- not too high.
@@ -88,6 +90,9 @@ config = Config
       push 50; ge
 
   , cRejectedProposalReturnValue = do
+      -- storage is not needed
+      dip drop
+
       -- How many tokens to return on proposal rejection.
 
       -- Here we provide a simple implementation that returns

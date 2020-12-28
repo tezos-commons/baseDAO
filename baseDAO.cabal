@@ -32,6 +32,9 @@ library
       Lorentz.Contracts.BaseDAO.Token.FA2
       Lorentz.Contracts.BaseDAO.Types
       Lorentz.Contracts.GameDAO
+      Lorentz.Contracts.RegistryDAO
+      Lorentz.Contracts.RegistryDAO.Doc
+      Lorentz.Contracts.RegistryDAO.Types
       Lorentz.Contracts.TrivialDAO
   other-modules:
       Paths_baseDAO
@@ -82,6 +85,9 @@ test-suite baseDAO-test
       Test.BaseDAO.Token.FA2
       Test.Common
       Test.GameDAO
+      Test.Integrational.Common
+      Test.Integrational.RegistryDAO
+      Test.RegistryDAO
       Paths_baseDAO
   hs-source-dirs:
       test

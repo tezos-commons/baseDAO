@@ -69,11 +69,13 @@ data Config contractExtra proposalMetadata = Config
   -- ^ FA2 metadata for unfrozen token.
   , frozenTokenMetadata :: FA2.TokenMetadata
   -- ^ FA2 metadata for frozen token.
-  , proposalCheck :: Lambda (ProposeParams proposalMetadata) Bool
+  , proposalCheck :: Lambda
+      (ProposeParams proposalMetadata, Storage contractExtra proposalMetadata) Bool
   -- ^ A lambda used to verify whether a proposal can be submitted.
   -- It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   -- It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
-  , rejectedProposalReturnValue :: Lambda (Proposal proposalMetadata) Natural
+  , rejectedProposalReturnValue :: Lambda
+      (Proposal proposalMetadata, Storage contractExtra proposalMetadata) Natural
   -- ^ When a proposal is rejected, the value that voters get back can be slashed.
   -- This lambda specifies how many tokens will be received.
   -- For example, if Alice freezes 100 tokens to vote and this lambda divides the value by 2,

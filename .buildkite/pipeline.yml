@@ -99,6 +99,7 @@ steps:
     artifact_paths:
       - TrivialDAO.md
       - GameDAO.md
+      - RegistryDAO.md
 
   - label: contract doc release
     if: build.branch == "master" && build.source != "schedule"
@@ -110,6 +111,7 @@ steps:
     artifact_paths:
       - TrivialDAO.md
       - GameDAO.md
+      - RegistryDAO.md
 
   - label: xrefcheck generated doc
     soft_fail: true  # TODO: remove

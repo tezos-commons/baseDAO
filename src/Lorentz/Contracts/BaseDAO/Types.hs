@@ -83,15 +83,17 @@ data Config contractExtra proposalMetadata = Config
   , cUnfrozenTokenMetadata :: FA2.TokenMetadata
   , cFrozenTokenMetadata :: FA2.TokenMetadata
 
-  , cProposalCheck :: forall s
-      . (ProposeParams proposalMetadata) : s
+  , cProposalCheck :: forall s store.
+        StorageC store contractExtra proposalMetadata
+    =>  ProposeParams proposalMetadata : store : s
     :-> Bool : s
   -- ^ A lambda used to verify whether a proposal can be submitted.
   -- It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   -- It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
 
-  , cRejectedProposalReturnValue :: forall s
-      . (Proposal proposalMetadata) : s
+  , cRejectedProposalReturnValue :: forall s store.
+        StorageC store contractExtra proposalMetadata
+    =>  Proposal proposalMetadata : store : s
     :-> ("slash_amount" :! Natural) : s
   -- ^ When a proposal is rejected, the value that voters get back can be slashed.
   -- This lambda specifies how many tokens will be received.
@@ -137,9 +139,9 @@ defaultConfig = Config
       , FA2.tmExtras = mempty
       }
   , cProposalCheck = do
-      drop; push True
+      dropN @2; push True
   , cRejectedProposalReturnValue = do
-      drop; push (0 :: Natural); toNamed #slash_amount
+      dropN @2; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
       drop; nil
 
