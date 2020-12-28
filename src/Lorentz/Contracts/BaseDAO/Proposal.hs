@@ -9,6 +9,7 @@ module Lorentz.Contracts.BaseDAO.Proposal
   , setQuorumThreshold
   , flush
   , dropProposal
+  , toProposalKey
   ) where
 
 import Lorentz
@@ -70,14 +71,13 @@ toProposalKey = do
 ------------------------------------------------------------------------
 -- Propose
 ------------------------------------------------------------------------
-
 checkIsProposalValid
-  :: forall store ce pm.
-     Config ce pm -> '[ProposeParams pm, store] :-> '[ProposeParams pm, store]
+  :: forall store ce pm s. (StorageC store ce pm)
+  => Config ce pm -> (ProposeParams pm : store : s) :-> (ProposeParams pm: store : s)
 checkIsProposalValid Config{..} = do
-  dup
+  dupTop2
   cProposalCheck
-  stackType @[Bool, ProposeParams pm, store]
+  stackType @(Bool : ProposeParams pm : store : s)
   if Holds then
     nop
   else
@@ -208,7 +208,7 @@ propose
 propose config = do
   doc $ DDescription proposeDoc
   stackType @(ProposeParams pm : store : s)
-  framed $ checkIsProposalValid config
+  checkIsProposalValid config
   framed $ checkProposalLimitReached config
   framed $ checkProposerUnfrozenToken
   stackType @(ProposeParams pm : store : s)
@@ -532,7 +532,7 @@ unfreezeProposerToken Config{..} isAccepted = do
           stackType @(Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
 
         False -> do
-          dup
+          dupTop2
           cRejectedProposalReturnValue
           stackType @("slash_amount" :! Natural : Proposal pm : store : ProposalKey pm : [Operation] : s)
           dip $ do
@@ -709,7 +709,9 @@ flush config = do
   -- guards
   dip $ do
     ensureNotMigrated
+
   ensureMaybeIsNot (Just 0 :: Maybe Natural)
+
   push 0; toNamed #currentCount; pair
   nil
   dig @2; stGetField #sProposalKeyListSortByDate
@@ -757,7 +759,6 @@ dropProposal config = do
   else do
     failCustom_ #fAIL_DROP_PROPOSAL_NOT_OVER
 
--- Have to be divided like this due to Maybe a is not comparable
 ensureMaybeIsNot :: forall a s.
   ( NiceParameter a, NiceStorage a
   , NicePackedValue a, NiceComparable a
