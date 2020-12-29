@@ -48,35 +48,29 @@ treasuryDaoProposalCheck = do
     if #requireValue ==. #ppFrozenToken then do
       -- Check if the proposal is xtz or not
       toField #ppProposalMetadata
-      caseT
-        ( #cNormalProposalType /-> do
-            toField #npTransfers
-            push True; swap -- track whether or not it contains proper xtz amount
-            iter $ do
-              caseT
-                ( #cXtzTransferType /-> do
-                    toFieldNamed #xtAmount;
-                    duupX @3; stToField #sExtra
-                    dupTop2;
-                    toFieldNamed #ceMaxXtzAmount
-                    if #ceMaxXtzAmount >=. #xtAmount then do
-                      toFieldNamed #ceMinXtzAmount
-                      if #ceMinXtzAmount <=. #xtAmount then do
-                        nop
-                      else do
-                        drop; push False
-                    else do
-                      dropN @3
-                      push False
+      toField #npTransfers
+      push True; swap -- track whether or not it contains proper xtz amount
+      iter $ do
+        caseT
+          ( #cXtzTransferType /-> do
+              toFieldNamed #xtAmount;
+              duupX @3; stToField #sExtra
+              dupTop2;
+              toFieldNamed #ceMaxXtzAmount
+              if #ceMaxXtzAmount >=. #xtAmount then do
+                toFieldNamed #ceMinXtzAmount
+                if #ceMinXtzAmount <=. #xtAmount then do
+                  nop
+                else do
+                  drop; push False
+              else do
+                dropN @3
+                push False
 
-                , #cTokenTransferType /-> do
-                    drop;
-                )
-            dip drop
-            -- drop; drop; push True
-        , #cConfigProposalType /-> do
-            dropN @2; push True
-        )
+          , #cTokenTransferType /-> do
+              drop;
+          )
+      dip drop
     else do
       dropN @2
       push False
@@ -111,58 +105,44 @@ decisionLambda
   :-> List Operation : store : s
 decisionLambda = do
   toField #pMetadata
-  caseT
-    ( #cNormalProposalType /-> do
-        toField #npTransfers
-        nil
-        push False -- track wherher or not there is a fail operation
-        dig @2
-        iter $ do
-          caseT
-            ( #cXtzTransferType /-> do
-                stackType @(XtzTransfer : Bool : [Operation] : store : s)
-                getField #xtRecipient;
-                contractCallingUnsafe @() DefEpName
-                ifSome ( do
-                    swap
-                    toField #xtAmount;
-                    push ();
-                    transferTokens
-                    dip swap; cons; swap
-                  ) $ do
-                    dropN @2; push True -- set to True due to fail operation
 
-            , #cTokenTransferType /-> do
-                getField #ttContractAddress
-                contractCalling @FA2.Parameter (Call @"Transfer")
-                ifSome (do
-                    swap; toField #ttTransferList
-                    push zeroMutez; swap
-                    transferTokens
-                    dip swap; cons; swap
-                  ) $ do
-                    dropN @2; push True
-            )
+  toField #npTransfers
+  nil
+  push False -- track wherher or not there is a fail operation
+  dig @2
+  iter $ do
+    caseT
+      ( #cXtzTransferType /-> do
+          stackType @(XtzTransfer : Bool : [Operation] : store : s)
+          getField #xtRecipient;
+          contractCallingUnsafe @() DefEpName
+          ifSome ( do
+              swap
+              toField #xtAmount;
+              push ();
+              transferTokens
+              dip swap; cons; swap
+            ) $ do
+              dropN @2; push True -- set to True due to fail operation
 
-        if Holds then do
-          -- drop; nil
-          -- TODO: [#87] Improve handling of failed proposals
-          failCustom_ #fAIL_DECISION_LAMBDA
-        else
-          nop
+      , #cTokenTransferType /-> do
+          getField #ttContractAddress
+          contractCalling @FA2.Parameter (Call @"Transfer")
+          ifSome (do
+              swap; toField #ttTransferList
+              push zeroMutez; swap
+              transferTokens
+              dip swap; cons; swap
+            ) $ do
+              dropN @2; push True
+      )
 
-    , #cConfigProposalType /-> do
-        duupX @2; stToField #sExtra;
-        duupX @2; toField #cpFrozenScaleValue; ifSome (setField #ceFrozenScaleValue) nop
-        duupX @2; toField #cpFrozenExtraValue; ifSome (setField #ceFrozenExtraValue)  nop
-        duupX @2; toField #cpSlashScaleValue; ifSome (setField #ceSlashScaleValue) nop
-        duupX @2; toField #cpSlashDivisionValue; ifSome (setField #ceSlashDivisionValue) nop
-        duupX @2; toField #cpMinXtzAmount; ifSome (setField #ceMinXtzAmount) nop
-        duupX @2; toField #cpMaxXtzAmount; ifSome (setField #ceMaxXtzAmount) nop
-        dig @1; toField #cpMaxProposalSize; ifSome (setField #ceMaxProposalSize) nop
-        stSetField #sExtra
-        nil
-    )
+  if Holds then do
+    -- drop; nil
+    -- TODO: [#87] Improve handling of failed proposals
+    failCustom_ #fAIL_DECISION_LAMBDA
+  else
+    nop
 
 extraEntrypoints
   :: forall store ce pm s. (DAO.StorageC store ce pm)

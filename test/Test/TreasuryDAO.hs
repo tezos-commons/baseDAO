@@ -63,8 +63,8 @@ validProposal = uncapsNettest $ do
   -- Expected token is 58 in this case
   _ <- createSampleProposal expectedToken proposal owner1 dao
 
-  checkTokenBalance (DAO.frozenTokenId) dao owner1 117
-  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 83
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 115
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 85
 
 flushTokenTransfer :: (Monad m) => NettestImpl m -> m ()
 flushTokenTransfer = uncapsNettest $ do
@@ -89,8 +89,8 @@ flushTokenTransfer = uncapsNettest $ do
 
   key1 <- createSampleProposal expectedToken proposal owner1 dao
 
-  checkTokenBalance (DAO.frozenTokenId) dao owner1 117
-  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 83
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 115
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 85
 
   let
     upvote = DAO.NoPermit DAO.VoteParam
@@ -142,7 +142,7 @@ flushXtzTransfer = uncapsNettest $ do
 --------------------------------------------------------------------------
 
 tokenTransferProposalMetadata :: Address -> Address -> Address -> TreasuryDaoProposalMetadata
-tokenTransferProposalMetadata contractAddr fromAddr toAddr = NormalProposalType $ NormalProposal
+tokenTransferProposalMetadata contractAddr fromAddr toAddr = TreasuryDaoProposalMetadata
   { npAgoraPostId = AgoraPostId 1
   , npTransfers =
       [ TokenTransferType $ TokenTransfer

@@ -5,8 +5,6 @@
 -- | TreasuryDAO Types
 module Lorentz.Contracts.TreasuryDAO.Types
   ( AgoraPostId (..)
-  , ConfigProposal (..)
-  , NormalProposal (..)
   , TokenTransfer (..)
   , TransferType (..)
   , TreasuryDaoContractExtra (..)
@@ -52,10 +50,12 @@ instance Default TreasuryDaoContractExtra where
     , ceMaxProposalSize = 1000 --z
     }
 
--- | Proposal metadata used in Treasuy DAO
-data TreasuryDaoProposalMetadata
-  = NormalProposalType NormalProposal
-  | ConfigProposalType ConfigProposal
+-- | A Treasury DAO proposal, contains list of transfers of 2 types:
+-- Token transfer and Xtz transfer
+data TreasuryDaoProposalMetadata = TreasuryDaoProposalMetadata
+  { npAgoraPostId :: AgoraPostId
+  , npTransfers :: [TransferType]
+  }
   deriving stock (Generic)
   deriving anyclass (IsoValue)
 
@@ -63,24 +63,6 @@ instance HasAnnotation TreasuryDaoProposalMetadata where
   annOptions = DAO.baseDaoAnnOptions
 
 instance TypeHasDoc TreasuryDaoProposalMetadata where
-  typeDocMdDescription = "Describe the metadata of a proposal in Treasury DAO. In TreasuryDAO, \
-    \there are 2 types of proposal, a configuration proposal and a treasury proposal. A treasuy \
-    \proposal can contains a list of transfers which divided into 2 types: token transfers and \
-    \xtz transfers."
-
--- | A Treasury DAO proposal, contains list of transfers of 2 types:
--- Token transfer and Xtz transfer
-data NormalProposal = NormalProposal
-  { npAgoraPostId :: AgoraPostId
-  , npTransfers :: [TransferType]
-  }
-  deriving stock (Generic)
-  deriving anyclass (IsoValue)
-
-instance HasAnnotation NormalProposal where
-  annOptions = DAO.baseDaoAnnOptions
-
-instance TypeHasDoc NormalProposal where
   typeDocMdDescription =
     "A treasury proposal which contains an Agora post ID and a list of transfer items."
 
@@ -136,30 +118,6 @@ instance HasAnnotation TokenTransfer where
 instance TypeHasDoc TokenTransfer where
   typeDocMdDescription = "Describe a proposal which wants to transfer any FA2 tokens \
   \ to a certain address."
-
-
--- | Special proposal that allow updating certain scale values in 'contractExtra'
-data ConfigProposal = ConfigProposal
-  { cpFrozenScaleValue :: Maybe Natural -- a
-  , cpFrozenExtraValue :: Maybe Natural -- b
-  , cpSlashScaleValue :: Maybe Natural -- c
-  , cpSlashDivisionValue :: Maybe Natural -- d
-  , cpMinXtzAmount :: Maybe Mutez -- y
-  , cpMaxXtzAmount :: Maybe Mutez -- z
-  , cpMaxProposalSize :: Maybe Natural --z
-  }
-  deriving stock (Generic)
-  deriving anyclass (IsoValue)
-
-instance HasAnnotation ConfigProposal where
-  annOptions = DAO.baseDaoAnnOptions
-
-instance TypeHasDoc ConfigProposal where
-  typeDocMdDescription =
-    "Describe a configuration proposal in Registry DAO. It is used to \
-    \update the configuration values in contract extra that affect the process of \
-    \checking if a proposal is valid or not and how tokens are slash when a proposal \
-    \is rejected."
 
 
 data TreasuryDaoExtraInterface
