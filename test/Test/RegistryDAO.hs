@@ -27,7 +27,10 @@ test_RegistryDAO :: TestTree
 test_RegistryDAO = testGroup "RegistryDAO Tests"
   [ testGroup "Proposal creator:"
       [ nettestScenario "can propose a valid proposal" validProposal
-      , nettestScenario "can propose a valid configuration proposal" validConfigProposal
+
+      -- TODO [#47]: Disable running in real network due to time-sensitive operations
+      , nettestScenarioOnEmulator "can propose a valid configuration proposal" $
+          \_emulated -> validConfigProposal
       ]
   ]
 
