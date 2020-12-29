@@ -320,7 +320,7 @@ flushNotAffectOngoingProposals = uncapsNettest $ do
 
   _key1 <- createSampleProposal 1 owner1 dao
   _key2 <- createSampleProposal 2 owner1 dao
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -356,7 +356,7 @@ flushAcceptedProposals = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 97
 
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -392,7 +392,7 @@ flushAcceptedProposalsWithAnAmount = uncapsNettest $ do
   checkTokenBalance (DAO.frozenTokenId) dao owner1 40
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 60
 
-  callFrom (AddressResolved admin) dao (Call @"Flush") (Just 2)
+  callFrom (AddressResolved admin) dao (Call @"Flush") 2
 
   -- Proposals are flushed
   callFrom (AddressResolved owner2) dao (Call @"Vote") [vote key1]
@@ -438,7 +438,7 @@ flushRejectProposalQuorum =
   callFrom (AddressResolved owner2) dao (Call @"Vote") votes
 
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -483,7 +483,7 @@ flushRejectProposalNegativeVotes = uncapsNettest $ do
   checkTokenBalance (DAO.frozenTokenId) dao owner1 10
 
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -512,7 +512,7 @@ flushWithBadConfig = uncapsNettest $ do
 
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 90
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -540,7 +540,7 @@ flushDecisionLambda = uncapsNettest $ do
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
 
   advanceTime (sec 61)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- | Credit the proposer 10 tokens when the proposal is accepted
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0

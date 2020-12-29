@@ -101,7 +101,7 @@ flushTokenTransfer = uncapsNettest $ do
 
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 210

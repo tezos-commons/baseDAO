@@ -753,17 +753,15 @@ Parameter (in Michelson)
 
 ```haskell
 data Parameter proposalMetadata otherParam
-  = Flush (Maybe Natural)
+  = Flush Natural
 ```
 
 Parameter (in Michelson):
 ```
-option nat
+nat
 ```
 
-- Finish voting process on an amount of proposals:
-  - If the parameter is `None`, process on all the proposals for which voting period is over.
-  - If the paramter is `Just n`, process `n` proposals for which voting period is over.
+- Finish voting process on an amount of proposals for which the voting period is over.
 - The order of processing proposals are from 'the oldest' to 'the newest'. The proposals which
 have the same timestamp due to being in the same block, are processed in the order of their proposal keys.
 - Frozen tokens from voters and proposal submitter associated with those proposals are returned

@@ -588,23 +588,17 @@ isCounterMet
 isCounterMet = do
   unpair
   swap; dup
-  stackType @(Maybe Natural : Maybe Natural : "currentCount" :! Natural : s)
-  if IsSome then do
-    toNamed #counter
-    stackType @("counter" :! Natural : Maybe Natural : "currentCount" :! Natural : s)
-    duupX @3
-    if #currentCount >=. #counter  then do -- currentCount should never be bigger than counter
-      swap; pair
-      push True
-    else do
-      -- increment
-      swap
-      fromNamed #currentCount; push (1 :: Natural); add; toNamed #currentCount
-      pair
-      push False
+  stackType @(Natural : Natural : "currentCount" :! Natural : s)
+  toNamed #counter
+  stackType @("counter" :! Natural : Natural : "currentCount" :! Natural : s)
+  duupX @3
+  if #currentCount >=. #counter  then do -- currentCount should never be bigger than counter
+    swap; pair
+    push True
   else do
-    -- if counter is nothing, loop until the last element.
+    -- increment
     swap
+    fromNamed #currentCount; push (1 :: Natural); add; toNamed #currentCount
     pair
     push False
 
@@ -700,7 +694,7 @@ deleteProposal = do
 flush
   :: forall store ce pm op s.
      (StorageC store ce pm, HasFuncContext s store)
-  => Config ce pm op -> Entrypoint' (Maybe Natural) store s
+  => Config ce pm op -> Entrypoint' Natural store s
 flush config = do
   doc $ DDescription flushDoc
 
@@ -708,7 +702,7 @@ flush config = do
   dip $ do
     ensureNotMigrated
 
-  ensureMaybeIsNot (Just 0 :: Maybe Natural)
+  ensureNot (0 :: Natural)
 
   push 0; toNamed #currentCount; pair
   nil
@@ -757,22 +751,14 @@ dropProposal config = do
   else do
     failCustom_ #fAIL_DROP_PROPOSAL_NOT_OVER
 
-ensureMaybeIsNot :: forall a s.
+ensureNot :: forall a s.
   ( NiceParameter a, NiceStorage a
   , NicePackedValue a, NiceComparable a
-  ) => Maybe a -> (Maybe a : s) :-> (Maybe a : s)
-ensureMaybeIsNot input =
-  let
-    (someCase, nothingCase) = case input of
-      Nothing -> (do drop; nop, failCustom_ #bAD_ENTRYPOINT_PARAMETER)
-      Just a -> ((do
-          toNamed #val
-          push a; toNamed #input
-          if #input ==. #val then
-            failCustom_ #bAD_ENTRYPOINT_PARAMETER
-          else
-            nop
-        ), nop)
-  in do
-    dup
-    ifSome someCase nothingCase
+  ) => a -> (a : s) :-> (a : s)
+ensureNot input = do
+  dup; toNamed #val
+  push input; toNamed #input
+  if #input ==. #val then
+    failCustom_ #bAD_ENTRYPOINT_PARAMETER
+  else
+    nop

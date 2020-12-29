@@ -292,11 +292,10 @@ data Parameter proposalMetadata otherParam
   -- Admin
   | Set_voting_period VotingPeriod
   | Set_quorum_threshold QuorumThreshold
-  | Flush (Maybe Natural)
+  | Flush Natural
   | Burn BurnParam
   | Mint MintParam
   | Transfer_contract_tokens TransferContractTokensParam
-  | Token_address TokenAddressParam
   | GetVotePermitCounter (View () Nonce)
   | Drop_proposal (ProposalKey proposalMetadata)
   | CallCustom otherParam
@@ -699,7 +698,7 @@ frozenTokenId = FA2.TokenId 1
 ------------------------------------------------------------------------
 
 -- Useful type when `iter` with a counter
-type Counter = (("currentCount" :! Natural), Maybe Natural)
+type Counter = (("currentCount" :! Natural), Natural)
 
 baseDaoAnnOptions :: AnnOptions
 baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnake }

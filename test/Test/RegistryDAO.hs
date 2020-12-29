@@ -94,7 +94,7 @@ validConfigProposal = uncapsNettest $ do
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
 
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- Fail due too big proposal size
   _ <- createSampleProposal ((getTokensAmount longNormalProposalMetadata) + 5) longNormalProposalMetadata owner1 dao
@@ -107,7 +107,7 @@ validConfigProposal = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 37
 
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- Only half are returned
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0

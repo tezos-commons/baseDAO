@@ -71,7 +71,6 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractN
       , #cBurn /-> burn
       , #cMint /-> mint
       , #cTransfer_contract_tokens /-> transferContractTokens
-      , #cToken_address /-> tokenAddress
 
       , #cGetVotePermitCounter /-> view_ $ do
           doc $ DDescription getVotePermitCounterDoc
