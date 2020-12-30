@@ -51,9 +51,10 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractN
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
   docStorage @(BaseDAO.Storage ce pm)
 
-  entrypointSection "Prior checks" (Proxy @CommonContractBehaviourKind) $ do
-    doc $ DDescription priorChecksDoc
-    ensureZeroTransfer
+  -- TODO: [#91] Disabled for now due to unable to send XTZ
+  -- entrypointSection "Prior checks" (Proxy @CommonContractBehaviourKind) $ do
+  --   doc $ DDescription priorChecksDoc
+  --   ensureZeroTransfer
 
   pushFuncContext @ce @pm $ do
     unpair
@@ -105,11 +106,12 @@ fa2Handler = do
     , #cUpdate_operators /-> updateOperators
     )
 
-ensureZeroTransfer :: s :-> s
-ensureZeroTransfer = do
-  amount
-  push zeroMutez
-  if IsEq then nop else failCustom_ #fORBIDDEN_XTZ
+-- TODO: [#91] Disabled for now due to unable to send XTZ
+-- ensureZeroTransfer :: s :-> s
+-- ensureZeroTransfer = do
+--   amount
+--   push zeroMutez
+--   if IsEq then nop else failCustom_ #fORBIDDEN_XTZ
 
 pushFuncContext
   :: (KnownValue ce, KnownValue pm)
