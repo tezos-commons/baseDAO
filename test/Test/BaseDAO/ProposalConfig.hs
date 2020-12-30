@@ -17,7 +17,7 @@ import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo)
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
-config :: forall ce pm. (IsoValue pm) => DAO.Config ce pm
+config :: forall ce pm op. (IsoValue pm) => DAO.Config ce pm op
 config = DAO.defaultConfig
   { DAO.cProposalCheck = do
       dip drop
@@ -32,7 +32,7 @@ config = DAO.defaultConfig
         push False
   }
 
-configWithRejectedProposal :: forall ce pm. (IsoValue pm) => DAO.Config ce pm
+configWithRejectedProposal :: forall ce pm op. (IsoValue pm) => DAO.Config ce pm op
 configWithRejectedProposal = DAO.defaultConfig
   { DAO.cRejectedProposalReturnValue = do
       dip drop
@@ -46,14 +46,14 @@ configWithRejectedProposal = DAO.defaultConfig
       toNamed #slash_amount
   }
 
-badRejectedValueConfig :: forall ce pm. DAO.Config ce pm
+badRejectedValueConfig :: forall ce pm op. DAO.Config ce pm op
 badRejectedValueConfig = DAO.defaultConfig
   { DAO.cRejectedProposalReturnValue = do
       drop; drop; push (9999 :: Natural)
       toNamed #slash_amount
   }
 
-decisionLambdaConfig :: forall ce pm. (IsoValue pm) => DAO.Config ce pm
+decisionLambdaConfig :: forall ce pm op. (IsoValue pm) => DAO.Config ce pm op
 decisionLambdaConfig = config
   { DAO.cDecisionLambda = decisionLambda
   }

@@ -7,8 +7,8 @@ module Test.Integrational.Common
 
 import Universum
 
-import qualified Data.Map as M
 import Data.List.NonEmpty ((!!))
+import qualified Data.Map as M
 import qualified Data.Set as S
 import Lorentz
 import Lorentz.Test
@@ -19,14 +19,12 @@ import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 
 lOriginateBaseDao
-  :: forall pm ce.
-     ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc pm, NicePackedValue pm
-     , KnownValue ce, TypeHasDoc ce
+  :: forall ce pm op.
+     ( DAO.DaoC ce pm op
      )
   => ce
-  -> DAO.Config ce pm
-  -> IntegrationalScenarioM ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+  -> DAO.Config ce pm op
+  -> IntegrationalScenarioM ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm op), Address)
 lOriginateBaseDao contractExtra config = do
   let
     owner1 = genesisAddresses !! 2

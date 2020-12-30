@@ -17,6 +17,7 @@ import Test.HUnit (Assertion, assertFailure)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)
 
+import Lorentz.Empty
 import Lorentz.OpSize
 import Lorentz.Value
 import Tezos.Address
@@ -24,7 +25,7 @@ import Tezos.Address
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import qualified Lorentz.Contracts.TrivialDAO as DAO
 
-originationOpSize :: _ => DAO.Config ce pm -> DAO.Storage ce pm -> OpSize
+originationOpSize :: _ => DAO.Config ce pm Empty -> DAO.Storage ce pm -> OpSize
 originationOpSize config storage = mconcat
   [ OpSize 1601  -- heuristically evaluated base origination cost
   , contractOpSize $ DAO.baseDaoContract config
@@ -45,7 +46,7 @@ averageStorage =
   -- TODO: fill this someday
   DAO.mkStorage ! #admin dummyAddress ! #extra () ! defaults
 
-averageConfig :: DAO.Config () ()
+averageConfig :: DAO.Config () () Empty
 averageConfig = DAO.trivialConfig
   -- TODO: fill this someday
 

@@ -11,11 +11,13 @@ module Lorentz.Contracts.BaseDAO
   , Storage (..)
 
   , DaoContract
+  , DaoC
   , baseDaoContract
   , mkStorage
   ) where
 
 import Lorentz
+import Universum (Each)
 
 import Lorentz.Contracts.BaseDAO.Doc
 import Lorentz.Contracts.BaseDAO.Management
@@ -31,17 +33,19 @@ instance EntrypointKindHasDoc FA2EntrypointsKind where
   entrypointKindPos = 1055
   entrypointKindSectionName = "FA2 entrypoints"
 
-type DaoContract ce pm =
-  Contract (BaseDAO.Parameter pm) (BaseDAO.Storage ce pm)
+type DaoContract ce pm op =
+  Contract (BaseDAO.Parameter pm op) (BaseDAO.Storage ce pm)
+
+type DaoC ce pm op =
+  ( NiceParameterFull (Parameter pm op), NiceStorage (Storage ce pm)
+  , Each [IsoValue, HasAnnotation, TypeHasDoc] [pm, op]
+  , NicePackedValue pm
+  , KnownValue ce, TypeHasDoc ce
+  )
 
 baseDaoContract
-  :: forall ce pm.
-      ( NiceParameter pm, TypeHasDoc pm
-      , HasAnnotation pm
-      , NicePackedValue pm
-      , KnownValue ce, TypeHasDoc ce
-      )
-  => Config ce pm -> DaoContract ce pm
+  :: forall ce pm op. DaoC ce pm op
+  => Config ce pm op -> DaoContract ce pm op
 baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractName cDaoName $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
@@ -53,7 +57,7 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractN
 
   pushFuncContext @ce @pm $ do
     unpair
-    finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm) (Proxy @PlainEntrypointsKind)
+    finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm op) (Proxy @PlainEntrypointsKind)
       ( #cCall_FA2 /-> fa2Handler
       , #cTransfer_ownership /-> transferOwnership
       , #cAccept_ownership /-> acceptOwnership
@@ -73,6 +77,9 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractN
           doc $ DDescription getVotePermitCounterDoc
           drop @(); stToField #sPermitsCounter
       , #cDrop_proposal /-> dropProposal config
+      , #cCallCustom /-> do
+          doc $ DDescription callCustomDoc
+          cCustomCall # pair
       )
   where
     -- By default we insert the CAST instruction at the beginning of

@@ -29,6 +29,8 @@ module Lorentz.Contracts.BaseDAO.Doc
    , tokenAddressDoc
 
    , getVotePermitCounterDoc
+
+   , callCustomDoc
    ) where
 
 import Lorentz
@@ -187,4 +189,9 @@ getVotePermitCounterDoc = [md|
 
   Return value increases by number of votes where a permit was provided
   with each successful call of an entrypoint.
+  |]
+
+callCustomDoc :: Markdown
+callCustomDoc = [md|
+  Additional entrypoints specific to the given specific DAO.
   |]

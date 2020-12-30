@@ -58,6 +58,19 @@ data GameDaoProposalMetadata = GameDaoProposalMetadata
 instance HasAnnotation GameDaoProposalMetadata where
   annOptions = DAO.baseDaoAnnOptions
 
+-- | Extra entrypoints supported by our DAO.
+data GameDaoExtraInterface
+  = Default
+  | ResetProposalsCounter
+  deriving stock (Generic)
+  deriving anyclass (IsoValue, HasAnnotation)
+
+instance TypeHasDoc GameDaoExtraInterface where
+  typeDocMdDescription = "Additional entrypoints of Game DAO."
+
+instance ParameterHasEntrypoints GameDaoExtraInterface where
+  type ParameterEntrypointsDerivation GameDaoExtraInterface = EpdPlain
+
 data ProposalType = BalanceType BalanceChange | NewType NewContents
   deriving stock (Generic)
   deriving anyclass (IsoValue)
@@ -129,6 +142,15 @@ instance TypeHasDoc GameDaoProposalMetadata where
   typeDocMdDescription = "GameDAO's metadata. This fields affect how proposal \
     \got accepted and how many tokens will be frozen"
 
+data GameDaoCustomEntrypointsKind
+instance EntrypointKindHasDoc GameDaoCustomEntrypointsKind where
+  entrypointKindPos = 1065
+  entrypointKindSectionName = "GameDAO custom entrypoints"
+  entrypointKindSectionDescription = Just
+    "Some functionality specific to Game DAO. \
+    \This demonstrates that we can e.g. add a `%default` entrypoint used to send \
+    \mutez to the contract."
+
 ----------------------------------------------------------------------------
 
 type instance ErrorArg "fAIL_DECISION_LAMBDA" = ()
@@ -139,7 +161,7 @@ instance CustomErrorHasDoc "fAIL_DECISION_LAMBDA" where
 
 ----------------------------------------------------------------------------
 
-type Parameter = DAO.Parameter GameDaoProposalMetadata
+type Parameter = DAO.Parameter GameDaoProposalMetadata GameDaoExtraInterface
 type Storage = DAO.Storage GameDaoContractExtra GameDaoProposalMetadata
 
 -- | For "balance change", the proposer needs to freeze 10 tokens
@@ -205,13 +227,34 @@ decisionLambda = do
     setField #ceAcceptedProposalsNum
     stSetField #sExtra
 
-config :: DAO.Config GameDaoContractExtra GameDaoProposalMetadata
-config = DAO.defaultConfig
+extraEntrypoints
+  :: forall s store. (DAO.StorageC store GameDaoContractExtra GameDaoProposalMetadata)
+  => GameDaoExtraInterface : store : s :-> List Operation : store : s
+extraEntrypoints =
+  entryCase (Proxy @GameDaoCustomEntrypointsKind)
+    ( #cDefault /-> do
+        doc $ DDescription "Entrypoint used for transferring money to the contract."
+        nil
+    , #cResetProposalsCounter /-> do
+        doc $ DDescription "An entrypoint that performs something smart (or not)."
+        stGetField #sExtra
+        push 0
+        setField #ceAcceptedProposalsNum
+        stSetField #sExtra
+        nil
+    )
+
+config :: DAO.Config GameDaoContractExtra GameDaoProposalMetadata GameDaoExtraInterface
+config = DAO.Config
   { DAO.cDaoName = "Game DAO"
   , DAO.cDaoDescription = [md|A simple DAO for a Moba-like game.|]
+  , DAO.cUnfrozenTokenMetadata = DAO.cUnfrozenTokenMetadata DAO.defaultConfig
+  , DAO.cFrozenTokenMetadata = DAO.cFrozenTokenMetadata DAO.defaultConfig
+
   , DAO.cProposalCheck = gameDaoProposalCheck
   , DAO.cRejectedProposalReturnValue = gameDaoRejectedProposalReturnValue
   , DAO.cDecisionLambda = decisionLambda
+  , DAO.cCustomCall = extraEntrypoints
 
   , DAO.cMaxVotingPeriod = 60 * 60 * 24 * 30 -- 1 months
   , DAO.cMinVotingPeriod = 1 -- value between 1 second - 1 month

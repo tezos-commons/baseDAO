@@ -56,7 +56,7 @@ module Lorentz.Contracts.BaseDAO.Types
   , baseDaoAnnOptions
   ) where
 
-import Universum (Each, Num(..), Show)
+import Universum (Each, Num (..), Show)
 
 import qualified Data.Kind as Kind
 
@@ -77,7 +77,7 @@ import Util.TypeLits
 -- Configuration
 ------------------------------------------------------------------------
 
-data Config contractExtra proposalMetadata = Config
+data Config contractExtra proposalMetadata otherParam = Config
   { cDaoName :: Text
   , cDaoDescription :: Markdown
   , cUnfrozenTokenMetadata :: FA2.TokenMetadata
@@ -106,6 +106,11 @@ data Config contractExtra proposalMetadata = Config
     :-> List Operation : store : s
   -- ^ The decision lambda is executed based on a successful proposal.
 
+  , cCustomCall :: forall s store.
+     (StorageC store contractExtra proposalMetadata, HasFuncContext s store)
+    => otherParam : store : s
+    :-> List Operation : store : s
+  -- ^ Implementation of DAO's custom entrypoints.
 
   -- Bounded Values
   , cMaxProposals :: Natural
@@ -119,7 +124,7 @@ data Config contractExtra proposalMetadata = Config
   }
 
 -- | The default configuration with the simplest possible logic.
-defaultConfig :: Config ce pm
+defaultConfig :: Config ce pm op
 defaultConfig = Config
   { cDaoName = "BaseDAO"
   , cDaoDescription = [md|An example of a very simple DAO contract without any custom checks,
@@ -144,6 +149,8 @@ defaultConfig = Config
       dropN @2; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
       drop; nil
+  , cCustomCall =
+      failUsing [mt|CustomCalls are not implemented|]
 
   , cMaxVotingPeriod = 60 * 60 * 24 * 30
   , cMinVotingPeriod = 1 -- value between 1 second - 1 month
@@ -270,10 +277,11 @@ type StorageC store ce pm =
   , StoreHasField store "sExtra" ce
     -- TODO: remove ^^^ once we use
     -- https://gitlab.com/morley-framework/morley/-/merge_requests/665
+  , KnownValue pm
   )
 
 -- | Parameter of the BaseDAO contract
-data Parameter proposalMetadata
+data Parameter proposalMetadata otherParam
   = Call_FA2 FA2.Parameter
   | Transfer_ownership TransferOwnershipParam
   | Accept_ownership ()
@@ -291,12 +299,19 @@ data Parameter proposalMetadata
   | Token_address TokenAddressParam
   | GetVotePermitCounter (View () Nonce)
   | Drop_proposal (ProposalKey proposalMetadata)
+  | CallCustom otherParam
   deriving stock (Generic, Show)
 
-instance (HasAnnotation pm, NiceParameter pm) => ParameterHasEntrypoints (Parameter pm) where
-  type ParameterEntrypointsDerivation (Parameter pm) = EpdDelegate
+instance ( HasAnnotation pm, NiceParameter pm
+         , ParameterDeclaresEntrypoints op
+         , RequireAllUniqueEntrypoints (Parameter pm op)
+         ) =>
+         ParameterHasEntrypoints (Parameter pm op) where
+  type ParameterEntrypointsDerivation (Parameter pm op) = EpdDelegate
 
-deriving anyclass instance (WellTypedIsoValue pm) => IsoValue (Parameter pm)
+deriving anyclass instance
+  (WellTypedIsoValue pm, WellTypedIsoValue op) =>
+  IsoValue (Parameter pm op)
 
 type TransferOwnershipParam = ("newOwner" :! Address)
 type MigrateParam = ("newAddress" :! Address)
