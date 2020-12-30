@@ -4,9 +4,10 @@ BaseDAO is a basic generic smart contract for DAO on Tezos.
 
 This repository provides:
 * Generic DAO contract (template) that can be used as basis for various DAOs.
-* Two instantiations of this template:
+* Instantiations of this template:
   1. Simplest implementation with no custom logic ([TrivialDAO contract](./src/Lorentz/Contracts/TrivialDAO.hs))
   2. A simple example with custom logic called [GameDAO](./src/Lorentz/Contracts/GameDAO.hs).
+  3. Two more practical DAO contracts: [RegistryDAO](./src/Lorentz/Contracts/RegistryDAO.hs) and [TreasuryDAO](./src/Lorentz/Contracts/TreasuryDAO.hs).
 * A [template package](./template) that one can copy and use to create their own DAO.
 
 It is implemented and tested using the [Morley framework](https://gitlab.com/morley-framework/morley)
@@ -19,6 +20,8 @@ The [specification](docs/specification.md) document is the specification used as
 Documentation of the actually implemented smart contract is generated automatically.
 * [TrivialDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/TrivialDAO.md)
 * [GameDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/GameDAO.md)
+* [RegistryDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/RegistryDAO.md)
+* [TreasuryDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/TreasuryDAO.md)
 
 ## Prerequisites
 
@@ -39,16 +42,21 @@ Run `stack exec -- baseDAO --help` to see available commands.
 
 ### Deploying a contract
 
-You can dump the entire contract code into a `BaseDAO.tz` file using the following command:
+You can dump the entire contract code into a `TrivialDAO.tz` file using the following command:
 
 <!-- TODO: remove `--oneline` once morley:#442 is resolved -->
 
 ```sh
-stack exec baseDAO -- print -n baseDAO --oneline
+stack exec baseDAO -- print -n TrivialDAO --oneline
 ```
 
 This will produce a contract with empty proposal metadata and the simplest possible configuration.
-We also provide some other contracts as example, for instance `GameDAO` contract.
+We also provide some other contracts, for instance `GameDAO` contract.
+The full list can be printed using
+
+```sh
+stack exec baseDAO list
+```
 
 The initial storage of the contract can be produced using
 
@@ -71,10 +79,10 @@ How to install `tezos-client` executable can be found at official [Tezos install
 You can obtain the actual version of documentation mentioned in [Contract documentation and requirements](#contract-documentation-and-requirements) for any specific contract via e.g.
 
 ```sh
-stack exec baseDAO -- document -n BaseDAO
+stack exec baseDAO -- document -n RegistryDAO
 ```
 
-This command will dump the documentation to `BaseDAO.md` file.
+This command will dump the documentation to `RegistryDAO.md` file.
 
 ## Writing your own DAOs
 
