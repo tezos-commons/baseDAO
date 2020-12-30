@@ -12,10 +12,10 @@ OUT ?= out
 
 .PHONY: all clean test
 
-all: build
+all: $(OUT)/baseDAO.tz
 
 # Compile LIGO contract into its michelson representation.
-build: src
+$(OUT)/baseDAO.tz: src
 	mkdir -p $(OUT)
 	# ============== Compiling contract ============== #
 	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/baseDAO.tz
@@ -28,7 +28,7 @@ build: src
 	sed -i 's/^[{ ] //g' $(OUT)/baseDAO.tz
 	sed -i '$$s/[}] *$$//' $(OUT)/baseDAO.tz
 
-test: build
+test: $(OUT)/baseDAO.tz
 	$(MAKE) -C .. test PACKAGE=baseDAO-ligo-tests \
     BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz
 
