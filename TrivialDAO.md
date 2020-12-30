@@ -1,6 +1,6 @@
 # BaseDAO
 
-**Code revision:** [d266b0a](https://github.com/tqtezos/baseDAO/tree/d266b0aa2aea6aa022206f893a0acdc3270d011e) *(Tue Dec 29 16:46:57 2020 +0700)*
+**Code revision:** [63a28e5](https://github.com/tqtezos/baseDAO/tree/63a28e5d254f3bebccff74e7741beebfc264f29f) *(Wed Dec 30 14:40:15 2020 +0300)*
 
 
 
@@ -35,6 +35,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [token_address](#entrypoints-token_address)
   - [getVotePermitCounter](#entrypoints-getVotePermitCounter)
   - [drop_proposal](#entrypoints-drop_proposal)
+  - [callCustom](#entrypoints-callCustom)
 - [Common for all contract's entrypoints](#section-Common-for-all-contract's-entrypoints)
   - [prior checks](#entrypoints-prior-checks)
 
@@ -53,6 +54,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [ChainId](#types-ChainId)
   - [Contract](#types-Contract)
   - [DataToSign](#types-DataToSign)
+  - [Empty](#types-Empty)
   - [Hash](#types-Hash)
   - [Integer](#types-Integer)
   - [List](#types-List)
@@ -886,6 +888,32 @@ failing decision lambda.
 
 
 
+<a name="entrypoints-callCustom"></a>
+
+---
+
+### `callCustom`
+
+Additional entrypoints specific to the given specific DAO.
+
+
+**Argument:** 
+  + **In Haskell:** [`Empty`](#types-Empty)
+  + **In Michelson:** `unit`
+    + **Example:** <span id="example-id">`Unit`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `callCustom` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+
+
 <a name="section-Common-for-all-contract's-entrypoints"></a>
 
 ## Common for all contract's entrypoints
@@ -1088,6 +1116,23 @@ to be globally unique in order to avoid replay attacks:
   * ***dsData*** :[`Text`](#types-Text)
 
 **Final Michelson representation (example):** `DataToSign MText` = `pair (pair chain_id address) (pair nat string)`
+
+
+
+<a name="types-Empty"></a>
+
+---
+
+### `Empty`
+
+Type which should never be constructed.
+
+If appears as part of entrypoint argument, this means that the entrypoint should never be called.
+
+**Structure:** 
+[`()`](#types-lparenrparen)
+
+**Final Michelson representation:** `unit`
 
 
 

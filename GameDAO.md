@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [d266b0a](https://github.com/tqtezos/baseDAO/tree/d266b0aa2aea6aa022206f893a0acdc3270d011e) *(Tue Dec 29 16:46:57 2020 +0700)*
+**Code revision:** [63a28e5](https://github.com/tqtezos/baseDAO/tree/63a28e5d254f3bebccff74e7741beebfc264f29f) *(Wed Dec 30 14:40:15 2020 +0300)*
 
 
 
@@ -34,6 +34,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [token_address](#entrypoints-token_address)
   - [getVotePermitCounter](#entrypoints-getVotePermitCounter)
   - [drop_proposal](#entrypoints-drop_proposal)
+  - [callCustom](#entrypoints-callCustom)
 - [Common for all contract's entrypoints](#section-Common-for-all-contract's-entrypoints)
   - [prior checks](#entrypoints-prior-checks)
 
@@ -54,6 +55,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [Contract](#types-Contract)
   - [DataToSign](#types-DataToSign)
   - [GameDaoContractExtra](#types-GameDaoContractExtra)
+  - [GameDaoExtraInterface](#types-GameDaoExtraInterface)
   - [GameDaoProposalMetadata](#types-GameDaoProposalMetadata)
   - [Hash](#types-Hash)
   - [HeroChange](#types-HeroChange)
@@ -895,6 +897,82 @@ failing decision lambda.
 
 
 
+<a name="entrypoints-callCustom"></a>
+
+---
+
+### `callCustom`
+
+Additional entrypoints specific to the given specific DAO.
+
+
+**Argument:** 
+  + **In Haskell:** [`GameDaoExtraInterface`](#types-GameDaoExtraInterface)
+  + **In Michelson:** `(or unit unit)`
+    + **Example:** <span id="example-id">`Left Unit`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `callCustom` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+<a name="section-GameDAO-custom-entrypoints"></a>
+
+#### GameDAO custom entrypoints
+
+Some functionality specific to Game DAO. This demonstrates that we can e.g. add a `%default` entrypoint used to send mutez to the contract.
+
+<a name="entrypoints-default"></a>
+
+---
+
+##### `default`
+
+Entrypoint used for transferring money to the contract.
+
+**Argument:** none (pass unit)
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call the contract (default entrypoint) with the constructed argument.
+</details>
+<p>
+
+
+
+
+
+<a name="entrypoints-resetProposalsCounter"></a>
+
+---
+
+##### `resetProposalsCounter`
+
+An entrypoint that performs something smart (or not).
+
+**Argument:** none (pass unit)
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `resetProposalsCounter` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+
+
+
+
 <a name="section-Common-for-all-contract's-entrypoints"></a>
 
 ## Common for all contract's entrypoints
@@ -1128,6 +1206,23 @@ As part of contract global state this carries nothing
   * ***acceptedProposalsNum*** :[`Natural`](#types-Natural)
 
 **Final Michelson representation:** `nat`
+
+
+
+<a name="types-GameDaoExtraInterface"></a>
+
+---
+
+### `GameDaoExtraInterface`
+
+Additional entrypoints of Game DAO.
+
+**Structure:** *one of* 
++ **Default**()
++ **ResetProposalsCounter**()
+
+
+**Final Michelson representation:** `or unit unit`
 
 
 
