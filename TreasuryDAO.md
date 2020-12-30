@@ -1,13 +1,11 @@
-# Registry DAO
+# Treasury DAO
 
 **Code revision:** [871953a](https://github.com/tqtezos/baseDAO/tree/871953ad923d3fde445ae7b356153b3a85956019) *(Wed Dec 30 21:51:06 2020 +0700)*
 
 
 
-Registry DAO is a decentralized key-value storage of arbitrary data.
-It's parameterized by two types: `k` (for key) and `v` (for value).
-In UI, these `k` and `v` parameters both will be `bytes` and will be converted to application-level types externally.
-Application-level types can be stored as part of the contract's metadata as specified in TZIP-16.
+Treasury DAO is a smart contract that holds XTZ and FA2 tokens and lets its users
+decide how to spend its XTZ and tokens.
 
 
 It contains standard FA2 entrypoints, plus some extra ones including proposal and
@@ -53,20 +51,18 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [BurnParam](#types-BurnParam)
   - [ByteString](#types-ByteString)
   - [ChainId](#types-ChainId)
-  - [ConfigProposal](#types-ConfigProposal)
   - [Contract](#types-Contract)
   - [DataToSign](#types-DataToSign)
-  - [Empty](#types-Empty)
   - [Hash](#types-Hash)
   - [Integer](#types-Integer)
   - [List](#types-List)
   - [Maybe](#types-Maybe)
   - [MigrationStatus](#types-MigrationStatus)
   - [MintParam](#types-MintParam)
+  - [Mutez](#types-Mutez)
   - [Named entry](#types-Named-entry)
   - [Natural](#types-Natural)
   - [Nonce](#types-Nonce)
-  - [NormalProposal](#types-NormalProposal)
   - [OperatorParam](#types-OperatorParam)
   - [Packed](#types-Packed)
   - [Parameter](#types-Parameter)
@@ -75,10 +71,6 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [Proposal](#types-Proposal)
   - [ProposeParams](#types-ProposeParams)
   - [PublicKey](#types-PublicKey)
-  - [RegistryDaoContractExtra](#types-RegistryDaoContractExtra)
-  - [RegistryDaoProposalMetadata](#types-RegistryDaoProposalMetadata)
-  - [RegistryEntry](#types-RegistryEntry)
-  - [RegistryUpdate](#types-RegistryUpdate)
   - [Set](#types-Set)
   - [Signature](#types-Signature)
   - [SomeType](#types-SomeType)
@@ -86,17 +78,24 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [Text](#types-Text)
   - [Timestamp](#types-Timestamp)
   - [TokenId](#types-TokenId)
+  - [TokenTransfer](#types-TokenTransfer)
   - [TransferContractTokensParam](#types-TransferContractTokensParam)
   - [TransferDestination](#types-TransferDestination)
   - [TransferItem](#types-TransferItem)
+  - [TransferType](#types-TransferType)
+  - [TreasuryDaoContractExtra](#types-TreasuryDaoContractExtra)
+  - [TreasuryDaoExtraInterface](#types-TreasuryDaoExtraInterface)
+  - [TreasuryDaoProposalMetadata](#types-TreasuryDaoProposalMetadata)
   - [UpdateOperator](#types-UpdateOperator)
   - [View](#types-View)
   - [VoteParam](#types-VoteParam)
+  - [XtzTransfer](#types-XtzTransfer)
 - [Errors](#section-Errors)
   - [BAD_ENTRYPOINT_PARAMETER](#errors-BAD_ENTRYPOINT_PARAMETER)
   - [FA2_INSUFFICIENT_BALANCE](#errors-FA2_INSUFFICIENT_BALANCE)
   - [FA2_NOT_OPERATOR](#errors-FA2_NOT_OPERATOR)
   - [FA2_TOKEN_UNDEFINED](#errors-FA2_TOKEN_UNDEFINED)
+  - [FAIL_DECISION_LAMBDA](#errors-FAIL_DECISION_LAMBDA)
   - [FAIL_DROP_PROPOSAL_NOT_ACCEPTED](#errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED)
   - [FAIL_DROP_PROPOSAL_NOT_OVER](#errors-FAIL_DROP_PROPOSAL_NOT_OVER)
   - [FAIL_PROPOSAL_CHECK](#errors-FAIL_PROPOSAL_CHECK)
@@ -501,9 +500,9 @@ is decreased by the same value.
 
 
 **Argument:** 
-  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
-  + **In Michelson:** `(pair (nat %frozen_token) (or %proposal_metadata (pair %proposal_type (nat %agora_post_id) (list %diff (pair (bytes %key) (option %new_value bytes)))) (pair %proposal_type (pair (option %frozen_scale_value nat) (option %frozen_extra_value nat)) (pair (option %slash_scale_value nat) (pair (option %slash_division_value nat) (option %max_proposal_size nat))))))`
-    + **Example:** <span id="example-id">`Pair 0 (Left (Pair 0 { Pair 0x0a (Some 0x0a) }))`</span>
+  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`TreasuryDaoProposalMetadata`](#types-TreasuryDaoProposalMetadata)
+  + **In Michelson:** `(pair (nat %frozen_token) (pair %proposal_metadata (nat %agora_post_id) (list %transfers (or (pair %transfer_type (mutez %amount) (address %recipient)) (pair %transfer_type (address %contract_address) (list %transfer_list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))))))`
+    + **Example:** <span id="example-id">`Pair 0 (Pair 0 { Left (Pair 100 "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB") })`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -540,7 +539,7 @@ The sender must have an amount required for all votings.
 
 
 **Argument:** 
-  + **In Haskell:** [`List`](#types-List) ([`PermitProtected`](#types-PermitProtected) ([`VoteParam`](#types-VoteParam) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))))
+  + **In Haskell:** [`List`](#types-List) ([`PermitProtected`](#types-PermitProtected) ([`VoteParam`](#types-VoteParam) [`TreasuryDaoProposalMetadata`](#types-TreasuryDaoProposalMetadata)))
   + **In Michelson:** `(list (pair :permit_protected (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))) (option %permit (pair (key %key) (signature %signature)))))`
     + **Example:** <span id="example-id">`{ Pair (Pair 0x0a (Pair True 0)) (Some (Pair "edpkuwTWKgQNnhR5v17H2DYHbfcxYepARyrPGbf1tbMoGQAj8Ljr3V" "edsigtrs8bK7vNfiR4Kd9dWasVa1bAWaQSu2ipnmLGZuwQa8ktCEMYVKqbWsbJ7zTS8dgYT9tiSUKorWCPFHosL5zPsiDwBQ6vb")) }`</span>
 
@@ -681,6 +680,8 @@ If the proposal is accepted, the decision lambda is called.
 * [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
 
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`FAIL_DECISION_LAMBDA`](#errors-FAIL_DECISION_LAMBDA) — Trying to execute decision lambda but result in errors.
 
 
 
@@ -831,7 +832,7 @@ failing decision lambda.
 
 
 **Argument:** 
-  + **In Haskell:** [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString)), [`Address`](#types-Address)))
+  + **In Haskell:** [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`TreasuryDaoProposalMetadata`](#types-TreasuryDaoProposalMetadata), [`Address`](#types-Address)))
   + **In Michelson:** `bytes`
     + **Example:** <span id="example-id">`0x0a`</span>
 
@@ -874,9 +875,9 @@ Additional entrypoints specific to the given specific DAO.
 
 
 **Argument:** 
-  + **In Haskell:** [`Empty`](#types-Empty)
-  + **In Michelson:** `unit`
-    + **Example:** <span id="example-id">`Unit`</span>
+  + **In Haskell:** [`TreasuryDaoExtraInterface`](#types-TreasuryDaoExtraInterface)
+  + **In Michelson:** `(or unit unit)`
+    + **Example:** <span id="example-id">`Left Unit`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -885,6 +886,57 @@ Additional entrypoints specific to the given specific DAO.
 1. Call contract's `callCustom` entrypoint passing the constructed argument.
 </details>
 <p>
+
+
+
+<a name="section-TreasuryDAO-custom-entrypoints"></a>
+
+#### TreasuryDAO custom entrypoints
+
+Some functionality specific to Treasury DAO. This demonstrates that we can e.g. add a `%default` entrypoint used to send mutez to the contract.
+
+<a name="entrypoints-default"></a>
+
+---
+
+##### `default`
+
+Entrypoint used for transferring money to the contract.
+
+**Argument:** none (pass unit)
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call the contract (default entrypoint) with the constructed argument.
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+
+
+<a name="entrypoints-none"></a>
+
+---
+
+##### `none`
+
+**Argument:** none (pass unit)
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `none` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
 
 
 
@@ -1055,25 +1107,6 @@ Identifier of the current chain.
 
 
 
-<a name="types-ConfigProposal"></a>
-
----
-
-### `ConfigProposal`
-
-Describe a configuration proposal in Registry DAO. It is used to update the configuration values in contract extra that affect the process of checking if a proposal is valid or not and how tokens are slash when a proposal is rejected.
-
-**Structure:** 
-  * ***frozenScaleValue*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
-  * ***frozenExtraValue*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
-  * ***slashScaleValue*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
-  * ***slashDivisionValue*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
-  * ***maxProposalSize*** :[`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
-
-**Final Michelson representation:** `pair (pair (option nat) (option nat)) (pair (option nat) (pair (option nat) (option nat)))`
-
-
-
 <a name="types-Contract"></a>
 
 ---
@@ -1108,23 +1141,6 @@ to be globally unique in order to avoid replay attacks:
   * ***dsData*** :[`Text`](#types-Text)
 
 **Final Michelson representation (example):** `DataToSign MText` = `pair (pair chain_id address) (pair nat string)`
-
-
-
-<a name="types-Empty"></a>
-
----
-
-### `Empty`
-
-Type which should never be constructed.
-
-If appears as part of entrypoint argument, this means that the entrypoint should never be called.
-
-**Structure:** 
-[`()`](#types-lparenrparen)
-
-**Final Michelson representation:** `unit`
 
 
 
@@ -1220,6 +1236,18 @@ Describes whose account, which token id and in what amount to mint
 
 
 
+<a name="types-Mutez"></a>
+
+---
+
+### `Mutez`
+
+Mutez primitive.
+
+**Final Michelson representation:** `mutez`
+
+
+
 <a name="types-Named-entry"></a>
 
 ---
@@ -1258,22 +1286,6 @@ Contract-local nonce used to make some data unique.
 [`Natural`](#types-Natural)
 
 **Final Michelson representation:** `nat`
-
-
-
-<a name="types-NormalProposal"></a>
-
----
-
-### `NormalProposal`
-
-Describe a proposal for add/update/delete an item in the registry.
-
-**Structure (example):** `NormalProposal ByteString ByteString` = 
-  * ***npAgoraPostId*** :[`AgoraPostId`](#types-AgoraPostId)
-  * ***npDiff*** :[`List`](#types-List) ([`RegistryUpdate`](#types-RegistryUpdate) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
-
-**Final Michelson representation (example):** `NormalProposal ByteString ByteString` = `pair nat (list (pair bytes (option bytes)))`
 
 
 
@@ -1428,78 +1440,6 @@ PublicKey primitive.
 
 
 
-<a name="types-RegistryDaoContractExtra"></a>
-
----
-
-### `RegistryDaoContractExtra`
-
-Describe the contract extra fields of a registry DAO. It contain a registry as a `BigMap` of a key `k` and a value of `RegistryEntry v`. It also contains various configurable values that can  be updated via `ConfigProposal`
-
-**Structure (example):** `RegistryDaoContractExtra ByteString ByteString` = 
-  * ***ceRegistry*** :[`BigMap`](#types-BigMap) [`ByteString`](#types-ByteString) ([`RegistryEntry`](#types-RegistryEntry) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
-  * ***ceFrozenScaleValue*** :[`Natural`](#types-Natural)
-  * ***ceFrozenExtraValue*** :[`Natural`](#types-Natural)
-  * ***ceSlashScaleValue*** :[`Natural`](#types-Natural)
-  * ***ceSlashDivisionValue*** :[`Natural`](#types-Natural)
-  * ***ceMaxProposalSize*** :[`Natural`](#types-Natural)
-
-**Final Michelson representation (example):** `RegistryDaoContractExtra ByteString ByteString` = `pair (pair (big_map bytes (pair (option bytes) (pair bytes timestamp))) (pair nat nat)) (pair nat (pair nat nat))`
-
-
-
-<a name="types-RegistryDaoProposalMetadata"></a>
-
----
-
-### `RegistryDaoProposalMetadata`
-
-Describe the metadata of a proposal in Registry DAO. In Registry DAO, there are 2 types of proposals: a registry proposal, represented as `NormalProposal k v` and a configuration proposal represented as `ConfigProposal`.
-
-**Structure (example):** `RegistryDaoProposalMetadata ByteString ByteString` = *one of* 
-+ **NormalProposalType**
-([`NormalProposal`](#types-NormalProposal) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
-+ **ConfigProposalType**
-[`ConfigProposal`](#types-ConfigProposal)
-
-
-**Final Michelson representation (example):** `RegistryDaoProposalMetadata ByteString ByteString` = `or (pair nat (list (pair bytes (option bytes)))) (pair (pair (option nat) (option nat)) (pair (option nat) (pair (option nat) (option nat))))`
-
-
-
-<a name="types-RegistryEntry"></a>
-
----
-
-### `RegistryEntry`
-
-Describe the value in registry map. It represents the actual item of the registry as `Maybe v`. `None` represents the deletion of item and `Some v` represents the existence of an item.It also contains the last proposal's agora post id that affects this item and its last updated time.
-
-**Structure (example):** `RegistryEntry ByteString ByteString` = 
-  * ***reValue*** :[`Maybe`](#types-Maybe) [`ByteString`](#types-ByteString)
-  * ***reAffectedProposalKey*** :[`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString)), [`Address`](#types-Address)))
-  * ***reLastUpdated*** :[`Timestamp`](#types-Timestamp)
-
-**Final Michelson representation (example):** `RegistryEntry ByteString ByteString` = `pair (option bytes) (pair bytes timestamp)`
-
-
-
-<a name="types-RegistryUpdate"></a>
-
----
-
-### `RegistryUpdate`
-
-Describe a proposed change to an items in the registry.
-
-**Structure (example):** `RegistryUpdate ByteString ByteString` = 
-  * ***ruKey*** :[`ByteString`](#types-ByteString)
-  * ***ruNewValue*** :[`Maybe`](#types-Maybe) [`ByteString`](#types-ByteString)
-
-**Final Michelson representation (example):** `RegistryUpdate ByteString ByteString` = `pair bytes (option bytes)`
-
-
-
 <a name="types-Set"></a>
 
 ---
@@ -1592,6 +1532,22 @@ Token identifier as defined by [TZIP-12](https://gitlab.com/tzip/tzip/-/blob/eb1
 
 
 
+<a name="types-TokenTransfer"></a>
+
+---
+
+### `TokenTransfer`
+
+Describe a proposal which wants to transfer any FA2 tokens  to a certain address.
+
+**Structure:** 
+  * ***contractAddress*** :[`Address`](#types-Address)
+  * ***transferList*** :[`List`](#types-List) [`TransferItem`](#types-TransferItem)
+
+**Final Michelson representation:** `pair address (list (pair address (list (pair address (pair nat nat)))))`
+
+
+
 <a name="types-TransferContractTokensParam"></a>
 
 ---
@@ -1638,6 +1594,79 @@ Describes a transfer operation
   * ***txs*** :[`List`](#types-List) [`TransferDestination`](#types-TransferDestination)
 
 **Final Michelson representation:** `pair address (list (pair address (pair nat nat)))`
+
+
+
+<a name="types-TransferType"></a>
+
+---
+
+### `TransferType`
+
+Describe the transfer type of the Treasury proposal which are: token transfer type and xtz transfer type.
+
+**Structure:** *one of* 
++ **XtzTransferType**
+[`XtzTransfer`](#types-XtzTransfer)
++ **TokenTransferType**
+[`TokenTransfer`](#types-TokenTransfer)
+
+
+**Final Michelson representation:** `or (pair mutez address) (pair address (list (pair address (list (pair address (pair nat nat))))))`
+
+
+
+<a name="types-TreasuryDaoContractExtra"></a>
+
+---
+
+### `TreasuryDaoContractExtra`
+
+Describe TreasuryDAO's extra fields in storage. They are mainly configuration fields.
+
+**Structure:** 
+  * ***frozenScaleValue*** :[`Natural`](#types-Natural)
+  * ***frozenExtraValue*** :[`Natural`](#types-Natural)
+  * ***slashScaleValue*** :[`Natural`](#types-Natural)
+  * ***slashDivisionValue*** :[`Natural`](#types-Natural)
+  * ***minXtzAmount*** :[`Mutez`](#types-Mutez)
+  * ***maxXtzAmount*** :[`Mutez`](#types-Mutez)
+  * ***maxProposalSize*** :[`Natural`](#types-Natural)
+
+**Final Michelson representation:** `pair (pair nat (pair nat nat)) (pair (pair nat mutez) (pair mutez nat))`
+
+
+
+<a name="types-TreasuryDaoExtraInterface"></a>
+
+---
+
+### `TreasuryDaoExtraInterface`
+
+Additional entrypoints of Game DAO.
+
+**Structure:** *one of* 
++ **Default**()
++ **None**()
+
+
+**Final Michelson representation:** `or unit unit`
+
+
+
+<a name="types-TreasuryDaoProposalMetadata"></a>
+
+---
+
+### `TreasuryDaoProposalMetadata`
+
+A treasury proposal which contains an Agora post ID and a list of transfer items.
+
+**Structure:** 
+  * ***agoraPostId*** :[`AgoraPostId`](#types-AgoraPostId)
+  * ***transfers*** :[`List`](#types-List) [`TransferType`](#types-TransferType)
+
+**Final Michelson representation:** `pair nat (list (or (pair mutez address) (pair address (list (pair address (list (pair address (pair nat nat))))))))`
 
 
 
@@ -1691,6 +1720,22 @@ Describes target proposal id, vote type and vote amount
   * ***vVoteAmount*** :[`Natural`](#types-Natural)
 
 **Final Michelson representation (example):** `VoteParam MText` = `pair bytes (pair bool nat)`
+
+
+
+<a name="types-XtzTransfer"></a>
+
+---
+
+### `XtzTransfer`
+
+Describe a proposal which wants to transfer some amount of XTZ to a certain address.
+
+**Structure:** 
+  * ***amount*** :[`Mutez`](#types-Mutez)
+  * ***recipient*** :[`Address`](#types-Address)
+
+**Final Michelson representation:** `pair mutez address`
 
 
 
@@ -1788,6 +1833,18 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 **Fires if:** Contract received an unsupported token id
 
 **Representation:** `("FA2_TOKEN_UNDEFINED", ())`.
+
+<a name="errors-FAIL_DECISION_LAMBDA"></a>
+
+---
+
+### `FAIL_DECISION_LAMBDA`
+
+**Class:** Action exception
+
+**Fires if:** Trying to execute decision lambda but result in errors.
+
+**Representation:** `("FAIL_DECISION_LAMBDA", ())`.
 
 <a name="errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED"></a>
 

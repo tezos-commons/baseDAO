@@ -1,6 +1,6 @@
 # BaseDAO
 
-**Code revision:** [63a28e5](https://github.com/tqtezos/baseDAO/tree/63a28e5d254f3bebccff74e7741beebfc264f29f) *(Wed Dec 30 14:40:15 2020 +0300)*
+**Code revision:** [871953a](https://github.com/tqtezos/baseDAO/tree/871953ad923d3fde445ae7b356153b3a85956019) *(Wed Dec 30 21:51:06 2020 +0700)*
 
 
 
@@ -32,12 +32,9 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [burn](#entrypoints-burn)
   - [mint](#entrypoints-mint)
   - [transfer_contract_tokens](#entrypoints-transfer_contract_tokens)
-  - [token_address](#entrypoints-token_address)
   - [getVotePermitCounter](#entrypoints-getVotePermitCounter)
   - [drop_proposal](#entrypoints-drop_proposal)
   - [callCustom](#entrypoints-callCustom)
-- [Common for all contract's entrypoints](#section-Common-for-all-contract's-entrypoints)
-  - [prior checks](#entrypoints-prior-checks)
 
 **[Definitions](#definitions)**
 
@@ -94,7 +91,6 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [FAIL_DROP_PROPOSAL_NOT_OVER](#errors-FAIL_DROP_PROPOSAL_NOT_OVER)
   - [FAIL_PROPOSAL_CHECK](#errors-FAIL_PROPOSAL_CHECK)
   - [FAIL_TRANSFER_CONTRACT_TOKENS](#errors-FAIL_TRANSFER_CONTRACT_TOKENS)
-  - [FORBIDDEN_XTZ](#errors-FORBIDDEN_XTZ)
   - [FROZEN_TOKEN_NOT_TRANSFERABLE](#errors-FROZEN_TOKEN_NOT_TRANSFERABLE)
   - [InternalError](#errors-InternalError)
   - [MAX_PROPOSALS_REACHED](#errors-MAX_PROPOSALS_REACHED)
@@ -651,9 +647,9 @@ If the proposal is accepted, the decision lambda is called.
 
 
 **Argument:** 
-  + **In Haskell:** [`Maybe`](#types-Maybe) [`Natural`](#types-Natural)
-  + **In Michelson:** `(option nat)`
-    + **Example:** <span id="example-id">`Some 0`</span>
+  + **In Haskell:** [`Natural`](#types-Natural)
+  + **In Michelson:** `nat`
+    + **Example:** <span id="example-id">`0`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -782,36 +778,6 @@ Unlike the others, this entrypoint can be used after contract is migrated.
 
 
 
-<a name="entrypoints-token_address"></a>
-
----
-
-### `token_address`
-
-Returns the address of the associated FA2 contract.
-Since FA2 logic is embedded into this contract, this entrypoint always returns SELF.
-
-
-**Argument:** 
-  + **In Haskell:** [`ContractRef`](#types-Contract) [`Address`](#types-Address)
-  + **In Michelson:** `(contract address)`
-    + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `token_address` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-
-
 <a name="entrypoints-getVotePermitCounter"></a>
 
 ---
@@ -911,24 +877,6 @@ Additional entrypoints specific to the given specific DAO.
 <p>
 
 
-
-
-
-<a name="section-Common-for-all-contract's-entrypoints"></a>
-
-## Common for all contract's entrypoints
-
-<a name="entrypoints-prior-checks"></a>
-
----
-
-### `prior checks`
-
-These properties belong to all entrypoints of the contract.
-
-
-**Possible errors:**
-* [`FORBIDDEN_XTZ`](#errors-FORBIDDEN_XTZ) — Received some XTZ as part of a contract call, which is forbidden
 
 
 
@@ -1756,18 +1704,6 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 **Fires if:** Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract.
 
 **Representation:** `("FAIL_TRANSFER_CONTRACT_TOKENS", ())`.
-
-<a name="errors-FORBIDDEN_XTZ"></a>
-
----
-
-### `FORBIDDEN_XTZ`
-
-**Class:** Action exception
-
-**Fires if:** Received some XTZ as part of a contract call, which is forbidden
-
-**Representation:** `("FORBIDDEN_XTZ", ())`.
 
 <a name="errors-FROZEN_TOKEN_NOT_TRANSFERABLE"></a>
 
