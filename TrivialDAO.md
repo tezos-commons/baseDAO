@@ -1,6 +1,6 @@
 # BaseDAO
 
-**Code revision:** [871953a](https://github.com/tqtezos/baseDAO/tree/871953ad923d3fde445ae7b356153b3a85956019) *(Wed Dec 30 21:51:06 2020 +0700)*
+**Code revision:** [c37229d](https://github.com/tqtezos/baseDAO/tree/c37229d26108ba031b2a0876e1c4d820f85766ec) *(Wed Dec 30 19:33:21 2020 +0300)*
 
 
 
