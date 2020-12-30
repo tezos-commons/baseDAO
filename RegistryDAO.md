@@ -1,6 +1,6 @@
 # Registry DAO
 
-**Code revision:** [c37229d](https://github.com/tqtezos/baseDAO/tree/c37229d26108ba031b2a0876e1c4d820f85766ec) *(Wed Dec 30 19:33:21 2020 +0300)*
+**Code revision:** [0d4b650](https://github.com/tqtezos/baseDAO/tree/0d4b650c53f0114048bffd9bf9682c71fc13970c) *(Wed Dec 30 22:00:14 2020 +0300)*
 
 
 
@@ -165,8 +165,9 @@ Storage type for baseDAO contract
   * ***sProposals*** :[`BigMap`](#types-BigMap) ([`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address)))) ([`Proposal`](#types-Proposal) [`Text`](#types-Text))
   * ***sProposalKeyListSortByDate*** :[`Set`](#types-Set) ([`Timestamp`](#types-Timestamp), [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address))))
   * ***sPermitsCounter*** :[`Nonce`](#types-Nonce)
+  * ***sMetadata*** :***metadata*** : [`BigMap`](#types-BigMap) [`Text`](#types-Text) [`ByteString`](#types-ByteString)
 
-**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair address (pair address (or unit (or address address))))) (pair (pair nat (pair nat nat)) (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (pair (set (pair timestamp bytes)) nat)))`
+**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair address (pair address (or unit (or address address))))) (pair (pair nat (pair nat nat)) (pair (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (set (pair timestamp bytes))) (pair nat (big_map string bytes))))`
 
 
 
