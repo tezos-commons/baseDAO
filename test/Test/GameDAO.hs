@@ -59,9 +59,6 @@ flushAcceptedProposals = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin)
     <- originateBaseDaoWithConfig def config
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
-
   -- | Accepted Proposals
   key1 <- createSampleProposal (sampleMetadataBalance $ toAddress consumer) owner1 dao
   checkTokenBalance (DAO.frozenTokenId) dao owner1 10
@@ -81,7 +78,7 @@ flushAcceptedProposals = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 97
 
   advanceTime (sec 21)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100 -- proposer

@@ -26,7 +26,6 @@ module Lorentz.Contracts.BaseDAO.Doc
    , burnDoc
    , mintDoc
    , transferContractTokensDoc
-   , tokenAddressDoc
 
    , getVotePermitCounterDoc
 
@@ -175,12 +174,6 @@ transferContractTokensDoc = [md|
   This entrypoint can be used by the administrator
   to transfer tokens owned (or operated) by this contract in another FA2 contract.
   Unlike the others, this entrypoint can be used after contract is migrated.
-  |]
-
-tokenAddressDoc :: Markdown
-tokenAddressDoc = [md|
-  Returns the address of the associated FA2 contract.
-  Since FA2 logic is embedded into this contract, this entrypoint always returns SELF.
   |]
 
 getVotePermitCounterDoc :: Markdown
