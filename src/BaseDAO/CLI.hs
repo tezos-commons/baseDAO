@@ -17,17 +17,20 @@ module BaseDAO.CLI
 
 import Universum
 
+import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.Map as Map
 import Data.Version (Version, showVersion)
-import Main.Utf8 (withUtf8)
+import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
 
 import Lorentz.ContractRegistry
+import Lorentz.Contracts.MetadataCarrier (metadataCarrierContract)
 import Lorentz.Doc
 import Lorentz.Value
 import Morley.CLI (addressOption)
 import Util.CLI
+import Util.Main (wrapMain)
 import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
@@ -49,11 +52,14 @@ daoStorageParser extraParser = do
     (#help .! "Total number of votes necessary for successful proposal")
   extra <-
     extraParser
+  metadata <-
+    tzip16MetadataParser
   pure $ DAO.mkStorage
     (#admin .! adminAddress)
     (#votingPeriod .? Just votingPeriod)
     (#quorumThreshold .? Just quorumThreshold)
     (#extra .! extra)
+    (#metadata .! metadata)
 
 daoStorageParserDef :: Default ce => Opt.Parser (DAO.Storage ce pm)
 daoStorageParserDef = daoStorageParser (pure def)
@@ -67,8 +73,8 @@ data DaoContractInfo =
   }
 
 daoContractRegistry :: [DaoContractInfo] -> ContractRegistry
-daoContractRegistry contracts = ContractRegistry . Map.fromList $
-  contracts <&> \DaoContractInfo{..} ->
+daoContractRegistry contracts = ContractRegistry $ mconcat
+  [ Map.fromList $ contracts <&> \DaoContractInfo{..} ->
     dciName ?:: ContractInfo
       { ciContract = DAO.baseDaoContract dciConfig
       , ciIsDocumented = True
@@ -76,27 +82,89 @@ daoContractRegistry contracts = ContractRegistry . Map.fromList $
       , ciStorageNotes = Nothing
       }
 
+  , one $ "MetadataCarrier" ?:: ContractInfo
+      { ciContract = metadataCarrierContract
+      , ciIsDocumented = False
+      , ciStorageParser = Nothing
+      , ciStorageNotes = Nothing
+      }
+  ]
+
+------------------------------------------------------------------------
+-- TZIP-16 metadata
+------------------------------------------------------------------------
+
+tzip16MetadataParser :: Opt.Parser (TZIP16.MetadataMap BigMap)
+tzip16MetadataParser = do
+  -- The primary scenario we support - reference to a contract
+  -- with actual metadata
+  contract <- contractHostParser
+  key <- metadataKeyParser
+  return $ TZIP16.metadataURI (TZIP16.tezosStorageUri contract key)
+  where
+    contractHostParser :: Opt.Parser TZIP16.ContractHost
+    contractHostParser = do
+      address <-
+        mkCLOptionParser Nothing (#name .! "metadata-host-address")
+        (#help .! "Address of the contract storing actual metadata")
+      mChainId <- Opt.optional . fmap fromString $
+        mkCLOptionParser Nothing (#name .! "metadata-host-chain")
+        (#help .! "Chain where the contract storing actual metadata resides")
+      return $
+        maybe TZIP16.contractHost TZIP16.foreignContractHost mChainId address
+
+    metadataKeyParser :: Opt.Parser MText
+    metadataKeyParser =
+      mkCLOptionParser Nothing (#name .! "metadata-key")
+        (#help .! "Key in metadata host contract where baseDAO's metadata is located")
+
 ------------------------------------------------------------------------
 -- Contract registry
 ------------------------------------------------------------------------
 
+data AllCmdLnArgs
+  = ContractRegistryCmd CmdLnArgs
+  | PrintMetadata
+
+allArgsParser :: DGitRevision -> ContractRegistry -> Opt.Parser AllCmdLnArgs
+allArgsParser gitRev registry = asum
+  [ ContractRegistryCmd <$>
+      argParser registry gitRev
+
+  , Opt.hsubparser $
+      mkCommandParser "print-metadata" (pure PrintMetadata)
+        "Print known part of TZIP-16 metadata."
+  ]
+
+mkCommandParser
+  :: String
+  -> Opt.Parser a
+  -> String
+  -> Opt.Mod Opt.CommandFields a
+mkCommandParser commandName parser desc =
+  Opt.command commandName $ Opt.info parser $ Opt.progDesc desc
+
 -- | Put this to @main@ to make the executable serve given contracts.
 serveContractRegistry :: String -> DGitRevision -> ContractRegistry -> Version -> IO ()
 serveContractRegistry execName gitRev contracts version =
-  withUtf8 $ do
-    cmdLnArgs <-
+  wrapMain $ do
+    allCmdLnArgs <-
       Opt.execParser $
       contractRegistryProgramInfo version gitRev execName contracts
-    runContractRegistry contracts cmdLnArgs `catchAny` (die . displayException)
+    case allCmdLnArgs of
+      ContractRegistryCmd cmdLnArgs ->
+        runContractRegistry contracts cmdLnArgs
+      PrintMetadata ->
+        putTextLn . decodeUtf8 $ encodePretty DAO.knownBaseDAOMetadata
 
 contractRegistryProgramInfo
   :: Version
   -> DGitRevision
   -> String
   -> ContractRegistry
-  -> Opt.ParserInfo CmdLnArgs
+  -> Opt.ParserInfo AllCmdLnArgs
 contractRegistryProgramInfo version gitRev execName registry =
-  Opt.info (Opt.helper <*> versionOption <*> argParser registry gitRev) $
+  Opt.info (Opt.helper <*> versionOption <*> allArgsParser gitRev registry) $
     mconcat
     [ Opt.fullDesc
     , Opt.progDesc $ execName <> " contracts registry"

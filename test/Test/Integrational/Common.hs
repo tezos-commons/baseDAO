@@ -44,7 +44,10 @@ lOriginateBaseDao contractExtra config = do
         [ (#owner .! owner1, #operator .! operator1)
         , (#owner .! owner2, #operator .! operator2)
         ]
-    storage = (mkStorage ! #admin admin ! #extra contractExtra ! defaults)
+    storage =
+        ( mkStorage ! #admin admin ! #extra contractExtra ! #metadata mempty
+                    ! defaults
+        )
         { sLedger = BigMap bal
         , sOperators = BigMap operators
         }

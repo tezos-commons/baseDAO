@@ -42,6 +42,30 @@ Run `stack exec -- baseDAO --help` to see available commands.
 
 ### Deploying a contract
 
+Deploying a TZIP-16-compliant baseDAO contract requires the following steps.
+
+### 1. Construct baseDAO metadata
+
+Some predefined parts of the metadata can be obtained via calling
+
+```sh
+stack exec baseDAO -- print-metadata
+```
+
+Later it can be merged with user-defined fields like contract name and description.
+
+### 2. Originate metadata contract
+
+Originate a contract that would carry the full metadata information, pass the metadata under some key `K` in initial storage map.
+
+You can obtain the metadata carrier contract via calling
+
+```sh
+stack exec baseDAO -- print --name MetadataCarrier
+```
+
+### 3. Originate baseDAO
+
 You can dump the entire contract code into a `TrivialDAO.tz` file using the following command:
 
 <!-- TODO: remove `--oneline` once morley:#442 is resolved -->
@@ -63,7 +87,12 @@ The initial storage of the contract can be produced using
 
 ```sh
 admin=<administrator address>
-stack exec baseDAO -- storage-BaseDAO --admin $admin > storage
+metadata_carrier=<address of the metadata carrier contract>
+stack exec baseDAO -- storage-TrivialDAO \
+  --admin $admin \
+  --metadata-host-address $metadata_carrier \
+  --metadata-key K \
+  > storage
 ```
 
 Later the contract can be originated with `tezos-client`:

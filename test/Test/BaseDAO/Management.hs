@@ -192,7 +192,8 @@ test_BaseDAO_Management =
      ]
   ]
   where
-    initialStorage admin = mkStorage ! #admin admin ! #extra () ! defaults
+    initialStorage admin =
+      mkStorage ! #admin admin ! #extra () ! #metadata mempty ! defaults
 
 expectNotAdmin
   :: (MonadNettest caps base m)

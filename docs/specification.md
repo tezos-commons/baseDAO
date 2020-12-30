@@ -870,6 +870,17 @@ DAO developer can provide arbitrary entrypoints that will be callable by their n
 
 # TZIP-16 metadata
 
-We do not provide a proper support for contract metadata until [the proposal](https://gitlab.com/tzip/tzip/-/merge_requests/94) is finalized and merged.
+Note: we do not provide a proper support for contract metadata until [the proposal](https://gitlab.com/tzip/tzip/-/merge_requests/94) is finalized and merged.
 
-Except for basic fields, we are going to include `GetCounter` off-chain view.
+This contract implements TZIP-16.
+
+The DAO contract itself won't store the metadata, rather a dedicated contract will contain that.
+Motivation:
+* The baseDAO contract is very large and approaches the Tezos hard limits.
+  * Providing the metadata during origination would significantly reduce the amount of functionality we can put into contract;
+  * Inserting the metadata after origination still requires mechanisms to manage the metadata, increasing the contract size.
+
+## Deployment with metadata
+
+The deployment of contract with metadata has an extra step: a dedicated contract for carrying metadata has to be originated first.
+Then the baseDAO contract should include the reference to a metadata key in the contract in order to be compliant with TZIP-16.

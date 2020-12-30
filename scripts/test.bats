@@ -22,9 +22,19 @@ exe="baseDAO"
 }
 
 @test "Print initial BaseDAO storage" {
-  "$exe" storage-TrivialDAO --admin KT1VdyhR9JsmfpxdGf2hMBo1f4Z2TCogp8Th
+  "$exe" storage-TrivialDAO --admin KT1VdyhR9JsmfpxdGf2hMBo1f4Z2TCogp8Th \
+                            --metadata-host-address KT1VdyhR9JsmfpxdGf2hMBo1f4Z2TCogp8Th \
+                            --metadata-key ""
 }
 
 @test "Document BaseDAO" {
   "$exe" document -n TrivialDAO
+}
+
+@test "Print metadata" {
+  "$exe" print-metadata > metadata.json
+}
+
+@test "Print MetadataCarrier" {
+  "$exe" print -n MetadataCarrier
 }
