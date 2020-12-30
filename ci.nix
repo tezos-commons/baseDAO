@@ -100,6 +100,7 @@ rec {
       cd $out
       baseDAO document --name TrivialDAO --output TrivialDAO.md
       baseDAO document --name RegistryDAO --output RegistryDAO.md
+      baseDAO document --name TreasuryDAO --output TreasuryDAO.md
       baseDAO document --name GameDAO --output GameDAO.md
     '';
 

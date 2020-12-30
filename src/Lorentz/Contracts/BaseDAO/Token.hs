@@ -6,11 +6,10 @@ module Lorentz.Contracts.BaseDAO.Token
   ( burn
   , mint
   , transferContractTokens
-  , tokenAddress
   ) where
 
 import Lorentz
-import Lorentz.Contracts.BaseDAO.Doc (burnDoc, mintDoc, tokenAddressDoc, transferContractTokensDoc)
+import Lorentz.Contracts.BaseDAO.Doc(burnDoc, mintDoc, transferContractTokensDoc)
 import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
 import Lorentz.Contracts.BaseDAO.Types
@@ -75,14 +74,3 @@ transferContractTokens = do
   nil; swap; cons
   pair
 
-tokenAddress
-  :: forall store ce pm s. StorageC store ce pm
-  => Entrypoint' TokenAddressParam store s
-tokenAddress = do
-  doc $ DDescription tokenAddressDoc
-  dip $ do
-    ensureNotMigrated
-  stackType @(TokenAddressParam : store : s)
-  push zeroMutez
-  selfAddress
-  transferTokens # nil # swap # cons # pair

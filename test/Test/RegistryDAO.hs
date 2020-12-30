@@ -1,8 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-{-# LANGUAGE NumericUnderscores #-}
-
 module Test.RegistryDAO
   ( test_RegistryDAO
   ) where
@@ -71,8 +69,6 @@ validConfigProposal = uncapsNettest $ do
 
   sendXtz owner1 -- fixes "Balance is too low" error in CI.
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
 
   let
     (configMetadata :: RegistryDaoProposalMetadata ByteString ByteString) = ConfigProposalType $ ConfigProposal
@@ -98,7 +94,7 @@ validConfigProposal = uncapsNettest $ do
   callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
 
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- Fail due too big proposal size
   _ <- createSampleProposal ((getTokensAmount longNormalProposalMetadata) + 5) longNormalProposalMetadata owner1 dao
@@ -111,7 +107,7 @@ validConfigProposal = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 37
 
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") Nothing
+  callFrom (AddressResolved admin) dao (Call @"Flush") 100
 
   -- Only half are returned
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
@@ -144,17 +140,6 @@ longNormalProposalMetadata = NormalProposalType $ NormalProposal
         }
       ]
   }
-
-sendXtz :: MonadNettest caps base m => Address -> m ()
-sendXtz addr = do
-  let transferData = TransferData
-        { tdFrom = nettestAddress
-        , tdTo = AddressResolved addr
-        , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
-        , tdEntrypoint = DefEpName
-        , tdParameter = ()
-        }
-  transfer transferData
 
 getTokensAmount :: RegistryDaoProposalMetadata ByteString ByteString -> Natural
 getTokensAmount pm = fromInteger $ toInteger $ length $ lPackValueRaw pm

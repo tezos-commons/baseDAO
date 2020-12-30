@@ -8,7 +8,6 @@ module Test.BaseDAO.Token
 import Universum
 
 import Lorentz
-import Lorentz.Test
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenario)
 import Test.Tasty (TestTree, testGroup)
@@ -28,7 +27,6 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
     ]
   , testGroup "Other:"
     [ nettestScenario "can call transfer tokens entrypoint" transferContractTokensScenario
-    , nettestScenario "can call token address entrypoint" tokenAddressScenario
     ]
   ]
 
@@ -95,11 +93,3 @@ transferContractTokensScenario = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) fa2Contract owner1 90
   checkTokenBalance (DAO.unfrozenTokenId) fa2Contract owner2 110
 
-tokenAddressScenario :: (Monad m) => NettestImpl m -> m ()
-tokenAddressScenario = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateTrivialDao
-  consumer <- originateSimple "consumer" [] contractConsumer
-  callFrom (AddressResolved owner1) dao (Call @"Token_address") (toContractRef consumer)
-
-  checkStorage (AddressResolved $ toAddress consumer)
-    (toVal [(toAddress dao)])

@@ -72,7 +72,7 @@ flushProposalIntegrational = do
   withSender owner2 $ lCallEP dao (Call @"Vote") [upvote]
   rewindTime 20
 
-  withSender owner1 $ lCallEP dao (Call @"Flush") Nothing
+  withSender owner1 $ lCallEP dao (Call @"Flush") 100
   let updatedTime = timestampFromSeconds 1000
   setNow updatedTime
 
