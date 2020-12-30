@@ -29,6 +29,9 @@ test_GameDAO = testGroup "GameDAO Tests"
       [ nettestScenarioOnEmulator "can flush proposals that got accepted" $
           \_emulated -> flushAcceptedProposals
       ]
+  , testGroup "CustomCall"
+      [ nettestScenario "can call default entrypoint" callDefaultEp
+      ]
   ]
 
 validProposal :: (Monad m) => NettestImpl m -> m ()
@@ -92,6 +95,12 @@ flushAcceptedProposals = uncapsNettest $ do
     (toVal [([mt|Balance Item|] :: MText)])
 
   -- TODO [#31]: add a check on proposals counter
+
+callDefaultEp :: (Monad m) => NettestImpl m -> m ()
+callDefaultEp = uncapsNettest $ do
+  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def config
+
+  callFrom (AddressResolved owner1) dao CallDefault ()
 
 -------------------------------------------------------------------------------
 -- Helper

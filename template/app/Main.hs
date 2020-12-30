@@ -60,8 +60,12 @@ instance TypeHasDoc ProposalMetadata where
 -- similarly to 'ProposalMetadata'.
 type ContractExtra = ()
 
+-- | Additional entrypoints in the parameter.
+-- Left empty here, but can be initialized similarly to 'ProposalMetadata'.
+type OtherParam = Empty
+
 -- | DAO configuration.
-config :: Config ContractExtra ProposalMetadata
+config :: Config ContractExtra ProposalMetadata OtherParam
 config = Config
   { cDaoName =
       "Custom DAO"
@@ -102,6 +106,9 @@ config = Config
   , cDecisionLambda =
       -- Handler for successfully accepted proposal.
       error "not implemented"
+
+  , cCustomCall =
+      failUsing [mt|CustomCalls are not implemented|]
 
   , cMaxVotingPeriod = 60 * 60 * 24 * 30  -- 30 days
   , cMinVotingPeriod = 1

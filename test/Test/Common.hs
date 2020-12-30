@@ -37,7 +37,7 @@ withOriginated
   :: MonadNettest caps base m
   => Integer
   -> ([Address] -> (Storage () ()))
-  -> ([Address] -> TAddress (Parameter ()) -> m a)
+  -> ([Address] -> TAddress (Parameter () Empty) -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
@@ -53,13 +53,9 @@ withOriginated addrCount storageFn tests = do
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.
 originateBaseDaoWithConfig
-  :: forall pm ce caps base m.
-     ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc pm, NicePackedValue pm
-     , KnownValue ce, TypeHasDoc ce
-     , MonadNettest caps base m
-     )
-  => ce -> DAO.Config ce pm -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+  :: forall pm op ce caps base m.
+     (DAO.DaoC ce pm op, MonadNettest caps base m)
+  => ce -> DAO.Config ce pm op -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm op), Address)
 originateBaseDaoWithConfig contractExtra config = do
   originateBaseDaoWithBalance contractExtra config
     (\owner1 owner2 ->
@@ -69,16 +65,12 @@ originateBaseDaoWithConfig contractExtra config = do
     )
 
 originateBaseDaoWithBalance
-  :: forall pm ce caps base m.
-     ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc pm, NicePackedValue pm
-     , KnownValue ce, TypeHasDoc ce
-     , MonadNettest caps base m
-     )
+  :: forall pm op ce caps base m.
+     (DAO.DaoC ce pm op, MonadNettest caps base m)
   => ce
-  -> DAO.Config ce pm
+  -> DAO.Config ce pm op
   -> (Address -> Address -> [((Address, FA2.TokenId), Natural)])
-  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm op), Address)
 originateBaseDaoWithBalance contractExtra config balFunc = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
@@ -111,23 +103,19 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
 originateTrivialDaoWithBalance
   :: (MonadNettest caps base m)
   => (Address -> Address -> [((Address, FA2.TokenId), Natural)])
-  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter ()), Address)
+  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter () Empty), Address)
 originateTrivialDaoWithBalance =
   originateBaseDaoWithBalance () DAO.trivialConfig
 
 originateBaseDao
-  :: forall pm ce caps base m.
-     ( NiceStorage (Storage ce pm), NiceParameterFull (Parameter pm), NiceStorage pm
-     , TypeHasDoc pm, NicePackedValue pm
-     , KnownValue ce, TypeHasDoc ce
-     , MonadNettest caps base m
-     )
-  => ce -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm), Address)
+  :: forall pm op ce caps base m.
+     (DAO.DaoC ce pm op, MonadNettest caps base m)
+  => ce -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm op), Address)
 originateBaseDao contractExtra = originateBaseDaoWithConfig contractExtra DAO.defaultConfig
 
 originateTrivialDao
   :: (MonadNettest caps base m)
-  => m ((Address, Address), (Address, Address), TAddress (DAO.Parameter ()), Address)
+  => m ((Address, Address), (Address, Address), TAddress (DAO.Parameter () Empty), Address)
 originateTrivialDao = originateBaseDao ()
 
 -- | Create FA2 View
@@ -140,8 +128,8 @@ mkFA2View a c = FA2.FA2View (mkView a c)
 
 -- | Helper function to check a user balance of a particular token
 checkTokenBalance
-  :: (NiceParameterFull (Parameter pm), MonadNettest caps base m)
-  => FA2.TokenId -> TAddress (DAO.Parameter pm)
+  :: (NiceParameterFull (Parameter pm op), MonadNettest caps base m)
+  => FA2.TokenId -> TAddress (DAO.Parameter pm op)
   -> Address -> Natural
   -> m ()
 checkTokenBalance tokenId dao addr expectedValue = do
@@ -161,7 +149,7 @@ makeProposalKey params owner = toHashHs $ lPackValue (params, owner)
 
 addDataToSign
   :: (MonadNettest caps base m)
-  => TAddress (Parameter pm)
+  => TAddress (Parameter pm op)
   -> Nonce
   -> d
   -> m (DataToSign d, d)

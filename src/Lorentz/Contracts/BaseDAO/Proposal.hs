@@ -14,8 +14,7 @@ module Lorentz.Contracts.BaseDAO.Proposal
 
 import Lorentz
 import Lorentz.Contracts.BaseDAO.Doc
-  ( flushDoc, proposeDoc, setQuorumThresholdDoc, setVotingPeriodDoc, voteDoc
-  , dropProposalDoc )
+  (dropProposalDoc, flushDoc, proposeDoc, setQuorumThresholdDoc, setVotingPeriodDoc, voteDoc)
 import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Permit
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
@@ -29,14 +28,14 @@ import Lorentz.Contracts.Spec.FA2Interface (TokenId)
 ------------------------------------------------------------------------
 
 checkIfProposalExist
-  :: forall store ce pm s. (NiceParameter pm, StorageC store ce pm)
+  :: forall store ce pm s. (KnownValue pm, StorageC store ce pm)
   => (ProposalKey pm : store : s) :-> (Proposal pm : s)
 checkIfProposalExist = do
   stGet #sProposals
   ifSome nop (failCustom_ #pROPOSAL_NOT_EXIST)
 
 ensureVotingPeriodIsNotOver
-  :: forall store ce pm s. (NiceParameter pm, StorageC store ce pm)
+  :: forall store ce pm s. (KnownValue pm, StorageC store ce pm)
   => (Proposal pm : store : s) :-> s
 ensureVotingPeriodIsNotOver = do
   toField #pStartDate
@@ -72,8 +71,8 @@ toProposalKey = do
 -- Propose
 ------------------------------------------------------------------------
 checkIsProposalValid
-  :: forall store ce pm s. (StorageC store ce pm)
-  => Config ce pm -> (ProposeParams pm : store : s) :-> (ProposeParams pm: store : s)
+  :: forall store ce pm op s. (StorageC store ce pm)
+  => Config ce pm op -> (ProposeParams pm : store : s) :-> (ProposeParams pm : store : s)
 checkIsProposalValid Config{..} = do
   dupTop2
   cProposalCheck
@@ -84,7 +83,7 @@ checkIsProposalValid Config{..} = do
     failCustom_ #fAIL_PROPOSAL_CHECK
 
 checkProposerUnfrozenToken
-  :: forall store ce pm. (IsoValue pm, StorageC store ce pm)
+  :: forall store ce pm. (StorageC store ce pm)
   => '[ProposeParams pm, store] :-> '[ProposeParams pm, store]
 checkProposerUnfrozenToken = do
   duupX @2
@@ -109,8 +108,8 @@ checkProposerUnfrozenToken = do
     nop
 
 checkProposalLimitReached
-  :: forall store ce pm. (StorageC store ce pm)
-  => Config ce pm -> '[ProposeParams pm, store] :-> '[ProposeParams pm, store]
+  :: forall store ce pm op. (StorageC store ce pm)
+  => Config ce pm op -> '[ProposeParams pm, store] :-> '[ProposeParams pm, store]
 checkProposalLimitReached Config{..} = do
   duupX @2
   stToField #sProposalKeyListSortByDate
@@ -202,9 +201,9 @@ addProposal = do
   swap; cdr
 
 propose
-  :: forall store ce pm s.
+  :: forall store ce pm op s.
      (StorageC store ce pm, NicePackedValue pm, HasFuncContext s store)
-  => Config ce pm -> Entrypoint' (ProposeParams pm) store s
+  => Config ce pm op -> Entrypoint' (ProposeParams pm) store s
 propose config = do
   doc $ DDescription proposeDoc
   stackType @(ProposeParams pm : store : s)
@@ -254,7 +253,7 @@ checkVoterUnfrozenToken = do
 
 submitVote
   :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
+     (KnownValue pm, StorageC store ce pm, HasFuncContext s store)
   => VoteParam pm : store : "author" :! Address : s :-> store : s
 submitVote = do
   dupTop2
@@ -329,8 +328,8 @@ submitVote = do
   dip $ drop @("author" :! _)
 
 checkVoteLimitReached
-  :: forall store ce pm. (IsoValue pm, StorageC store ce pm)
-  => Config ce pm -> '[Proposal pm, VoteParam pm, store] :-> '[Proposal pm, VoteParam pm, store]
+  :: forall store ce pm op. (StorageC store ce pm)
+  => Config ce pm op -> '[Proposal pm, VoteParam pm, store] :-> '[Proposal pm, VoteParam pm, store]
 checkVoteLimitReached Config{..} = do
   dupTop2
 
@@ -345,9 +344,9 @@ checkVoteLimitReached Config{..} = do
 
 -- | Vote
 vote
-  :: forall store ce pm s.
-     (StorageC store ce pm, NiceParameter pm, HasFuncContext s store)
-  => Config ce pm -> Entrypoint' [PermitProtected $ VoteParam pm] store s
+  :: forall store ce pm op s.
+     (StorageC store ce pm, HasFuncContext s store)
+  => Config ce pm op -> Entrypoint' [PermitProtected $ VoteParam pm] store s
 vote config = do
   doc $ DDescription voteDoc
   dip ensureNotMigrated
@@ -388,8 +387,8 @@ vote config = do
 
 -- | Update voting period of all ongoing and new proposals.
 setVotingPeriod
-  :: forall store ce pm s. (StorageC store ce pm)
-  => Config ce pm -> Entrypoint' VotingPeriod store s
+  :: forall store ce pm op s. (StorageC store ce pm)
+  => Config ce pm op -> Entrypoint' VotingPeriod store s
 setVotingPeriod Config{..}= do
   doc $ DDescription setVotingPeriodDoc
   dip $ do
@@ -414,8 +413,8 @@ setVotingPeriod Config{..}= do
 -- | Update quroum_threshold. The new quorum_threshold affects
 -- all ongoing and new proposals.
 setQuorumThreshold
-  :: forall store ce pm s. (StorageC store ce pm)
-  => Config ce pm -> Entrypoint' QuorumThreshold store s
+  :: forall store ce pm op s. (StorageC store ce pm)
+  => Config ce pm op -> Entrypoint' QuorumThreshold store s
 setQuorumThreshold Config{..} = do
   doc $ DDescription setQuorumThresholdDoc
   dip $ do
@@ -507,9 +506,9 @@ burnSlashAmount = do
   swap; dip $ do swap; dip swap
 
 unfreezeProposerToken
-  :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => Config ce pm -> Bool -> Proposal pm : store : ProposalKey pm : [Operation] : s
+  :: forall store ce pm op s.
+     (StorageC store ce pm, HasFuncContext s store)
+  => Config ce pm op -> Bool -> Proposal pm : store : ProposalKey pm : [Operation] : s
   :-> Proposal pm : store : ProposalKey pm : [Operation] : s
 unfreezeProposerToken Config{..} isAccepted = do
 
@@ -554,7 +553,7 @@ unfreezeProposerToken Config{..} isAccepted = do
 
 unfreezeVoterToken
   :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
+     (StorageC store ce pm, HasFuncContext s store)
   => Proposal pm : store : ProposalKey pm : [Operation] : s
   :-> Proposal pm : store : ProposalKey pm : [Operation] : s
 unfreezeVoterToken = do
@@ -568,7 +567,7 @@ unfreezeVoterToken = do
 
 isVotingPeriodOver
   :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm)
+     (StorageC store ce pm)
   => Proposal pm : store : s
   :-> Bool : s
 isVotingPeriodOver = do
@@ -611,7 +610,7 @@ isCounterMet = do
 
 doTotalVoteMeetQuorumThreshold
   :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm)
+     (StorageC store ce pm)
   => Proposal pm : store : s
   :-> Bool : s
 doTotalVoteMeetQuorumThreshold = do
@@ -627,9 +626,9 @@ doTotalVoteMeetQuorumThreshold = do
     push False
 
 handleProposalIsOver
-  :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => Config ce pm
+  :: forall store ce pm op s.
+     (StorageC store ce pm, HasFuncContext s store)
+  => Config ce pm op
   -> (Timestamp, ProposalKey pm) : store : [Operation] : Counter : s
   :-> store : [Operation] : Counter : s
 handleProposalIsOver config@Config{..} = do
@@ -683,7 +682,7 @@ handleProposalIsOver config@Config{..} = do
 -- | Delete a proposal from 'sProposalKeyListSortByDate'
 deleteProposal
   :: forall store ce pm s.
-    (NiceParameter pm, StorageC store ce pm)
+    (StorageC store ce pm)
   => Timestamp : ProposalKey pm : store : s
   :-> store : s
 deleteProposal = do
@@ -694,15 +693,14 @@ deleteProposal = do
   update
   stSetField #sProposalKeyListSortByDate
 
-
 -- | Flush all proposals that passed their voting period
 -- If the proposal's total vote >= quorum_theshold and it's upvote > downvote
 -- the proposal is accepted.
 -- Otherwise it will be rejected.
 flush
-  :: forall store ce pm s.
-     (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => Config ce pm -> Entrypoint' (Maybe Natural) store s
+  :: forall store ce pm op s.
+     (StorageC store ce pm, HasFuncContext s store)
+  => Config ce pm op -> Entrypoint' (Maybe Natural) store s
 flush config = do
   doc $ DDescription flushDoc
 
@@ -724,8 +722,8 @@ flush config = do
 -- a proposal that has fail `decisionLambda`. In other word, it is alike `flush` a
 -- proposal without executing decision lambda.
 dropProposal
-  :: forall store ce pm s. (NiceParameter pm, StorageC store ce pm, HasFuncContext s store)
-  => Config ce pm -> Entrypoint' (ProposalKey pm) store s
+  :: forall store ce pm op s. (StorageC store ce pm, HasFuncContext s store)
+  => Config ce pm op -> Entrypoint' (ProposalKey pm) store s
 dropProposal config = do
   doc $ DDescription dropProposalDoc
 

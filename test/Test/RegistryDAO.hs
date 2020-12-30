@@ -34,9 +34,18 @@ test_RegistryDAO = testGroup "RegistryDAO Tests"
       ]
   ]
 
+configBS :: DAO.Config
+  (RegistryDaoContractExtra ByteString ByteString)
+  (RegistryDaoProposalMetadata ByteString ByteString)
+  Empty
+configBS = config
+
+type Parameter =
+  DAO.Parameter (RegistryDaoProposalMetadata ByteString ByteString) Empty
+
 validProposal :: (Monad m) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ do
-  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def (config @ByteString @ByteString)
+  ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def configBS
 
   let params t = DAO.ProposeParams
         { ppFrozenToken = t
@@ -58,7 +67,7 @@ validProposal = uncapsNettest $ do
 
 validConfigProposal :: (Monad m) => NettestImpl m -> m ()
 validConfigProposal = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig def (config @ByteString @ByteString)
+  ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig def configBS
 
   sendXtz owner1 -- fixes "Balance is too low" error in CI.
 
@@ -155,7 +164,7 @@ createSampleProposal
   => Natural
   -> RegistryDaoProposalMetadata ByteString ByteString
   -> Address
-  -> TAddress (DAO.Parameter (RegistryDaoProposalMetadata ByteString ByteString))
+  -> TAddress Parameter
   -> m (DAO.ProposalKey (RegistryDaoProposalMetadata ByteString ByteString))
 createSampleProposal t pm owner1 dao = do
   let params = DAO.ProposeParams

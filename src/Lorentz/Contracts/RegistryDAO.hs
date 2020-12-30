@@ -13,8 +13,8 @@ import Universum ((*))
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import qualified Lorentz.Contracts.BaseDAO.Proposal as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
-import Lorentz.Contracts.RegistryDAO.Types
 import Lorentz.Contracts.RegistryDAO.Doc
+import Lorentz.Contracts.RegistryDAO.Types
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -145,7 +145,7 @@ config ::
   ( IsoRegistryDaoProposalMetadata k v
   , NicePackedValue (RegistryDaoProposalMetadata k v)
   )
-  => DAO.Config (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v)
+  => DAO.Config (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v) Empty
 config = DAO.defaultConfig
   { DAO.cDaoName = "Registry DAO"
   , DAO.cDaoDescription = registryDaoDoc
@@ -164,16 +164,11 @@ config = DAO.defaultConfig
   }
 
 registryDaoContract ::
-  ( NiceParameter (RegistryDaoProposalMetadata k v)
-  , TypeHasDoc (RegistryDaoProposalMetadata k v)
-  , HasAnnotation (RegistryDaoProposalMetadata k v)
-  , KnownValue (RegistryDaoContractExtra k v)
-  , TypeHasDoc (RegistryDaoContractExtra k v)
+  ( DAO.DaoC (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v) Empty
 
   -- shared
   , IsoRegistryDaoProposalMetadata k v
-  , NicePackedValue (RegistryDaoProposalMetadata k v)
   ) => Contract
-      (DAO.Parameter (RegistryDaoProposalMetadata k v))
+      (DAO.Parameter (RegistryDaoProposalMetadata k v) Empty)
       (DAO.Storage (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v))
 registryDaoContract = DAO.baseDaoContract config
