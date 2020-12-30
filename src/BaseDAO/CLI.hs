@@ -21,7 +21,6 @@ import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.Map as Map
 import Data.Version (Version, showVersion)
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
-import Main.Utf8 (withUtf8)
 import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
 
@@ -31,6 +30,7 @@ import Lorentz.Doc
 import Lorentz.Value
 import Morley.CLI (addressOption)
 import Util.CLI
+import Util.Main (wrapMain)
 import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
@@ -147,13 +147,13 @@ mkCommandParser commandName parser desc =
 -- | Put this to @main@ to make the executable serve given contracts.
 serveContractRegistry :: String -> DGitRevision -> ContractRegistry -> Version -> IO ()
 serveContractRegistry execName gitRev contracts version =
-  withUtf8 $ do
+  wrapMain $ do
     allCmdLnArgs <-
       Opt.execParser $
       contractRegistryProgramInfo version gitRev execName contracts
     case allCmdLnArgs of
       ContractRegistryCmd cmdLnArgs ->
-        runContractRegistry contracts cmdLnArgs `catchAny` (die . displayException)
+        runContractRegistry contracts cmdLnArgs
       PrintMetadata ->
         putTextLn . decodeUtf8 $ encodePretty DAO.knownBaseDAOMetadata
 

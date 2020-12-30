@@ -97,7 +97,6 @@ library:
     - lorentz
     - optparse-applicative
     - universum
-    - with-utf8
 
 executables:
   baseDAO:
