@@ -129,7 +129,7 @@ nonUniqueProposal = uncapsNettest $ do
 
 voteValidProposal :: (Monad m) => NettestImpl m -> m ()
 voteValidProposal = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () config
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () voteConfig
 
   -- | Create sample proposal (first proposal has id = 0)
   key1 <- createSampleProposal 1 owner1 dao
@@ -161,7 +161,7 @@ voteNonExistingProposal = uncapsNettest $ do
 
 voteMultiProposals :: (Monad m) => NettestImpl m -> m ()
 voteMultiProposals = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () config
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () voteConfig
 
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -186,7 +186,7 @@ voteMultiProposals = uncapsNettest $ do
 
 insufficientTokenVote :: (Monad m) => NettestImpl m -> m ()
 insufficientTokenVote = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () config
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () voteConfig
 
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -228,7 +228,7 @@ voteOutdatedProposal = uncapsNettest $ do
 
 voteWithPermit :: (Monad m) => NettestImpl m -> m ()
 voteWithPermit = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () config
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () voteConfig
 
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -245,7 +245,7 @@ voteWithPermit = uncapsNettest $ do
 
 voteWithPermitNonce :: (Monad m) => NettestImpl m -> m ()
 voteWithPermitNonce = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () config
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () voteConfig
 
   -- | Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -561,7 +561,7 @@ proposalBoundedValue = uncapsNettest $ do
 
 votesBoundedValue :: (Monad m) => NettestImpl m -> m ()
 votesBoundedValue = uncapsNettest $ do
-  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () (config { DAO.cMaxVotes = 1})
+  ((owner1, _), (owner2, _), dao, _) <- originateBaseDaoWithConfig @Integer @Empty () (voteConfig { DAO.cMaxVotes = 1})
 
   key1 <- createSampleProposal 1 owner2 dao
   let upvote = DAO.NoPermit DAO.VoteParam

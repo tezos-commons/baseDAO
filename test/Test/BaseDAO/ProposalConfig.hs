@@ -9,6 +9,7 @@ module Test.BaseDAO.ProposalConfig
   , configWithRejectedProposal
   , badRejectedValueConfig
   , decisionLambdaConfig
+  , voteConfig
   ) where
 
 import Lorentz
@@ -30,6 +31,16 @@ config = DAO.defaultConfig
         push True
       else
         push False
+  , DAO.cMinVotingPeriod = 20
+  , DAO.cMinQuorumThreshold = 1
+  }
+
+-- | Config with longer voting period and bigger quorum threshold
+-- Needed for vote related tests that do not call `flush`
+voteConfig :: forall ce pm op. (IsoValue pm) => DAO.Config ce pm op
+voteConfig = config
+  { DAO.cMinVotingPeriod = 120
+  , DAO.cMinQuorumThreshold = 4
   }
 
 configWithRejectedProposal :: forall ce pm op. (IsoValue pm) => DAO.Config ce pm op

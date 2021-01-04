@@ -68,6 +68,7 @@ originateBaseDaoWithConfig contractExtra config = do
         ]
     )
 
+-- TODO: [#96] Add a way to customize storage
 originateBaseDaoWithBalance
   :: forall pm op ce caps base m.
      (DAO.DaoC ce pm op, MonadNettest caps base m)
@@ -98,8 +99,8 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
           ( mkStorage
           ! #admin admin
           ! #extra contractExtra
-          ! #votingPeriod 20
-          ! #quorumThreshold 1
+          ! #votingPeriod (cMinVotingPeriod config)
+          ! #quorumThreshold (cMinQuorumThreshold config)
           ! #metadata mempty
           ! defaults
           ) { sLedger = BigMap bal
