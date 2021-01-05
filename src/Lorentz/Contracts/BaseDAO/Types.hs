@@ -8,9 +8,11 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , Operators
   , Ledger
+  , LedgerKey
   , LedgerValue
 
   , Parameter (..)
+  , ParameterC
   , ProposeParams(..)
   , ProposalKey
   , Proposal (..)
@@ -27,7 +29,7 @@ module Lorentz.Contracts.BaseDAO.Types
   , StorageC
   , TransferOwnershipParam
   , MigrateParam
-  , MigrationStatus
+  , MigrationStatus (..)
 
   , mkStorage
 
@@ -306,6 +308,24 @@ data Parameter proposalMetadata otherParam
   | Transfer_ownership TransferOwnershipParam
   | Vote [PermitProtected $ VoteParam proposalMetadata]
   deriving stock (Generic, Show)
+
+type ParameterC param proposalMetadata =
+  ParameterContainsEntrypoints param
+    [ "Accept_ownership" :> ()
+    , "Burn" :> BurnParam
+    , "Confirm_migration" :> ()
+    , "Drop_proposal" :> ProposalKey proposalMetadata
+    , "Flush" :> Natural
+    , "GetVotePermitCounter" :> (View () Nonce)
+    , "Migrate" :> MigrateParam
+    , "Mint" :> MintParam
+    , "Propose" :> (ProposeParams proposalMetadata)
+    , "Set_quorum_threshold" :> QuorumThreshold
+    , "Set_voting_period" :> VotingPeriod
+    , "Transfer_contract_tokens" :> TransferContractTokensParam
+    , "Transfer_ownership" :> TransferOwnershipParam
+    , "Vote" :> [PermitProtected $ VoteParam proposalMetadata]
+    ]
 
 type TransferOwnershipParam = ("newOwner" :! Address)
 type MigrateParam = ("newAddress" :! Address)

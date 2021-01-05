@@ -315,7 +315,7 @@ addOperator = do
     getField #opOperator; toNamed #operator
     dip $ do toField #opOwner; toNamed #owner
   stackType @(TokenId : "operator" :! Address : "owner" :! Address : Storage ce pm : s)
-  assertEq0or1
+  validateOperatorToken
   swap
   dup; fromNamed #owner
   Lorentz.sender
@@ -354,7 +354,7 @@ removeOperator = do
     getField #opOperator; toNamed #operator
     dip $ do toField #opOwner; toNamed #owner
   stackType @(TokenId : "operator" :! Address : "owner" :! Address : Storage ce pm : s)
-  assertEq0or1
+  validateOperatorToken
   swap
   dup; fromNamed #owner
   Lorentz.sender
@@ -383,8 +383,8 @@ removeOperator = do
     ifKeyDoesntExist :: ("owner" :! Address, "operator" :! Address) : Operators : Storage ce pm : s :-> Storage ce pm : s
     ifKeyDoesntExist = dropN @2
 
-assertEq0or1 :: TokenId : f :-> f
-assertEq0or1 = do
+validateOperatorToken :: TokenId : f :-> f
+validateOperatorToken = do
   dup
   push unfrozenTokenId
   if IsEq

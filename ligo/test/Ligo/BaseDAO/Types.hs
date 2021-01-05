@@ -15,6 +15,7 @@ module Ligo.BaseDAO.Types
   , Storage (..)
   , Config (..)
   , FullStorage (..)
+  , DynamicRec (..)
   ) where
 
 import Lorentz
@@ -23,7 +24,7 @@ import Universum (One, Show)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 
-import Lorentz.Contracts.BaseDAO.Types hiding (Config(..), Parameter(..), Storage(..))
+import Lorentz.Contracts.BaseDAO.Types hiding (Config(..), Parameter(..), Storage(..), defaultConfig)
 import Michelson.Typed.Haskell.Compatibility
 
 -- | Represents a product type with arbitrary fields.

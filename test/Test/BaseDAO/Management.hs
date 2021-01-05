@@ -6,8 +6,7 @@
 -- withOriginated func
 
 module Test.BaseDAO.Management
-  ( expectMigrated
-  , test_BaseDAO_Management
+  ( test_BaseDAO_Management
   ) where
 
 import Universum

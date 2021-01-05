@@ -5,6 +5,23 @@
 
 #include "types.mligo"
 
+
+// -----------------------------------------------------------------
+// Shared Function
+// -----------------------------------------------------------------
+#if !MANAGEMENT_H
+#define MANAGEMENT_H
+
+[@inline]
+let ensure_not_migrated (storage : storage): storage =
+  match storage.migration_status with
+      Not_in_migration -> storage
+    | MigratingTo (p) -> storage
+    | MigratedTo (p) -> (failwith ("MIGRATED") : storage)
+
+#endif  // MANAGEMENT_H included
+
+
 let transfer_ownership
     (param, store : transfer_ownership_param * storage) : return =
   not_implemented("transfer_ownership")

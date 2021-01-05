@@ -23,6 +23,8 @@ source-repository head
 library
   exposed-modules:
       BaseDAO.CLI
+      BaseDAO.ShareTest.Common
+      BaseDAO.ShareTest.FA2
       Lorentz.Contracts.BaseDAO
       Lorentz.Contracts.BaseDAO.Doc
       Lorentz.Contracts.BaseDAO.Management
@@ -51,6 +53,7 @@ library
   build-depends:
       aeson-pretty
     , base >=4.7 && <5
+    , cleveland
     , containers
     , lorentz
     , morley
