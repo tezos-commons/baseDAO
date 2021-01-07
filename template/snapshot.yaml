@@ -32,4 +32,6 @@ packages:
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 7b3ee35067f368e627029d71f3b5453b430bac0d # master
+    commit: 0c7005373dcdf79118def10637ff95c8c9820b10 # master
+    subdirs:
+      - code/morley-metadata

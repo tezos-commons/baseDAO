@@ -95,6 +95,7 @@ test-suite baseDAO-test
       Test.BaseDAO.Doc
       Test.BaseDAO.Limits
       Test.BaseDAO.Management
+      Test.BaseDAO.OffChainViews
       Test.BaseDAO.Proposal
       Test.BaseDAO.Token
       Test.BaseDAO.Token.FA2
@@ -121,6 +122,7 @@ test-suite baseDAO-test
     , lorentz
     , morley
     , morley-ledgers
+    , morley-metadata
     , named
     , o-clock
     , tasty

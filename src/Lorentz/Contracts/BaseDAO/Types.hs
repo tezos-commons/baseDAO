@@ -57,6 +57,7 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , unfrozenTokenId
   , frozenTokenId
+  , allTokenIds
 
   , Counter
   , baseDaoAnnOptions
@@ -724,6 +725,10 @@ unfrozenTokenId = FA2.TokenId 0
 
 frozenTokenId :: FA2.TokenId
 frozenTokenId = FA2.TokenId 1
+
+-- | All token types supported by DAOs.
+allTokenIds :: [FA2.TokenId]
+allTokenIds = [unfrozenTokenId, frozenTokenId]
 
 ------------------------------------------------------------------------
 -- Helper
