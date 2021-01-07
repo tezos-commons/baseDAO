@@ -92,7 +92,7 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractN
     optimizeBetter c = c
       { cDisableInitialCast = True
       , cCompilationOptions = (cCompilationOptions c)
-        { coOptimizerConf = Just $ def {gotoValues = True}
+        { coOptimizerConf = Just $ def {ocGotoValues = True}
         }
       }
 
