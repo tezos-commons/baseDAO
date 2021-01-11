@@ -10,7 +10,7 @@ This repository provides:
   3. Two more practical DAO contracts: [RegistryDAO](./src/Lorentz/Contracts/RegistryDAO.hs) and [TreasuryDAO](./src/Lorentz/Contracts/TreasuryDAO.hs).
 * A [template package](./template) that one can copy and use to create their own DAO.
 
-It is implemented and tested using the [Morley framework](https://gitlab.com/morley-framework/morley)
+It is implemented and tested in Michelson using the [Morley framework](https://gitlab.com/morley-framework/morley)
 and Haskell programming language.
 
 ## Contract documentation and requirements
