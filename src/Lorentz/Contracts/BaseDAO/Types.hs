@@ -228,7 +228,7 @@ data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Stor
 
   , sPermitsCounter :: Nonce
 
-  , sMetadata :: "metadata" :! TZIP16.MetadataMap BigMap
+  , sMetadata :: TZIP16.MetadataMap BigMap
   }
   deriving stock (Generic, Show)
 
@@ -343,7 +343,7 @@ mkStorage admin votingPeriod quorumThreshold extra metadata =
   , sProposalKeyListSortByDate = mempty
   , sPermitsCounter = Nonce 0
 
-  , sMetadata = metadata
+  , sMetadata = arg #metadata metadata
   }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
