@@ -6,5 +6,6 @@ resolver: template/snapshot.yaml
 packages:
   - .
   - template
+  - ligo/test
 
 # See extra-deps in template/snapshot.yaml
