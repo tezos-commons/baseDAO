@@ -11,7 +11,7 @@ This repository provides:
 * A [template package](./template) that one can copy and use to create their own DAO.
 
 It is implemented and tested in Michelson using the [Morley framework](https://gitlab.com/morley-framework/morley)
-and Haskell programming language.
+and Haskell programming language. A LIGO implementation is also in development.
 
 ## Contract documentation and requirements
 
