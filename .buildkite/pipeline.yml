@@ -61,6 +61,11 @@ steps:
       ./result/bin/baseDAO-test --nettest-run-network
       -A localhost -P 8735
 
+  - label: ligo
+    if: *not_scheduled
+    commands:
+    - nix-build ci.nix -A build-ligo
+
   - label: weeder
     if: *not_scheduled
     commands:

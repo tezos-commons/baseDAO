@@ -6,7 +6,7 @@ name: dao-snapshot
 resolver: lts-16.5
 
 packages:
-  - morley-1.10.0
+  - morley-1.11.0
   - lorentz-0.8.0
   - indigo-0.4
   - base58-bytestring-0.1.0
@@ -21,14 +21,14 @@ packages:
   - git:
       https://gitlab.com/morley-framework/morley.git # CI can't use SSH
     commit:
-      8e6568b0f0839b0dd9c0e99a3a299be4627aece8 # morley-0.10.0
+      fd1f796e970ed370285b4ca184a5d63c04483d19 # morley-0.11.0
     subdirs:
       - code/cleveland
       - code/morley-client
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 1a1f1caab12e051d0c930c2f9bde4b5a0bca1d60 # master
+    commit: 817ef36927679743409dc7260f1d3a63ed7d8ad5 # master
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git

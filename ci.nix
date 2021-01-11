@@ -15,6 +15,7 @@ rec {
   pkgs = import sources.nixpkgs haskell-nix.nixpkgsArgs;
   weeder-hacks = import sources.haskell-nix-weeder { inherit pkgs; };
   tezos-client = (import "${sources.tezos-packaging}/nix/build/pkgs.nix" {}).ocamlPackages.tezos-client;
+  ligo = (import "${sources.ligo}/nix" {}).ligo-bin;
 
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
@@ -103,6 +104,14 @@ rec {
       baseDAO document --name TreasuryDAO --output TreasuryDAO.md
       baseDAO document --name GameDAO --output GameDAO.md
     '';
+
+  build-ligo = pkgs.stdenv.mkDerivation {
+    name = "baseDAO-ligo";
+    src = ./ligo;
+    nativeBuildInputs = [ ligo ];
+    buildPhase = "make";
+    installPhase = "cp out/*.tz $out";
+  };
 
   # nixpkgs has weeder 2, but we use weeder 1
   weeder-legacy = pkgs.haskellPackages.callHackageDirect {
