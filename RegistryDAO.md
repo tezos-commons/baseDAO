@@ -1,6 +1,6 @@
 # Registry DAO
 
-**Code revision:** [d4cd3d4](https://github.com/tqtezos/baseDAO/tree/d4cd3d4961e05d83673347a73ab9423e34830c36) *(Sun Jan 10 23:23:04 2021 -0500)*
+**Code revision:** [0c7efbf](https://github.com/tqtezos/baseDAO/tree/0c7efbf734addbf0a73ba58f417faf40874c1598) *(Mon Jan 11 17:51:53 2021 +0100)*
 
 
 
@@ -22,22 +22,22 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
 - [Storage](#section-Storage)
   - [Storage](#storage-Storage)
 - [Entrypoints](#section-Entrypoints)
-  - [call_FA2](#entrypoints-call_FA2)
-  - [transfer_ownership](#entrypoints-transfer_ownership)
   - [accept_ownership](#entrypoints-accept_ownership)
-  - [migrate](#entrypoints-migrate)
-  - [confirm_migration](#entrypoints-confirm_migration)
-  - [propose](#entrypoints-propose)
-  - [vote](#entrypoints-vote)
-  - [set_voting_period](#entrypoints-set_voting_period)
-  - [set_quorum_threshold](#entrypoints-set_quorum_threshold)
-  - [flush](#entrypoints-flush)
   - [burn](#entrypoints-burn)
-  - [mint](#entrypoints-mint)
-  - [transfer_contract_tokens](#entrypoints-transfer_contract_tokens)
-  - [getVotePermitCounter](#entrypoints-getVotePermitCounter)
-  - [drop_proposal](#entrypoints-drop_proposal)
+  - [call_FA2](#entrypoints-call_FA2)
   - [callCustom](#entrypoints-callCustom)
+  - [confirm_migration](#entrypoints-confirm_migration)
+  - [drop_proposal](#entrypoints-drop_proposal)
+  - [flush](#entrypoints-flush)
+  - [getVotePermitCounter](#entrypoints-getVotePermitCounter)
+  - [migrate](#entrypoints-migrate)
+  - [mint](#entrypoints-mint)
+  - [propose](#entrypoints-propose)
+  - [set_quorum_threshold](#entrypoints-set_quorum_threshold)
+  - [set_voting_period](#entrypoints-set_voting_period)
+  - [transfer_contract_tokens](#entrypoints-transfer_contract_tokens)
+  - [transfer_ownership](#entrypoints-transfer_ownership)
+  - [vote](#entrypoints-vote)
 
 **[Definitions](#definitions)**
 
@@ -175,6 +175,76 @@ Storage type for baseDAO contract
 
 ## Entrypoints
 
+<a name="entrypoints-accept_ownership"></a>
+
+---
+
+### `accept_ownership`
+
+Accepts the administrator privelege.
+Only works when the sender was asked to become an admin and only if it was asked by the current admin.
+
+
+**Argument:** 
+  + **In Haskell:** [`()`](#types-lparenrparen)
+  + **In Michelson:** `unit`
+    + **Example:** <span id="example-id">`Unit`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `accept_ownership` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `pending owner`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_PENDING_ADMIN`](#errors-NOT_PENDING_ADMIN) — Received an `accept_ownership` from an address other than what is in the pending owner field
+
+
+
+<a name="entrypoints-burn"></a>
+
+---
+
+### `burn`
+
+Reduces the amount of tokens of the given address. Can be performed only
+only if the given address has enough tokens to burn.
+
+
+**Argument:** 
+  + **In Haskell:** [`BurnParam`](#types-BurnParam)
+  + **In Michelson:** `(pair (address %from_) (pair (nat %token_id) (nat %amount)))`
+    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0)`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `burn` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+
+
 <a name="entrypoints-call_FA2"></a>
 
 ---
@@ -186,8 +256,8 @@ Entrypoint to be called if you want to use one of FA2 entrypoints.
 
 **Argument:** 
   + **In Haskell:** [`Parameter`](#types-Parameter)
-  + **In Michelson:** `(or (or (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))) (pair (list %requests (pair (address %owner) (nat %token_id))) (contract %callback (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance)))))) (or (contract address) (list (or (pair %add_operator (address %owner) (pair (address %operator) (nat %token_id))) (pair %remove_operator (address %owner) (pair (address %operator) (nat %token_id)))))))`
-    + **Example:** <span id="example-id">`Left (Left { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0) } })`</span>
+  + **In Michelson:** `(or (or (pair (list %requests (pair (address %owner) (nat %token_id))) (contract %callback (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance))))) (contract address)) (or (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))) (list (or (pair %add_operator (address %owner) (pair (address %operator) (nat %token_id))) (pair %remove_operator (address %owner) (pair (address %operator) (nat %token_id)))))))`
+    + **Example:** <span id="example-id">`Left (Left (Pair { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" 0 } "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"))`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -202,49 +272,6 @@ Entrypoint to be called if you want to use one of FA2 entrypoints.
 <a name="section-FA2-entrypoints"></a>
 
 #### FA2 entrypoints
-
-<a name="entrypoints-transfer"></a>
-
----
-
-##### `transfer`
-
-Transfer tokens between a given account and each account from the given list.
-
-It serves multiple purposes:
-* If transaction `"from"` address equals to the admin address presented in storage, then  it is allowed for
-any address and both `frozen` and `unfrozen` tokens
-* Otherwise, it is allowed to transfer money only if `from` address equals to sender address or have sender as an operator
-It is also prohibited to send frozen tokens in this case.
-
-
-**Argument:** 
-  + **In Haskell:** [`List`](#types-List) [`TransferItem`](#types-TransferItem)
-  + **In Michelson:** `(list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount))))))`
-    + **Example:** <span id="example-id">`{ Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0) } }`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `transfer` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`FA2_NOT_OPERATOR`](#errors-FA2_NOT_OPERATOR) — The sender of transfer is not the owner or the authorized operator
-
-* [`FROZEN_TOKEN_NOT_TRANSFERABLE`](#errors-FROZEN_TOKEN_NOT_TRANSFERABLE) — The sender tries to transfer frozen token
-
-* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
-
-* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
-
-
 
 <a name="entrypoints-balance_of"></a>
 
@@ -308,6 +335,49 @@ Token metadata will contain the DAO metadata.
 
 
 
+<a name="entrypoints-transfer"></a>
+
+---
+
+##### `transfer`
+
+Transfer tokens between a given account and each account from the given list.
+
+It serves multiple purposes:
+* If transaction `"from"` address equals to the admin address presented in storage, then  it is allowed for
+any address and both `frozen` and `unfrozen` tokens
+* Otherwise, it is allowed to transfer money only if `from` address equals to sender address or have sender as an operator
+It is also prohibited to send frozen tokens in this case.
+
+
+**Argument:** 
+  + **In Haskell:** [`List`](#types-List) [`TransferItem`](#types-TransferItem)
+  + **In Michelson:** `(list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount))))))`
+    + **Example:** <span id="example-id">`{ Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0) } }`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `transfer` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`FA2_NOT_OPERATOR`](#errors-FA2_NOT_OPERATOR) — The sender of transfer is not the owner or the authorized operator
+
+* [`FROZEN_TOKEN_NOT_TRANSFERABLE`](#errors-FROZEN_TOKEN_NOT_TRANSFERABLE) — The sender tries to transfer frozen token
+
+* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+
+
 <a name="entrypoints-update_operators"></a>
 
 ---
@@ -351,52 +421,17 @@ Each owner must be equal to sender, or the entrypoint fails.
 
 
 
-<a name="entrypoints-transfer_ownership"></a>
+<a name="entrypoints-callCustom"></a>
 
 ---
 
-### `transfer_ownership`
+### `callCustom`
 
-Asks an Address to become an admin. Can be called only by current administrator. The admin duties transfer only when the
-requested address accepts ownership. If called multiple times, only the last called address can accept ownership.
-
-
-**Argument:** 
-  + **In Haskell:** ***newOwner*** : [`Address`](#types-Address)
-  + **In Michelson:** `(address :newOwner)`
-    + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `transfer_ownership` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Authorization:** The sender has to be `administrator`.
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
-
-
-
-<a name="entrypoints-accept_ownership"></a>
-
----
-
-### `accept_ownership`
-
-Accepts the administrator privelege.
-Only works when the sender was asked to become an admin and only if it was asked by the current admin.
+Additional entrypoints specific to the given specific DAO.
 
 
 **Argument:** 
-  + **In Haskell:** [`()`](#types-lparenrparen)
+  + **In Haskell:** [`Empty`](#types-Empty)
   + **In Michelson:** `unit`
     + **Example:** <span id="example-id">`Unit`</span>
 
@@ -404,52 +439,11 @@ Only works when the sender was asked to become an admin and only if it was asked
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Call contract's `accept_ownership` entrypoint passing the constructed argument.
+1. Call contract's `callCustom` entrypoint passing the constructed argument.
 </details>
 <p>
 
 
-
-**Authorization:** The sender has to be `pending owner`.
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`NOT_PENDING_ADMIN`](#errors-NOT_PENDING_ADMIN) — Received an `accept_ownership` from an address other than what is in the pending owner field
-
-
-
-<a name="entrypoints-migrate"></a>
-
----
-
-### `migrate`
-
-Asks an address to migrate the contract to it.
-The contract is not considered migrated, until it receives confirm_migration call.
-
-
-**Argument:** 
-  + **In Haskell:** ***newAddress*** : [`Address`](#types-Address)
-  + **In Michelson:** `(address :newAddress)`
-    + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `migrate` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Authorization:** The sender has to be `administrator`.
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
 
 
 
@@ -486,335 +480,6 @@ After a successful call the contract will be set to migrated state where no oper
 * [`NOT_MIGRATION_TARGET`](#errors-NOT_MIGRATION_TARGET) — Recieved a confirm_migration call on a contract from an address other than the new version
 
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-
-
-<a name="entrypoints-propose"></a>
-
----
-
-### `propose`
-
-Saves the proposal with specific id and freezes the amount of sender tokens equal to the given amount.
-The sender must have enough unfrozen tokens.
-The sender's amount of frozen tokens is increased by proposal ammount. And the amount of unfrozen one
-is decreased by the same value.
-
-
-**Argument:** 
-  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
-  + **In Michelson:** `(pair (nat %frozen_token) (or %proposal_metadata (pair %proposal_type (nat %agora_post_id) (list %diff (pair (bytes %key) (option %new_value bytes)))) (pair %proposal_type (pair (option %frozen_scale_value nat) (option %frozen_extra_value nat)) (pair (option %slash_scale_value nat) (pair (option %slash_division_value nat) (option %max_proposal_size nat))))))`
-    + **Example:** <span id="example-id">`Pair 0 (Left (Pair 0 { Pair 0x0a (Some 0x0a) }))`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `propose` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Possible errors:**
-* [`FAIL_PROPOSAL_CHECK`](#errors-FAIL_PROPOSAL_CHECK) — Trying to propose a proposal that does not pass `proposalCheck`
-
-* [`MAX_PROPOSALS_REACHED`](#errors-MAX_PROPOSALS_REACHED) — Trying to propose a proposal when proposals max amount is already reached
-
-* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
-
-* [`PROPOSAL_INSUFFICIENT_BALANCE`](#errors-PROPOSAL_INSUFFICIENT_BALANCE) — Trying to propose a proposal without having enough unfrozen token
-
-* [`PROPOSAL_NOT_UNIQUE`](#errors-PROPOSAL_NOT_UNIQUE) — Trying to propose a proposal that is already existed in the Storage.
-
-
-
-<a name="entrypoints-vote"></a>
-
----
-
-### `vote`
-
-For each vote params in a given list vote for the proposal with that id. Thus the sender can vote many proposals
-(or one proposal multiple times) in a single call.
-The sender must have an amount required for all votings.
-
-
-**Argument:** 
-  + **In Haskell:** [`List`](#types-List) ([`PermitProtected`](#types-PermitProtected) ([`VoteParam`](#types-VoteParam) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))))
-  + **In Michelson:** `(list (pair :permit_protected (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))) (option %permit (pair (key %key) (signature %signature)))))`
-    + **Example:** <span id="example-id">`{ Pair (Pair 0x0a (Pair True 0)) (Some (Pair "edpkuwTWKgQNnhR5v17H2DYHbfcxYepARyrPGbf1tbMoGQAj8Ljr3V" "edsigtrs8bK7vNfiR4Kd9dWasVa1bAWaQSu2ipnmLGZuwQa8ktCEMYVKqbWsbJ7zTS8dgYT9tiSUKorWCPFHosL5zPsiDwBQ6vb")) }`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `vote` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`MISSIGNED`](#errors-MISSIGNED) — Invalid signature provided.
-
-* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
-
-* [`MAX_VOTES_REACHED`](#errors-MAX_VOTES_REACHED) — Trying to vote on a proposal when the votes max amount of that proposal is already reached
-
-* [`VOTING_PERIOD_OVER`](#errors-VOTING_PERIOD_OVER) — Trying to vote on a proposal that is already ended
-
-* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
-
-* [`VOTING_INSUFFICIENT_BALANCE`](#errors-VOTING_INSUFFICIENT_BALANCE) — Trying to vote on a proposal without having enough unfrozen token
-
-
-
-<a name="entrypoints-set_voting_period"></a>
-
----
-
-### `set_voting_period`
-
-Updates how long the voting period would last.
-It affects all ongoing proposals and all created afterwards.
-
-
-**Argument:** 
-  + **In Haskell:** [`Natural`](#types-Natural)
-  + **In Michelson:** `nat`
-    + **Example:** <span id="example-id">`0`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `set_voting_period` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Authorization:** The sender has to be `administrator`.
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
-
-* [`OUT_OF_BOUND_VOTING_PERIOD`](#errors-OUT_OF_BOUND_VOTING_PERIOD) — Trying to set voting period that is out of bound.
-
-
-
-<a name="entrypoints-set_quorum_threshold"></a>
-
----
-
-### `set_quorum_threshold`
-
-Updates the quorum threshold with a given value.
-It affects all ongoing proposals and all created afterwards.
-
-
-**Argument:** 
-  + **In Haskell:** [`Natural`](#types-Natural)
-  + **In Michelson:** `nat`
-    + **Example:** <span id="example-id">`0`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `set_quorum_threshold` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Authorization:** The sender has to be `administrator`.
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
-
-* [`OUT_OF_BOUND_QUORUM_THRESHOLD`](#errors-OUT_OF_BOUND_QUORUM_THRESHOLD) — Trying to set quorum threshold that is out of bound
-
-
-
-<a name="entrypoints-flush"></a>
-
----
-
-### `flush`
-
-Finish voting process on all proposals where the voting period is over.
-Returns an amount to the proposer, determined by the result of voting.
-There is a possibility of some tokens being lost due to administrator perform
-of burn or transfer operation.
-If the proposal is accepted, the decision lambda is called.
-
-
-**Argument:** 
-  + **In Haskell:** [`Natural`](#types-Natural)
-  + **In Michelson:** `nat`
-    + **Example:** <span id="example-id">`0`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `flush` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`BAD_ENTRYPOINT_PARAMETER`](#errors-BAD_ENTRYPOINT_PARAMETER) — Value passed to the entrypoint is not valid
-
-* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
-
-* [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
-
-* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
-
-
-
-<a name="entrypoints-burn"></a>
-
----
-
-### `burn`
-
-Reduces the amount of tokens of the given address. Can be performed only
-only if the given address has enough tokens to burn.
-
-
-**Argument:** 
-  + **In Haskell:** [`BurnParam`](#types-BurnParam)
-  + **In Michelson:** `(pair (address %from_) (pair (nat %token_id) (nat %amount)))`
-    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0)`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `burn` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Authorization:** The sender has to be `administrator`.
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
-
-* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
-
-
-
-<a name="entrypoints-mint"></a>
-
----
-
-### `mint`
-
-Provides the amount of tokens of the given address.
-
-
-**Argument:** 
-  + **In Haskell:** [`MintParam`](#types-MintParam)
-  + **In Michelson:** `(pair (address %to_) (pair (nat %token_id) (nat %amount)))`
-    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0)`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `mint` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Authorization:** The sender has to be `administrator`.
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
-
-* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
-
-
-
-<a name="entrypoints-transfer_contract_tokens"></a>
-
----
-
-### `transfer_contract_tokens`
-
-This entrypoint can be used by the administrator
-to transfer tokens owned (or operated) by this contract in another FA2 contract.
-Unlike the others, this entrypoint can be used after contract is migrated.
-
-
-**Argument:** 
-  + **In Haskell:** [`TransferContractTokensParam`](#types-TransferContractTokensParam)
-  + **In Michelson:** `(pair (address %contract_address) (list %params (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))`
-    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0) } }`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `transfer_contract_tokens` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Authorization:** The sender has to be `administrator`.
-
-**Possible errors:**
-* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
-
-* [`FAIL_TRANSFER_CONTRACT_TOKENS`](#errors-FAIL_TRANSFER_CONTRACT_TOKENS) — Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract.
-
-
-
-<a name="entrypoints-getVotePermitCounter"></a>
-
----
-
-### `getVotePermitCounter`
-
-Returns the next nonce value with which a permit should be created.
-
-Return value increases by number of votes where a permit was provided
-with each successful call of an entrypoint.
-
-
-**Argument:** 
-  + **In Haskell:** [`View`](#types-View) [`()`](#types-lparenrparen) [`Nonce`](#types-Nonce)
-  + **In Michelson:** `(pair (unit %viewParam) (contract %viewCallbackTo nat))`
-    + **Example:** <span id="example-id">`Pair Unit "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `getVotePermitCounter` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
 
 
 
@@ -865,29 +530,364 @@ failing decision lambda.
 
 
 
-<a name="entrypoints-callCustom"></a>
+<a name="entrypoints-flush"></a>
 
 ---
 
-### `callCustom`
+### `flush`
 
-Additional entrypoints specific to the given specific DAO.
+Finish voting process on all proposals where the voting period is over.
+Returns an amount to the proposer, determined by the result of voting.
+There is a possibility of some tokens being lost due to administrator perform
+of burn or transfer operation.
+If the proposal is accepted, the decision lambda is called.
 
 
 **Argument:** 
-  + **In Haskell:** [`Empty`](#types-Empty)
-  + **In Michelson:** `unit`
-    + **Example:** <span id="example-id">`Unit`</span>
+  + **In Haskell:** [`Natural`](#types-Natural)
+  + **In Michelson:** `nat`
+    + **Example:** <span id="example-id">`0`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Call contract's `callCustom` entrypoint passing the constructed argument.
+1. Call contract's `flush` entrypoint passing the constructed argument.
 </details>
 <p>
 
 
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`BAD_ENTRYPOINT_PARAMETER`](#errors-BAD_ENTRYPOINT_PARAMETER) — Value passed to the entrypoint is not valid
+
+* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
+
+* [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+
+
+<a name="entrypoints-getVotePermitCounter"></a>
+
+---
+
+### `getVotePermitCounter`
+
+Returns the next nonce value with which a permit should be created.
+
+Return value increases by number of votes where a permit was provided
+with each successful call of an entrypoint.
+
+
+**Argument:** 
+  + **In Haskell:** [`View`](#types-View) [`()`](#types-lparenrparen) [`Nonce`](#types-Nonce)
+  + **In Michelson:** `(pair (unit %viewParam) (contract %viewCallbackTo nat))`
+    + **Example:** <span id="example-id">`Pair Unit "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `getVotePermitCounter` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+
+
+<a name="entrypoints-migrate"></a>
+
+---
+
+### `migrate`
+
+Asks an address to migrate the contract to it.
+The contract is not considered migrated, until it receives confirm_migration call.
+
+
+**Argument:** 
+  + **In Haskell:** ***newAddress*** : [`Address`](#types-Address)
+  + **In Michelson:** `(address :newAddress)`
+    + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `migrate` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+
+
+<a name="entrypoints-mint"></a>
+
+---
+
+### `mint`
+
+Provides the amount of tokens of the given address.
+
+
+**Argument:** 
+  + **In Haskell:** [`MintParam`](#types-MintParam)
+  + **In Michelson:** `(pair (address %to_) (pair (nat %token_id) (nat %amount)))`
+    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0)`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `mint` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+
+
+<a name="entrypoints-propose"></a>
+
+---
+
+### `propose`
+
+Saves the proposal with specific id and freezes the amount of sender tokens equal to the given amount.
+The sender must have enough unfrozen tokens.
+The sender's amount of frozen tokens is increased by proposal ammount. And the amount of unfrozen one
+is decreased by the same value.
+
+
+**Argument:** 
+  + **In Haskell:** [`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
+  + **In Michelson:** `(pair (nat %frozen_token) (or %proposal_metadata (pair %proposal_type (nat %agora_post_id) (list %diff (pair (bytes %key) (option %new_value bytes)))) (pair %proposal_type (pair (option %frozen_scale_value nat) (option %frozen_extra_value nat)) (pair (option %slash_scale_value nat) (pair (option %slash_division_value nat) (option %max_proposal_size nat))))))`
+    + **Example:** <span id="example-id">`Pair 0 (Left (Pair 0 { Pair 0x0a (Some 0x0a) }))`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `propose` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`FAIL_PROPOSAL_CHECK`](#errors-FAIL_PROPOSAL_CHECK) — Trying to propose a proposal that does not pass `proposalCheck`
+
+* [`MAX_PROPOSALS_REACHED`](#errors-MAX_PROPOSALS_REACHED) — Trying to propose a proposal when proposals max amount is already reached
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`PROPOSAL_INSUFFICIENT_BALANCE`](#errors-PROPOSAL_INSUFFICIENT_BALANCE) — Trying to propose a proposal without having enough unfrozen token
+
+* [`PROPOSAL_NOT_UNIQUE`](#errors-PROPOSAL_NOT_UNIQUE) — Trying to propose a proposal that is already existed in the Storage.
+
+
+
+<a name="entrypoints-set_quorum_threshold"></a>
+
+---
+
+### `set_quorum_threshold`
+
+Updates the quorum threshold with a given value.
+It affects all ongoing proposals and all created afterwards.
+
+
+**Argument:** 
+  + **In Haskell:** [`Natural`](#types-Natural)
+  + **In Michelson:** `nat`
+    + **Example:** <span id="example-id">`0`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `set_quorum_threshold` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`OUT_OF_BOUND_QUORUM_THRESHOLD`](#errors-OUT_OF_BOUND_QUORUM_THRESHOLD) — Trying to set quorum threshold that is out of bound
+
+
+
+<a name="entrypoints-set_voting_period"></a>
+
+---
+
+### `set_voting_period`
+
+Updates how long the voting period would last.
+It affects all ongoing proposals and all created afterwards.
+
+
+**Argument:** 
+  + **In Haskell:** [`Natural`](#types-Natural)
+  + **In Michelson:** `nat`
+    + **Example:** <span id="example-id">`0`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `set_voting_period` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`OUT_OF_BOUND_VOTING_PERIOD`](#errors-OUT_OF_BOUND_VOTING_PERIOD) — Trying to set voting period that is out of bound.
+
+
+
+<a name="entrypoints-transfer_contract_tokens"></a>
+
+---
+
+### `transfer_contract_tokens`
+
+This entrypoint can be used by the administrator
+to transfer tokens owned (or operated) by this contract in another FA2 contract.
+Unlike the others, this entrypoint can be used after contract is migrated.
+
+
+**Argument:** 
+  + **In Haskell:** [`TransferContractTokensParam`](#types-TransferContractTokensParam)
+  + **In Michelson:** `(pair (address %contract_address) (list %params (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))`
+    + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0) } }`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `transfer_contract_tokens` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+* [`FAIL_TRANSFER_CONTRACT_TOKENS`](#errors-FAIL_TRANSFER_CONTRACT_TOKENS) — Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract.
+
+
+
+<a name="entrypoints-transfer_ownership"></a>
+
+---
+
+### `transfer_ownership`
+
+Asks an Address to become an admin. Can be called only by current administrator. The admin duties transfer only when the
+requested address accepts ownership. If called multiple times, only the last called address can accept ownership.
+
+
+**Argument:** 
+  + **In Haskell:** ***newOwner*** : [`Address`](#types-Address)
+  + **In Michelson:** `(address :newOwner)`
+    + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `transfer_ownership` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Authorization:** The sender has to be `administrator`.
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
+
+
+
+<a name="entrypoints-vote"></a>
+
+---
+
+### `vote`
+
+For each vote params in a given list vote for the proposal with that id. Thus the sender can vote many proposals
+(or one proposal multiple times) in a single call.
+The sender must have an amount required for all votings.
+
+
+**Argument:** 
+  + **In Haskell:** [`List`](#types-List) ([`PermitProtected`](#types-PermitProtected) ([`VoteParam`](#types-VoteParam) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))))
+  + **In Michelson:** `(list (pair :permit_protected (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))) (option %permit (pair (key %key) (signature %signature)))))`
+    + **Example:** <span id="example-id">`{ Pair (Pair 0x0a (Pair True 0)) (Some (Pair "edpkuwTWKgQNnhR5v17H2DYHbfcxYepARyrPGbf1tbMoGQAj8Ljr3V" "edsigtrs8bK7vNfiR4Kd9dWasVa1bAWaQSu2ipnmLGZuwQa8ktCEMYVKqbWsbJ7zTS8dgYT9tiSUKorWCPFHosL5zPsiDwBQ6vb")) }`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `vote` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
+
+* [`MISSIGNED`](#errors-MISSIGNED) — Invalid signature provided.
+
+* [`PROPOSAL_NOT_EXIST`](#errors-PROPOSAL_NOT_EXIST) — Trying to vote on a proposal that does not exist
+
+* [`MAX_VOTES_REACHED`](#errors-MAX_VOTES_REACHED) — Trying to vote on a proposal when the votes max amount of that proposal is already reached
+
+* [`VOTING_PERIOD_OVER`](#errors-VOTING_PERIOD_OVER) — Trying to vote on a proposal that is already ended
+
+* [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`VOTING_INSUFFICIENT_BALANCE`](#errors-VOTING_INSUFFICIENT_BALANCE) — Trying to vote on a proposal without having enough unfrozen token
 
 
 
@@ -952,8 +952,7 @@ name may result in unexpected errors.
 
 Describe an Agora post ID.
 
-**Structure:** 
-[`Natural`](#types-Natural)
+**Structure:** [`Natural`](#types-Natural)
 
 **Final Michelson representation:** `nat`
 
@@ -1122,8 +1121,7 @@ Type which should never be constructed.
 
 If appears as part of entrypoint argument, this means that the entrypoint should never be called.
 
-**Structure:** 
-[`()`](#types-lparenrparen)
+**Structure:** [`()`](#types-lparenrparen)
 
 **Final Michelson representation:** `unit`
 
@@ -1141,8 +1139,7 @@ First type argument denotes algorithm used to compute the hash, and the second
 argument describes the data being hashed.
 
 
-**Structure (example):** `Hash Blake2b ByteString` = 
-[`ByteString`](#types-ByteString)
+**Structure (example):** `Hash Blake2b ByteString` = [`ByteString`](#types-ByteString)
 
 **Final Michelson representation (example):** `Hash Blake2b ByteString` = `bytes`
 
@@ -1194,10 +1191,8 @@ Migration status of the contract
 
 **Structure:** *one of* 
 + **NotInMigration**()
-+ **MigratingTo**
-[`Address`](#types-Address)
-+ **MigratedTo**
-[`Address`](#types-Address)
++ **MigratingTo**[`Address`](#types-Address)
++ **MigratedTo**[`Address`](#types-Address)
 
 
 **Final Michelson representation:** `or unit (or address address)`
@@ -1255,8 +1250,7 @@ Unsigned number.
 
 Contract-local nonce used to make some data unique.
 
-**Structure:** 
-[`Natural`](#types-Natural)
+**Structure:** [`Natural`](#types-Natural)
 
 **Final Michelson representation:** `nat`
 
@@ -1306,8 +1300,7 @@ This exactly matches the result of Michelson `PACK` instruction application
 to the given value.
 
 
-**Structure (example):** `Packed (MText,Integer)` = 
-[`ByteString`](#types-ByteString)
+**Structure (example):** `Packed (MText,Integer)` = [`ByteString`](#types-ByteString)
 
 **Final Michelson representation (example):** `Packed (MText,Integer)` = `bytes`
 
@@ -1322,17 +1315,13 @@ to the given value.
 Describes the FA2 operations.
 
 **Structure:** *one of* 
-+ **Transfer**
-([`List`](#types-List) [`TransferItem`](#types-TransferItem))
-+ **Balance_of**
-([`View`](#types-View) ([`List`](#types-List) [`BalanceRequestItem`](#types-BalanceRequestItem)) ([`List`](#types-List) [`BalanceResponseItem`](#types-BalanceResponseItem)))
-+ **Token_metadata_registry**
-([`ContractRef`](#types-Contract) [`Address`](#types-Address))
-+ **Update_operators**
-([`List`](#types-List) [`UpdateOperator`](#types-UpdateOperator))
++ **Balance_of**([`View`](#types-View) ([`List`](#types-List) [`BalanceRequestItem`](#types-BalanceRequestItem)) ([`List`](#types-List) [`BalanceResponseItem`](#types-BalanceResponseItem)))
++ **Token_metadata_registry**([`ContractRef`](#types-Contract) [`Address`](#types-Address))
++ **Transfer**([`List`](#types-List) [`TransferItem`](#types-TransferItem))
++ **Update_operators**([`List`](#types-List) [`UpdateOperator`](#types-UpdateOperator))
 
 
-**Final Michelson representation:** `or (or (list (pair address (list (pair address (pair nat nat))))) (pair (list (pair address nat)) (contract (list (pair (pair address nat) nat))))) (or (contract address) (list (or (pair address (pair address nat)) (pair address (pair address nat)))))`
+**Final Michelson representation:** `or (or (pair (list (pair address nat)) (contract (list (pair (pair address nat) nat)))) (contract address)) (or (list (pair address (list (pair address (pair nat nat))))) (list (or (pair address (pair address nat)) (pair address (pair address nat)))))`
 
 
 
@@ -1458,10 +1447,8 @@ Describe the contract extra fields of a registry DAO. It contain a registry as a
 Describe the metadata of a proposal in Registry DAO. In Registry DAO, there are 2 types of proposals: a registry proposal, represented as `NormalProposal k v` and a configuration proposal represented as `ConfigProposal`.
 
 **Structure (example):** `RegistryDaoProposalMetadata ByteString ByteString` = *one of* 
-+ **NormalProposalType**
-([`NormalProposal`](#types-NormalProposal) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
-+ **ConfigProposalType**
-[`ConfigProposal`](#types-ConfigProposal)
++ **NormalProposalType**([`NormalProposal`](#types-NormalProposal) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
++ **ConfigProposalType**[`ConfigProposal`](#types-ConfigProposal)
 
 
 **Final Michelson representation (example):** `RegistryDaoProposalMetadata ByteString ByteString` = `or (pair nat (list (pair bytes (option bytes)))) (pair (pair (option nat) (option nat)) (pair (option nat) (pair (option nat) (option nat))))`
@@ -1545,8 +1532,7 @@ Some type, may differ in various situations.
 
 Signature for data of the given type.
 
-**Structure (example):** `TSignature (MText,Integer)` = 
-[`Signature`](#types-Signature)
+**Structure (example):** `TSignature (MText,Integer)` = [`Signature`](#types-Signature)
 
 **Final Michelson representation (example):** `TSignature (MText,Integer)` = `signature`
 
@@ -1586,8 +1572,7 @@ Timestamp primitive.
 
 Token identifier as defined by [TZIP-12](https://gitlab.com/tzip/tzip/-/blob/eb1da57684599a266334a73babd7ba82dbbbce66/proposals/tzip-12/tzip-12.md#general).
 
-**Structure:** 
-[`Natural`](#types-Natural)
+**Structure:** [`Natural`](#types-Natural)
 
 **Final Michelson representation:** `nat`
 
@@ -1651,10 +1636,8 @@ Describes a transfer operation
 Describes the operator update operation.
 
 **Structure:** *one of* 
-+ **AddOperator**
-[`OperatorParam`](#types-OperatorParam)
-+ **RemoveOperator**
-[`OperatorParam`](#types-OperatorParam)
++ **AddOperator**[`OperatorParam`](#types-OperatorParam)
++ **RemoveOperator**[`OperatorParam`](#types-OperatorParam)
 
 
 **Final Michelson representation:** `or (pair address (pair address nat)) (pair address (pair address nat))`
@@ -1671,8 +1654,8 @@ Describes the operator update operation.
 Read more in [A1 conventions document](https://gitlab.com/tzip/tzip/-/blob/c42e3f0f5e73669e84e615d69bee73281572eb0a/proposals/tzip-4/tzip-4.md#view-entrypoints).
 
 **Structure (example):** `View () Integer` = 
-[`()`](#types-lparenrparen)
-[`ContractRef`](#types-Contract) [`Integer`](#types-Integer)
+  * [`()`](#types-lparenrparen)
+  * [`ContractRef`](#types-Contract) [`Integer`](#types-Integer)
 
 **Final Michelson representation (example):** `View () Integer` = `pair unit (contract int)`
 
