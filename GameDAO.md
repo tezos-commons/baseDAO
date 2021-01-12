@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [0c7efbf](https://github.com/tqtezos/baseDAO/tree/0c7efbf734addbf0a73ba58f417faf40874c1598) *(Mon Jan 11 17:51:53 2021 +0100)*
+**Code revision:** [2398034](https://github.com/tqtezos/baseDAO/tree/2398034915c191b4ba36785b6a16910dfd68691b) *(Tue Jan 12 11:31:51 2021 +0100)*
 
 
 
@@ -162,7 +162,7 @@ Storage type for baseDAO contract
   * ***sProposals*** :[`BigMap`](#types-BigMap) ([`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address)))) ([`Proposal`](#types-Proposal) [`Text`](#types-Text))
   * ***sProposalKeyListSortByDate*** :[`Set`](#types-Set) ([`Timestamp`](#types-Timestamp), [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address))))
   * ***sPermitsCounter*** :[`Nonce`](#types-Nonce)
-  * ***sMetadata*** :***metadata*** : [`BigMap`](#types-BigMap) [`Text`](#types-Text) [`ByteString`](#types-ByteString)
+  * ***sMetadata*** :[`BigMap`](#types-BigMap) [`Text`](#types-Text) [`ByteString`](#types-ByteString)
 
 **Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair address (pair address (or unit (or address address))))) (pair (pair nat (pair nat nat)) (pair (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (set (pair timestamp bytes))) (pair nat (big_map string bytes))))`
 
