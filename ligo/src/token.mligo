@@ -4,9 +4,14 @@
 // Corresponds to Token.hs module
 
 #include "types.mligo"
+#include "token/fa2.mligo"
 
 let call_fa2(param, store : fa2_parameter * storage) : return =
-  not_implemented("call_fa2")
+  match param with
+    Transfer (p) -> transfer (p, store)
+  | Balance_of (p) -> balance_of(p, store)
+  | Token_metadata_registry (p) -> token_metadata_registry(p, store)
+  | Update_operators (p) -> update_operators(p, store)
 
 let burn(param, store : burn_param * storage) : return =
   not_implemented("burn")
