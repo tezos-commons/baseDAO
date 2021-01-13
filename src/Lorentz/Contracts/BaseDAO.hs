@@ -24,12 +24,12 @@ import Universum (Each)
 import Lorentz.Contracts.BaseDAO.Doc
 import Lorentz.Contracts.BaseDAO.Management
 import Lorentz.Contracts.BaseDAO.Proposal
+import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import Lorentz.Contracts.BaseDAO.Token
 import Lorentz.Contracts.BaseDAO.Token.FA2
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
-import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Michelson.Optimizer (OptimizerConf (..))
+import Michelson.Optimizer (OptimizerConf(..))
 
 data FA2EntrypointsKind
 instance EntrypointKindHasDoc FA2EntrypointsKind where
@@ -61,7 +61,7 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ docGroup 
 
   pushFuncContext @ce @pm $ do
     unpair
-    finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm op) (Proxy @PlainEntrypointsKind)
+    entryCase @(BaseDAO.Parameter pm op) (Proxy @PlainEntrypointsKind)
       ( #cAccept_ownership /-> acceptOwnership
       , #cBurn /-> burn
       , #cCall_FA2 /-> fa2Handler
