@@ -50,7 +50,6 @@ steps:
     - nix run -f ci.nix
           tezos-client
           pkgs.bats
-          pkgs.gawk
           packages.baseDAO.exes.baseDAO
         -c bats ./scripts/test.bats
 
