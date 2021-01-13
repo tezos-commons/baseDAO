@@ -29,7 +29,6 @@ import Lorentz.Contracts.BaseDAO.Token
 import Lorentz.Contracts.BaseDAO.Token.FA2
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Michelson.Optimizer (OptimizerConf(..))
 
 data FA2EntrypointsKind
 instance EntrypointKindHasDoc FA2EntrypointsKind where
@@ -49,7 +48,7 @@ type DaoC ce pm op =
 baseDaoContract
   :: forall ce pm op. DaoC ce pm op
   => Config ce pm op -> DaoContract ce pm op
-baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ docGroup (DName cDaoName) $ do
+baseDaoContract config@Config{..} = toContract $ docGroup (DName cDaoName) $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
   doc $ dStorage @(BaseDAO.Storage ce pm)
@@ -85,15 +84,14 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ docGroup 
       )
   where
     -- By default we insert the CAST instruction at the beginning of
-    -- the contract and do not optimize lambdas in code.
-    -- In our case CAST is redundant and optimizing lambdas is harmless, so
-    -- let's do it.
-    optimizeBetter :: Contract cp st -> Contract cp st
-    optimizeBetter c = c
+    -- the contract.
+    -- In our case CAST is redundant, so we disable it to decrease
+    -- the contract size.
+    -- If it ever becomes necessary, we will see failing tests and
+    -- will enable initial case.
+    toContract :: NiceParameterFull cp => ContractCode cp st -> Contract cp st
+    toContract code = (defaultContract code)
       { cDisableInitialCast = True
-      , cCompilationOptions = (cCompilationOptions c)
-        { coOptimizerConf = Just $ def {ocGotoValues = True}
-        }
       }
 
 fa2Handler
