@@ -231,6 +231,8 @@ type full_storage = storage * config
 
 type return = operation list * storage
 
+type return_with_full_storage = operation list * full_storage
+
 let nil_op = ([] : operation list)
 
 // Remove this when everything is covered

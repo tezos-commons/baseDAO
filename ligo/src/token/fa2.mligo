@@ -4,7 +4,6 @@
 // Corresponds to Token/FA2.hs module
 
 #include "../types.mligo"
-#include "../management.mligo"
 
 
 let unfrozen_token_id: nat = 0n
