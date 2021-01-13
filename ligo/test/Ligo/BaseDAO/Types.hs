@@ -64,10 +64,14 @@ data ProposalL = ProposalL
 
 type CallCustomParam = (MText, ByteString)
 
-data Parameter
+-- NOTE: Constructors of the parameter types should remain sorted for the
+--'ligoLayout' custom derivation to work.
+--
+-- TODO: This above will be no longer the case once the following issue is fixed.
+-- https://gitlab.com/morley-framework/morley/-/issues/527
+data ForbidXTZParam
   = Accept_ownership ()
   | Burn BurnParam
-  | CallCustom CallCustomParam
   | Call_FA2 FA2.Parameter
   | Confirm_migration ()
   | Drop_proposal ProposalKeyL
@@ -78,9 +82,18 @@ data Parameter
   | Propose ProposeParamsL
   | Set_quorum_threshold QuorumThreshold
   | Set_voting_period VotingPeriod
-  | Transfer_contract_tokens TransferContractTokensParam
   | Transfer_ownership TransferOwnershipParam
   | Vote [PermitProtected VoteParamL]
+  deriving stock (Show)
+
+data MigratableParam
+  = CallCustom CallCustomParam
+  | XtzForbidden ForbidXTZParam
+  deriving stock (Show)
+
+data Parameter
+  = Migratable MigratableParam
+  | Transfer_contract_tokens TransferContractTokensParam
   deriving stock (Show)
 
 data Storage = Storage
@@ -171,6 +184,16 @@ data FullStorage = FullStorage
 
 customGeneric "ProposalL" ligoLayout
 deriving anyclass instance IsoValue ProposalL
+
+customGeneric "MigratableParam" ligoLayout
+deriving anyclass instance IsoValue MigratableParam
+instance ParameterHasEntrypoints MigratableParam where
+  type ParameterEntrypointsDerivation MigratableParam = EpdDelegate
+
+customGeneric "ForbidXTZParam" ligoLayout
+deriving anyclass instance IsoValue ForbidXTZParam
+instance ParameterHasEntrypoints ForbidXTZParam where
+  type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
 
 customGeneric "Parameter" ligoLayout
 deriving anyclass instance IsoValue Parameter
