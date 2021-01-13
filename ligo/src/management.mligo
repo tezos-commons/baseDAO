@@ -19,6 +19,11 @@ let ensure_not_migrated (storage : storage): storage =
     | MigratingTo (p) -> storage
     | MigratedTo (p) -> (failwith ("MIGRATED") : storage)
 
+let authorize_admin (storage : storage): storage =
+  if storage.admin = Tezos.sender
+  then storage
+  else (failwith("NOT_ADMIN") : storage)
+
 #endif  // MANAGEMENT_H included
 
 

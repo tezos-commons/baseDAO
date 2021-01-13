@@ -27,6 +27,13 @@ import Lorentz.Contracts.Spec.FA2Interface (TokenId)
 -- Helper
 ------------------------------------------------------------------------
 
+toProposalKey
+  :: forall pm s. NicePackedValue pm
+  => (ProposeParams pm, Address) : s :-> ProposalKey pm : s
+toProposalKey = do
+  pack @(ProposeParams pm, Address)
+  blake2B
+
 checkIfProposalExist
   :: forall store ce pm s. (KnownValue pm, StorageC store ce pm)
   => (ProposalKey pm : store : s) :-> (Proposal pm : s)
@@ -59,13 +66,6 @@ ensureProposalIsUnique = do
   if Holds then
     failCustom_ #pROPOSAL_NOT_UNIQUE
   else nop
-
-toProposalKey
-  :: forall pm s. NicePackedValue pm
-  => (ProposeParams pm, Address) : s :-> ProposalKey pm : s
-toProposalKey = do
-  pack @(ProposeParams pm, Address)
-  blake2B
 
 ------------------------------------------------------------------------
 -- Propose
@@ -268,63 +268,36 @@ submitVote = do
   freeze; dig @2; dig @2
   stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
-  constructT @(Proposal pm)
-    ( fieldCtor $ do
-        -- Update upvote
-        duupX @2;
-        stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-        toField #vVoteType;
-        stackType @(Bool : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-        if Holds then do
-          duupX @2
-          stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-          toField #vVoteAmount
-          duupX @2
-          stackType @(Proposal pm : Natural : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-          toField #pUpvotes
-          add
-        else do
-          stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
-          getField #pUpvotes
-    , fieldCtor $ do
-        -- Update downvote
-        duupX @2
-        stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-        toField #vVoteType;
-        stackType @(Bool : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-        if Holds then do
-          stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
-          getField #pDownvotes
-        else do
-          duupX @2
-          stackType @(VoteParam pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-          toField #vVoteAmount
-          duupX @2
-          stackType @(Proposal pm : Natural : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-          toField #pDownvotes
-          add
+  -- Update upvotes/downvotes
+  duupX @2;
+  dup @(VoteParam pm);
+  dip $ toField #vVoteAmount
+  toField #vVoteType
+  if Holds then do
+    stackType @(Natural : Proposal pm : VoteParam pm : store : "author" :! _ : s)
+    dip $ getField #pUpvotes
+    add
+    setField #pUpvotes
+  else do
+    dip $ getField #pDownvotes
+    add
+    setField #pDownvotes
 
-    , fieldCtor $ getField #pStartDate
-    , fieldCtor $ getField #pMetadata
-    , fieldCtor $ getField #pProposer
-    , fieldCtor $ getField #pProposerFrozenToken
-    , fieldCtor $ do
-        duupX @2; toField #vVoteAmount
-        dupL #author; pair
-        dip $ getField #pVoters
-        stackType @((Address, Natural) : [(Address, Natural)] : Proposal pm
-                   : VoteParam pm : store : "author" :! _ : s)
-        cons
-    )
-
-  stackType @(Proposal pm : Proposal pm : VoteParam pm : store : "author" :! _ : s)
-  dip drop
   stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
-  some
+  duupX @2; toField #vVoteAmount
+  dupL #author; pair
+  dip $ getField #pVoters
+  stackType @((Address, Natural) : [(Address, Natural)] : Proposal pm
+              : VoteParam pm : store : "author" :! _ : s)
+  cons
+  setField #pVoters
+
+  stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
+
   swap; toField #vProposalKey
-  stackType @(ProposalKey pm : Maybe (Proposal pm) : store : "author" :! _ : s)
-  stUpdate #sProposals
+  stackType @(ProposalKey pm : Proposal pm : store : "author" :! _ : s)
+  stInsert #sProposals
   dip $ drop @("author" :! _)
 
 checkVoteLimitReached
@@ -481,28 +454,28 @@ burnFrozenToken = do
 -- the whole proposer frozen balance.
 burnSlashAmount
   :: forall store ce pm s. (StorageC store ce pm, HasFuncContext s store)
-  => ("slash_amount" :! Natural) : Natural : Address : store : s
-  :-> ("slash_amount" :! Natural) : Natural : Address : store : s
+  => ("slash_amount" :! Natural) : ("frozen_tokens" :! Natural) : Address : store : s
+  :-> ("slash_amount" :! Natural) : ("frozen_tokens" :! Natural) : Address : store : s
 burnSlashAmount = do
   dupTop2
-  swap; dip (fromNamed #slash_amount)
+  swap; dip (fromNamed #slash_amount); fromNamed #frozen_tokens
   sub; isNat
   ifSome
     (do
       drop
-      stackType @("slash_amount" :! Natural : Natural : Address : store : s)
+      stackType @("slash_amount" :! Natural : "frozen_tokens" :! Natural : Address : store : s)
       dig @3; duupX @2; fromNamed #slash_amount -- Use the slash value
       duupX @5
-      stackType @(Address : Natural : store : "slash_amount" :! Natural : Natural : Address : s)
+      stackType @(Address : Natural : store : "slash_amount" :! Natural : "frozen_tokens" :! Natural : Address : s)
     )
     (do
-      stackType @("slash_amount" :! Natural : Natural : Address : store : s)
-      dig @3; duupX @3 -- Use the frozen balance value
+      stackType @("slash_amount" :! Natural : "frozen_tokens" :! Natural : Address : store : s)
+      dig @3; duupX @3; fromNamed #frozen_tokens -- Use the frozen balance value
       duupX @5
-      stackType @(Address : Natural : store : "slash_amount" :! Natural : Natural : Address : s)
+      stackType @(Address : Natural : store : "slash_amount" :! Natural : "frozen_tokens" :! Natural : Address : s)
     )
   burnFrozenToken
-  stackType @(store : "slash_amount" :! Natural : Natural : Address : s)
+  stackType @(store : "slash_amount" :! Natural : "frozen_tokens" :! Natural : Address : s)
   swap; dip $ do swap; dip swap
 
 unfreezeProposerToken
@@ -535,14 +508,14 @@ unfreezeProposerToken Config{..} isAccepted = do
           cRejectedProposalReturnValue
           stackType @("slash_amount" :! Natural : Proposal pm : store : ProposalKey pm : [Operation] : s)
           dip $ do
-            getField #pProposerFrozenToken
+            getField #pProposerFrozenToken; toNamed #frozen_tokens
             dip $ getField #pProposer
             dip $ dip swap
-          stackType @("slash_amount" :! Natural : Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
+          stackType @("slash_amount" :! Natural : "frozen_tokens" :! Natural : Address : store : Proposal pm : ProposalKey pm : [Operation] : s)
           burnSlashAmount
 
           -- Calculate unfreeze amount
-          swap; dip (fromNamed #slash_amount)
+          swap; dip (fromNamed #slash_amount); fromNamed #frozen_tokens
           sub; isNat
           ifSome nop $ do
             -- If the result is negative, we unfreeze 0 tokens.
@@ -619,6 +592,20 @@ doTotalVoteMeetQuorumThreshold = do
   else
     push False
 
+-- | Delete a proposal from 'sProposalKeyListSortByDate'
+deleteProposal
+  :: forall store ce pm s.
+    (StorageC store ce pm)
+  => Timestamp : ProposalKey pm : store : s
+  :-> store : s
+deleteProposal = do
+  -- Delete from 'sProposalKeyListSortByDate'
+  pair
+  dip $ stGetField #sProposalKeyListSortByDate
+  dip $ push False
+  update
+  stSetField #sProposalKeyListSortByDate
+
 handleProposalIsOver
   :: forall store ce pm op s.
      (StorageC store ce pm, HasFuncContext s store)
@@ -672,20 +659,6 @@ handleProposalIsOver config@Config{..} = do
   else do
     -- Do nothing
     drop; dip drop
-
--- | Delete a proposal from 'sProposalKeyListSortByDate'
-deleteProposal
-  :: forall store ce pm s.
-    (StorageC store ce pm)
-  => Timestamp : ProposalKey pm : store : s
-  :-> store : s
-deleteProposal = do
-  -- Delete from 'sProposalKeyListSortByDate'
-  pair
-  dip $ stGetField #sProposalKeyListSortByDate
-  dip $ push False
-  update
-  stSetField #sProposalKeyListSortByDate
 
 -- | Flush all proposals that passed their voting period
 -- If the proposal's total vote >= quorum_theshold and it's upvote > downvote
