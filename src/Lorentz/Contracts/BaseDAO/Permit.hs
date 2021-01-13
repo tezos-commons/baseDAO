@@ -5,7 +5,6 @@
 module Lorentz.Contracts.BaseDAO.Permit
   ( toSignedData
   , permitSender
-  , checkPermit
   , verifyPermit
   , verifyPermitProtected
   ) where
@@ -52,16 +51,17 @@ permitSender = do toField #pKey; hashKey; implicitAccount; address
 --
 -- On failure, this returns packed signed data for which we compared the
 -- signature.
-checkPermit
+checkedPermitSender
   :: NicePackedValue a
-  => Permit a : DataToSign a : s :-> Either (Packed (DataToSign a)) () : s
-checkPermit = do
-  dip (pack # dup)
+  => Permit a : DataToSign a : s :-> Address : s
+checkedPermitSender = do
+  dip pack
+  dupTop2
   getField #pKey; dip (toField #pSignature)
   checkSignature
   if Holds
-  then do drop; push (Right ())
-  else left
+  then do dip (drop @(Packed $ DataToSign _)); permitSender
+  else do drop @(Permit _); checkedCoerce_; failCustom #mISSIGNED
 
 -- | Check that permit is signed by its author, and return the author
 -- and the parameter to work with.
@@ -71,18 +71,11 @@ verifyPermit
   => Label counterLabel
   -> Permit a : a : store : s :-> a : ("author" :! Address) : store : s
 verifyPermit counterLabel = do
-  stackType @(Permit a : a : store : s)
-  dupTop2
-  dipN @2 $ do
+  duupX @2
+  dip $ do
     dip $ toSignedData counterLabel
-    checkPermit
-    if IsRight
-    then drop @()
-    else do checkedCoerce_; failCustom #mISSIGNED
-
-  stackType @(Permit a : a : store : s)
-  permitSender; toNamed #author
-  swap
+    checkedPermitSender
+    toNamed #author
 
 -- | Check that permit is signed by its author, and return the data
 -- carried under permit protection.

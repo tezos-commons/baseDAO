@@ -78,6 +78,13 @@ type fa2_parameter =
   | Token_metadata_registry of token_metadata_registry_param
   | Update_operators of update_operators_param
 
+// -- Helpers -- //
+
+type counter =
+  { current : nat
+  ; total : nat
+  }
+
 // -- DAO base types -- //
 
 type nonce = nat
@@ -175,6 +182,7 @@ type transfer_contract_tokens_param =
   ; params : transfer_params
   }
 
+// TODO: get rid of it once it is possible to execute off-chain-views in tests
 type vote_permit_counter_param =
   [@layout:comb]
   { param : unit
