@@ -867,7 +867,7 @@ instance CustomErrorHasDoc "mISSIGNED" where
 type instance ErrorArg "bAD_ENTRYPOINT_PARAMETER" = ()
 
 instance CustomErrorHasDoc "bAD_ENTRYPOINT_PARAMETER" where
-  customErrClass = ErrClassActionException
+  customErrClass = ErrClassBadArgument
   customErrDocMdCause = "Value passed to the entrypoint is not valid"
 
 type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_OVER" = ()
