@@ -16,16 +16,22 @@ module Ligo.BaseDAO.Types
   , Config (..)
   , FullStorage (..)
   , DynamicRec (..)
+  , mkStorage
   ) where
 
-import Lorentz
-import Universum (One, Show)
+import Lorentz as L
+import Universum (One)
 
+import qualified Data.Map as Map
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
+import Util.Named
 
-import Lorentz.Contracts.BaseDAO.Types hiding (Config(..), Parameter(..), Storage(..), defaultConfig)
-import Michelson.Typed.Haskell.Compatibility
+import Michelson.Runtime.GState (genesisAddress)
+import Lorentz.Contracts.BaseDAO.Types hiding
+  (Config(..), Parameter(..), Storage(..), defaultConfig, mkStorage)
+import qualified Lorentz.Contracts.BaseDAO.Types as BaseDAO
+
 
 -- | Represents a product type with arbitrary fields.
 --
@@ -93,6 +99,47 @@ data Storage = Storage
   , sVotingPeriod :: VotingPeriod
   }
   deriving stock (Show)
+
+mkStorage
+  :: Address
+  -> Natural
+  -> Natural
+  -> ContractExtraL
+  -> TZIP16.MetadataMap BigMap
+  -> [(MText, ByteString)]
+  -> FullStorage
+mkStorage admin votingPeriod quorumThreshold extra metadata customEps = let
+  storage = Storage
+    { sAdmin = admin
+    , sExtra = extra
+    , sLedger = mempty
+    , sMetadata = #metadata .! metadata
+    , sMigrationStatus = NotInMigration
+    , sOperators = mempty
+    , sPendingOwner = admin
+    , sPermitsCounter = Nonce 0
+    , sProposals = mempty
+    , sProposalKeyListSortByDate = mempty
+    , sQuorumThreshold = quorumThreshold
+    , sTokenAddress = genesisAddress
+    , sVotingPeriod = votingPeriod
+    }
+
+  config = Config
+    { cUnfrozenTokenMetadata = BaseDAO.cUnfrozenTokenMetadata BaseDAO.defaultConfig
+    , cFrozenTokenMetadata = BaseDAO.cFrozenTokenMetadata BaseDAO.defaultConfig
+    , cProposalCheck = failUsing [mt|not implemented|]
+    , cRejectedProposalReturnValue = failUsing [mt|not implemented|]
+    , cDecisionLambda = failUsing [mt|not implemented|]
+    , cMaxProposals = 0
+    , cMaxVotes = 0
+    , cMaxQuorumThreshold = 0
+    , cMinQuorumThreshold = 0
+    , cMaxVotingPeriod = 0
+    , cMinVotingPeriod = 0
+    , cCustomEntrypoints = DynamicRec $ Map.fromList customEps
+    }
+  in FullStorage storage config
 
 data Config = Config
   { cUnfrozenTokenMetadata :: FA2.TokenMetadata
