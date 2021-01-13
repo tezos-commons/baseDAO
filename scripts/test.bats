@@ -27,7 +27,7 @@ exe="baseDAO"
                             --metadata-key ""
 }
 
-@test "Document BaseDAO" {
+@test "Document contracts" {
   "$exe" document -n TrivialDAO
 }
 
@@ -37,4 +37,13 @@ exe="baseDAO"
 
 @test "Print MetadataCarrier" {
   "$exe" print -n MetadataCarrier
+}
+
+@test "Typecheck Lorentz contracts" {
+  names=`"$exe" list | grep - | awk '{print $2}'`
+  for name in $names;
+  do
+    "$exe" print -n "$name" -o out.tz
+    tezos-client --mode mockup typecheck script out.tz
+  done
 }
