@@ -49,10 +49,10 @@ type DaoC ce pm op =
 baseDaoContract
   :: forall ce pm op. DaoC ce pm op
   => Config ce pm op -> DaoContract ce pm op
-baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractName cDaoName $ do
+baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ docGroup (DName cDaoName) $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
-  docStorage @(BaseDAO.Storage ce pm)
+  doc $ dStorage @(BaseDAO.Storage ce pm)
 
   -- TODO: [#91] Disabled for now due to unable to send XTZ
   -- entrypointSection "Prior checks" (Proxy @CommonContractBehaviourKind) $ do
