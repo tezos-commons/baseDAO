@@ -3,8 +3,15 @@
 
 {-# LANGUAGE NumericUnderscores #-}
 
-module Test.Common
-  ( checkTokenBalance
+-- | Contain common functions and types that are used
+-- in the shared tests.
+module BaseDAO.ShareTest.Common
+  ( OriginateFn
+  , IsLorentz
+  , expectFailed
+
+  , mkFA2View
+  , checkTokenBalance
   , withOriginated
   , originateTrivialDao
   , originateBaseDaoWithConfig
@@ -14,13 +21,14 @@ module Test.Common
   , addDataToSign
   , permitProtect
   , sendXtz
+  , expectMigrated
   ) where
 
 import Universum
 
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Lorentz
+import Lorentz hiding ((>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
@@ -31,6 +39,19 @@ import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.TrivialDAO as DAO
+
+type OriginateFn param m = m ((Address, Address), (Address, Address), TAddress param, Address)
+
+-- TODO: Since Ligo contract has different error messages (string type)
+-- we need this to be able to catch error message properly.
+type IsLorentz = Bool
+
+-- | Used for check error from ligo contract
+expectFailed
+ :: forall caps base m
+  . (MonadNettest caps base m)
+  => Address -> MText -> m () -> m ()
+expectFailed addr val = flip expectFailure (NettestFailedWith addr val)
 
 -- | Function that originates the contract and also make a bunch of
 -- address (the `addrCount` arg determines the count) for use within
@@ -191,3 +212,8 @@ sendXtz addr = do
         , tdParameter = ()
         }
   transfer transferData
+
+expectMigrated
+  :: (MonadNettest caps base m)
+  => Address -> m a -> m ()
+expectMigrated addr = expectCustomError #mIGRATED addr

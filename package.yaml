@@ -97,6 +97,7 @@ library:
     - lorentz
     - optparse-applicative
     - universum
+    - cleveland
 
 executables:
   baseDAO:
