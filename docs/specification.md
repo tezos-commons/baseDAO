@@ -225,7 +225,6 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `OUT_OF_BOUND_QUORUM_THRESHOLD` | Throws when trying to set quorum threshold that is out of bound from what is specified in the `Config`      |
 | `MAX_PROPOSALS_REACHED`         | Throws when trying to propose a proposal when proposals max amount is already reached                       |
 | `MAX_VOTES_REACHED`             | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
-| `CONTRACT_MIGRATED`             | Throw when conract has been migrated                                                                        |
 | `MIGRATED`                      | Throw when conract has been migrated                                                                        |
 | `NOT_MIGRATING`                 | Throw when `confirm_migration` is called and contract is not in migration                                   |
 | `NOT_MIGRATION_TARGET`          | Throw when `confirm_migration` is called by address other than the new address                              |
@@ -233,6 +232,8 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `PROPOSER_NOT_EXIST_IN_LEDGER`  | Expect a proposer address to exist in Ledger but it is not found                                            |
 | `PROPOSAL_NOT_UNIQUE`           | Trying to propose a proposal that is already existed in the Storage.                                        |
 | `MISSIGNED`                     | Parameter signature does not match the expected one - for permits.                                          |
+| `ENTRYPOINT_NOT_FOUND`          | Throw when `CallCustom` is called with a non-existing entrypoint                                            |
+| `UNPACKING_FAILED`              | Throw when unpacking of the stored lambda in a 'CallCustom' call fails                                      |
 
 
 # Entrypoints
