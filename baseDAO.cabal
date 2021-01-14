@@ -25,6 +25,7 @@ library
       BaseDAO.CLI
       BaseDAO.ShareTest.Common
       BaseDAO.ShareTest.FA2
+      BaseDAO.ShareTest.Token
       Lorentz.Contracts.BaseDAO
       Lorentz.Contracts.BaseDAO.Doc
       Lorentz.Contracts.BaseDAO.Management
