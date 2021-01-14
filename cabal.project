@@ -10,13 +10,13 @@ packages:
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley.git
-    tag: fd1f796e970ed370285b4ca184a5d63c04483d19
+    tag: 9e69d52741e456bd0976a1ec4c45cc4c43a11722
     subdir: code/cleveland
 
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley.git
-    tag: fd1f796e970ed370285b4ca184a5d63c04483d19
+    tag: 9e69d52741e456bd0976a1ec4c45cc4c43a11722
     subdir: code/morley-client
 
 source-repository-package

@@ -24,12 +24,11 @@ import Universum (Each)
 import Lorentz.Contracts.BaseDAO.Doc
 import Lorentz.Contracts.BaseDAO.Management
 import Lorentz.Contracts.BaseDAO.Proposal
+import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import Lorentz.Contracts.BaseDAO.Token
 import Lorentz.Contracts.BaseDAO.Token.FA2
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
-import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Michelson.Optimizer (OptimizerConf (..))
 
 data FA2EntrypointsKind
 instance EntrypointKindHasDoc FA2EntrypointsKind where
@@ -49,10 +48,10 @@ type DaoC ce pm op =
 baseDaoContract
   :: forall ce pm op. DaoC ce pm op
   => Config ce pm op -> DaoContract ce pm op
-baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractName cDaoName $ do
+baseDaoContract config@Config{..} = toContract $ docGroup (DName cDaoName) $ do
   contractGeneralDefault
   doc $ DDescription $ cDaoDescription <> "\n\n" <> introductoryDoc
-  docStorage @(BaseDAO.Storage ce pm)
+  doc $ dStorage @(BaseDAO.Storage ce pm)
 
   -- TODO: [#91] Disabled for now due to unable to send XTZ
   -- entrypointSection "Prior checks" (Proxy @CommonContractBehaviourKind) $ do
@@ -61,7 +60,7 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractN
 
   pushFuncContext @ce @pm $ do
     unpair
-    finalizeParamCallingDoc $ entryCase @(BaseDAO.Parameter pm op) (Proxy @PlainEntrypointsKind)
+    entryCase @(BaseDAO.Parameter pm op) (Proxy @PlainEntrypointsKind)
       ( #cAccept_ownership /-> acceptOwnership
       , #cBurn /-> burn
       , #cCall_FA2 /-> fa2Handler
@@ -85,15 +84,14 @@ baseDaoContract config@Config{..} = optimizeBetter $ defaultContract $ contractN
       )
   where
     -- By default we insert the CAST instruction at the beginning of
-    -- the contract and do not optimize lambdas in code.
-    -- In our case CAST is redundant and optimizing lambdas is harmless, so
-    -- let's do it.
-    optimizeBetter :: Contract cp st -> Contract cp st
-    optimizeBetter c = c
+    -- the contract.
+    -- In our case CAST is redundant, so we disable it to decrease
+    -- the contract size.
+    -- If it ever becomes necessary, we will see failing tests and
+    -- will enable initial case.
+    toContract :: NiceParameterFull cp => ContractCode cp st -> Contract cp st
+    toContract code = (defaultContract code)
       { cDisableInitialCast = True
-      , cCompilationOptions = (cCompilationOptions c)
-        { coOptimizerConf = Just $ def {ocGotoValues = True}
-        }
       }
 
 fa2Handler

@@ -48,6 +48,7 @@ steps:
     if: *not_scheduled
     commands:
     - nix run -f ci.nix
+          tezos-client
           pkgs.bats
           packages.baseDAO.exes.baseDAO
         -c bats ./scripts/test.bats

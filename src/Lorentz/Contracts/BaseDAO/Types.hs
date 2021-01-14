@@ -58,7 +58,7 @@ module Lorentz.Contracts.BaseDAO.Types
   , baseDaoAnnOptions
   ) where
 
-import Universum (Each, Num (..), Show)
+import Universum (Each, Num(..))
 
 import qualified Data.Kind as Kind
 
