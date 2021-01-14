@@ -59,7 +59,7 @@ for more information on its content and usage.
 
 DAO configuration value parameters are captured by the `config` type:
 
-```cameLIGO
+```ocaml
 type config =
   { unfrozen_token_metadata : token_metadata
   // ^ FA2 metadata for unfrozen token.
@@ -102,7 +102,7 @@ Note:
 which is to say: `type full_storage = storage * config`.
 
 
-```cameLIGO
+```ocaml
 type proposal_key = bytes
 
 type proposal =
@@ -268,7 +268,7 @@ Functions present in the [*FA2 Tezos Token Standard*][FA2].
 
 ### **transfer**
 
-```cameLIGO
+```ocaml
 type token_id = nat
 
 type transfer_destination =
@@ -323,7 +323,7 @@ Parameter (in Michelson):
 
 ### **balance_of**
 
-```cameLIGO
+```ocaml
 type token_id = nat
 
 type balance_request_item =
@@ -376,7 +376,7 @@ Parameter (in Michelson):
 
 ### **token_metadata_registry**
 
-```cameLIGO
+```ocaml
 type token_metadata_registry_param = address contract
 
 Token_metadata_registry of token_metadata_registry_param
@@ -392,7 +392,7 @@ Parameter (in Michelson)
 
 ### **update_operators**
 
-```cameLIGO
+```ocaml
 type token_id = nat
 
 type operator_param =
@@ -445,7 +445,7 @@ Functions related to token transfers, but not present in FA2. They do not have `
 
 ### **mint**
 
-```cameLIGO
+```ocaml
 type mint_param =
   [@layout:comb]
   { to_ : address
@@ -472,7 +472,7 @@ Parameter (in Michelson):
 
 ### **burn**
 
-```cameLIGO
+```ocaml
 type burn_param =
   [@layout:comb]
   { from_ : address
@@ -501,7 +501,7 @@ does not have enough tokens to burn.
 
 ### **transfer_contract_tokens**
 
-```cameLIGO
+```ocaml
 type token_id = nat
 
 type transfer_destination =
@@ -557,7 +557,7 @@ Otherwise the call fails.
 
 ### **transfer_ownership**
 
-```cameLIGO
+```ocaml
 type transfer_ownership_param = address
 
 Transfer_ownership of transfer_ownership_param
@@ -581,7 +581,7 @@ Parameter (in Michelson):
 
 ### **accept_ownership**
 
-```cameLIGO
+```ocaml
 Accept_ownership of unit
 ```
 
@@ -600,7 +600,7 @@ Parameter (in Michelson):
 
 ### **propose**
 
-```cameLIGO
+```ocaml
 type proposal_metadata = (string, bytes) map
 
 type propose_params =
@@ -631,7 +631,7 @@ Parameter (in Michelson):
 
 ### **set_voting_period**
 
-```cameLIGO
+```ocaml
 // Voting period in seconds
 type voting_period = nat
 
@@ -651,7 +651,7 @@ Parameter (in Michelson):
 
 ### **set_quorum_threshold**
 
-```cameLIGO
+```ocaml
 // Quorum threshold that a proposal need to meet
 // quorum_threshold = upvote + downvote
 type quorum_threshold = nat
@@ -672,7 +672,7 @@ Parameter (in Michelson):
 
 ### **vote**
 
-```cameLIGO
+```ocaml
 type proposal_key = bytes
 
 type vote_type = bool
@@ -732,7 +732,7 @@ Parameter (in Michelson):
 
 ### **flush**
 
-```cameLIGO
+```ocaml
 Flush of nat
 ```
 
@@ -757,7 +757,7 @@ have the same timestamp due to being in the same block, are processed in the ord
 
 ### **drop_proposal**
 
-```cameLIGO
+```ocaml
 type proposal_key = bytes
 
 Drop_proposal of proposal_key
@@ -778,7 +778,7 @@ failing decision lambda.
 
 ### **migrate**
 
-```cameLIGO
+```ocaml
 type migrate_param = address
 
 Migrate of migrate_param
@@ -799,7 +799,7 @@ Parameter (in Michelson):
 
 ### **confirm_migration**
 
-```cameLIGO
+```ocaml
 Confirm_migration of unit
 ```
 
@@ -822,7 +822,7 @@ Parameter (in Michelson):
 
 ### **GetVotePermitCounter**
 
-```cameLIGO
+```ocaml
 type vote_permit_counter_param =
   [@layout:comb]
   { param : unit
@@ -850,7 +850,7 @@ This is done with the use of the `config` option `custom_entrypoints`, which is
 a `(string, bytes) map` that associates a `string` "entrypoint name" with the
 `bytes` of a `pack`ed lambda with the signature:
 
-```cameLIGO
+```ocaml
 bytes * full_storage -> operation list * storage
 ```
 
@@ -860,7 +860,7 @@ To call one of these "custom entrypoints" the contract `parameter` has:
 
 ### **CallCustom**
 
-```cameLIGO
+```ocaml
 type custom_ep_param = (string * bytes)
 
 CallCustom of custom_ep_param
