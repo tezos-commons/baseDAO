@@ -25,6 +25,12 @@ library
       BaseDAO.CLI
       BaseDAO.ShareTest.Common
       BaseDAO.ShareTest.FA2
+      BaseDAO.ShareTest.Proposal
+      BaseDAO.ShareTest.Proposal.Bounds
+      BaseDAO.ShareTest.Proposal.Config
+      BaseDAO.ShareTest.Proposal.Flush
+      BaseDAO.ShareTest.Proposal.Proposal
+      BaseDAO.ShareTest.Proposal.Vote
       BaseDAO.ShareTest.Token
       Lorentz.Contracts.BaseDAO
       Lorentz.Contracts.BaseDAO.Doc
@@ -62,6 +68,7 @@ library
     , morley-metadata
     , named
     , optparse-applicative
+    , tasty
     , universum
   default-language: Haskell2010
 
@@ -89,7 +96,6 @@ test-suite baseDAO-test
       Test.BaseDAO.Limits
       Test.BaseDAO.Management
       Test.BaseDAO.Proposal
-      Test.BaseDAO.ProposalConfig
       Test.BaseDAO.Token
       Test.BaseDAO.Token.FA2
       Test.Common

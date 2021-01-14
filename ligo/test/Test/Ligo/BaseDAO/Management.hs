@@ -32,7 +32,7 @@ withOriginated
   :: MonadNettest caps base m
   => Integer
   -> ([Address] -> FullStorage)
-  -> ([Address] -> TAddress Parameter -> m a)
+  -> ([Address] -> TAddress ParameterL -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
@@ -238,7 +238,7 @@ test_BaseDAO_Management =
       L.nil # pair
 
     initialStorage admin =
-      mkStorage admin 0 0 mempty mempty [([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)]
+      mkStorageL admin 0 0 dynRecUnsafe mempty [([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)]
 
 expectNotAdmin
   :: (MonadNettest caps base m)

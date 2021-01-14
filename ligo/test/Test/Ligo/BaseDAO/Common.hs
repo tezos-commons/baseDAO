@@ -2,8 +2,9 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Test.Ligo.BaseDAO.Common
-  ( originateLigoDao
-  , originateLigoDaoWithBalance
+  ( originateLigoDaoWithBalance
+  , originateLigoDaoWithConfig
+  , originateLigoDao
   ) where
 
 import Universum
@@ -14,20 +15,22 @@ import Util.Named
 
 import Lorentz.Contracts.BaseDAO.Types
 
-import qualified Ligo.BaseDAO.Contract as Ligo
-import qualified Ligo.BaseDAO.Types as Ligo
-import qualified Ligo.BaseDAO.Helper as Ligo
-import Michelson.Typed.Convert (convertContract, untypeValue)
+import BaseDAO.ShareTest.Common
 import qualified Data.Map as M
 import qualified Data.Set as S
-
-{-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
+import Ligo.BaseDAO.ConfigDesc
+import Ligo.BaseDAO.Contract
+import Ligo.BaseDAO.Helper
+import Ligo.BaseDAO.Types
+import Michelson.Typed.Convert (convertContract, untypeValue)
 
 originateLigoDaoWithBalance
  :: forall caps base m. (MonadNettest caps base m)
- => (Address -> Address -> [(LedgerKey, LedgerValue)])
- -> m ((Address, Address), (Address, Address), TAddress Ligo.Parameter, Address)
-originateLigoDaoWithBalance balFunc = do
+ => ContractExtraL
+ -> ConfigDesc ConfigL
+ -> (Address -> Address -> [(LedgerKey, LedgerValue)])
+ -> OriginateFn ParameterL m
+originateLigoDaoWithBalance extra configDesc balFunc = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
   owner2 :: Address <- newAddress "owner2"
@@ -35,13 +38,15 @@ originateLigoDaoWithBalance balFunc = do
 
   admin :: Address <- newAddress "admin"
 
+  let config = fillConfig configDesc defaultConfigL
+
   let bal = BigMap $ M.fromList $ balFunc owner1 owner2
   let operators = BigMap $ M.fromSet (const ()) $ S.fromList
         [ (#owner .! owner1, #operator .! operator1)
         , (#owner .! owner2, #operator .! operator2)
         ]
 
-  let fullStorage = Ligo.mkFullStorage admin bal operators
+  let fullStorage = mkFullStorage config extra admin bal operators
 
   let
     originateData = UntypedOriginateData
@@ -49,18 +54,26 @@ originateLigoDaoWithBalance balFunc = do
       , uodName = "BaseDAO"
       , uodBalance = toMutez 0
       , uodStorage = untypeValue $ toVal $ fullStorage
-      , uodContract = convertContract Ligo.baseDAOContractLigo
+      , uodContract = convertContract baseDAOContractLigo
       }
   daoUntyped <- originateUntyped originateData
-  let dao = TAddress @Ligo.Parameter daoUntyped
+  let dao = TAddress @ParameterL daoUntyped
 
   pure ((owner1, operator1), (owner2, operator2), dao, admin)
 
+originateLigoDaoWithConfig
+ :: forall caps base m. (MonadNettest caps base m)
+ => ConfigDesc ConfigL
+ -> OriginateFn ParameterL m
+originateLigoDaoWithConfig config =
+  originateLigoDaoWithBalance dynRecUnsafe config
+    (\owner1_ owner2_ ->
+    [ ((owner1_, unfrozenTokenId), 100)
+    , ((owner2_, unfrozenTokenId), 100)
+    ])
+
 originateLigoDao
  :: forall caps base m. (MonadNettest caps base m)
- => m ((Address, Address), (Address, Address), TAddress Ligo.Parameter, Address)
+ => OriginateFn ParameterL m
 originateLigoDao =
-  originateLigoDaoWithBalance (\owner1_ owner2_ ->
-    [ ((owner1_, Ligo.unfrozenTokenId), 100)
-    , ((owner2_, Ligo.unfrozenTokenId), 100)
-    ])
+  originateLigoDaoWithConfig (ConfigDesc ())
