@@ -160,8 +160,8 @@ mkFA2View a c = FA2.FA2View (mkView a c)
 
 -- | Helper function to check a user balance of a particular token
 checkTokenBalance
-  :: (NiceParameterFull (Parameter pm op), MonadNettest caps base m)
-  => FA2.TokenId -> TAddress (DAO.Parameter pm op)
+  :: (MonadNettest caps base m, FA2.ParameterC param)
+  => FA2.TokenId -> TAddress param
   -> Address -> Natural
   -> m ()
 checkTokenBalance tokenId dao addr expectedValue = do

@@ -28,6 +28,8 @@ test-suite baseDAO-test
       Ligo.BaseDAO.Helper
       Ligo.BaseDAO.Types
       Ligo.Util
+      Test.Ligo.BaseDAO.Common
+      Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Token.FA2
       Test.Ligo.BaseDAO.Types
       Paths_baseDAO_ligo_tests
