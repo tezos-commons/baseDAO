@@ -1,6 +1,6 @@
 # Treasury DAO
 
-**Code revision:** [f8099d6](https://github.com/tqtezos/baseDAO/tree/f8099d6bf56f5a753e5b7e6542d745e98542b44a) *(Wed Jan 13 21:42:10 2021 +0700)*
+**Code revision:** [7fdf105](https://github.com/tqtezos/baseDAO/tree/7fdf1057e6b7a3a732b846fff4e29379d36d5f29) *(Thu Jan 14 12:33:10 2021 +0300)*
 
 
 
@@ -1683,11 +1683,11 @@ Describes the operator update operation.
 `View a r` accepts an argument of type `a` and callback contract which accepts `r` and returns result via calling that contract.
 Read more in [A1 conventions document](https://gitlab.com/tzip/tzip/-/blob/c42e3f0f5e73669e84e615d69bee73281572eb0a/proposals/tzip-4/tzip-4.md#view-entrypoints).
 
-**Structure (example):** `View () Integer` = 
-  * [`()`](#types-lparenrparen)
+**Structure (example):** `View MText Integer` = 
+  * [`Text`](#types-Text)
   * [`ContractRef`](#types-Contract) [`Integer`](#types-Integer)
 
-**Final Michelson representation (example):** `View () Integer` = `pair unit (contract int)`
+**Final Michelson representation (example):** `View MText Integer` = `pair string (contract int)`
 
 
 
