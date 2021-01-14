@@ -22,6 +22,8 @@ module BaseDAO.ShareTest.Common
   , permitProtect
   , sendXtz
   , expectMigrated
+  , ProposalMetadataFromNum (..)
+  , createSampleProposal
   ) where
 
 import Universum
@@ -35,10 +37,10 @@ import Morley.Nettest
 import Named (defaults, (!))
 import Util.Named ((.!))
 
+import qualified BaseDAO.ShareTest.Proposal.Config as DAO (ConfigDesc(..), fillConfig)
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
-import qualified Lorentz.Contracts.TrivialDAO as DAO
 
 type OriginateFn param m = m ((Address, Address), (Address, Address), TAddress param, Address)
 
@@ -79,9 +81,11 @@ withOriginated addrCount storageFn tests = do
 originateBaseDaoWithConfig
   :: forall pm op ce caps base m.
      (DAO.DaoC ce pm op, MonadNettest caps base m)
-  => ce -> DAO.Config ce pm op -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm op), Address)
-originateBaseDaoWithConfig contractExtra config = do
-  originateBaseDaoWithBalance contractExtra config
+  => ce
+  -> DAO.ConfigDesc (DAO.Config ce pm op)
+  -> OriginateFn (DAO.Parameter pm op) m
+originateBaseDaoWithConfig contractExtra configDesc = do
+  originateBaseDaoWithBalance contractExtra configDesc
     (\owner1 owner2 ->
         [ ((owner1, unfrozenTokenId), 100)
         , ((owner2, unfrozenTokenId), 100)
@@ -93,16 +97,18 @@ originateBaseDaoWithBalance
   :: forall pm op ce caps base m.
      (DAO.DaoC ce pm op, MonadNettest caps base m)
   => ce
-  -> DAO.Config ce pm op
+  -> DAO.ConfigDesc (DAO.Config ce pm op)
   -> (Address -> Address -> [((Address, FA2.TokenId), Natural)])
-  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm op), Address)
-originateBaseDaoWithBalance contractExtra config balFunc = do
+  -> OriginateFn (DAO.Parameter pm op) m
+originateBaseDaoWithBalance contractExtra configDesc balFunc = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
   owner2 :: Address <- newAddress "owner2"
   operator2 :: Address <- newAddress "operator2"
 
   admin :: Address <- newAddress "admin"
+
+  let config = DAO.fillConfig configDesc defaultConfig
 
   let bal = M.fromList $ balFunc owner1 owner2
   let operators = M.fromSet (const ()) $ S.fromList
@@ -135,15 +141,16 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
 originateTrivialDaoWithBalance
   :: (MonadNettest caps base m)
   => (Address -> Address -> [((Address, FA2.TokenId), Natural)])
-  -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter () Empty), Address)
+  -> OriginateFn (DAO.Parameter () Empty) m
 originateTrivialDaoWithBalance =
-  originateBaseDaoWithBalance () DAO.trivialConfig
+  originateBaseDaoWithBalance () (DAO.ConfigDesc ())
 
 originateBaseDao
   :: forall pm op ce caps base m.
      (DAO.DaoC ce pm op, MonadNettest caps base m)
-  => ce -> m ((Address, Address), (Address, Address), TAddress (DAO.Parameter pm op), Address)
-originateBaseDao contractExtra = originateBaseDaoWithConfig contractExtra DAO.defaultConfig
+  => ce
+  -> OriginateFn (DAO.Parameter pm op) m
+originateBaseDao contractExtra = originateBaseDaoWithConfig contractExtra (DAO.ConfigDesc ())
 
 originateTrivialDao
   :: (MonadNettest caps base m)
@@ -160,8 +167,8 @@ mkFA2View a c = FA2.FA2View (mkView a c)
 
 -- | Helper function to check a user balance of a particular token
 checkTokenBalance
-  :: (NiceParameterFull (Parameter pm op), MonadNettest caps base m)
-  => FA2.TokenId -> TAddress (DAO.Parameter pm op)
+  :: (NiceParameterFull param, FA2.ParameterC param, MonadNettest caps base m)
+  => FA2.TokenId -> TAddress param
   -> Address -> Natural
   -> m ()
 checkTokenBalance tokenId dao addr expectedValue = do
@@ -181,7 +188,7 @@ makeProposalKey params owner = toHashHs $ lPackValue (params, owner)
 
 addDataToSign
   :: (MonadNettest caps base m)
-  => TAddress (Parameter pm op)
+  => TAddress param
   -> Nonce
   -> d
   -> m (DataToSign d, d)
@@ -217,3 +224,44 @@ expectMigrated
   :: (MonadNettest caps base m)
   => Address -> m a -> m ()
 expectMigrated addr = expectCustomError #mIGRATED addr
+
+-- | Since in LIGO proposal metadata type is fixed but is inconvenient to work
+-- with, we need a way to abstract away from that complexity - this problem
+-- is resolved by the following typeclass.
+class (KnownValue n, NicePackedValue n) => ProposalMetadataFromNum n where
+  -- | Generate a proposal metadata.
+  -- Different numbers must result in different values.
+  proposalMetadataFromNum :: Int -> n
+
+instance ProposalMetadataFromNum Integer where
+  proposalMetadataFromNum = fromIntegral
+
+createSampleProposal
+  :: ( ProposalMetadataFromNum proposal
+     , MonadNettest caps base m
+     , ParameterContainsEntrypoints param '[ProposeEp proposal]
+     )
+  => Int -> Address -> TAddress param -> m (ProposalKey proposal)
+createSampleProposal counter owner1 dao = do
+  let params = ProposeParams
+        { ppFrozenToken = 10
+        , ppProposalMetadata = proposalMetadataFromNum counter
+        }
+
+  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  pure $ (makeProposalKey params owner1)
+
+-- TODO: Implement this via [#31] instead
+-- checkIfAProposalExist
+--   :: MonadNettest caps base m
+--   => ProposalKey -> TAddress (Parameter TestProposalMetadata) -> m ()
+-- checkIfAProposalExist proposalKey dao = do
+--   owner :: Address <- newAddress "owner"
+--   consumer <- originateSimple "consumer" [] contractConsumer
+--   -- | If the proposal exists, there should be no error
+--   callFrom (AddressResolved owner) dao (Call @"Proposal_metadata") (mkView proposalKey consumer)
+
+-- TODO [#31]: See this ISSUES: https://gitlab.com/morley-framework/morley/-/issues/415#note_435327096
+-- Check if certain field in storage
+-- checkPropertyOfProposal :: _
+-- checkPropertyOfProposal = error "undefined"

@@ -11,6 +11,6 @@ import Michelson.Typed
 import Ligo.BaseDAO.Types
 import Ligo.Util
 
-baseDAOContractLigo :: Contract (ToT Parameter) (ToT FullStorage)
+baseDAOContractLigo :: Contract (ToT ParameterL) (ToT FullStorage)
 baseDAOContractLigo =
-  $(fetchContract @(ToT Parameter) @(ToT FullStorage) "BASEDAO_LIGO_PATH")
+  $(fetchContract @(ToT ParameterL) @(ToT FullStorage) "BASEDAO_LIGO_PATH")

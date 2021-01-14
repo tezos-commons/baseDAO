@@ -5,17 +5,20 @@
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
 module Ligo.BaseDAO.Helper
-  ( mkFullStorage
+  ( defaultConfigL
+  , dynRecUnsafe
+  , mkFullStorage
   ) where
 
 import Universum ((*))
 import Lorentz
-import Ligo.BaseDAO.Types
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
-defaultConfig :: Config
-defaultConfig  = Config
+import Ligo.BaseDAO.Types
+
+defaultConfigL :: ConfigL
+defaultConfigL = ConfigL
   { cUnfrozenTokenMetadata = FA2.TokenMetadata
       { FA2.tmTokenId = unfrozenTokenId
       , FA2.tmSymbol = [mt|unfrozen_token|]
@@ -51,11 +54,21 @@ defaultConfig  = Config
 -- Helper
 ------------------------------------------------
 
-mkFullStorage :: Address -> Ledger -> Operators -> FullStorage
-mkFullStorage admin bal operators =
-  let storage = Storage
+-- | Construct 'DynamicRec' assuming it contains no mandatory entries.
+dynRecUnsafe :: DynamicRec n
+dynRecUnsafe = DynamicRec mempty
+
+mkFullStorage
+  :: ConfigL
+  -> ContractExtraL
+  -> Address
+  -> Ledger
+  -> Operators
+  -> FullStorage
+mkFullStorage config extra admin bal operators =
+  let storage = StorageL
         { sAdmin = admin
-        , sExtra = DynamicRec $ mempty
+        , sExtra = extra
         , sLedger = bal
         , sMetadata = #metadata mempty
         , sMigrationStatus = NotInMigration
@@ -71,5 +84,5 @@ mkFullStorage admin bal operators =
 
   in FullStorage
       { fsStorage = storage
-      , fsConfig = defaultConfig
+      , fsConfig = config
       }

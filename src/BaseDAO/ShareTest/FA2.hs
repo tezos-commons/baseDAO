@@ -115,7 +115,7 @@ validTransferOwnerScenario _ originateFn = do
 
 updatingOperatorAfterMigrationScenario
   :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, ParameterC param pm)
+  . (MonadNettest caps base m, ParameterC param pm)
   => IsLorentz -> OriginateFn param m -> m ()
 updatingOperatorAfterMigrationScenario isLorentz originateFn = do
   ((owner1, _), (owner2, newAddress1), dao, admin) <- originateFn
@@ -460,7 +460,7 @@ adminTransferFrozenScenario _ originateFn = do
 
 transferAfterMigrationScenario
   :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, ParameterC param pm)
+  . (MonadNettest caps base m, ParameterC param pm)
   => IsLorentz -> OriginateFn param m -> m ()
 transferAfterMigrationScenario isLorentz originateFn = do
   ((owner1, op1), (owner2, newAddress1), dao, admin) <- originateFn
@@ -486,7 +486,7 @@ transferAfterMigrationScenario isLorentz originateFn = do
 
 balanceOfRequestAfterMigrationScenario
   :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, ParameterC param pm)
+  . (MonadNettest caps base m, ParameterC param pm)
   => IsLorentz -> OriginateFn param m -> m ()
 balanceOfRequestAfterMigrationScenario _ originateFn = do
   ((owner1, newAddress1), _, dao, admin) <- originateFn
@@ -503,7 +503,7 @@ balanceOfRequestAfterMigrationScenario _ originateFn = do
 
 tokenMetadataRegistryRequestAfterMigrationScenario
   :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, ParameterC param pm)
+  . (MonadNettest caps base m, ParameterC param pm)
   => IsLorentz -> OriginateFn param m -> m ()
 tokenMetadataRegistryRequestAfterMigrationScenario _ originateFn = do
   ((owner1, newAddress1), _, dao, admin) <- originateFn

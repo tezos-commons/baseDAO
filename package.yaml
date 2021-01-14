@@ -96,6 +96,8 @@ library:
     - morley-metadata
     - lorentz
     - optparse-applicative
+    - tasty
+    - tasty-hunit-compat
     - universum
     - cleveland
 

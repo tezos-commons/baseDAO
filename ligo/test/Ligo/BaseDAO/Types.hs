@@ -1,30 +1,31 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-{-# LANGUAGE FunctionalDependencies #-}
-
 -- | Types mirrored from LIGO implementation.
 module Ligo.BaseDAO.Types
   ( module Lorentz.Contracts.BaseDAO.Types
   , ProposalMetadataL
   , ContractExtraL
   , ProposeParamsL
+  , CustomEntrypointsL
   , ProposalL (..)
   , VoteParamL
-  , Parameter (..)
-  , Storage (..)
-  , Config (..)
+  , ParameterL (..)
+  , StorageL (..)
+  , ConfigL (..)
   , FullStorage (..)
   , DynamicRec (..)
   ) where
 
 import Lorentz
-import Universum (One, Show)
+import Universum (One(..), Show, fromIntegral)
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 
-import Lorentz.Contracts.BaseDAO.Types hiding (Config(..), Parameter(..), Storage(..), defaultConfig)
+import BaseDAO.ShareTest.Common (ProposalMetadataFromNum(..))
+import Lorentz.Contracts.BaseDAO.Types hiding
+  (Config(..), Parameter(..), Storage(..), defaultConfig)
 import Michelson.Typed.Haskell.Compatibility
 
 -- | Represents a product type with arbitrary fields.
@@ -36,7 +37,7 @@ newtype DynamicRec n = DynamicRec { unDynamic :: Map MText ByteString }
 
 type ProposalMetadataL = DynamicRec "pm"
 type ContractExtraL = DynamicRec "ce"
-type CustomEntrypoints = DynamicRec "ep"
+type CustomEntrypointsL = DynamicRec "ep"
 
 type ProposeParamsL = ProposeParams ProposalMetadataL
 type ProposalKeyL = ProposalKey ProposalMetadataL
@@ -58,7 +59,7 @@ data ProposalL = ProposalL
 
 type CallCustomParam = (MText, ByteString)
 
-data Parameter
+data ParameterL
   = Accept_ownership ()
   | Burn BurnParam
   | CallCustom CallCustomParam
@@ -77,7 +78,7 @@ data Parameter
   | Vote [PermitProtected VoteParamL]
   deriving stock (Show)
 
-data Storage = Storage
+data StorageL = StorageL
   { sAdmin :: Address
   , sExtra :: ContractExtraL
   , sLedger :: Ledger
@@ -94,12 +95,12 @@ data Storage = Storage
   }
   deriving stock (Show)
 
-data Config = Config
+data ConfigL = ConfigL
   { cUnfrozenTokenMetadata :: FA2.TokenMetadata
   , cFrozenTokenMetadata :: FA2.TokenMetadata
-  , cProposalCheck :: '[ProposeParamsL, Storage] :-> '[Bool]
-  , cRejectedProposalReturnValue :: '[ProposalL, Storage] :-> '["slash_amount" :! Natural]
-  , cDecisionLambda :: '[ProposalL, Storage] :-> '[List Operation, Storage]
+  , cProposalCheck :: '[ProposeParamsL, StorageL] :-> '[Bool]
+  , cRejectedProposalReturnValue :: '[ProposalL, StorageL] :-> '["slash_amount" :! Natural]
+  , cDecisionLambda :: '[ProposalL, StorageL] :-> '[List Operation, StorageL]
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural
@@ -109,13 +110,13 @@ data Config = Config
   , cMaxVotingPeriod :: Natural
   , cMinVotingPeriod :: Natural
 
-  , cCustomEntrypoints :: CustomEntrypoints
+  , cCustomEntrypoints :: CustomEntrypointsL
   }
   deriving stock (Show)
 
 data FullStorage = FullStorage
-  { fsStorage :: Storage
-  , fsConfig :: Config
+  { fsStorage :: StorageL
+  , fsConfig :: ConfigL
   }
   deriving stock (Show)
 
@@ -125,16 +126,20 @@ data FullStorage = FullStorage
 customGeneric "ProposalL" ligoLayout
 deriving anyclass instance IsoValue ProposalL
 
-customGeneric "Parameter" ligoLayout
-deriving anyclass instance IsoValue Parameter
-instance ParameterHasEntrypoints Parameter where
-  type ParameterEntrypointsDerivation Parameter = EpdDelegate
+customGeneric "ParameterL" ligoLayout
+deriving anyclass instance IsoValue ParameterL
+instance ParameterHasEntrypoints ParameterL where
+  type ParameterEntrypointsDerivation ParameterL = EpdDelegate
 
-customGeneric "Storage" ligoLayout
-deriving anyclass instance IsoValue Storage
+customGeneric "StorageL" ligoLayout
+deriving anyclass instance IsoValue StorageL
 
-customGeneric "Config" ligoLayout
-deriving anyclass instance IsoValue Config
+customGeneric "ConfigL" ligoLayout
+deriving anyclass instance IsoValue ConfigL
 
 deriving stock instance Generic FullStorage
 deriving anyclass instance IsoValue FullStorage
+
+instance ProposalMetadataFromNum ProposalMetadataL where
+  proposalMetadataFromNum n =
+    one ([mt|int|], lPackValueRaw @Integer $ fromIntegral n)
