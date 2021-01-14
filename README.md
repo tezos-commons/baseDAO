@@ -67,10 +67,8 @@ stack exec baseDAO -- print --name MetadataCarrier
 
 You can dump the entire contract code into a `TrivialDAO.tz` file using the following command:
 
-<!-- TODO: remove `--oneline` once morley:#442 is resolved -->
-
 ```sh
-stack exec baseDAO -- print -n TrivialDAO --oneline
+stack exec baseDAO -- print -n TrivialDAO
 ```
 
 This will produce a contract with empty proposal metadata and the simplest possible configuration.
