@@ -14,6 +14,9 @@ import Test.Tasty (TestTree, testGroup)
 import Lorentz.Contracts.BaseDAO.Types
 
 import qualified BaseDAO.ShareTest.FA2 as Share
+import qualified Ligo.BaseDAO.ConfigDesc as Ligo
+import qualified Ligo.BaseDAO.Helper as Ligo
+
 import Test.Ligo.BaseDAO.Common
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
@@ -56,7 +59,8 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
     [ nettestScenario "transfer tokens from any address to any address"
         $ uncapsNettest $ Share.adminTransferScenario originateLigoDao
     , nettestScenario "transfer frozen tokens"
-        $ uncapsNettest $ Share.adminTransferFrozenScenario $ originateLigoDaoWithBalance
+        $ uncapsNettest $ Share.adminTransferFrozenScenario
+        $ originateLigoDaoWithBalance Ligo.dynRecUnsafe (Ligo.ConfigDesc ())
             (\owner1 owner2 ->
                 [ ((owner1, frozenTokenId), 100)
                 , ((owner2, frozenTokenId), 100)
@@ -74,4 +78,3 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
           $ uncapsNettest $ Share.tokenMetadataRegistryRequestAfterMigrationScenario originateLigoDao
       ]
   ]
-

@@ -24,12 +24,14 @@ test-suite baseDAO-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ligo.BaseDAO.ConfigDesc
       Ligo.BaseDAO.Contract
       Ligo.BaseDAO.Helper
       Ligo.BaseDAO.Types
       Ligo.Util
       Test.Ligo.BaseDAO.Common
       Test.Ligo.BaseDAO.Management
+      Test.Ligo.BaseDAO.Proposal
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Token.FA2
       Test.Ligo.BaseDAO.Types
@@ -52,10 +54,8 @@ test-suite baseDAO-test
     , morley-ledgers
     , morley-metadata
     , named
-    , o-clock
     , tasty
     , tasty-hunit-compat
     , template-haskell
-    , uncaught-exception
     , universum
   default-language: Haskell2010
