@@ -63,6 +63,12 @@ rec {
             export MORLEY_DOC_GIT_COMMIT_DATE=${if release then pkgs.lib.escapeShellArg commitDate else "UNSPECIFIED"}
           '';
         };
+        packages.baseDAO-ligo-tests = {
+          preBuild = ''
+            mkdir -p ./ligo/test
+            cp ${build-ligo} ./ligo/test/baseDAO.tz
+          '';
+        };
       }
     ];
   };
