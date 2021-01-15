@@ -21,7 +21,8 @@ packages:
   - git:
       https://gitlab.com/morley-framework/morley.git # CI can't use SSH
     commit:
-      fd1f796e970ed370285b4ca184a5d63c04483d19 # morley-0.11.0
+      79f0357cd2f66f4342fcc27805dabe7364330be2
+    # nix-sha256: 02kkafj89wl6lfn12chzjqcj36yh60pxw1wkmnr75cjr151pdwl1
     subdirs:
       - code/cleveland
       - code/morley-client
