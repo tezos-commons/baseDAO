@@ -183,7 +183,7 @@ and the balance of the `to_` addresses is increased according to the transferred
 
 # Errors
 
-In error scenarios the baseDAO contract fails with a string.
+In error scenarios the baseDAO contract fails with a string or a pair where the first item is a string.
 Here is a summary of all the strings used as error messages.
 We start with standard FA2 errors which are part of the FA2 specification.
 

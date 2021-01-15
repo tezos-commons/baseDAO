@@ -10,6 +10,7 @@ let authorize_admin (store : storage): storage =
   if sender = store.admin then
     store
   else
-    (failwith("NOT_ADMIN"): storage)
+    ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
+        ("NOT_ADMIN", ()) : storage)
 
 #endif

@@ -23,30 +23,18 @@ import BaseDAO.ShareTest.Common
 burnScenario
   :: forall caps base m param pm
   . (MonadNettest caps base m, FA2.ParameterC param, DAO.ParameterC param pm)
-  => IsLorentz -> OriginateFn param m -> m ()
-burnScenario isLorentz originateFn = do
+  => OriginateFn param m -> m ()
+burnScenario originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn
 
-  case isLorentz of
-    True -> do
-      callFrom (AddressResolved owner1) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
-        & expectCustomError_ #nOT_ADMIN
+  callFrom (AddressResolved owner1) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
+    & expectCustomError_ #nOT_ADMIN
 
-      callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 100)
-        & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
+  callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 100)
+    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
 
-      callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 100)
-        & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
-
-    False -> do
-      callFrom (AddressResolved owner1) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
-        & expectFailed (toAddress dao) [mt|NOT_ADMIN|]
-
-      callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 100)
-        & expectFailed (toAddress dao) [mt|FA2_INSUFFICIENT_BALANCE|]
-
-      callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 100)
-        & expectFailed (toAddress dao) [mt|FA2_INSUFFICIENT_BALANCE|]
+  callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 100)
+    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
 
   callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 0
@@ -56,17 +44,12 @@ burnScenario isLorentz originateFn = do
 mintScenario
   :: forall caps base m param pm
   . (MonadNettest caps base m, FA2.ParameterC param, DAO.ParameterC param pm)
-  => IsLorentz -> OriginateFn param m -> m ()
-mintScenario isLorentz originateFn = do
+  => OriginateFn param m -> m ()
+mintScenario originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn
 
-  case isLorentz of
-    True -> do
-      callFrom (AddressResolved owner1) dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 10)
-        & expectCustomError_ #nOT_ADMIN
-    False -> do
-      callFrom (AddressResolved owner1) dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 10)
-        & expectFailed (toAddress dao) [mt|NOT_ADMIN|]
+  callFrom (AddressResolved owner1) dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 10)
+    & expectCustomError_ #nOT_ADMIN
 
   callFrom (AddressResolved admin) dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 100)
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100
@@ -76,8 +59,8 @@ mintScenario isLorentz originateFn = do
 transferContractTokensScenario
   :: forall caps base m param pm
   . (MonadNettest caps base m, FA2.ParameterC param, DAO.ParameterC param pm)
-  => IsLorentz -> OriginateFn param m -> m ()
-transferContractTokensScenario isLorentz originateFn = do
+  => OriginateFn param m -> m ()
+transferContractTokensScenario originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn
   ((target_owner1, _), (target_owner2, _), fa2Contract, _) <- originateFn
   let addParams = FA2.OperatorParam
@@ -100,13 +83,8 @@ transferContractTokensScenario isLorentz originateFn = do
         , DAO.tcParams = transferParams
         }
 
-  case isLorentz of
-    True -> do
-      callFrom (AddressResolved owner1) dao (Call @"Transfer_contract_tokens") param
-        & expectCustomError_ #nOT_ADMIN
-    False -> do
-      callFrom (AddressResolved owner1) dao (Call @"Transfer_contract_tokens") param
-        & expectFailed (toAddress dao) [mt|NOT_ADMIN|]
+  callFrom (AddressResolved owner1) dao (Call @"Transfer_contract_tokens") param
+    & expectCustomError_ #nOT_ADMIN
 
   callFrom (AddressResolved admin) dao (Call @"Transfer_contract_tokens") param
   checkTokenBalance (DAO.unfrozenTokenId) fa2Contract target_owner1 90

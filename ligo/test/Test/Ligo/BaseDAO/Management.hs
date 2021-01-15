@@ -115,7 +115,7 @@ test_BaseDAO_Management =
               callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
               callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
                 (#newOwner .! newOwner)
-                & expectMigrated
+                & expectMigrated newAddress1
     ]
   , testGroup "Accept Ownership"
       [ nettestScenarioCaps "authenticates the sender" $
@@ -154,7 +154,7 @@ test_BaseDAO_Management =
               -- We test this by calling `confirmMigration` and seeing that it does not fail
               callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
               callFrom (AddressResolved owner) baseDao (Call @"Accept_ownership") ()
-                & expectMigrated
+                & expectMigrated newAddress1
       ]
 
   , testGroup "Migration"
@@ -208,7 +208,7 @@ test_BaseDAO_Management =
               -- We test this by calling `confirmMigration` and seeing that it does not fail
               callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
               callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-                & expectMigrated
+                & expectMigrated newAddress1
      ]
 
   , testGroup "Custom entrypoints"
@@ -243,29 +243,29 @@ test_BaseDAO_Management =
 expectNotAdmin
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotAdmin act = expectFailure act (NettestFailedWithError [mt|NOT_ADMIN|])
+expectNotAdmin = expectCustomError_ #nOT_ADMIN
 
 expectNotPendingOwner
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotPendingOwner act = expectFailure act (NettestFailedWithError [mt|NOT_PENDING_ADMIN|])
+expectNotPendingOwner = expectCustomError_ #nOT_PENDING_ADMIN
 
 expectNotMigrating
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotMigrating act = expectFailure act (NettestFailedWithError [mt|NOT_MIGRATING|])
+expectNotMigrating = expectCustomError_ #nOT_MIGRATING
 
 expectNotMigrationTarget
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotMigrationTarget act = expectFailure act (NettestFailedWithError [mt|NOT_MIGRATION_TARGET|])
+expectNotMigrationTarget = expectCustomError_ #nOT_MIGRATION_TARGET
 
 expectMigrated
   :: (MonadNettest caps base m)
-  => m a -> m ()
-expectMigrated act = expectFailure act (NettestFailedWithError [mt|MIGRATED|])
+  => Address -> m a -> m ()
+expectMigrated addr = expectCustomError #mIGRATED addr
 
 expectForbiddenXTZ
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectForbiddenXTZ act = expectFailure act (NettestFailedWithError [mt|FORBIDDEN_XTZ|])
+expectForbiddenXTZ = expectCustomError_ #fORBIDDEN_XTZ
