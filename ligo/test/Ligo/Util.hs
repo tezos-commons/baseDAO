@@ -22,8 +22,9 @@ import Michelson.Typed
 -- types in error messages on types mismatch.
 fetchContract :: forall cp st. (KnownT cp, KnownT st) => String -> TH.ExpQ
 fetchContract envKey = do
-  path <- fromMaybe "../out/baseDAO.tz" <$> liftIO (lookupEnv envKey)
-          -- ↑ Note that our working directory will be './ligo/test'
+  path <- fromMaybe "ligo/test/baseDAO.tz" <$> liftIO (lookupEnv envKey)
+          -- ↑ This default path works on CI.
+          -- There it's relative to the repo root, apparently.
 
   -- We cannot use 'embedFile' directly because it returns Exp,
   -- doing the following should be equivalent
