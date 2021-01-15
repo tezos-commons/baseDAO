@@ -39,7 +39,14 @@ steps:
     commands:
     - nix run -f ci.nix stack2cabal pkgs.diffutils -c ./scripts/ci/validate-cabal-files.sh
 
-  - label: build
+  - label: build-ligo
+    if: *not_scheduled
+    commands:
+    - nix-build ci.nix -A build-ligo -o baseDAO.tz
+    artifact_paths:
+      - baseDAO.tz
+
+  - label: build-haskell
     if: *not_scheduled
     commands:
     - nix-build ci.nix -A all-components
@@ -61,11 +68,6 @@ steps:
     - nix run -f ci.nix tezos-client -c
       ./result/bin/baseDAO-test --nettest-run-network
       -A localhost -P 8735
-
-  - label: ligo
-    if: *not_scheduled
-    commands:
-    - nix-build ci.nix -A build-ligo
 
   - label: weeder
     if: *not_scheduled
