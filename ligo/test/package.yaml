@@ -102,9 +102,7 @@ tests:
     - morley
     - morley-ledgers
     - morley-metadata
-    - o-clock
     - tasty
     - tasty-hunit-compat
     - template-haskell
-    - uncaught-exception
     - universum

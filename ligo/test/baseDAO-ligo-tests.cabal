@@ -54,10 +54,8 @@ test-suite baseDAO-test
     , morley-ledgers
     , morley-metadata
     , named
-    , o-clock
     , tasty
     , tasty-hunit-compat
     , template-haskell
-    , uncaught-exception
     , universum
   default-language: Haskell2010
