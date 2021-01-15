@@ -3,6 +3,7 @@
 
 // Corresponds to Token.hs module
 
+#include "common.mligo"
 #include "types.mligo"
 #include "token/fa2.mligo"
 
@@ -13,19 +14,13 @@ let call_fa2(param, store : fa2_parameter * storage) : return =
   | Token_metadata_registry (p) -> token_metadata_registry(p, store)
   | Update_operators (p) -> update_operators(p, store)
 
-let authorize_admin (store : storage): storage =
-  if sender = store.admin then
-    store
-  else
-    (failwith("NOT_ADMIN"): storage)
-
 let burn(param, store : burn_param * storage) : return =
-  let store = authorize_admin(ensure_not_migrated(store)) in
+  let store = authorize_admin(store) in
   let store = debit_from (param.amount, param.from_, param.token_id, store)
   in (([] : operation list), store)
 
 let mint(param, store : mint_param * storage) : return =
-  let store = authorize_admin(ensure_not_migrated(store)) in
+  let store = authorize_admin(store) in
   let store = credit_to (param.amount, param.to_, param.token_id, store)
   in (([] : operation list), store)
 

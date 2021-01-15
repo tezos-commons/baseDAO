@@ -4,7 +4,6 @@
 // Corresponds to Token/FA2.hs module
 
 #include "../types.mligo"
-#include "../management.mligo"
 
 
 let unfrozen_token_id: nat = 0n
@@ -74,7 +73,6 @@ let transfer_item (store, ti : storage * transfer_item): storage =
   in List.fold transfer_one ti.txs store
 
 let transfer (params, store : transfer_params * storage): return =
-  let store = ensure_not_migrated(store) in
   let store = List.fold transfer_item params store in
   (([] : operation list), store)
 
@@ -105,7 +103,6 @@ let balance_of (params, store : balance_request_params * storage): return =
 // -----------------------------------------------------------------
 
 let token_metadata_registry (params, store : token_metadata_registry_param * storage):return =
-  let store = ensure_not_migrated (store) in
   let transfer_operation = Tezos.transaction store.token_address 0mutez params
   in (([transfer_operation] : operation list), store)
 
@@ -138,7 +135,6 @@ let update_one (store, param: storage * update_operator): storage =
   else (failwith("NOT_OWNER"): storage)
 
 let update_operators (params, store : update_operators_param * storage):return =
-  let store = ensure_not_migrated (store) in
   let store = List.fold update_one params store in
   (([] : operation list), store)
 

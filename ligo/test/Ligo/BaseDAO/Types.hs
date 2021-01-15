@@ -16,16 +16,22 @@ module Ligo.BaseDAO.Types
   , Config (..)
   , FullStorage (..)
   , DynamicRec (..)
+  , mkStorage
   ) where
 
-import Lorentz
-import Universum (One, Show)
+import Lorentz as L
+import Universum (One)
 
+import qualified Data.Map as Map
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
+import Util.Named
 
-import Lorentz.Contracts.BaseDAO.Types hiding (Config(..), Parameter(..), Storage(..), defaultConfig)
-import Michelson.Typed.Haskell.Compatibility
+import Michelson.Runtime.GState (genesisAddress)
+import Lorentz.Contracts.BaseDAO.Types hiding
+  (Config(..), Parameter(..), Storage(..), defaultConfig, mkStorage)
+import qualified Lorentz.Contracts.BaseDAO.Types as BaseDAO
+
 
 -- | Represents a product type with arbitrary fields.
 --
@@ -58,10 +64,14 @@ data ProposalL = ProposalL
 
 type CallCustomParam = (MText, ByteString)
 
-data Parameter
+-- NOTE: Constructors of the parameter types should remain sorted for the
+--'ligoLayout' custom derivation to work.
+--
+-- TODO: This above will be no longer the case once the following issue is fixed.
+-- https://gitlab.com/morley-framework/morley/-/issues/527
+data ForbidXTZParam
   = Accept_ownership ()
   | Burn BurnParam
-  | CallCustom CallCustomParam
   | Call_FA2 FA2.Parameter
   | Confirm_migration ()
   | Drop_proposal ProposalKeyL
@@ -72,9 +82,18 @@ data Parameter
   | Propose ProposeParamsL
   | Set_quorum_threshold QuorumThreshold
   | Set_voting_period VotingPeriod
-  | Transfer_contract_tokens TransferContractTokensParam
   | Transfer_ownership TransferOwnershipParam
   | Vote [PermitProtected VoteParamL]
+  deriving stock (Show)
+
+data MigratableParam
+  = CallCustom CallCustomParam
+  | XtzForbidden ForbidXTZParam
+  deriving stock (Show)
+
+data Parameter
+  = Migratable MigratableParam
+  | Transfer_contract_tokens TransferContractTokensParam
   deriving stock (Show)
 
 data Storage = Storage
@@ -93,6 +112,47 @@ data Storage = Storage
   , sVotingPeriod :: VotingPeriod
   }
   deriving stock (Show)
+
+mkStorage
+  :: Address
+  -> Natural
+  -> Natural
+  -> ContractExtraL
+  -> TZIP16.MetadataMap BigMap
+  -> [(MText, ByteString)]
+  -> FullStorage
+mkStorage admin votingPeriod quorumThreshold extra metadata customEps = let
+  storage = Storage
+    { sAdmin = admin
+    , sExtra = extra
+    , sLedger = mempty
+    , sMetadata = #metadata .! metadata
+    , sMigrationStatus = NotInMigration
+    , sOperators = mempty
+    , sPendingOwner = admin
+    , sPermitsCounter = Nonce 0
+    , sProposals = mempty
+    , sProposalKeyListSortByDate = mempty
+    , sQuorumThreshold = quorumThreshold
+    , sTokenAddress = genesisAddress
+    , sVotingPeriod = votingPeriod
+    }
+
+  config = Config
+    { cUnfrozenTokenMetadata = BaseDAO.cUnfrozenTokenMetadata BaseDAO.defaultConfig
+    , cFrozenTokenMetadata = BaseDAO.cFrozenTokenMetadata BaseDAO.defaultConfig
+    , cProposalCheck = failUsing [mt|not implemented|]
+    , cRejectedProposalReturnValue = failUsing [mt|not implemented|]
+    , cDecisionLambda = failUsing [mt|not implemented|]
+    , cMaxProposals = 0
+    , cMaxVotes = 0
+    , cMaxQuorumThreshold = 0
+    , cMinQuorumThreshold = 0
+    , cMaxVotingPeriod = 0
+    , cMinVotingPeriod = 0
+    , cCustomEntrypoints = DynamicRec $ Map.fromList customEps
+    }
+  in FullStorage storage config
 
 data Config = Config
   { cUnfrozenTokenMetadata :: FA2.TokenMetadata
@@ -124,6 +184,16 @@ data FullStorage = FullStorage
 
 customGeneric "ProposalL" ligoLayout
 deriving anyclass instance IsoValue ProposalL
+
+customGeneric "MigratableParam" ligoLayout
+deriving anyclass instance IsoValue MigratableParam
+instance ParameterHasEntrypoints MigratableParam where
+  type ParameterEntrypointsDerivation MigratableParam = EpdDelegate
+
+customGeneric "ForbidXTZParam" ligoLayout
+deriving anyclass instance IsoValue ForbidXTZParam
+instance ParameterHasEntrypoints ForbidXTZParam where
+  type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
 
 customGeneric "Parameter" ligoLayout
 deriving anyclass instance IsoValue Parameter
