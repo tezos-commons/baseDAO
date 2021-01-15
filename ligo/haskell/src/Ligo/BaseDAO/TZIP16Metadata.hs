@@ -6,12 +6,11 @@ module Ligo.BaseDAO.TZIP16Metadata
   ( mkMetadataSettingsL
   ) where
 
+import Universum (undefined)
+
 import Ligo.BaseDAO.Types
 import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 
 -- | Construct settings for LIGO version of the contract.
 mkMetadataSettingsL :: MetadataConfig -> MetadataSettings StorageL
-mkMetadataSettingsL msConfig = MetadataSettings
-  { msConfig
-  , mcOperatorsL = sOperatorsLens
-  }
+mkMetadataSettingsL msConfig = undefined -- MetadataSettings

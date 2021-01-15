@@ -142,4 +142,5 @@ tests:
     - tasty
     - tasty-hunit-compat
     - template-haskell
+    - text
     - universum

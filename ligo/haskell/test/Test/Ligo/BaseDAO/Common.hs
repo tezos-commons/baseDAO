@@ -39,10 +39,10 @@ originateLigoDaoWithBalance extra configDesc balFunc = do
 
   let config = fillConfig configDesc defaultConfigL
 
-  let bal = BigMap $ M.fromList $ balFunc owner1 owner2
-  let operators = BigMap $ M.fromSet (const ()) $ S.fromList
-        [ (#owner .! owner1, #operator .! operator1)
-        , (#owner .! owner2, #operator .! operator2)
+  let bal = M.fromList $ balFunc owner1 owner2
+  let operators = M.fromSet (const ()) $ S.fromList
+        [ (owner1, operator1)
+        , (owner2, operator2)
         ]
 
   let fullStorage = FullStorage

@@ -106,5 +106,6 @@ test-suite baseDAO-test
     , tasty
     , tasty-hunit-compat
     , template-haskell
+    , text
     , universum
   default-language: Haskell2010

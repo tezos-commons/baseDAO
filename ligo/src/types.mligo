@@ -15,11 +15,11 @@ type operator =
   { owner : address
   ; operator : address
   }
-type operators = (operator, unit) big_map
+type operators = (operator, unit) map
 
 type ledger_key = address * token_id
 type ledger_value = nat
-type ledger = (ledger_key, ledger_value) big_map
+type ledger = (ledger_key, ledger_value) map
 
 type transfer_destination =
   [@layout:comb]
@@ -117,12 +117,12 @@ type storage =
   ; token_address : address
   ; admin : address
   ; pending_owner : address
-  ; metadata : (string, bytes) big_map
+  ; metadata : (string, bytes) map
   ; migration_status : migration_status
   ; voting_period : voting_period
   ; quorum_threshold : quorum_threshold
   ; extra : contract_extra
-  ; proposals : (proposal_key, proposal) big_map
+  ; proposals : (proposal_key, proposal) map
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
   ; permits_counter : nonce
   }

@@ -109,13 +109,13 @@ data ParameterL
 data StorageL = StorageL
   { sAdmin :: Address
   , sExtra :: ContractExtraL
-  , sLedger :: Ledger
-  , sMetadata :: TZIP16.MetadataMap BigMap
+  , sLedger :: Map (Address, FA2.TokenId) Natural
+  , sMetadata :: TZIP16.MetadataMap Map
   , sMigrationStatus :: MigrationStatus
-  , sOperators :: Operators
+  , sOperators :: Map (Address, Address) ()
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
-  , sProposals :: BigMap ProposalKeyL ProposalL
+  , sProposals :: Map ProposalKeyL ProposalL
   , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKeyL)
   , sQuorumThreshold :: QuorumThreshold
   , sTokenAddress :: Address
@@ -130,7 +130,7 @@ instance HasFieldOfType StorageL name field =>
 instance StoreHasSubmap StorageL "sLedger" LedgerKey LedgerValue where
   storeSubmapOps = storeSubmapOpsDeeper #sLedger
 
-instance StoreHasSubmap StorageL "sOperators" ("owner" :! Address, "operator" :! Address) () where
+instance StoreHasSubmap StorageL "sOperators" (Address, Address) () where
   storeSubmapOps = storeSubmapOpsDeeper #sOperators
 
 mkStorageL
@@ -138,7 +138,7 @@ mkStorageL
   -> "votingPeriod" :? Natural
   -> "quorumThreshold" :? Natural
   -> "extra" :! ContractExtraL
-  -> "metadata" :! TZIP16.MetadataMap BigMap
+  -> "metadata" :! TZIP16.MetadataMap Map
   -> StorageL
 mkStorageL admin votingPeriod quorumThreshold extra metadata =
   StorageL
@@ -211,7 +211,7 @@ mkFullStorageL
   -> "votingPeriod" :? Natural
   -> "quorumThreshold" :? Natural
   -> "extra" :! ContractExtraL
-  -> "metadata" :! TZIP16.MetadataMap BigMap
+  -> "metadata" :! TZIP16.MetadataMap Map
   -> "customEps" :? [(MText, ByteString)]
   -> FullStorage
 mkFullStorageL admin vp qt extra md cEps = FullStorage

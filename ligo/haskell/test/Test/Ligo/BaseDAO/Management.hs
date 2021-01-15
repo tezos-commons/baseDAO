@@ -6,12 +6,15 @@
 -- withOriginated func
 module Test.Ligo.BaseDAO.Management
   ( test_BaseDAO_Management
+  , go
   ) where
 
 import Universum
 
 import Test.Tasty (TestTree, testGroup)
 import Named (defaults, (!))
+import Fmt (fmt, hexF)
+import qualified Data.Text as T
 
 import Lorentz as L
 import Michelson.Typed (convertContract)
@@ -19,7 +22,9 @@ import Michelson.Typed.Convert (untypeValue)
 import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
+import Michelson.Interpret.Pack
 import Tezos.Core (unsafeMkMutez)
+import Tezos.Address (unsafeParseAddress)
 
 import Ligo.BaseDAO.Contract
 import Util.Named
@@ -45,6 +50,19 @@ withOriginated addrCount storageFn tests = do
     , uodContract = convertContract baseDAOContractLigo
     }
   tests addresses (TAddress baseDao)
+
+packedL :: ByteString
+packedL = packValue' $ l $ initialStorage $ unsafeParseAddress "tz1MpUMDnj5hYBHW6EmEbtiLC5BpaRxjo7H7"
+
+go :: IO ()
+go = do
+  putTextLn $ "Length: " <> show (length packedL) <> " bytes"
+  let t = fmt (hexF packedL)
+      chunks = T.chunksOf 28000 t
+  putTextLn $ "Number of chunks: " <> show (length chunks)
+  forM_ (zip [0 :: Int ..] chunks) $ \(i, chunk) -> do
+    putTextLn $ show i <> ". " <> chunk
+  putTextLn $ fmt $ hexF packedL
 
 -- | We test non-token entrypoints of the BaseDAO contract here
 test_BaseDAO_Management :: [TestTree]
@@ -226,6 +244,15 @@ test_BaseDAO_Management =
               callFrom (AddressResolved randomAddress) baseDao (Call @"Migrate") (#newAddress .! newContractAddress)
      ]
   ]
+
+initialStorage admin = mkFullStorageL
+      ! #admin admin
+      ! #extra dynRecUnsafe
+      ! #metadata mempty
+      ! #customEps
+          [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)
+          ]
+      ! defaults
   where
 
     testCustomEntrypoint :: ('[(ByteString, FullStorage)] :-> '[([Operation], FullStorage)])
@@ -237,15 +264,6 @@ test_BaseDAO_Management =
         (L.unit # L.failWith)
         ((L.dip (L.getField #fsStorage)) # setField #sAdmin # setField #fsStorage) #
       L.nil # pair
-
-    initialStorage admin = mkFullStorageL
-      ! #admin admin
-      ! #extra dynRecUnsafe
-      ! #metadata mempty
-      ! #customEps
-          [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)
-          ]
-      ! defaults
 
 expectNotAdmin
   :: (MonadNettest caps base m)

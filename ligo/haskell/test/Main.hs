@@ -1,4 +1,8 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-{-# OPTIONS_GHC -F -pgmF tasty-discover #-}
+import Test.Ligo.BaseDAO.Management (go)
+import Universum
+
+main :: IO ()
+main = go
