@@ -21,41 +21,41 @@ test_BaseDAO_FA2 :: TestTree
 test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
   [ testGroup "Operator:"
       [ nettestScenario "allows zero transfer from non-existent operator"
-          $ uncapsNettest $ Share.zeroTransferScenario True originateTrivialDao
+          $ uncapsNettest $ Share.zeroTransferScenario originateTrivialDao
       , nettestScenario "allows valid transfer and check balance"
-          $ uncapsNettest $ Share.validTransferScenario True originateTrivialDao
+          $ uncapsNettest $ Share.validTransferScenario originateTrivialDao
       , nettestScenario "validates token id"
-          $ uncapsNettest $ Share.validateTokenScenario True originateTrivialDao
+          $ uncapsNettest $ Share.validateTokenScenario originateTrivialDao
       , nettestScenario "accepts an empty list of transfers"
-          $ uncapsNettest $ Share.emptyTransferListScenario True originateTrivialDao
+          $ uncapsNettest $ Share.emptyTransferListScenario originateTrivialDao
       , nettestScenario "aborts if there is a failure (due to low balance)"
-          $ uncapsNettest $ Share.lowBalanceScenario True originateTrivialDao
+          $ uncapsNettest $ Share.lowBalanceScenario originateTrivialDao
       , nettestScenario "aborts if there is a failure (due to non existent source account)"
-          $ uncapsNettest $ Share.noSourceAccountScenario True originateTrivialDao
+          $ uncapsNettest $ Share.noSourceAccountScenario originateTrivialDao
       , nettestScenario "aborts if there is a failure (due to bad operator)"
-          $ uncapsNettest $ Share.badOperatorScenario True originateTrivialDao
+          $ uncapsNettest $ Share.badOperatorScenario originateTrivialDao
       , nettestScenario "cannot transfer foreign money"
-          $ uncapsNettest $ Share.noForeignMoneyScenario True originateTrivialDao
+          $ uncapsNettest $ Share.noForeignMoneyScenario originateTrivialDao
       ]
   , testGroup "Owner:"
       [ nettestScenario "allows valid transfer and check balance"
-          $ uncapsNettest $ Share.validTransferOwnerScenario True originateTrivialDao
+          $ uncapsNettest $ Share.validTransferOwnerScenario originateTrivialDao
       , nettestScenario "allows updating operator "
-          $ uncapsNettest $ Share.updatingOperatorScenario True originateTrivialDao
+          $ uncapsNettest $ Share.updatingOperatorScenario originateTrivialDao
       , nettestScenario "allows balanceOf request"
-          $ uncapsNettest $ Share.balanceOfOwnerScenario True originateTrivialDao
+          $ uncapsNettest $ Share.balanceOfOwnerScenario originateTrivialDao
       , nettestScenario "validates token id"
-          $ uncapsNettest $ Share.validateTokenOwnerScenario True originateTrivialDao
+          $ uncapsNettest $ Share.validateTokenOwnerScenario originateTrivialDao
       , nettestScenario "aborts if there is a failure (due to low balance)"
-          $ uncapsNettest $ Share.lowBalanceOwnerScenario True originateTrivialDao
+          $ uncapsNettest $ Share.lowBalanceOwnerScenario originateTrivialDao
       , nettestScenario "cannot transfer foreign money"
-          $ uncapsNettest $ Share.noForeignMoneyOwnerScenario True originateTrivialDao
+          $ uncapsNettest $ Share.noForeignMoneyOwnerScenario originateTrivialDao
       ]
   , testGroup "Admin:"
     [ nettestScenario "transfer tokens from any address to any address"
-        $ uncapsNettest $ Share.adminTransferScenario True originateTrivialDao
+        $ uncapsNettest $ Share.adminTransferScenario originateTrivialDao
     , nettestScenario "transfer frozen tokens"
-        $ uncapsNettest $ Share.adminTransferFrozenScenario True $ originateTrivialDaoWithBalance
+        $ uncapsNettest $ Share.adminTransferFrozenScenario $ originateTrivialDaoWithBalance
             (\owner1 owner2 ->
                 [ ((owner1, frozenTokenId), 100)
                 , ((owner2, frozenTokenId), 100)
@@ -64,12 +64,12 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
     ]
   , testGroup "Entrypoints respect migration status"
       [ nettestScenario "transfer respects migration status"
-          $ uncapsNettest $ Share.transferAfterMigrationScenario True originateTrivialDao
+          $ uncapsNettest $ Share.transferAfterMigrationScenario originateTrivialDao
       , nettestScenario "update operator respects migration status "
-          $ uncapsNettest $ Share.updatingOperatorAfterMigrationScenario True originateTrivialDao
+          $ uncapsNettest $ Share.updatingOperatorAfterMigrationScenario originateTrivialDao
       , nettestScenario "balanceOf request respects migration status"
-          $ uncapsNettest $ Share.balanceOfRequestAfterMigrationScenario True originateTrivialDao
+          $ uncapsNettest $ Share.balanceOfRequestAfterMigrationScenario originateTrivialDao
       , nettestScenario "tokenMetadataRegistry request respects migration status"
-          $ uncapsNettest $ Share.tokenMetadataRegistryRequestAfterMigrationScenario True originateTrivialDao
+          $ uncapsNettest $ Share.tokenMetadataRegistryRequestAfterMigrationScenario originateTrivialDao
       ]
   ]
