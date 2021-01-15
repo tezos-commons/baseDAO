@@ -6,6 +6,7 @@
 
 #include "types.mligo"
 
+[@inline]
 let authorize_admin (store : storage): storage =
   if sender = store.admin then
     store

@@ -24,12 +24,14 @@ test-suite baseDAO-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Ligo.BaseDAO.ConfigDesc
       Ligo.BaseDAO.Contract
       Ligo.BaseDAO.Helper
       Ligo.BaseDAO.Types
       Ligo.Util
       Test.Ligo.BaseDAO.Common
       Test.Ligo.BaseDAO.Management
+      Test.Ligo.BaseDAO.Proposal
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Token.FA2
       Test.Ligo.BaseDAO.Types

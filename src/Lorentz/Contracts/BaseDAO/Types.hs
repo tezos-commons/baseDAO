@@ -13,6 +13,10 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , Parameter (..)
   , ParameterC
+  , ProposeEp
+  , VoteEp
+  , FlushEp
+  , DropProposalEp
   , ProposeParams(..)
   , ProposalKey
   , Proposal (..)
@@ -309,23 +313,33 @@ data Parameter proposalMetadata otherParam
   | Vote [PermitProtected $ VoteParam proposalMetadata]
   deriving stock (Generic, Show)
 
+-- Note: using this for calling entrypoints with polymorphic arguments may
+-- severely increase compilation time.
+-- If this is your case, consider requiring reduced set of entrypoints.
 type ParameterC param proposalMetadata =
-  ParameterContainsEntrypoints param
+  ( ParameterContainsEntrypoints param
     [ "Accept_ownership" :> ()
     , "Burn" :> BurnParam
     , "Confirm_migration" :> ()
-    , "Drop_proposal" :> ProposalKey proposalMetadata
-    , "Flush" :> Natural
+    , DropProposalEp proposalMetadata
+    , FlushEp
     , "GetVotePermitCounter" :> (View () Nonce)
     , "Migrate" :> MigrateParam
     , "Mint" :> MintParam
-    , "Propose" :> (ProposeParams proposalMetadata)
+    , ProposeEp proposalMetadata
     , "Set_quorum_threshold" :> QuorumThreshold
     , "Set_voting_period" :> VotingPeriod
     , "Transfer_contract_tokens" :> TransferContractTokensParam
     , "Transfer_ownership" :> TransferOwnershipParam
-    , "Vote" :> [PermitProtected $ VoteParam proposalMetadata]
+    , VoteEp proposalMetadata
     ]
+  , FA2.ParameterC param
+  )
+
+type ProposeEp pm = "Propose" :> ProposeParams pm
+type VoteEp pm = "Vote" :> [PermitProtected $ VoteParam pm]
+type FlushEp = "Flush" :> Natural
+type DropProposalEp pm = "Drop_proposal" :> ProposalKey pm
 
 type TransferOwnershipParam = ("newOwner" :! Address)
 type MigrateParam = ("newAddress" :! Address)
@@ -867,7 +881,7 @@ instance CustomErrorHasDoc "mISSIGNED" where
 type instance ErrorArg "bAD_ENTRYPOINT_PARAMETER" = ()
 
 instance CustomErrorHasDoc "bAD_ENTRYPOINT_PARAMETER" where
-  customErrClass = ErrClassActionException
+  customErrClass = ErrClassBadArgument
   customErrDocMdCause = "Value passed to the entrypoint is not valid"
 
 type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_OVER" = ()

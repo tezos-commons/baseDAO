@@ -1,26 +1,26 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-{-# LANGUAGE FunctionalDependencies #-}
-
 -- | Types mirrored from LIGO implementation.
 module Ligo.BaseDAO.Types
   ( module Lorentz.Contracts.BaseDAO.Types
   , ProposalMetadataL
   , ContractExtraL
   , ProposeParamsL
+  , CustomEntrypointsL
   , ProposalL (..)
   , VoteParamL
-  , Parameter (..)
-  , Storage (..)
-  , Config (..)
+  , ParameterL (..)
+  , StorageL (..)
+  , ConfigL (..)
   , FullStorage (..)
   , DynamicRec (..)
-  , mkStorage
+  , dynRecUnsafe
+  , mkStorageL
   ) where
 
-import Lorentz as L
-import Universum (One)
+import Lorentz
+import Universum (One(..), fromIntegral)
 
 import qualified Data.Map as Map
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
@@ -29,20 +29,25 @@ import Util.Named
 
 import Michelson.Runtime.GState (genesisAddress)
 import Lorentz.Contracts.BaseDAO.Types hiding
-  (Config(..), Parameter(..), Storage(..), defaultConfig, mkStorage)
+  (Config(..), Parameter(..), Storage(..), defaultConfig)
 import qualified Lorentz.Contracts.BaseDAO.Types as BaseDAO
 
+import BaseDAO.ShareTest.Common (ProposalMetadataFromNum(..))
 
 -- | Represents a product type with arbitrary fields.
 --
 -- Contains a name to make different such records distinguishable.
 newtype DynamicRec n = DynamicRec { unDynamic :: Map MText ByteString }
   deriving stock (Generic, Show, Eq)
-  deriving newtype (IsoValue, HasAnnotation, Default, One, Semigroup, Monoid)
+  deriving newtype (IsoValue, HasAnnotation, Default, One, Semigroup)
+
+-- | Construct 'DynamicRec' assuming it contains no mandatory entries.
+dynRecUnsafe :: DynamicRec n
+dynRecUnsafe = DynamicRec mempty
 
 type ProposalMetadataL = DynamicRec "pm"
 type ContractExtraL = DynamicRec "ce"
-type CustomEntrypoints = DynamicRec "ep"
+type CustomEntrypointsL = DynamicRec "ep"
 
 type ProposeParamsL = ProposeParams ProposalMetadataL
 type ProposalKeyL = ProposalKey ProposalMetadataL
@@ -91,12 +96,12 @@ data MigratableParam
   | XtzForbidden ForbidXTZParam
   deriving stock (Show)
 
-data Parameter
+data ParameterL
   = Migratable MigratableParam
   | Transfer_contract_tokens TransferContractTokensParam
   deriving stock (Show)
 
-data Storage = Storage
+data StorageL = StorageL
   { sAdmin :: Address
   , sExtra :: ContractExtraL
   , sLedger :: Ledger
@@ -113,7 +118,7 @@ data Storage = Storage
   }
   deriving stock (Show)
 
-mkStorage
+mkStorageL
   :: Address
   -> Natural
   -> Natural
@@ -121,8 +126,8 @@ mkStorage
   -> TZIP16.MetadataMap BigMap
   -> [(MText, ByteString)]
   -> FullStorage
-mkStorage admin votingPeriod quorumThreshold extra metadata customEps = let
-  storage = Storage
+mkStorageL admin votingPeriod quorumThreshold extra metadata customEps = let
+  storage = StorageL
     { sAdmin = admin
     , sExtra = extra
     , sLedger = mempty
@@ -138,7 +143,7 @@ mkStorage admin votingPeriod quorumThreshold extra metadata customEps = let
     , sVotingPeriod = votingPeriod
     }
 
-  config = Config
+  config = ConfigL
     { cUnfrozenTokenMetadata = BaseDAO.cUnfrozenTokenMetadata BaseDAO.defaultConfig
     , cFrozenTokenMetadata = BaseDAO.cFrozenTokenMetadata BaseDAO.defaultConfig
     , cProposalCheck = failUsing [mt|not implemented|]
@@ -154,12 +159,12 @@ mkStorage admin votingPeriod quorumThreshold extra metadata customEps = let
     }
   in FullStorage storage config
 
-data Config = Config
+data ConfigL = ConfigL
   { cUnfrozenTokenMetadata :: FA2.TokenMetadata
   , cFrozenTokenMetadata :: FA2.TokenMetadata
-  , cProposalCheck :: '[ProposeParamsL, Storage] :-> '[Bool]
-  , cRejectedProposalReturnValue :: '[ProposalL, Storage] :-> '["slash_amount" :! Natural]
-  , cDecisionLambda :: '[ProposalL, Storage] :-> '[List Operation, Storage]
+  , cProposalCheck :: '[ProposeParamsL, StorageL] :-> '[Bool]
+  , cRejectedProposalReturnValue :: '[ProposalL, StorageL] :-> '["slash_amount" :! Natural]
+  , cDecisionLambda :: '[ProposalL, StorageL] :-> '[List Operation, StorageL]
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural
@@ -169,13 +174,13 @@ data Config = Config
   , cMaxVotingPeriod :: Natural
   , cMinVotingPeriod :: Natural
 
-  , cCustomEntrypoints :: CustomEntrypoints
+  , cCustomEntrypoints :: CustomEntrypointsL
   }
   deriving stock (Show)
 
 data FullStorage = FullStorage
-  { fsStorage :: Storage
-  , fsConfig :: Config
+  { fsStorage :: StorageL
+  , fsConfig :: ConfigL
   }
   deriving stock (Show)
 
@@ -195,16 +200,20 @@ deriving anyclass instance IsoValue ForbidXTZParam
 instance ParameterHasEntrypoints ForbidXTZParam where
   type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
 
-customGeneric "Parameter" ligoLayout
-deriving anyclass instance IsoValue Parameter
-instance ParameterHasEntrypoints Parameter where
-  type ParameterEntrypointsDerivation Parameter = EpdDelegate
+customGeneric "ParameterL" ligoLayout
+deriving anyclass instance IsoValue ParameterL
+instance ParameterHasEntrypoints ParameterL where
+  type ParameterEntrypointsDerivation ParameterL = EpdDelegate
 
-customGeneric "Storage" ligoLayout
-deriving anyclass instance IsoValue Storage
+customGeneric "StorageL" ligoLayout
+deriving anyclass instance IsoValue StorageL
 
-customGeneric "Config" ligoLayout
-deriving anyclass instance IsoValue Config
+customGeneric "ConfigL" ligoLayout
+deriving anyclass instance IsoValue ConfigL
 
 deriving stock instance Generic FullStorage
 deriving anyclass instance IsoValue FullStorage
+
+instance ProposalMetadataFromNum ProposalMetadataL where
+  proposalMetadataFromNum n =
+    one ([mt|int|], lPackValueRaw @Integer $ fromIntegral n)
