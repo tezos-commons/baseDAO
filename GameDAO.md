@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [6a2022d](https://github.com/tqtezos/baseDAO/tree/6a2022d1be5216f7f6cb5d898f733f92dfea0443) *(Fri Jan 15 17:46:18 2021 +0700)*
+**Code revision:** [f772328](https://github.com/tqtezos/baseDAO/tree/f7723283c8d1eb65988facf4ecf3f4183a684695) *(Fri Jan 15 21:47:45 2021 +0100)*
 
 
 
@@ -1772,7 +1772,7 @@ We distinquish several error classes:
 
 ### `BAD_ENTRYPOINT_PARAMETER`
 
-**Class:** Action exception
+**Class:** Bad argument
 
 **Fires if:** Value passed to the entrypoint is not valid
 
