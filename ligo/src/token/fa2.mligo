@@ -22,7 +22,8 @@ let check_sender (from_ , store : address * storage): address =
     if Big_map.mem key store.operators then
       from_
     else
-      (failwith("FA2_NOT_OPERATOR"): address)
+     ([%Michelson ({| { FAILWITH } |} : string * unit -> address)]
+        ("FA2_NOT_OPERATOR", ()) : address)
 
 let debit_from (amt, from_, token_id, store: nat * address * token_id * storage): storage =
   match Big_map.find_opt (from_, token_id) store.ledger with
@@ -34,11 +35,12 @@ let debit_from (amt, from_, token_id, store: nat * address * token_id * storage)
               ledger = Big_map.update (from_, token_id) (Some new_bal) store.ledger
             }
         | None ->
-            (failwith ("FA2_INSUFFICIENT_BALANCE") : storage)
+            ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> storage)] ("FA2_INSUFFICIENT_BALANCE", (amt, bal)) : storage)
       in store
   | None ->
       if (amt = 0n) then store // We allow 0 transfer
-      else (failwith ("FA2_INSUFFICIENT_BALANCE") : storage)
+      else
+        ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> storage)] ("FA2_INSUFFICIENT_BALANCE", (amt, 0n)) : storage)
 
 let credit_to (amt, to_, token_id, store : nat * address * nat * storage): storage =
   let new_bal =
@@ -63,8 +65,12 @@ let transfer_item (store, ti : storage * transfer_item): storage =
         if tx.token_id = unfrozen_token_id then tx.token_id
         else if tx.token_id = frozen_token_id then (
           if sender = store.admin then tx.token_id
-          else (failwith ("FROZEN_TOKEN_NOT_TRANSFERABLE"): token_id)
-        ) else (failwith ("FA2_TOKEN_UNDEFINED") : token_id)
+          else
+            ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
+              ("FROZEN_TOKEN_NOT_TRANSFERABLE", ()) : token_id)
+        ) else
+            ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
+              ("FA2_TOKEN_UNDEFINED", ()) : token_id)
       in credit_to
         ( tx.amount, tx.to_, valid_token_id
         , debit_from (tx.amount, valid_from_, valid_token_id, store)
@@ -85,7 +91,8 @@ let transfer (params, store : transfer_params * storage): return =
 let validate_token_type (token_id : token_id): token_id =
   if (token_id = unfrozen_token_id || token_id = frozen_token_id) then
     token_id
-  else (failwith ("FA2_TOKEN_UNDEFINED"): token_id)
+  else ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
+          ("FA2_TOKEN_UNDEFINED", ()) : token_id)
 
 let balance_of (params, store : balance_request_params * storage): return =
   let check_one (req : balance_request_item): balance_response_item =
@@ -115,9 +122,11 @@ let validate_operator_token (token_id : token_id): token_id =
   if (token_id = unfrozen_token_id) then
     token_id
   else if (token_id = frozen_token_id) then
-    (failwith ("OPERATION_PROHIBITED"): token_id)
+    ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
+      ("OPERATION_PROHIBITED", ()) : token_id)
   else
-    (failwith ("FA2_TOKEN_UNDEFINED"): token_id)
+    ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
+      ("FA2_TOKEN_UNDEFINED", ()) : token_id)
 
 let update_one (store, param: storage * update_operator): storage =
   let (operator_update, operator_param) =
@@ -132,7 +141,9 @@ let update_one (store, param: storage * update_operator): storage =
     in  { store with
           operators = updated_operators
         }
-  else (failwith("NOT_OWNER"): storage)
+  else
+    ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
+      ("NOT_OWNER", ()) : storage)
 
 let update_operators (params, store : update_operators_param * storage):return =
   let store = List.fold update_one params store in

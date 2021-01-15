@@ -20,7 +20,7 @@ import Test.Common
 test_BaseDAO_Token :: TestTree
 test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   [ nettestScenario "can burn tokens from any accounts"
-      $ uncapsNettest $ Share.burnScenario True
+      $ uncapsNettest $ Share.burnScenario
         $ originateTrivialDaoWithBalance
           (\o1 _ ->
               [ ((o1, DAO.unfrozenTokenId), 10)
@@ -28,7 +28,7 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
               ]
           )
   , nettestScenario "can mint tokens to any accounts"
-      $ uncapsNettest $ Share.mintScenario True
+      $ uncapsNettest $ Share.mintScenario
         $ originateTrivialDaoWithBalance
           (\o1 _ ->
               [ ((o1, DAO.unfrozenTokenId), 0)
@@ -36,5 +36,5 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
               ]
           )
   , nettestScenario "can call transfer tokens entrypoint"
-      $ uncapsNettest $ Share.transferContractTokensScenario True originateTrivialDao
+      $ uncapsNettest $ Share.transferContractTokensScenario originateTrivialDao
   ]
