@@ -25,6 +25,7 @@ let check_sender (from_ , store : address * storage): address =
      ([%Michelson ({| { FAILWITH } |} : string * unit -> address)]
         ("FA2_NOT_OPERATOR", ()) : address)
 
+[@inline]
 let debit_from (amt, from_, token_id, store: nat * address * token_id * storage): storage =
   match Big_map.find_opt (from_, token_id) store.ledger with
     Some bal ->
@@ -42,6 +43,7 @@ let debit_from (amt, from_, token_id, store: nat * address * token_id * storage)
       else
         ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> storage)] ("FA2_INSUFFICIENT_BALANCE", (amt, 0n)) : storage)
 
+[@inline]
 let credit_to (amt, to_, token_id, store : nat * address * nat * storage): storage =
   let new_bal =
     match Big_map.find_opt (to_, token_id) store.ledger with
