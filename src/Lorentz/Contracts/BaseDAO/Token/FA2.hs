@@ -4,7 +4,6 @@
 module Lorentz.Contracts.BaseDAO.Token.FA2
    ( transfer
    , balanceOf
-   , tokenMetadataRegistry
    , updateOperators
    , defaultPermissionsDescriptor
    , debitFrom
@@ -15,8 +14,7 @@ module Lorentz.Contracts.BaseDAO.Token.FA2
    ) where
 
 import Lorentz
-import Lorentz.Contracts.BaseDAO.Doc
-  (balanceOfDoc, tokenMetadataRegistryDoc, transferDoc, updateOperatorsDoc)
+import Lorentz.Contracts.BaseDAO.Doc (balanceOfDoc, transferDoc, updateOperatorsDoc)
 import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface
@@ -280,20 +278,6 @@ balanceOf = do
       swap
       constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
-
-tokenMetadataRegistry
-  :: (IsoValue ce, KnownValue pm)
-  => Entrypoint' TokenMetadataRegistryParam (Storage ce pm) s
-tokenMetadataRegistry = do
-  doc $ DDescription tokenMetadataRegistryDoc
-  dip ensureNotMigrated
-  swap
-  getField #sTokenAddress
-  dig @2
-  swap
-  push @Mutez (toMutez 0)
-  swap
-  transferTokens # nil # swap # cons # pair
 
 updateOperators
   :: (IsoValue ce, KnownValue pm)

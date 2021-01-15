@@ -131,13 +131,13 @@ packages:
     version: 0.2.0.1
     git: https://gitlab.com/morley-framework/morley-ledgers.git
     pantry-tree:
-      size: 1422
-      sha256: a6524e6f145bcf11ab1bcbc3a17d6f9dd3e6f6086dac1df58fad3cd142175a3c
-    commit: 817ef36927679743409dc7260f1d3a63ed7d8ad5
+      size: 1524
+      sha256: 7becd7b1b6ff008ae7a69a82380e11f61f7dc56eff29109a0aa9910e2e40df0a
+    commit: 932981ecd04bc09f6a3201d128a5a16c426c31be
   original:
     subdir: code/morley-ledgers
     git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 817ef36927679743409dc7260f1d3a63ed7d8ad5
+    commit: 932981ecd04bc09f6a3201d128a5a16c426c31be
 - completed:
     subdir: code/morley-metadata
     name: morley-metadata

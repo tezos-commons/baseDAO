@@ -10,29 +10,18 @@ module Ligo.BaseDAO.Helper
   , mkFullStorage
   ) where
 
-import Universum ((*))
+import Ligo.BaseDAO.Types
 import Lorentz
+import Universum ((*))
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
-import Ligo.BaseDAO.Types
-
 defaultConfigL :: ConfigL
-defaultConfigL = ConfigL
-  { cUnfrozenTokenMetadata = FA2.TokenMetadata
-      { FA2.tmTokenId = unfrozenTokenId
-      , FA2.tmSymbol = [mt|unfrozen_token|]
-      , FA2.tmName = [mt|Unfrozen Token|]
-      , FA2.tmDecimals = 8
-      , FA2.tmExtras = mempty
-      }
-  , cFrozenTokenMetadata = FA2.TokenMetadata
-      { FA2.tmTokenId = frozenTokenId
-      , FA2.tmSymbol = [mt|frozen_token|]
-      , FA2.tmName = [mt|Frozen Token|]
-      , FA2.tmDecimals = 8
-      , FA2.tmExtras = mempty
-      }
+defaultConfigL  = ConfigL
+  { cUnfrozenTokenMetadata =
+      FA2.mkTokenMetadata "unfrozen_token" "Unfrozen Token" "8"
+  , cFrozenTokenMetadata =
+      FA2.mkTokenMetadata "frozen_token" "Frozen Token" "8"
   , cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do

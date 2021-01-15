@@ -8,7 +8,6 @@ module Lorentz.Contracts.BaseDAO.Doc
    , callFA2Doc
    , transferDoc
    , balanceOfDoc
-   , tokenMetadataRegistryDoc
    , updateOperatorsDoc
 
    , transferOwnershipDoc
@@ -67,12 +66,6 @@ balanceOfDoc :: Markdown
 balanceOfDoc = [md|
   Returns the balance of specified address in ledger.
   The entrypoint supports both frozen and unfrozen tokens.
-  |]
-
-tokenMetadataRegistryDoc :: Markdown
-tokenMetadataRegistryDoc = [md|
-  Returns contract address that holds token metadata.
-  Token metadata will contain the DAO metadata.
   |]
 
 updateOperatorsDoc :: Markdown

@@ -23,7 +23,6 @@ module BaseDAO.ShareTest.FA2
   , transferAfterMigrationScenario
   , updatingOperatorAfterMigrationScenario
   , balanceOfRequestAfterMigrationScenario
-  , tokenMetadataRegistryRequestAfterMigrationScenario
   ) where
 
 import Universum
@@ -430,18 +429,4 @@ balanceOfRequestAfterMigrationScenario originateFn = do
   callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
 
   callWith (params [ FA2.BalanceRequestItem owner1 unfrozenTokenId ])
-    & expectMigrated newAddress1
-
-tokenMetadataRegistryRequestAfterMigrationScenario
-  :: forall caps base m param pm
-  . (MonadNettest caps base m, ParameterC param pm)
-  => OriginateFn param m -> m ()
-tokenMetadataRegistryRequestAfterMigrationScenario originateFn = do
-  ((owner1, newAddress1), _, dao, admin) <- originateFn
-  consumer <- originateSimple "consumer" [] (contractConsumer @Address)
-
-  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
-  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
-
-  callFrom (AddressResolved owner1) dao (Call @"Token_metadata_registry") (toContractRef consumer)
     & expectMigrated newAddress1

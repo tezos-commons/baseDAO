@@ -81,6 +81,21 @@ import Util.Named
 import Util.Type
 import Util.TypeLits
 
+-- Orphans
+------------------------------------------------------------------------
+
+customGeneric "FA2.Parameter" ligoLayout
+
+deriving anyclass instance IsoValue FA2.Parameter
+
+instance ParameterHasEntrypoints FA2.Parameter where
+  type ParameterEntrypointsDerivation FA2.Parameter = EpdPlain
+
+instance TypeHasDoc FA2.Parameter where
+  typeDocMdDescription = "Describes the FA2 operations."
+
+instance HasAnnotation FA2.Parameter
+
 ------------------------------------------------------------------------
 -- Configuration
 ------------------------------------------------------------------------
@@ -137,20 +152,10 @@ defaultConfig = Config
   { cDaoName = "BaseDAO"
   , cDaoDescription = [md|An example of a very simple DAO contract without any custom checks,
                           extra data and decision lambda.|]
-  , cUnfrozenTokenMetadata = FA2.TokenMetadata
-      { FA2.tmTokenId = unfrozenTokenId
-      , FA2.tmSymbol = [mt|unfrozen_token|]
-      , FA2.tmName = [mt|Unfrozen Token|]
-      , FA2.tmDecimals = 8
-      , FA2.tmExtras = mempty
-      }
-  , cFrozenTokenMetadata = FA2.TokenMetadata
-      { FA2.tmTokenId = frozenTokenId
-      , FA2.tmSymbol = [mt|frozen_token|]
-      , FA2.tmName = [mt|Frozen Token|]
-      , FA2.tmDecimals = 8
-      , FA2.tmExtras = mempty
-      }
+  , cUnfrozenTokenMetadata =
+      FA2.mkTokenMetadata "unfrozen_token" "Unfrozen Token" "8"
+  , cFrozenTokenMetadata =
+      FA2.mkTokenMetadata "frozen_token" "Frozen Token" "8"
   , cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do

@@ -228,7 +228,6 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 Full list:
 * [`transfer`](#transfer)
 * [`balance_of`](#balance_of)
-* [`token_metadata_registry`](#token_metadata_registry)
 * [`update_operators`](#update_operators)
 * [`mint`](#mint)
 * [`burn`](#burn)
@@ -373,22 +372,6 @@ Parameter (in Michelson):
 - This entrypoint MUST follow the FA2 requirements.
 
 - Since the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed MUST be either 0 or 1.
-
-### **token_metadata_registry**
-
-```ocaml
-type token_metadata_registry_param = address contract
-
-Token_metadata_registry of token_metadata_registry_param
-```
-
-Parameter (in Michelson)
-```
-(contract %token_metadata_registry address)
-```
-
-- Return contract address that holds token metadata.
-- Token metadata MUST include the DAO metadata.
 
 ### **update_operators**
 

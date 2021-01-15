@@ -24,10 +24,10 @@ import Universum (Each)
 import Lorentz.Contracts.BaseDAO.Doc
 import Lorentz.Contracts.BaseDAO.Management
 import Lorentz.Contracts.BaseDAO.Proposal
-import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import Lorentz.Contracts.BaseDAO.Token
 import Lorentz.Contracts.BaseDAO.Token.FA2
 import Lorentz.Contracts.BaseDAO.Types as BaseDAO
+import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 data FA2EntrypointsKind
@@ -101,7 +101,6 @@ fa2Handler = do
   doc $ DDescription callFA2Doc
   entryCase @FA2.Parameter (Proxy @FA2EntrypointsKind)
     ( #cBalance_of /-> balanceOf
-    , #cToken_metadata_registry /-> tokenMetadataRegistry
     , #cTransfer /-> transfer
     , #cUpdate_operators /-> updateOperators
     )
