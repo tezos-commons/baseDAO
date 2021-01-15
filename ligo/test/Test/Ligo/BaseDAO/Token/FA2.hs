@@ -63,16 +63,15 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
                 ]
             )
     ]
-  -- TODO #100: Migration not implemented
-  -- , testGroup "Entrypoints respect migration status"
-  --     [ nettestScenario "transfer respects migration status"
-  --         $ uncapsNettest $ Share.transferAfterMigrationScenario originateLigoDao
-  --     , nettestScenario "update operator respects migration status "
-  --         $ uncapsNettest $ Share.updatingOperatorAfterMigrationScenario originateLigoDao
-  --     , nettestScenario "balanceOf request respects migration status"
-  --         $ uncapsNettest $ Share.balanceOfRequestAfterMigrationScenario originateLigoDao
-  --     , nettestScenario "tokenMetadataRegistry request respects migration status"
-  --         $ uncapsNettest $ Share.tokenMetadataRegistryRequestAfterMigrationScenario originateLigoDao
-  --     ]
+  , testGroup "Entrypoints respect migration status"
+      [ nettestScenario "transfer respects migration status"
+          $ uncapsNettest $ Share.transferAfterMigrationScenario originateLigoDao
+      , nettestScenario "update operator respects migration status "
+          $ uncapsNettest $ Share.updatingOperatorAfterMigrationScenario originateLigoDao
+      , nettestScenario "balanceOf request respects migration status"
+          $ uncapsNettest $ Share.balanceOfRequestAfterMigrationScenario originateLigoDao
+      , nettestScenario "tokenMetadataRegistry request respects migration status"
+          $ uncapsNettest $ Share.tokenMetadataRegistryRequestAfterMigrationScenario originateLigoDao
+      ]
   ]
 
