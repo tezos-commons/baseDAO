@@ -348,4 +348,3 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
   else
     ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
       ("FAIL_DROP_PROPOSAL_NOT_OVER", ()) : return)
-
