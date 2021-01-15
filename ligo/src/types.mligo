@@ -181,9 +181,11 @@ type vote_permit_counter_param =
   ; callback : nat contract
   }
 
-type parameter =
+(*
+ * Entrypoints that forbids Tz transfers
+ *)
+type forbid_xtz_params =
     Call_FA2 of fa2_parameter
-  | CallCustom of custom_ep_param
   | Drop_proposal of proposal_key
   | Transfer_ownership of transfer_ownership_param
   | Accept_ownership of unit
@@ -196,8 +198,23 @@ type parameter =
   | Flush of nat
   | Burn of burn_param
   | Mint of mint_param
-  | Transfer_contract_tokens of transfer_contract_tokens_param
   | GetVotePermitCounter of vote_permit_counter_param
+
+(*
+ * Entrypoints that should not work after migration.
+ * Separated into entrypoints that forbid Tz transfers and
+ * 'CallCustom' which may want to accept Tz transfers.
+ *)
+type migratable_parameter =
+  (custom_ep_param, "CallCustom", forbid_xtz_params, "") michelson_or
+
+(*
+ * Full parameter of the contract. Made up of entrypoints that could get
+ * migrated, and 'Transfer_contract_tokens' which should keep working even
+ * after migration.
+ *)
+type parameter =
+  (migratable_parameter, "", transfer_contract_tokens_param, "Transfer_contract_tokens") michelson_or
 
 // -- Config -- //
 
@@ -230,6 +247,8 @@ type full_storage = storage * config
 // -- Misc -- //
 
 type return = operation list * storage
+
+type return_with_full_storage = operation list * full_storage
 
 let nil_op = ([] : operation list)
 
