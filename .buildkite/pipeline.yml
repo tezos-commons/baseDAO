@@ -79,13 +79,14 @@ steps:
       ./result/bin/baseDAO-test --nettest-no-run-network
       -A localhost -P 8735
 
-  - label: weeder
-    if: *not_scheduled
-    commands:
-    - nix-build ci.nix -A weeder-script
-      # weeder needs .cabal file:
-    - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack
-    - ./result
+  # TODO: #122 enable it
+  # - label: weeder
+  #   if: *not_scheduled
+  #   commands:
+  #   - nix-build ci.nix -A weeder-script
+  #     # weeder needs .cabal file:
+  #   - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack
+  #   - ./result
 
   - label: haddock
     if: *not_scheduled
