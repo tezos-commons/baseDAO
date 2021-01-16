@@ -26,7 +26,6 @@ test-suite baseDAO-test
   other-modules:
       Ligo.BaseDAO.ConfigDesc
       Ligo.BaseDAO.Contract
-      Ligo.BaseDAO.Helper
       Ligo.BaseDAO.Types
       Ligo.Util
       Test.Ligo.BaseDAO.Common
