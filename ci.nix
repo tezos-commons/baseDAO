@@ -21,7 +21,7 @@ rec {
   # we need to know subdirectories to make weeder stuff work
   local-packages = [
     { name = "baseDAO"; subdirectory = "."; }
-    { name = "baseDAO-ligo-tests"; subdirectory = "./ligo/test"; }
+    { name = "baseDAO-ligo-meta"; subdirectory = "./ligo/test"; }
   ];
 
   # names of all local packages
@@ -32,7 +32,7 @@ rec {
   # - release – 'true' for "release" (e. g. master) build,
   #   'false' for "development" (e. g. PR) build.
   # - commitSha, commitDate – git revision info used for contract documentation.
-  hs-pkgs-original = { release, commitSha ? null, commitDate ? null }: pkgs.haskell-nix.stackProject {
+  hs-pkgs = { release, commitSha ? null, commitDate ? null }: pkgs.haskell-nix.stackProject {
     src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
 
     modules = [
@@ -64,34 +64,15 @@ rec {
             export MORLEY_DOC_GIT_COMMIT_DATE=${if release then pkgs.lib.escapeShellArg commitDate else "UNSPECIFIED"}
           '';
         };
-        packages.baseDAO-ligo-tests = {
+        packages.baseDAO-ligo-meta = {
           preBuild = ''
-            mkdir -p ./ligo/test
-            cp ${build-ligo} ./ligo/test/baseDAO.tz
+            mkdir -p ./ligo/haskell/test
+            cp ${build-ligo} ./ligo/haskell/test/baseDAO.tz
           '';
         };
       }
     ];
   };
-
-  # haskell.nix has issues when a package contains only a single test component,
-  # so it cannot build baesDAO-ligo-tests package. As a workaround, modify
-  # package set and overwrite installPhase for the package.
-  # Upstream issue: https://github.com/input-output-hk/haskell.nix/issues/362
-  hs-pkgs = attrs:
-    let
-      hs-pkgs-applied = hs-pkgs-original attrs;
-      test-original = hs-pkgs-applied.baseDAO-ligo-tests.components.tests.baseDAO-test;
-    in pkgs.lib.recursiveUpdate hs-pkgs-applied {
-      baseDAO-ligo-tests.components.tests.baseDAO-test = test-original.overrideAttrs (oldAttrs: {
-        installPhase = ''
-          runHook preInstall
-          mkdir -p $out/bin
-          cp dist/build/baseDAO-test/baseDAO-test $out/bin/
-          runHook postInstall
-       '';
-      });
-    };
 
   hs-pkgs-development = hs-pkgs { release = false; };
 

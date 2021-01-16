@@ -24,5 +24,5 @@ defaultStorage =
   ! #metadata mempty
   ! defaults
 
-test_FA2 :: [TestTree]
+test_FA2 :: TestTree
 test_FA2 = mkFA2Tests defaultStorage DAO.defaultMetadataConfigL

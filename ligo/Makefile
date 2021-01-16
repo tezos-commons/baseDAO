@@ -40,7 +40,7 @@ ifeq ($(OPTIMIZE), true)
 endif
 
 test: $(OUT)/baseDAO.tz
-	$(MAKE) -C .. test PACKAGE=baseDAO-ligo-tests \
+	$(MAKE) -C .. test PACKAGE=baseDAO-ligo-meta \
     BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz
 
 clean:

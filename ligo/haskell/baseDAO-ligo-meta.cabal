@@ -4,9 +4,9 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:           baseDAO-ligo-tests
+name:           baseDAO-ligo-meta
 version:        0.1.0.0
-description:    Tests in LIGO contract using cleveland.
+description:    Tools and tests for LIGO version of the contract.
 author:         Serokell, Tocqueville Group
 maintainer:     Serokell, Tocqueville Group
 copyright:      2020 TQ Tezos
@@ -20,15 +20,43 @@ source-repository head
   type: git
   location: git@github.com:tqtezos/baseDAO.git
 
+library
+  exposed-modules:
+      Ligo.BaseDAO.ConfigDesc
+      Ligo.BaseDAO.Types
+      Ligo.BaseDAO.TZIP16Metadata
+      Ligo.Util
+  other-modules:
+      Paths_baseDAO_ligo_meta
+  autogen-modules:
+      Paths_baseDAO_ligo_meta
+  hs-source-dirs:
+      src
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns RebindableSyntax
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-unused-do-bind
+  build-depends:
+      HUnit
+    , base >=4.7 && <5
+    , baseDAO
+    , cleveland
+    , containers
+    , fmt
+    , lens
+    , lorentz
+    , morley
+    , morley-ledgers
+    , morley-metadata
+    , named
+    , tasty
+    , template-haskell
+    , universum
+  default-language: Haskell2010
+
 test-suite baseDAO-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Ligo.BaseDAO.ConfigDesc
       Ligo.BaseDAO.Contract
-      Ligo.BaseDAO.Types
-      Ligo.BaseDAO.TZIP16Metadata
-      Ligo.Util
       Test.Ligo.BaseDAO.Common
       Test.Ligo.BaseDAO.Management
       Test.Ligo.BaseDAO.OffChainViews
@@ -36,9 +64,9 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Token.FA2
       Test.Ligo.BaseDAO.Types
-      Paths_baseDAO_ligo_tests
+      Paths_baseDAO_ligo_meta
   hs-source-dirs:
-      ./.
+      test
   default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
   ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -threaded -eventlog "-with-rtsopts=-N -A64m -AL256m"
   build-tool-depends:
@@ -47,6 +75,7 @@ test-suite baseDAO-test
       HUnit
     , base >=4.7 && <5
     , baseDAO
+    , baseDAO-ligo-meta
     , cleveland
     , containers
     , fmt

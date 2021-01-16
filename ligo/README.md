@@ -48,4 +48,4 @@ You can use the `Makefile` to do so as well:
 ```
 make test
 ```
-For more detail about LIGO tests, check out its [README.md](/ligo/test/)
+For more detail about LIGO tests, check out its [README.md](./haskell/test/)

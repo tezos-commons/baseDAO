@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-{-# LANGUAGE RebindableSyntax #-}
-{-# OPTIONS_GHC -Wno-unused-do-bind #-}
-
 -- | Types mirrored from LIGO implementation.
 module Ligo.BaseDAO.Types
   ( module Lorentz.Contracts.BaseDAO.Types
