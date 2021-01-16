@@ -7,13 +7,14 @@ module Ligo.BaseDAO.TZIP16Metadata
   ) where
 
 import Ligo.BaseDAO.Types
+import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 
 -- | Default values for config.
 -- Should we in fact fill it from CLI?
 defaultMetadataConfigL :: MetadataConfig StorageL
 defaultMetadataConfigL =
-  let ConfigL{..} = defaultConfigL
+  let Config{..} = defaultConfig
   in MetadataConfig
     { mcFrozenTokenMetadata = cFrozenTokenMetadata
     , mcUnfrozenTokenMetadata = cUnfrozenTokenMetadata

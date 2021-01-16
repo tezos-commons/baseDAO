@@ -9,7 +9,6 @@
 #define TYPES_H
 
 type token_id = nat
-type token_metadata = (string, bytes) map
 
 type operator =
   [@layout:comb]
@@ -225,9 +224,7 @@ type decision_lambda_input =
   }
 
 type config =
-  { unfrozen_token_metadata : token_metadata
-  ; frozen_token_metadata : token_metadata
-  ; proposal_check : propose_params * storage -> bool
+  { proposal_check : propose_params * storage -> bool
   ; rejected_proposal_return_value : proposal * storage -> nat
   ; decision_lambda : proposal * storage -> operation list * storage
 

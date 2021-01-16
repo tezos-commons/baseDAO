@@ -36,7 +36,6 @@ import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 import Michelson.Runtime.GState (genesisAddress)
 import Lorentz.Contracts.BaseDAO.Types hiding
   (Config(..), Parameter(..), Storage(..), defaultConfig)
-import qualified Lorentz.Contracts.BaseDAO.Types as BaseDAO
 
 import BaseDAO.ShareTest.Common (ProposalMetadataFromNum(..))
 
@@ -162,9 +161,7 @@ mkStorageL admin votingPeriod quorumThreshold extra metadata =
     quorumThresholdDef = 4
 
 data ConfigL = ConfigL
-  { cUnfrozenTokenMetadata :: FA2.TokenMetadata
-  , cFrozenTokenMetadata :: FA2.TokenMetadata
-  , cProposalCheck :: '[ProposeParamsL, StorageL] :-> '[Bool]
+  { cProposalCheck :: '[ProposeParamsL, StorageL] :-> '[Bool]
   , cRejectedProposalReturnValue :: '[ProposalL, StorageL] :-> '["slash_amount" :! Natural]
   , cDecisionLambda :: '[ProposalL, StorageL] :-> '[List Operation, StorageL]
 
@@ -182,11 +179,7 @@ data ConfigL = ConfigL
 
 mkConfigL :: [(MText, ByteString)] -> ConfigL
 mkConfigL customEps = ConfigL
-  { cUnfrozenTokenMetadata =
-      BaseDAO.cUnfrozenTokenMetadata BaseDAO.defaultConfig
-  , cFrozenTokenMetadata =
-      BaseDAO.cFrozenTokenMetadata BaseDAO.defaultConfig
-  , cProposalCheck = do
+  { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
       dropN @2; push (0 :: Natural); toNamed #slash_amount
