@@ -103,6 +103,18 @@ library:
     - universum
     - cleveland
 
+executables:
+  baseDAO-ligo-meta:
+    main:                Main.hs
+    source-dirs:         app
+    dependencies:
+    - aeson-pretty
+    - baseDAO
+    - baseDAO-ligo-meta
+    - morley
+    - optparse-applicative
+    - universum
+
 tests:
   baseDAO-test:
     main:        Main.hs

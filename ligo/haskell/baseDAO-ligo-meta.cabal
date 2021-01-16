@@ -52,6 +52,24 @@ library
     , universum
   default-language: Haskell2010
 
+executable baseDAO-ligo-meta
+  main-is: Main.hs
+  other-modules:
+      Paths_baseDAO_ligo_meta
+  hs-source-dirs:
+      app
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude
+  build-depends:
+      aeson-pretty
+    , base >=4.7 && <5
+    , baseDAO
+    , baseDAO-ligo-meta
+    , morley
+    , optparse-applicative
+    , universum
+  default-language: Haskell2010
+
 test-suite baseDAO-test
   type: exitcode-stdio-1.0
   main-is: Main.hs

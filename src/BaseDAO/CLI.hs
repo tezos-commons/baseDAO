@@ -13,6 +13,9 @@ module BaseDAO.CLI
   , serveContractRegistry
   , contractRegistryProgramInfo
   , contractRegistryUsageDoc
+
+    -- * Helpers
+  , mkCommandParser
   ) where
 
 import Universum

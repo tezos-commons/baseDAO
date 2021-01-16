@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 exe="baseDAO"
+ligo_exe="baseDAO-ligo-meta"
 # We expect all these contracts to be present.
 contracts="GameDAO MetadataCarrier RegistryDAO TreasuryDAO TrivialDAO"
 
@@ -45,6 +46,10 @@ contracts="GameDAO MetadataCarrier RegistryDAO TreasuryDAO TrivialDAO"
 
 @test "Print metadata" {
   "$exe" print-metadata > metadata.json
+}
+
+@test "Print LIGO metadata" {
+  "$ligo_exe" print-metadata > metadata.json
 }
 
 @test "Typecheck Lorentz contracts" {

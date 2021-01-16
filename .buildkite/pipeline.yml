@@ -59,6 +59,7 @@ steps:
           tezos-client
           pkgs.bats
           packages.baseDAO.exes.baseDAO
+          packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
         -c bats ./scripts/test.bats
 
   - label: test
