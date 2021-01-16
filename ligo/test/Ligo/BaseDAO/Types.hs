@@ -23,11 +23,14 @@ module Ligo.BaseDAO.Types
   , mkConfigL
   , defaultConfigL
   , mkFullStorageL
+
+  , sOperatorsLens
   ) where
 
 import Lorentz
 import Universum (One(..), fromIntegral, (*))
 
+import Control.Lens (makeLensesFor)
 import qualified Data.Map as M
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
@@ -123,6 +126,16 @@ data StorageL = StorageL
   , sVotingPeriod :: VotingPeriod
   }
   deriving stock (Show)
+
+instance HasFieldOfType StorageL name field =>
+         StoreHasField StorageL name field where
+  storeFieldOps = storeFieldOpsADT
+
+instance StoreHasSubmap StorageL "sLedger" LedgerKey LedgerValue where
+  storeSubmapOps = storeSubmapOpsDeeper #sLedger
+
+instance StoreHasSubmap StorageL "sOperators" ("owner" :! Address, "operator" :! Address) () where
+  storeSubmapOps = storeSubmapOpsDeeper #sOperators
 
 mkStorageL
   :: "admin" :! Address
@@ -249,3 +262,10 @@ deriving anyclass instance IsoValue FullStorage
 instance ProposalMetadataFromNum ProposalMetadataL where
   proposalMetadataFromNum n =
     one ([mt|int|], lPackValueRaw @Integer $ fromIntegral n)
+
+-- Lenses
+------------------------------------------------
+
+makeLensesFor
+  [ ("sOperators", "sOperatorsLens")
+  ] ''StorageL

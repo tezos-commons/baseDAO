@@ -155,7 +155,8 @@ serveContractRegistry execName gitRev contracts version =
       ContractRegistryCmd cmdLnArgs ->
         runContractRegistry contracts cmdLnArgs
       PrintMetadata ->
-        putTextLn . decodeUtf8 $ encodePretty DAO.knownBaseDAOMetadata
+        putTextLn . decodeUtf8 . encodePretty $
+          DAO.knownBaseDAOMetadata DAO.defaultMetadataConfig
 
 contractRegistryProgramInfo
   :: Version

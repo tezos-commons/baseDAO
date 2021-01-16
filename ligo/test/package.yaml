@@ -97,6 +97,7 @@ tests:
     - containers
     - fmt
     - HUnit
+    - lens
     - lorentz
     - named
     - morley

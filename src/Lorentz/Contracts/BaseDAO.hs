@@ -15,6 +15,8 @@ module Lorentz.Contracts.BaseDAO
   , baseDaoContract
   , mkStorage
 
+  , MetadataConfig (..)
+  , defaultMetadataConfig
   , knownBaseDAOMetadata
   ) where
 

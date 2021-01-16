@@ -6,6 +6,7 @@ module Lorentz.Contracts.BaseDAO.Types
   ( Config(..)
   , defaultConfig
 
+  , Operator
   , Operators
   , Ledger
   , LedgerKey
@@ -37,6 +38,8 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , mkStorage
 
+  , sOperatorsL
+
   , CachedFunc (..)
   , mkCachedFunc
   , pushCachedFunc
@@ -65,6 +68,7 @@ module Lorentz.Contracts.BaseDAO.Types
 
 import Universum (Each, Num(..))
 
+import Control.Lens (makeLensesFor)
 import qualified Data.Kind as Kind
 
 import Lorentz
@@ -277,7 +281,7 @@ instance (IsoValue ce, KnownValue pm) =>
 type StorageC store ce pm =
   ( StorageContains store
     [ "sLedger" := LedgerKey ~> LedgerValue
-    , "sOperators" := ("owner" :! Address, "operator" :! Address) ~> ()
+    , "sOperators" := Operator ~> ()
     , "sTokenAddress" := Address
     , "sAdmin" := Address
     , "sPendingOwner" := Address
@@ -924,3 +928,10 @@ instance ( HasAnnotation pm, NiceParameter pm
 deriving anyclass instance
   (WellTypedIsoValue pm, WellTypedIsoValue op) =>
   IsoValue (Parameter pm op)
+
+-- Lenses
+------------------------------------------------
+
+makeLensesFor
+  [ ("sOperators", "sOperatorsL")
+  ] ''Storage

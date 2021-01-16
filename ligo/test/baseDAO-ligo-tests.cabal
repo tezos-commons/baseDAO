@@ -27,9 +27,11 @@ test-suite baseDAO-test
       Ligo.BaseDAO.ConfigDesc
       Ligo.BaseDAO.Contract
       Ligo.BaseDAO.Types
+      Ligo.BaseDAO.TZIP16Metadata
       Ligo.Util
       Test.Ligo.BaseDAO.Common
       Test.Ligo.BaseDAO.Management
+      Test.Ligo.BaseDAO.OffChainViews
       Test.Ligo.BaseDAO.Proposal
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Token.FA2
@@ -48,6 +50,7 @@ test-suite baseDAO-test
     , cleveland
     , containers
     , fmt
+    , lens
     , lorentz
     , morley
     , morley-ledgers
