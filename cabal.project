@@ -27,13 +27,13 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley-ledgers.git
-    tag: 817ef36927679743409dc7260f1d3a63ed7d8ad5
+    tag: 932981ecd04bc09f6a3201d128a5a16c426c31be
     subdir: code/morley-ledgers
 
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley-metadata.git
-    tag: 0c7005373dcdf79118def10637ff95c8c9820b10
+    tag: ef98a1dd4e3e6d9c4243565ad011028ead4ea748
     subdir: code/morley-metadata
 
 allow-older: *

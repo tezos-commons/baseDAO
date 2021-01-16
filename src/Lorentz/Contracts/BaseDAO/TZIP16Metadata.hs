@@ -12,8 +12,11 @@ module Lorentz.Contracts.BaseDAO.TZIP16Metadata
   , tokenMetadataView
   ) where
 
+import qualified Universum as U
+
 import qualified Data.Map as Map
 import Data.Version (showVersion)
+import Fmt (pretty)
 
 import Lorentz hiding (View)
 import Lorentz.Contracts.Spec.TZIP16Interface
@@ -44,6 +47,13 @@ knownBaseDAOMetadata = mconcat
 -- Off-chain views
 ------------------------------------------------------------------------
 
+-- | A version of 'compileViewCode' that is simpler to use.
+--
+-- We cannot use 'compileViewCodeTH' easily because this way passing config
+-- won't work.
+compileViewCode_ :: ViewCode st ret -> CompiledViewCode st ret
+compileViewCode_ = U.either (U.error . pretty) U.id . compileViewCode
+
 type DaoView = View (ToT MetadataStorage)
 
 baseDAOViews :: [View $ ToT MetadataStorage]
@@ -70,7 +80,7 @@ getBalanceView = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @MetadataStorage @Natural Nothing [] $
-            WithParam @FA2.BalanceRequestItem $ do
+            compileViewCode_ $ WithParam @FA2.BalanceRequestItem $ do
               getField #briOwner; dip (toField #briTokenId); pair
               stGet #sLedger
               fromOption 0
@@ -86,7 +96,7 @@ allTokensView = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @MetadataStorage @[FA2.TokenId] Nothing [] $
-            WithoutParam $ do
+            compileViewCode_ $ WithoutParam $ do
               drop @MetadataStorage
               push allTokenIds
       ]
@@ -102,7 +112,7 @@ isOperatorView = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @MetadataStorage @Bool Nothing [] $
-            WithParam @FA2.OperatorParam $ do
+            compileViewCode_ $ WithParam @FA2.OperatorParam $ do
               convertOperatorParam
               pair
               stMem #sOperators
@@ -121,7 +131,7 @@ tokenMetadataView = View
            @MetadataStorage
            @(FA2.TokenId, FA2.TokenMetadata)
            Nothing [] $
-            WithParam @FA2.TokenId $ do
+            compileViewCode_ $ WithParam @FA2.TokenId $ do
               dip $ do
                 drop @MetadataStorage
                 push $ Map.fromList
@@ -153,7 +163,8 @@ permitsCounterView = View
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
-          mkSimpleMichelsonStorageView @MetadataStorage . WithoutParam $
-            stToField #sPermitsCounter
+          mkSimpleMichelsonStorageView @MetadataStorage $
+            compileViewCode_ $ WithoutParam $
+              stToField #sPermitsCounter
       ]
   }

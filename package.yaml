@@ -90,6 +90,7 @@ library:
   dependencies:
     - aeson-pretty
     - containers
+    - fmt
     - named
     - morley
     - morley-ledgers

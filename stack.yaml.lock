@@ -144,13 +144,13 @@ packages:
     version: '0'
     git: https://gitlab.com/morley-framework/morley-metadata.git
     pantry-tree:
-      size: 1059
-      sha256: a866de1b0d9b6a8c83f46725ae988da3f3aeb19f04a5c69bc1eb2e17d91c018a
-    commit: 0c7005373dcdf79118def10637ff95c8c9820b10
+      size: 1216
+      sha256: 77241b0c9ce2a8e60d81d89bc9168bb037a0ff165d66eae5ecd1d8b0d5f73e95
+    commit: ef98a1dd4e3e6d9c4243565ad011028ead4ea748
   original:
     subdir: code/morley-metadata
     git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 0c7005373dcdf79118def10637ff95c8c9820b10
+    commit: ef98a1dd4e3e6d9c4243565ad011028ead4ea748
 snapshots:
 - completed:
     size: 531707

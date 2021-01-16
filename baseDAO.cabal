@@ -62,6 +62,7 @@ library
     , base >=4.7 && <5
     , cleveland
     , containers
+    , fmt
     , lorentz
     , morley
     , morley-ledgers
