@@ -15,6 +15,7 @@ import Tezos.Address
 import BaseDAO.ShareTest.OffChainViews
 import qualified Ligo.BaseDAO.Types as DAO
 import qualified Ligo.BaseDAO.TZIP16Metadata as DAO
+import qualified Lorentz.Contracts.BaseDAO.TZIP16Metadata as DAO
 
 defaultStorage :: DAO.StorageL
 defaultStorage =
@@ -25,4 +26,5 @@ defaultStorage =
   ! defaults
 
 test_FA2 :: TestTree
-test_FA2 = mkFA2Tests defaultStorage DAO.defaultMetadataConfigL
+test_FA2 =
+  mkFA2Tests defaultStorage (DAO.mkMetadataSettingsL DAO.defaultMetadataConfig)

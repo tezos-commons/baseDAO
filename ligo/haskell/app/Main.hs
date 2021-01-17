@@ -20,12 +20,13 @@ import Ligo.BaseDAO.TZIP16Metadata
 import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 
 data CmdArgs
-  = PrintMetadata
+  = PrintMetadata MetadataConfig
 
 cmdArgsParser :: Opt.Parser CmdArgs
 cmdArgsParser = asum
   [ Opt.hsubparser $
-      mkCommandParser "print-metadata" (pure PrintMetadata)
+      mkCommandParser "print-metadata"
+        (PrintMetadata <$> metadataConfigParser)
         "Print known part of TZIP-16 metadata."
   ]
 
@@ -43,6 +44,6 @@ main :: IO ()
 main = wrapMain $ do
   cmdLnArgs <- Opt.execParser programInfo
   case cmdLnArgs of
-    PrintMetadata ->
+    PrintMetadata mc ->
       putTextLn . decodeUtf8 . encodePretty $
-        knownBaseDAOMetadata defaultMetadataConfigL
+        knownBaseDAOMetadata (mkMetadataSettingsL mc)

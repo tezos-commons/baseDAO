@@ -25,4 +25,5 @@ defaultStorage =
   ! defaults
 
 test_FA2 :: TestTree
-test_FA2 = mkFA2Tests defaultStorage DAO.defaultMetadataConfig
+test_FA2 =
+  mkFA2Tests defaultStorage (DAO.mkMetadataSettings DAO.defaultMetadataConfig)

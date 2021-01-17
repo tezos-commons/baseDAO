@@ -45,11 +45,11 @@ contracts="GameDAO MetadataCarrier RegistryDAO TreasuryDAO TrivialDAO"
 }
 
 @test "Print metadata" {
-  "$exe" print-metadata > metadata.json
+  "$exe" print-metadata --frozen-token-symbol=POG > metadata.json
 }
 
 @test "Print LIGO metadata" {
-  "$ligo_exe" print-metadata > metadata.json
+  "$ligo_exe" print-metadata --frozen-token-symbol=POG > metadata.json
 }
 
 @test "Typecheck Lorentz contracts" {

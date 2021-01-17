@@ -44,7 +44,7 @@ addr2 = unsafeParseAddress "tz1R2kv7Uzr8mgeJYEgi7KGQiHFbCg3WN6YC"
 
 mkFA2Tests
   :: (IsoValue store)
-  => store -> DAO.MetadataConfig store -> TestTree
+  => store -> DAO.MetadataSettings store -> TestTree
 mkFA2Tests defaultStorage mc = testGroup "FA2 off-chain views"
   [ testGroup "is_operator" $
     let checkOperator st param =

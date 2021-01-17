@@ -3,21 +3,15 @@
 
 -- | TZIP-16 metadata.
 module Ligo.BaseDAO.TZIP16Metadata
-  ( defaultMetadataConfigL
+  ( mkMetadataSettingsL
   ) where
 
 import Ligo.BaseDAO.Types
 import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 
--- | Default values for config.
--- Should we in fact fill it from CLI?
-defaultMetadataConfigL :: MetadataConfig StorageL
-defaultMetadataConfigL =
-  case defaultMetadataConfig of
-    MetadataConfig{..} ->
-      MetadataConfig
-      { mcFrozenTokenMetadata = mcFrozenTokenMetadata
-      , mcUnfrozenTokenMetadata = mcUnfrozenTokenMetadata
-
-      , mcOperatorsL = sOperatorsLens
-      }
+-- | Construct settings for LIGO version of the contract.
+mkMetadataSettingsL :: MetadataConfig -> MetadataSettings StorageL
+mkMetadataSettingsL msConfig = MetadataSettings
+  { msConfig
+  , mcOperatorsL = sOperatorsLens
+  }

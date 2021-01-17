@@ -4,7 +4,9 @@
 -- | TZIP-16 metadata.
 module Lorentz.Contracts.BaseDAO.TZIP16Metadata
   ( MetadataConfig (..)
+  , MetadataSettings (..)
   , defaultMetadataConfig
+  , mkMetadataSettings
   , knownBaseDAOMetadata
 
     -- * Views
@@ -30,49 +32,58 @@ import Lorentz.Contracts.BaseDAO.Token.FA2 (convertOperatorParam)
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Paths_baseDAO as Paths
 
+-- | Piece of metadata defined by user.
+data MetadataConfig = MetadataConfig
+  { mcFrozenTokenMetadata :: FA2.TokenMetadata
+  , mcUnfrozenTokenMetadata :: FA2.TokenMetadata
+  }
+
 -- | All the information for instantiating metadata.
 --
 -- This includes pieces defined by user (if any) like some constants for
 -- off-chain views, as well as abstract storage accessors suitable for
 -- Lorentz/LIGO versions of the contract.
-data MetadataConfig store =
+data MetadataSettings store =
   StorageContains store
     [ "sLedger" := LedgerKey ~> LedgerValue
     , "sOperators" := Operator ~> ()
     , "sPermitsCounter" := Nonce
     ]
   =>
-  MetadataConfig
-  { mcFrozenTokenMetadata :: FA2.TokenMetadata
-  , mcUnfrozenTokenMetadata :: FA2.TokenMetadata
+  MetadataSettings
+  { msConfig :: MetadataConfig
 
     -- Haskell-world accessors
   , mcOperatorsL :: U.Lens' store Operators
   }
 
 -- | Default values for config.
--- Should we in fact fill it from CLI?
-defaultMetadataConfig :: MetadataConfig (Storage () ())
+defaultMetadataConfig :: MetadataConfig
 defaultMetadataConfig =
   MetadataConfig
     { mcFrozenTokenMetadata =
         FA2.mkTokenMetadata "frozen_token" "Frozen Token" "8"
     , mcUnfrozenTokenMetadata =
         FA2.mkTokenMetadata "unfrozen_token" "Unfrozen Token" "8"
-
-    , mcOperatorsL = sOperatorsL
     }
+
+-- | Construct settings for Lorentz version of the contract.
+mkMetadataSettings :: MetadataConfig -> MetadataSettings (Storage () ())
+mkMetadataSettings msConfig = MetadataSettings
+  { msConfig
+  , mcOperatorsL = sOperatorsL
+  }
 
 -- | Parts of metadata that can be filled just knowing the contract,
 -- without user's input.
-knownBaseDAOMetadata :: MetadataConfig store -> Metadata (ToT store)
-knownBaseDAOMetadata config = mconcat
+knownBaseDAOMetadata :: MetadataSettings store -> Metadata (ToT store)
+knownBaseDAOMetadata settings = mconcat
   [ version . fromString $ showVersion Paths.version
   , license $ License "MIT" Nothing
   , authors [Author "Serokell", Author "Tocqueville Group"]
   , homepage "https://github.com/tqtezos/baseDAO"
   , interfaces [tzip 12, tzip 17]
-  , views (baseDAOViews config)
+  , views (baseDAOViews settings)
   ]
 
 ------------------------------------------------------------------------
@@ -86,7 +97,7 @@ knownBaseDAOMetadata config = mconcat
 compileViewCode_ :: ViewCode st ret -> CompiledViewCode st ret
 compileViewCode_ = U.either (U.error . pretty) U.id . compileViewCode
 
-baseDAOViews :: MetadataConfig store -> [View $ ToT store]
+baseDAOViews :: MetadataSettings store -> [View $ ToT store]
 baseDAOViews = U.sequence
   [ getBalanceView
   , allTokensView
@@ -98,13 +109,13 @@ baseDAOViews = U.sequence
   , permitsCounterView
   ]
 
-type DaoView store = MetadataConfig store -> View (ToT store)
+type DaoView store = MetadataSettings store -> View (ToT store)
 
 -- FA2
 ------------------------------------------------------------------------
 
 getBalanceView :: forall store. DaoView store
-getBalanceView MetadataConfig{} = View
+getBalanceView MetadataSettings{} = View
   { vName = "get_balance"
   , vDescription = Just
       "Get balance of an address according to TZIP-12."
@@ -135,7 +146,7 @@ allTokensView _ = View
   }
 
 isOperatorView :: forall store. DaoView store
-isOperatorView MetadataConfig{} = View
+isOperatorView MetadataSettings{} = View
   { vName = "is_operator"
   , vDescription = Just
       "Checks whether given address is allowed to transfer given tokens \
@@ -152,7 +163,7 @@ isOperatorView MetadataConfig{} = View
   }
 
 tokenMetadataView :: forall store. DaoView store
-tokenMetadataView MetadataConfig{..} = View
+tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
   { vName = "token_metadata"
   , vDescription = Just
       "Returns metadata for given token according to TZIP-12."
@@ -182,7 +193,7 @@ tokenMetadataView MetadataConfig{..} = View
 ------------------------------------------------------------------------
 
 permitsCounterView :: forall store. DaoView store
-permitsCounterView MetadataConfig{} = View
+permitsCounterView MetadataSettings{} = View
   { vName = "GetCounter"
   , vDescription = Just
       "Returns the next counter value with which a permit should be created."
