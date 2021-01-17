@@ -65,10 +65,6 @@ data Config contractExtra proposalMetadata = Config
   -- ^ Name of the DAO.
   , daoDescription :: Text
   -- ^ Description of the DAO.
-  , unfrozenTokenMetadata :: FA2.TokenMetadata
-  -- ^ FA2 metadata for unfrozen token.
-  , frozenTokenMetadata :: FA2.TokenMetadata
-  -- ^ FA2 metadata for frozen token.
   , proposalCheck :: Lambda
       (ProposeParams proposalMetadata, Storage contractExtra proposalMetadata) Bool
   -- ^ A lambda used to verify whether a proposal can be submitted.

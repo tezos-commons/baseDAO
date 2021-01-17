@@ -107,8 +107,6 @@ instance HasAnnotation FA2.Parameter
 data Config contractExtra proposalMetadata otherParam = Config
   { cDaoName :: Text
   , cDaoDescription :: Markdown
-  , cUnfrozenTokenMetadata :: FA2.TokenMetadata
-  , cFrozenTokenMetadata :: FA2.TokenMetadata
 
   , cProposalCheck :: forall s store.
         StorageC store contractExtra proposalMetadata
@@ -156,10 +154,6 @@ defaultConfig = Config
   { cDaoName = "BaseDAO"
   , cDaoDescription = [md|An example of a very simple DAO contract without any custom checks,
                           extra data and decision lambda.|]
-  , cUnfrozenTokenMetadata =
-      FA2.mkTokenMetadata "unfrozen_token" "Unfrozen Token" "8"
-  , cFrozenTokenMetadata =
-      FA2.mkTokenMetadata "frozen_token" "Frozen Token" "8"
   , cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do

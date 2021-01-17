@@ -54,10 +54,11 @@ data MetadataConfig store =
 -- Should we in fact fill it from CLI?
 defaultMetadataConfig :: MetadataConfig (Storage () ())
 defaultMetadataConfig =
-  let Config{..} = defaultConfig
-  in MetadataConfig
-    { mcFrozenTokenMetadata = cFrozenTokenMetadata
-    , mcUnfrozenTokenMetadata = cUnfrozenTokenMetadata
+  MetadataConfig
+    { mcFrozenTokenMetadata =
+        FA2.mkTokenMetadata "frozen_token" "Frozen Token" "8"
+    , mcUnfrozenTokenMetadata =
+        FA2.mkTokenMetadata "unfrozen_token" "Unfrozen Token" "8"
 
     , mcOperatorsL = sOperatorsL
     }

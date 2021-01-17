@@ -78,6 +78,6 @@ mkFA2Tests defaultStorage mc = testGroup "FA2 off-chain views"
     [ testCase "Get frozen tokens metadata" $
         runView @(FA2.TokenId, FA2.TokenMetadata)
           (DAO.tokenMetadataView mc) defaultStorage (ViewParam DAO.frozenTokenId)
-        @?= Right (DAO.frozenTokenId, DAO.cFrozenTokenMetadata DAO.defaultConfig)
+        @?= Right (DAO.frozenTokenId, DAO.mcFrozenTokenMetadata DAO.defaultMetadataConfig)
     ]
   ]
