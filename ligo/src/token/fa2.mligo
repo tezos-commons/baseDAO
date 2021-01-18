@@ -108,15 +108,6 @@ let balance_of (params, store : balance_request_params * storage): return =
   in (([transfer_operation] : operation list), store)
 
 // -----------------------------------------------------------------
-// Token metadata registry entrypoint
-// -----------------------------------------------------------------
-
-let token_metadata_registry (params, store : token_metadata_registry_param * storage):return =
-  let transfer_operation = Tezos.transaction store.token_address 0mutez params
-  in (([transfer_operation] : operation list), store)
-
-
-// -----------------------------------------------------------------
 // Update operators entrypoint
 // -----------------------------------------------------------------
 [@inline]

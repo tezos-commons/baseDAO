@@ -11,6 +11,7 @@ module Test.Ligo.BaseDAO.Management
 import Universum
 
 import Test.Tasty (TestTree, testGroup)
+import Named (defaults, (!))
 
 import Lorentz as L
 import Michelson.Typed (convertContract)
@@ -237,8 +238,14 @@ test_BaseDAO_Management =
         ((L.dip (L.getField #fsStorage)) # setField #sAdmin # setField #fsStorage) #
       L.nil # pair
 
-    initialStorage admin =
-      mkStorageL admin 0 0 dynRecUnsafe mempty [([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)]
+    initialStorage admin = mkFullStorageL
+      ! #admin admin
+      ! #extra dynRecUnsafe
+      ! #metadata mempty
+      ! #customEps
+          [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)
+          ]
+      ! defaults
 
 expectNotAdmin
   :: (MonadNettest caps base m)

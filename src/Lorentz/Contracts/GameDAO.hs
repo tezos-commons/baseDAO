@@ -248,8 +248,6 @@ config :: DAO.Config GameDaoContractExtra GameDaoProposalMetadata GameDaoExtraIn
 config = DAO.Config
   { DAO.cDaoName = "Game DAO"
   , DAO.cDaoDescription = [md|A simple DAO for a Moba-like game.|]
-  , DAO.cUnfrozenTokenMetadata = DAO.cUnfrozenTokenMetadata DAO.defaultConfig
-  , DAO.cFrozenTokenMetadata = DAO.cFrozenTokenMetadata DAO.defaultConfig
 
   , DAO.cProposalCheck = gameDaoProposalCheck
   , DAO.cRejectedProposalReturnValue = gameDaoRejectedProposalReturnValue

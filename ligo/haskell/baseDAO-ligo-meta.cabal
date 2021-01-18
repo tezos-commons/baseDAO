@@ -4,9 +4,9 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:           baseDAO
+name:           baseDAO-ligo-meta
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/tqtezos/baseDAO#readme>
+description:    Tools and tests for LIGO version of the contract.
 author:         Serokell, Tocqueville Group
 maintainer:     Serokell, Tocqueville Group
 copyright:      2020 TQ Tezos
@@ -22,46 +22,22 @@ source-repository head
 
 library
   exposed-modules:
-      BaseDAO.CLI
-      BaseDAO.ShareTest.Common
-      BaseDAO.ShareTest.FA2
-      BaseDAO.ShareTest.OffChainViews
-      BaseDAO.ShareTest.Proposal
-      BaseDAO.ShareTest.Proposal.Bounds
-      BaseDAO.ShareTest.Proposal.Config
-      BaseDAO.ShareTest.Proposal.Flush
-      BaseDAO.ShareTest.Proposal.Proposal
-      BaseDAO.ShareTest.Proposal.Vote
-      BaseDAO.ShareTest.Token
-      Lorentz.Contracts.BaseDAO
-      Lorentz.Contracts.BaseDAO.Doc
-      Lorentz.Contracts.BaseDAO.Management
-      Lorentz.Contracts.BaseDAO.Permit
-      Lorentz.Contracts.BaseDAO.Proposal
-      Lorentz.Contracts.BaseDAO.Token
-      Lorentz.Contracts.BaseDAO.Token.FA2
-      Lorentz.Contracts.BaseDAO.Types
-      Lorentz.Contracts.BaseDAO.TZIP16Metadata
-      Lorentz.Contracts.GameDAO
-      Lorentz.Contracts.RegistryDAO
-      Lorentz.Contracts.RegistryDAO.Doc
-      Lorentz.Contracts.RegistryDAO.Types
-      Lorentz.Contracts.TreasuryDAO
-      Lorentz.Contracts.TreasuryDAO.Doc
-      Lorentz.Contracts.TreasuryDAO.Types
-      Lorentz.Contracts.TrivialDAO
+      Ligo.BaseDAO.ConfigDesc
+      Ligo.BaseDAO.Types
+      Ligo.BaseDAO.TZIP16Metadata
+      Ligo.Util
   other-modules:
-      Paths_baseDAO
+      Paths_baseDAO_ligo_meta
   autogen-modules:
-      Paths_baseDAO
+      Paths_baseDAO_ligo_meta
   hs-source-dirs:
       src
   default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns RebindableSyntax
   ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-unused-do-bind
   build-depends:
       HUnit
-    , aeson-pretty
     , base >=4.7 && <5
+    , baseDAO
     , cleveland
     , containers
     , fmt
@@ -71,25 +47,26 @@ library
     , morley-ledgers
     , morley-metadata
     , named
-    , optparse-applicative
     , tasty
-    , tasty-hunit-compat
+    , template-haskell
     , universum
   default-language: Haskell2010
 
-executable baseDAO
+executable baseDAO-ligo-meta
   main-is: Main.hs
   other-modules:
-      Paths_baseDAO
+      Paths_baseDAO_ligo_meta
   hs-source-dirs:
       app
   default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
   ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude
   build-depends:
-      base >=4.7 && <5
+      aeson-pretty
+    , base >=4.7 && <5
     , baseDAO
-    , lorentz
+    , baseDAO-ligo-meta
     , morley
+    , optparse-applicative
     , universum
   default-language: Haskell2010
 
@@ -97,20 +74,15 @@ test-suite baseDAO-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
-      Test.BaseDAO.Doc
-      Test.BaseDAO.Limits
-      Test.BaseDAO.Management
-      Test.BaseDAO.OffChainViews
-      Test.BaseDAO.Proposal
-      Test.BaseDAO.Token
-      Test.BaseDAO.Token.FA2
-      Test.Common
-      Test.GameDAO
-      Test.Integrational.Common
-      Test.Integrational.RegistryDAO
-      Test.RegistryDAO
-      Test.TreasuryDAO
-      Paths_baseDAO
+      Ligo.BaseDAO.Contract
+      Test.Ligo.BaseDAO.Common
+      Test.Ligo.BaseDAO.Management
+      Test.Ligo.BaseDAO.OffChainViews
+      Test.Ligo.BaseDAO.Proposal
+      Test.Ligo.BaseDAO.Token
+      Test.Ligo.BaseDAO.Token.FA2
+      Test.Ligo.BaseDAO.Types
+      Paths_baseDAO_ligo_meta
   hs-source-dirs:
       test
   default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns
@@ -121,16 +93,18 @@ test-suite baseDAO-test
       HUnit
     , base >=4.7 && <5
     , baseDAO
+    , baseDAO-ligo-meta
     , cleveland
     , containers
     , fmt
+    , lens
     , lorentz
     , morley
     , morley-ledgers
     , morley-metadata
     , named
-    , o-clock
     , tasty
     , tasty-hunit-compat
+    , template-haskell
     , universum
   default-language: Haskell2010

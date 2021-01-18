@@ -9,18 +9,17 @@ module Test.Ligo.BaseDAO.Common
 
 import Universum
 
+import Named (defaults, (!))
+
 import Lorentz
 import Morley.Nettest
 import Util.Named
-
-import Lorentz.Contracts.BaseDAO.Types
 
 import BaseDAO.ShareTest.Common
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Ligo.BaseDAO.ConfigDesc
 import Ligo.BaseDAO.Contract
-import Ligo.BaseDAO.Helper
 import Ligo.BaseDAO.Types
 import Michelson.Typed.Convert (convertContract, untypeValue)
 
@@ -46,7 +45,21 @@ originateLigoDaoWithBalance extra configDesc balFunc = do
         , (#owner .! owner2, #operator .! operator2)
         ]
 
-  let fullStorage = mkFullStorage config extra admin bal operators
+  let fullStorage = FullStorage
+        { fsStorage =
+            ( mkStorageL
+              ! #extra extra
+              ! #admin admin
+              ! #votingPeriod (cMinVotingPeriod config)
+              ! #quorumThreshold (cMinQuorumThreshold config)
+              ! #metadata mempty
+              ! defaults
+            )
+            { sLedger = bal
+            , sOperators = operators
+            }
+        , fsConfig = config
+        }
 
   let
     originateData = UntypedOriginateData

@@ -6,6 +6,6 @@ resolver: template/snapshot.yaml
 packages:
   - .
   - template
-  - ligo/test
+  - ligo/haskell
 
 # See extra-deps in template/snapshot.yaml

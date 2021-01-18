@@ -6,6 +6,7 @@ module Lorentz.Contracts.BaseDAO.Types
   ( Config(..)
   , defaultConfig
 
+  , Operator
   , Operators
   , Ledger
   , LedgerKey
@@ -37,6 +38,8 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , mkStorage
 
+  , sOperatorsL
+
   , CachedFunc (..)
   , mkCachedFunc
   , pushCachedFunc
@@ -57,6 +60,7 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , unfrozenTokenId
   , frozenTokenId
+  , allTokenIds
 
   , Counter
   , baseDaoAnnOptions
@@ -64,6 +68,7 @@ module Lorentz.Contracts.BaseDAO.Types
 
 import Universum (Each, Num(..))
 
+import Control.Lens (makeLensesFor)
 import qualified Data.Kind as Kind
 
 import Lorentz
@@ -80,6 +85,21 @@ import Util.Named
 import Util.Type
 import Util.TypeLits
 
+-- Orphans
+------------------------------------------------------------------------
+
+customGeneric "FA2.Parameter" ligoLayout
+
+deriving anyclass instance IsoValue FA2.Parameter
+
+instance ParameterHasEntrypoints FA2.Parameter where
+  type ParameterEntrypointsDerivation FA2.Parameter = EpdPlain
+
+instance TypeHasDoc FA2.Parameter where
+  typeDocMdDescription = "Describes the FA2 operations."
+
+instance HasAnnotation FA2.Parameter
+
 ------------------------------------------------------------------------
 -- Configuration
 ------------------------------------------------------------------------
@@ -87,8 +107,6 @@ import Util.TypeLits
 data Config contractExtra proposalMetadata otherParam = Config
   { cDaoName :: Text
   , cDaoDescription :: Markdown
-  , cUnfrozenTokenMetadata :: FA2.TokenMetadata
-  , cFrozenTokenMetadata :: FA2.TokenMetadata
 
   , cProposalCheck :: forall s store.
         StorageC store contractExtra proposalMetadata
@@ -136,20 +154,6 @@ defaultConfig = Config
   { cDaoName = "BaseDAO"
   , cDaoDescription = [md|An example of a very simple DAO contract without any custom checks,
                           extra data and decision lambda.|]
-  , cUnfrozenTokenMetadata = FA2.TokenMetadata
-      { FA2.tmTokenId = unfrozenTokenId
-      , FA2.tmSymbol = [mt|unfrozen_token|]
-      , FA2.tmName = [mt|Unfrozen Token|]
-      , FA2.tmDecimals = 8
-      , FA2.tmExtras = mempty
-      }
-  , cFrozenTokenMetadata = FA2.TokenMetadata
-      { FA2.tmTokenId = frozenTokenId
-      , FA2.tmSymbol = [mt|frozen_token|]
-      , FA2.tmName = [mt|Frozen Token|]
-      , FA2.tmDecimals = 8
-      , FA2.tmExtras = mempty
-      }
   , cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
@@ -271,7 +275,7 @@ instance (IsoValue ce, KnownValue pm) =>
 type StorageC store ce pm =
   ( StorageContains store
     [ "sLedger" := LedgerKey ~> LedgerValue
-    , "sOperators" := ("owner" :! Address, "operator" :! Address) ~> ()
+    , "sOperators" := Operator ~> ()
     , "sTokenAddress" := Address
     , "sAdmin" := Address
     , "sPendingOwner" := Address
@@ -725,6 +729,10 @@ unfrozenTokenId = FA2.TokenId 0
 frozenTokenId :: FA2.TokenId
 frozenTokenId = FA2.TokenId 1
 
+-- | All token types supported by DAOs.
+allTokenIds :: [FA2.TokenId]
+allTokenIds = [unfrozenTokenId, frozenTokenId]
+
 ------------------------------------------------------------------------
 -- Helper
 ------------------------------------------------------------------------
@@ -914,3 +922,10 @@ instance ( HasAnnotation pm, NiceParameter pm
 deriving anyclass instance
   (WellTypedIsoValue pm, WellTypedIsoValue op) =>
   IsoValue (Parameter pm op)
+
+-- Lenses
+------------------------------------------------
+
+makeLensesFor
+  [ ("sOperators", "sOperatorsL")
+  ] ''Storage

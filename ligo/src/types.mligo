@@ -9,14 +9,6 @@
 #define TYPES_H
 
 type token_id = nat
-type token_metadata =
-  [@layout:comb]
-  { token_id : token_id
-  ; symbol : string
-  ; name : string
-  ; decimals : nat
-  ; extras : (string, string) map
-  }
 
 type operator =
   [@layout:comb]
@@ -58,8 +50,6 @@ type balance_request_params =
   ; callback : balance_response_item list contract
   }
 
-type token_metadata_registry_param = address contract
-
 type operator_param =
   [@layout:comb]
   { owner : address
@@ -73,9 +63,9 @@ type update_operator =
 type update_operators_param = update_operator list
 
 type fa2_parameter =
+  [@layout:comb]
     Transfer of transfer_params
   | Balance_of of balance_request_params
-  | Token_metadata_registry of token_metadata_registry_param
   | Update_operators of update_operators_param
 
 // -- Helpers -- //
@@ -234,9 +224,7 @@ type decision_lambda_input =
   }
 
 type config =
-  { unfrozen_token_metadata : token_metadata
-  ; frozen_token_metadata : token_metadata
-  ; proposal_check : propose_params * storage -> bool
+  { proposal_check : propose_params * storage -> bool
   ; rejected_proposal_return_value : proposal * storage -> nat
   ; decision_lambda : proposal * storage -> operation list * storage
 

@@ -10,9 +10,14 @@ module BaseDAO.CLI
   , DaoContractInfo (..)
   , daoContractRegistry
 
+  , metadataConfigParser
+
   , serveContractRegistry
   , contractRegistryProgramInfo
   , contractRegistryUsageDoc
+
+    -- * Helpers
+  , mkCommandParser
   ) where
 
 import Universum
@@ -20,12 +25,14 @@ import Universum
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.Map as Map
 import Data.Version (Version, showVersion)
-import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
+import Fmt (pretty)
 import qualified Options.Applicative as Opt
 import Options.Applicative.Help.Pretty (Doc, linebreak)
 
 import Lorentz.ContractRegistry
 import Lorentz.Contracts.MetadataCarrier (metadataCarrierContract)
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 import Lorentz.Doc
 import Lorentz.Value
 import Morley.CLI (addressOption)
@@ -118,13 +125,40 @@ tzip16MetadataParser = do
       mkCLOptionParser Nothing (#name .! "metadata-key")
         (#help .! "Key in metadata host contract where baseDAO's metadata is located")
 
+-- | Parse metadata for token with given name and given default values.
+tokenMetadataParser
+  :: String
+  -> Text
+  -> Text
+  -> Word16
+  -> Opt.Parser FA2.TokenMetadata
+tokenMetadataParser prefix defSymbol defName defDecimals = do
+  symbol <-
+    mkCLOptionParser (Just defSymbol) (#name .! (prefix <> "-token-symbol"))
+    (#help .! "Symbol of the token (according to TZIP-12)")
+  name <-
+    mkCLOptionParser (Just defName) (#name .! (prefix <> "-token-name"))
+    (#help .! "Name of the token (according to TZIP-12)")
+  decimals <-
+    mkCLOptionParser (Just defDecimals) (#name .! (prefix <> "-token-decimals"))
+    (#help .! "Decimals field of the token (according to TZIP-12)")
+  return $ FA2.mkTokenMetadata name symbol (pretty decimals)
+
+metadataConfigParser :: Opt.Parser DAO.MetadataConfig
+metadataConfigParser = do
+  mcFrozenTokenMetadata <-
+    tokenMetadataParser "frozen" "frozen_token" "Frozen Token" 8
+  mcUnfrozenTokenMetadata <-
+    tokenMetadataParser "unfrozen" "unfrozen_token" "Unfrozen Token" 8
+  return DAO.MetadataConfig{..}
+
 ------------------------------------------------------------------------
 -- Contract registry
 ------------------------------------------------------------------------
 
 data AllCmdLnArgs
   = ContractRegistryCmd CmdLnArgs
-  | PrintMetadata
+  | PrintMetadata DAO.MetadataConfig
 
 allArgsParser :: DGitRevision -> ContractRegistry -> Opt.Parser AllCmdLnArgs
 allArgsParser gitRev registry = asum
@@ -132,7 +166,8 @@ allArgsParser gitRev registry = asum
       argParser registry gitRev
 
   , Opt.hsubparser $
-      mkCommandParser "print-metadata" (pure PrintMetadata)
+      mkCommandParser "print-metadata"
+        (PrintMetadata <$> metadataConfigParser)
         "Print known part of TZIP-16 metadata."
   ]
 
@@ -154,8 +189,9 @@ serveContractRegistry execName gitRev contracts version =
     case allCmdLnArgs of
       ContractRegistryCmd cmdLnArgs ->
         runContractRegistry contracts cmdLnArgs
-      PrintMetadata ->
-        putTextLn . decodeUtf8 $ encodePretty DAO.knownBaseDAOMetadata
+      PrintMetadata config ->
+        putTextLn . decodeUtf8 . encodePretty $
+          DAO.knownBaseDAOMetadata (DAO.mkMetadataSettings config)
 
 contractRegistryProgramInfo
   :: Version

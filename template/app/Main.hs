@@ -71,12 +71,6 @@ config = Config
       "Custom DAO"
   , cDaoDescription =
       "Your description here"
-  , cUnfrozenTokenMetadata =
-      -- Token metadata as described in FA2, change it if you need a custom
-      -- token semantics
-      cUnfrozenTokenMetadata defaultConfig
-  , cFrozenTokenMetadata =
-      cFrozenTokenMetadata defaultConfig
 
   , cProposalCheck = do
       -- storage is not needed

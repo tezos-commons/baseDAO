@@ -4,16 +4,17 @@
 module Lorentz.Contracts.BaseDAO.Token.FA2
    ( transfer
    , balanceOf
-   , tokenMetadataRegistry
    , updateOperators
    , defaultPermissionsDescriptor
    , debitFrom
    , creditTo
+
+     -- * Helpers
+   , convertOperatorParam
    ) where
 
 import Lorentz
-import Lorentz.Contracts.BaseDAO.Doc
-  (balanceOfDoc, tokenMetadataRegistryDoc, transferDoc, updateOperatorsDoc)
+import Lorentz.Contracts.BaseDAO.Doc (balanceOfDoc, transferDoc, updateOperatorsDoc)
 import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface
@@ -278,20 +279,6 @@ balanceOf = do
       constructStack @BalanceResponseItem @[BalanceRequestItem, Natural]
       cons
 
-tokenMetadataRegistry
-  :: (IsoValue ce, KnownValue pm)
-  => Entrypoint' TokenMetadataRegistryParam (Storage ce pm) s
-tokenMetadataRegistry = do
-  doc $ DDescription tokenMetadataRegistryDoc
-  dip ensureNotMigrated
-  swap
-  getField #sTokenAddress
-  dig @2
-  swap
-  push @Mutez (toMutez 0)
-  swap
-  transferTokens # nil # swap # cons # pair
-
 updateOperators
   :: (IsoValue ce, KnownValue pm)
   => Entrypoint' UpdateOperatorsParam (Storage ce pm) s
@@ -310,13 +297,7 @@ addOperator
      (IsoValue ce, KnownValue pm)
   => (OperatorParam : Storage ce pm : s) :-> (Storage ce pm : s)
 addOperator = do
-  getField #opTokenId
-  dip do
-    getField #opOperator; toNamed #operator
-    dip $ do toField #opOwner; toNamed #owner
-  stackType @(TokenId : "operator" :! Address : "owner" :! Address : Storage ce pm : s)
-  validateOperatorToken
-  swap
+  convertOperatorParam
   dup; fromNamed #owner
   Lorentz.sender
   if IsEq
@@ -349,13 +330,7 @@ removeOperator
      (IsoValue ce, KnownValue pm)
   => (OperatorParam : Storage ce pm : s) :-> (Storage ce pm : s)
 removeOperator = do
-  getField #opTokenId
-  dip do
-    getField #opOperator; toNamed #operator
-    dip $ do toField #opOwner; toNamed #owner
-  stackType @(TokenId : "operator" :! Address : "owner" :! Address : Storage ce pm : s)
-  validateOperatorToken
-  swap
+  convertOperatorParam
   dup; fromNamed #owner
   Lorentz.sender
   if IsEq
@@ -382,6 +357,17 @@ removeOperator = do
 
     ifKeyDoesntExist :: ("owner" :! Address, "operator" :! Address) : Operators : Storage ce pm : s :-> Storage ce pm : s
     ifKeyDoesntExist = dropN @2
+
+convertOperatorParam
+  :: OperatorParam : s
+  :-> ("owner" :! Address) : ("operator" :! Address) : s
+convertOperatorParam = do
+  getField #opTokenId
+  dip do
+    getField #opOperator; toNamed #operator
+    dip $ do toField #opOwner; toNamed #owner
+  validateOperatorToken
+  swap
 
 validateOperatorToken :: TokenId : f :-> f
 validateOperatorToken = do

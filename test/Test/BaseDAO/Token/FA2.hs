@@ -69,7 +69,5 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
           $ uncapsNettest $ Share.updatingOperatorAfterMigrationScenario originateTrivialDao
       , nettestScenario "balanceOf request respects migration status"
           $ uncapsNettest $ Share.balanceOfRequestAfterMigrationScenario originateTrivialDao
-      , nettestScenario "tokenMetadataRegistry request respects migration status"
-          $ uncapsNettest $ Share.tokenMetadataRegistryRequestAfterMigrationScenario originateTrivialDao
       ]
   ]

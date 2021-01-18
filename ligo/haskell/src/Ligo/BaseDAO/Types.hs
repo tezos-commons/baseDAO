@@ -17,20 +17,25 @@ module Ligo.BaseDAO.Types
   , DynamicRec (..)
   , dynRecUnsafe
   , mkStorageL
+  , mkConfigL
+  , defaultConfigL
+  , mkFullStorageL
+
+  , sOperatorsLens
   ) where
 
 import Lorentz
-import Universum (One(..), fromIntegral)
+import Universum (One(..), fromIntegral, (*))
 
-import qualified Data.Map as Map
+import Control.Lens (makeLensesFor)
+import qualified Data.Map as M
+
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
-import Util.Named
 
 import Michelson.Runtime.GState (genesisAddress)
 import Lorentz.Contracts.BaseDAO.Types hiding
   (Config(..), Parameter(..), Storage(..), defaultConfig)
-import qualified Lorentz.Contracts.BaseDAO.Types as BaseDAO
 
 import BaseDAO.ShareTest.Common (ProposalMetadataFromNum(..))
 
@@ -105,7 +110,7 @@ data StorageL = StorageL
   { sAdmin :: Address
   , sExtra :: ContractExtraL
   , sLedger :: Ledger
-  , sMetadata :: "metadata" :! TZIP16.MetadataMap BigMap
+  , sMetadata :: TZIP16.MetadataMap BigMap
   , sMigrationStatus :: MigrationStatus
   , sOperators :: Operators
   , sPendingOwner :: Address
@@ -118,51 +123,45 @@ data StorageL = StorageL
   }
   deriving stock (Show)
 
+instance HasFieldOfType StorageL name field =>
+         StoreHasField StorageL name field where
+  storeFieldOps = storeFieldOpsADT
+
+instance StoreHasSubmap StorageL "sLedger" LedgerKey LedgerValue where
+  storeSubmapOps = storeSubmapOpsDeeper #sLedger
+
+instance StoreHasSubmap StorageL "sOperators" ("owner" :! Address, "operator" :! Address) () where
+  storeSubmapOps = storeSubmapOpsDeeper #sOperators
+
 mkStorageL
-  :: Address
-  -> Natural
-  -> Natural
-  -> ContractExtraL
-  -> TZIP16.MetadataMap BigMap
-  -> [(MText, ByteString)]
-  -> FullStorage
-mkStorageL admin votingPeriod quorumThreshold extra metadata customEps = let
-  storage = StorageL
-    { sAdmin = admin
-    , sExtra = extra
+  :: "admin" :! Address
+  -> "votingPeriod" :? Natural
+  -> "quorumThreshold" :? Natural
+  -> "extra" :! ContractExtraL
+  -> "metadata" :! TZIP16.MetadataMap BigMap
+  -> StorageL
+mkStorageL admin votingPeriod quorumThreshold extra metadata =
+  StorageL
+    { sAdmin = arg #admin admin
+    , sExtra = arg #extra extra
     , sLedger = mempty
-    , sMetadata = #metadata .! metadata
+    , sMetadata = arg #metadata metadata
     , sMigrationStatus = NotInMigration
     , sOperators = mempty
-    , sPendingOwner = admin
+    , sPendingOwner = arg #admin admin
     , sPermitsCounter = Nonce 0
     , sProposals = mempty
     , sProposalKeyListSortByDate = mempty
-    , sQuorumThreshold = quorumThreshold
+    , sQuorumThreshold = argDef #quorumThreshold quorumThresholdDef quorumThreshold
     , sTokenAddress = genesisAddress
-    , sVotingPeriod = votingPeriod
+    , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
     }
-
-  config = ConfigL
-    { cUnfrozenTokenMetadata = BaseDAO.cUnfrozenTokenMetadata BaseDAO.defaultConfig
-    , cFrozenTokenMetadata = BaseDAO.cFrozenTokenMetadata BaseDAO.defaultConfig
-    , cProposalCheck = failUsing [mt|not implemented|]
-    , cRejectedProposalReturnValue = failUsing [mt|not implemented|]
-    , cDecisionLambda = failUsing [mt|not implemented|]
-    , cMaxProposals = 0
-    , cMaxVotes = 0
-    , cMaxQuorumThreshold = 0
-    , cMinQuorumThreshold = 0
-    , cMaxVotingPeriod = 0
-    , cMinVotingPeriod = 0
-    , cCustomEntrypoints = DynamicRec $ Map.fromList customEps
-    }
-  in FullStorage storage config
+  where
+    votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
+    quorumThresholdDef = 4
 
 data ConfigL = ConfigL
-  { cUnfrozenTokenMetadata :: FA2.TokenMetadata
-  , cFrozenTokenMetadata :: FA2.TokenMetadata
-  , cProposalCheck :: '[ProposeParamsL, StorageL] :-> '[Bool]
+  { cProposalCheck :: '[ProposeParamsL, StorageL] :-> '[Bool]
   , cRejectedProposalReturnValue :: '[ProposalL, StorageL] :-> '["slash_amount" :! Natural]
   , cDecisionLambda :: '[ProposalL, StorageL] :-> '[List Operation, StorageL]
 
@@ -178,11 +177,47 @@ data ConfigL = ConfigL
   }
   deriving stock (Show)
 
+mkConfigL :: [(MText, ByteString)] -> ConfigL
+mkConfigL customEps = ConfigL
+  { cProposalCheck = do
+      dropN @2; push True
+  , cRejectedProposalReturnValue = do
+      dropN @2; push (0 :: Natural); toNamed #slash_amount
+  , cDecisionLambda = do
+      drop; nil
+  , cCustomEntrypoints = DynamicRec $ M.fromList customEps
+
+  , cMaxVotingPeriod = 60 * 60 * 24 * 30
+  , cMinVotingPeriod = 1
+
+  , cMaxQuorumThreshold = 1000
+  , cMinQuorumThreshold = 1
+
+  , cMaxVotes = 1000
+  , cMaxProposals = 500
+  }
+
+defaultConfigL :: ConfigL
+defaultConfigL = mkConfigL []
+
 data FullStorage = FullStorage
   { fsStorage :: StorageL
   , fsConfig :: ConfigL
   }
   deriving stock (Show)
+
+mkFullStorageL
+  :: "admin" :! Address
+  -> "votingPeriod" :? Natural
+  -> "quorumThreshold" :? Natural
+  -> "extra" :! ContractExtraL
+  -> "metadata" :! TZIP16.MetadataMap BigMap
+  -> "customEps" :? [(MText, ByteString)]
+  -> FullStorage
+mkFullStorageL admin vp qt extra md cEps = FullStorage
+  { fsStorage = mkStorageL admin vp qt extra md
+  , fsConfig = mkConfigL (argDef #customEps [] cEps)
+  }
 
 -- Instances
 ------------------------------------------------
@@ -217,3 +252,10 @@ deriving anyclass instance IsoValue FullStorage
 instance ProposalMetadataFromNum ProposalMetadataL where
   proposalMetadataFromNum n =
     one ([mt|int|], lPackValueRaw @Integer $ fromIntegral n)
+
+-- Lenses
+------------------------------------------------
+
+makeLensesFor
+  [ ("sOperators", "sOperatorsLens")
+  ] ''StorageL

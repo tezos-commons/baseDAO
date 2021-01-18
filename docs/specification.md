@@ -65,10 +65,6 @@ data Config contractExtra proposalMetadata = Config
   -- ^ Name of the DAO.
   , daoDescription :: Text
   -- ^ Description of the DAO.
-  , unfrozenTokenMetadata :: FA2.TokenMetadata
-  -- ^ FA2 metadata for unfrozen token.
-  , frozenTokenMetadata :: FA2.TokenMetadata
-  -- ^ FA2 metadata for frozen token.
   , proposalCheck :: Lambda
       (ProposeParams proposalMetadata, Storage contractExtra proposalMetadata) Bool
   -- ^ A lambda used to verify whether a proposal can be submitted.
@@ -241,7 +237,6 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 Full list:
 * [`transfer`](#transfer)
 * [`balance_of`](#balance_of)
-* [`token_metadata_registry`](#token_metadata_registry)
 * [`update_operators`](#update_operators)
 * [`mint`](#mint)
 * [`burn`](#burn)
@@ -381,22 +376,6 @@ Parameter (in Michelson):
 - This entrypoint MUST follow the FA2 requirements.
 
 - Since the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed MUST be either 0 or 1.
-
-### **token_metadata_registry**
-
-```haskell
-type TokenMetadataRegistryParam = ContractRef Address
-
-data Parameter proposalMetadata otherParam
-  = Token_metadata_registry TokenMetadataRegistryParam
-```
-Parameter (in Michelson)
-```
-(contract %token_metadata_registry address)
-```
-
-- Return contract address that holds token metadata.
-- Token metadata MUST include the DAO metadata.
 
 ### **update_operators**
 
