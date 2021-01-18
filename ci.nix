@@ -22,6 +22,7 @@ rec {
   local-packages = [
     { name = "baseDAO"; subdirectory = "."; }
     { name = "baseDAO-ligo-meta"; subdirectory = "./ligo/haskell"; }
+    { name = "templateDAO"; subdirectory = "./template"; }
   ];
 
   # names of all local packages
