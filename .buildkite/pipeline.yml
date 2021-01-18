@@ -85,7 +85,8 @@ steps:
     commands:
     - nix-build ci.nix -A weeder-script
       # weeder needs .cabal file:
-    - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack
+      # (most of them are committed, but the one in `template` is not)
+    - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack template
     - ./result
 
   - label: haddock
