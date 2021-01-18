@@ -1,6 +1,6 @@
 # Treasury DAO
 
-**Code revision:** [94e85aa](https://github.com/tqtezos/baseDAO/tree/94e85aa667d51395b91e0b277cb35768977d37f8) *(Mon Jan 18 11:41:36 2021 +0300)*
+**Code revision:** [a875950](https://github.com/tqtezos/baseDAO/tree/a875950dbf57ab8d9e5f8fe905c7a572bd4ce2fa) *(Mon Jan 18 14:23:10 2021 +0100)*
 
 
 
