@@ -143,14 +143,7 @@ contracts = daoContractRegistry
 
 -- | Attaches a reference to your git repository into the documentation.
 gitRev :: DGitRevision
-gitRev = $mkDGitRevision . GitRepoSettings $ \commit ->
-  "https://github.com/username/reponame/tree/" <> commit
-  -- TODO: update this to refer to your repository, the link will appear in
-  -- the generated documentation
-
--- Another possible implementation, in case
--- you don't keep your code in a repository
--- gitRev = DGitRevisionUnknown
+gitRev = DGitRevisionUnknown
 
 main :: IO ()
 main =
