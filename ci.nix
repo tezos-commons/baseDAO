@@ -21,7 +21,7 @@ rec {
   # we need to know subdirectories to make weeder stuff work
   local-packages = [
     { name = "baseDAO"; subdirectory = "."; }
-    { name = "baseDAO-ligo-meta"; subdirectory = "./ligo/test"; }
+    { name = "baseDAO-ligo-meta"; subdirectory = "./ligo/haskell"; }
   ];
 
   # names of all local packages
