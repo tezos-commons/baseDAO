@@ -158,7 +158,7 @@ steps:
     - ./scripts/ci/upload-autodoc.sh
 
   - label: create auto prerelease
-    branches: "master"
+    if: build.branch == "master" && build.source != "schedule"
     commands:
       - mkdir assets
       - buildkite-agent artifact download RegistryDAO.md assets --step "contract doc release"
