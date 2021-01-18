@@ -33,7 +33,7 @@ let ensure_voting_period_is_not_over (proposal, store : proposal * storage): sto
 
 [@inline]
 let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
-  let proposal_key = to_proposal_key(propose_params, sender) in
+  let proposal_key = to_proposal_key(propose_params, Tezos.sender) in
   if Map.mem proposal_key store.proposals
     then ([%Michelson ({| { FAILWITH } |} : string * unit -> proposal_key)]
         ("PROPOSAL_NOT_UNIQUE", ()) : proposal_key)
@@ -51,18 +51,16 @@ let check_is_proposal_valid (config, propose_params, store : config * propose_pa
           ("FAIL_PROPOSAL_CHECK", ()) : storage)
 
 [@inline]
-let check_proposer_unfrozen_token (propose_params, store : propose_params * storage): storage =
-  let current_balance =
-    match Map.find_opt (Tezos.sender, unfrozen_token_id) store.ledger with
-      None ->
-        ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger_value)]
-          ("FA2_INSUFFICIENT_BALANCE", (propose_params.frozen_token, 0n)) : ledger_value)
-    | Some v -> v
-    in
-  if propose_params.frozen_token > current_balance
-    then ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-          ("PROPOSAL_INSUFFICIENT_BALANCE", ()) : storage)
-    else store
+let check_proposer_unfrozen_token (propose_params, ledger : propose_params * ledger): ledger =
+  match Map.find_opt (Tezos.sender, unfrozen_token_id) ledger with
+    None ->
+      ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)]
+        ("FA2_INSUFFICIENT_BALANCE", (propose_params.frozen_token, 0n)) : ledger)
+  | Some current_balance ->
+    if propose_params.frozen_token > current_balance
+      then ([%Michelson ({| { FAILWITH } |} : string * unit -> ledger)]
+            ("PROPOSAL_INSUFFICIENT_BALANCE", ()) : ledger)
+      else ledger
 
 [@inline]
 let check_proposal_limit_reached (config, propose_params, store : config * propose_params * storage): storage =
@@ -104,9 +102,9 @@ let add_proposal (propose_params, store : propose_params * storage): storage =
 let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, param, store) in
-  let store = check_proposer_unfrozen_token (param, store) in
+  let ledger = check_proposer_unfrozen_token (param, store.ledger) in
 
-  let ledger = freeze (param.frozen_token, Tezos.sender, store.ledger) in
+  let ledger = freeze (param.frozen_token, Tezos.sender, ledger) in
   let store = add_proposal (param, {store with ledger = ledger}) in
   ( ([] : operation list)
   , store

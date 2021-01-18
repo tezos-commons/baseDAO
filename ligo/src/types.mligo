@@ -248,8 +248,4 @@ type return_with_full_storage = operation list * full_storage
 
 let nil_op = ([] : operation list)
 
-// Remove this when everything is covered
-[@inline]
-let not_implemented (func : string) = (failwith(func ^ " is not implemented"): return)
-
 #endif  // TYPES_H included

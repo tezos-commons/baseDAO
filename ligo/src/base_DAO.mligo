@@ -24,7 +24,7 @@ let base_DAO_contract
               M_left (p) -> call_custom(p, full_store)
             // entrypoints that won't accept any xtz
             | M_right (fbp) ->
-                let result =
+                let (ops, store) =
                   if Tezos.amount > 0tez
                     then
                       ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
@@ -47,8 +47,8 @@ let base_DAO_contract
                           | Mint (p) -> mint(p, store)
                           | GetVotePermitCounter (p) -> get_vote_permit_counter (p, store)
                       end
-                in (result.0, (result.1, config))
+                in (ops, (store, config))
       end
   // entrypoint that also work when the contract has been migrated
-  | M_right (p) -> let result = transfer_contract_tokens(p, store) in
-      (result.0, (result.1, config))
+  | M_right (p) -> let (ops, store) = transfer_contract_tokens(p, store) in
+      (ops, (store, config))

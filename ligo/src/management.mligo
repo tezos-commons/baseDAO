@@ -31,7 +31,7 @@ let transfer_ownership
  *)
 let accept_ownership(param, store : unit * storage) : return =
   if store.pending_owner = Tezos.sender
-    then (([] : operation list), { store with admin = store.pending_owner })
+    then (([] : operation list), { store with admin = Tezos.sender })
     else
       ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
         ("NOT_PENDING_ADMIN", ()) : return)
@@ -73,7 +73,6 @@ let confirm_migration(param, store : unit * storage) : return =
 let call_custom(param, full_storage : custom_ep_param * full_storage) : return_with_full_storage =
   let ep_name = param.0 in
   let config = full_storage.1 in
-  let storage = full_storage.0 in
   let packed_param = param.1 in
 
   match Map.find_opt ep_name config.custom_entrypoints with

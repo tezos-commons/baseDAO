@@ -94,9 +94,11 @@ let validate_token_type (token_id : token_id): token_id =
 let balance_of (params, store : balance_request_params * storage): return =
   let check_one (req : balance_request_item): balance_response_item =
     let valid_token_id = validate_token_type(req.token_id) in
-    match Big_map.find_opt (req.owner, valid_token_id) store.ledger with
-      Some bal -> { request = req; balance = bal}
-    | None -> { request = req; balance = 0n}
+    let bal =
+      match Big_map.find_opt (req.owner, valid_token_id) store.ledger with
+        Some bal -> bal
+      | None -> 0n
+    in { request = req; balance = bal}
   in
   let result = List.map check_one params.requests in
   let transfer_operation = Tezos.transaction result 0mutez params.callback
