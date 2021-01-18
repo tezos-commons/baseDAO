@@ -127,7 +127,6 @@ test-suite baseDAO-test
     , lorentz
     , morley
     , morley-ledgers
-    , morley-metadata
     , named
     , o-clock
     , tasty
