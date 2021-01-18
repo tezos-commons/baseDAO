@@ -15,7 +15,7 @@ import Lorentz.Contracts.BaseDAO.Types
 
 import qualified BaseDAO.ShareTest.FA2 as Share
 import qualified Ligo.BaseDAO.ConfigDesc as Ligo
-import qualified Ligo.BaseDAO.Helper as Ligo
+import qualified Ligo.BaseDAO.Types as Ligo
 
 import Test.Ligo.BaseDAO.Common
 
@@ -74,7 +74,5 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
           $ uncapsNettest $ Share.updatingOperatorAfterMigrationScenario originateLigoDao
       , nettestScenario "balanceOf request respects migration status"
           $ uncapsNettest $ Share.balanceOfRequestAfterMigrationScenario originateLigoDao
-      , nettestScenario "tokenMetadataRegistry request respects migration status"
-          $ uncapsNettest $ Share.tokenMetadataRegistryRequestAfterMigrationScenario originateLigoDao
       ]
   ]

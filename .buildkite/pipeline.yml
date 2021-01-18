@@ -59,6 +59,7 @@ steps:
           tezos-client
           pkgs.bats
           packages.baseDAO.exes.baseDAO
+          packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
         -c bats ./scripts/test.bats
 
   - label: test
@@ -73,8 +74,7 @@ steps:
   - label: ligo-test
     if: *not_scheduled
     commands:
-    - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
-    - nix-build ci.nix -A packages.baseDAO-ligo-tests.tests.baseDAO-test
+    - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
     # Running only on emulator for now due to oversized operations
     - nix run -f ci.nix tezos-client -c
       ./result/bin/baseDAO-test --nettest-no-run-network

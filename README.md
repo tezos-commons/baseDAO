@@ -1,6 +1,8 @@
-# baseDAO
+# BaseDAO
 
-BaseDAO is a basic generic smart contract for DAO on Tezos.
+BaseDAO is a generic smart contract framework on Tezos that enables enables a community to collectively govern resources, registries, or rules. The framework enables the a creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by a DAO’s proposals. BaseDAO also includes Permit (TZIP-17) to enable off-chain voting.
+
+The repository currently provides a [LIGO implementation](/ligo/) and a Michelson implementation created using [Morley](https://gitlab.com/morley-framework/morley).
 
 This repository provides:
 * Generic DAO contract (template) that can be used as basis for various DAOs.
@@ -10,8 +12,7 @@ This repository provides:
   3. Two more practical DAO contracts: [RegistryDAO](./src/Lorentz/Contracts/RegistryDAO.hs) and [TreasuryDAO](./src/Lorentz/Contracts/TreasuryDAO.hs).
 * A [template package](./template) that one can copy and use to create their own DAO.
 
-It is implemented and tested in Michelson using the [Morley framework](https://gitlab.com/morley-framework/morley).
-A [LIGO implementation](/ligo/) has also been developed.
+BaseDAO currently has an in-development interface called [Homebase](https://github.com/dOrgTech/homebase-app) which enables users to create and manage DAOs created with the BaseDAO framework.
 
 ## Contract documentation and requirements
 

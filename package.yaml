@@ -90,13 +90,17 @@ library:
   dependencies:
     - aeson-pretty
     - containers
+    - fmt
+    - HUnit
     - named
     - morley
     - morley-ledgers
     - morley-metadata
+    - lens
     - lorentz
     - optparse-applicative
     - tasty
+    - tasty-hunit-compat
     - universum
     - cleveland
 
@@ -131,6 +135,7 @@ tests:
     - named
     - morley
     - morley-ledgers
+    - morley-metadata
     - o-clock
     - tasty
     - tasty-hunit-compat

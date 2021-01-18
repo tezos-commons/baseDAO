@@ -61,11 +61,7 @@ DAO configuration value parameters are captured by the `config` type:
 
 ```ocaml
 type config =
-  { unfrozen_token_metadata : token_metadata
-  // ^ FA2 metadata for unfrozen token.
-  ; frozen_token_metadata : token_metadata
-  // ^ FA2 metadata for frozen token.
-  ; proposal_check : propose_params * storage -> bool
+  { proposal_check : propose_params * storage -> bool
   // ^ A lambda used to verify whether a proposal can be submitted.
   // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
@@ -228,7 +224,6 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 Full list:
 * [`transfer`](#transfer)
 * [`balance_of`](#balance_of)
-* [`token_metadata_registry`](#token_metadata_registry)
 * [`update_operators`](#update_operators)
 * [`mint`](#mint)
 * [`burn`](#burn)
@@ -373,22 +368,6 @@ Parameter (in Michelson):
 - This entrypoint MUST follow the FA2 requirements.
 
 - Since the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed MUST be either 0 or 1.
-
-### **token_metadata_registry**
-
-```ocaml
-type token_metadata_registry_param = address contract
-
-Token_metadata_registry of token_metadata_registry_param
-```
-
-Parameter (in Michelson)
-```
-(contract %token_metadata_registry address)
-```
-
-- Return contract address that holds token metadata.
-- Token metadata MUST include the DAO metadata.
 
 ### **update_operators**
 

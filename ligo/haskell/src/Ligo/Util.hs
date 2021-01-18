@@ -22,7 +22,7 @@ import Michelson.Typed
 -- types in error messages on types mismatch.
 fetchContract :: forall cp st. (KnownT cp, KnownT st) => String -> TH.ExpQ
 fetchContract envKey = do
-  path <- fromMaybe "ligo/test/baseDAO.tz" <$> liftIO (lookupEnv envKey)
+  path <- fromMaybe "ligo/haskell/test/baseDAO.tz" <$> liftIO (lookupEnv envKey)
           -- ↑ This default path works on CI.
           -- There it's relative to the repo root, apparently.
 
