@@ -15,13 +15,13 @@ let call_fa2(param, store : fa2_parameter * storage) : return =
 
 let burn(param, store : burn_param * storage) : return =
   let store = authorize_admin(store) in
-  let store = debit_from (param.amount, param.from_, param.token_id, store)
-  in (([] : operation list), store)
+  let ledger = debit_from (param.amount, param.from_, param.token_id, store.ledger)
+  in (([] : operation list), { store with ledger = ledger })
 
 let mint(param, store : mint_param * storage) : return =
   let store = authorize_admin(store) in
-  let store = credit_to (param.amount, param.to_, param.token_id, store)
-  in (([] : operation list), store)
+  let ledger = credit_to (param.amount, param.to_, param.token_id, store.ledger)
+  in (([] : operation list), {store with ledger = ledger})
 
 let transfer_contract_tokens
     (param, store : transfer_contract_tokens_param * storage) : return =

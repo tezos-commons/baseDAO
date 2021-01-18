@@ -26,33 +26,27 @@ let check_sender (from_ , store : address * storage): address =
         ("FA2_NOT_OPERATOR", ()) : address)
 
 [@inline]
-let debit_from (amt, from_, token_id, store: nat * address * token_id * storage): storage =
-  match Big_map.find_opt (from_, token_id) store.ledger with
+let debit_from (amt, from_, token_id, ledger: nat * address * token_id * ledger): ledger =
+  match Big_map.find_opt (from_, token_id) ledger with
     Some bal ->
-      let store =
+      begin
         match Michelson.is_nat (bal - amt) with
-          Some new_bal ->
-            { store with
-              ledger = Big_map.update (from_, token_id) (Some new_bal) store.ledger
-            }
+          Some new_bal -> Big_map.update (from_, token_id) (Some new_bal) ledger
         | None ->
-            ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> storage)] ("FA2_INSUFFICIENT_BALANCE", (amt, bal)) : storage)
-      in store
+            ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)] ("FA2_INSUFFICIENT_BALANCE", (amt, bal)) : ledger)
+      end
   | None ->
-      if (amt = 0n) then store // We allow 0 transfer
+      if (amt = 0n) then ledger // We allow 0 transfer
       else
-        ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> storage)] ("FA2_INSUFFICIENT_BALANCE", (amt, 0n)) : storage)
+        ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)] ("FA2_INSUFFICIENT_BALANCE", (amt, 0n)) : ledger)
 
 [@inline]
-let credit_to (amt, to_, token_id, store : nat * address * nat * storage): storage =
+let credit_to (amt, to_, token_id, ledger : nat * address * nat * ledger): ledger =
   let new_bal =
-    match Big_map.find_opt (to_, token_id) store.ledger with
+    match Big_map.find_opt (to_, token_id) ledger with
       Some bal -> bal + amt
     | None -> amt
-  in  { store with
-        ledger = Big_map.update (to_, token_id) (Some new_bal) store.ledger
-      }
-
+  in Big_map.update (to_, token_id) (Some new_bal) ledger
 
 // -----------------------------------------------------------------
 // Transfer
@@ -73,10 +67,11 @@ let transfer_item (store, ti : storage * transfer_item): storage =
         ) else
             ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
               ("FA2_TOKEN_UNDEFINED", ()) : token_id)
-      in credit_to
-        ( tx.amount, tx.to_, valid_token_id
-        , debit_from (tx.amount, valid_from_, valid_token_id, store)
-        )
+      in
+      let ledger = store.ledger in
+      let ledger = debit_from(tx.amount, valid_from_, valid_token_id, ledger) in
+      let ledger = credit_to(tx.amount, tx.to_, valid_token_id, ledger) in
+      { store with ledger = ledger }
     )
   in List.fold transfer_one ti.txs store
 
