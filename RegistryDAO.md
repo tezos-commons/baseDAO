@@ -1,6 +1,6 @@
 # Registry DAO
 
-**Code revision:** [83785e2](https://github.com/tqtezos/baseDAO/tree/83785e2d0df6e9a105099734eda73265b42f6748) *(Mon Jan 18 17:59:12 2021 +0300)*
+**Code revision:** [025e780](https://github.com/tqtezos/baseDAO/tree/025e7807087c608c82fa734474b9e26c8209f170) *(Mon Jan 18 19:48:01 2021 +0300)*
 
 
 
@@ -256,7 +256,7 @@ Entrypoint to be called if you want to use one of FA2 entrypoints.
 
 **Argument:** 
   + **In Haskell:** [`Parameter`](#types-Parameter)
-  + **In Michelson:** `(or (or (pair (list %requests (pair (address %owner) (nat %token_id))) (contract %callback (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance))))) (contract address)) (or (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))) (list (or (pair %add_operator (address %owner) (pair (address %operator) (nat %token_id))) (pair %remove_operator (address %owner) (pair (address %operator) (nat %token_id)))))))`
+  + **In Michelson:** `(or (or (pair (list %requests (pair (address %owner) (nat %token_id))) (contract %callback (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance))))) (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount))))))) (list (or (pair %add_operator (address %owner) (pair (address %operator) (nat %token_id))) (pair %remove_operator (address %owner) (pair (address %operator) (nat %token_id))))))`
     + **Example:** <span id="example-id">`Left (Left (Pair { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" 0 } "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"))`</span>
 
 <details>
@@ -302,36 +302,6 @@ The entrypoint supports both frozen and unfrozen tokens.
 * [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
 
 * [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
-
-
-
-<a name="entrypoints-token_metadata_registry"></a>
-
----
-
-##### `token_metadata_registry`
-
-Returns contract address that holds token metadata.
-Token metadata will contain the DAO metadata.
-
-
-**Argument:** 
-  + **In Haskell:** [`ContractRef`](#types-Contract) [`Address`](#types-Address)
-  + **In Michelson:** `(contract address)`
-    + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
-
-<details>
-  <summary><b>How to call this entrypoint</b></summary>
-
-0. Construct an argument for the entrypoint.
-1. Call contract's `token_metadata_registry` entrypoint passing the constructed argument.
-</details>
-<p>
-
-
-
-**Possible errors:**
-* [`MIGRATED`](#errors-MIGRATED) — Recieved a call on a migrated contract
 
 
 
@@ -1316,12 +1286,11 @@ Describes the FA2 operations.
 
 **Structure:** *one of* 
 + **Balance_of**([`View`](#types-View) ([`List`](#types-List) [`BalanceRequestItem`](#types-BalanceRequestItem)) ([`List`](#types-List) [`BalanceResponseItem`](#types-BalanceResponseItem)))
-+ **Token_metadata_registry**([`ContractRef`](#types-Contract) [`Address`](#types-Address))
 + **Transfer**([`List`](#types-List) [`TransferItem`](#types-TransferItem))
 + **Update_operators**([`List`](#types-List) [`UpdateOperator`](#types-UpdateOperator))
 
 
-**Final Michelson representation:** `or (or (pair (list (pair address nat)) (contract (list (pair (pair address nat) nat)))) (contract address)) (or (list (pair address (list (pair address (pair nat nat))))) (list (or (pair address (pair address nat)) (pair address (pair address nat)))))`
+**Final Michelson representation:** `or (or (pair (list (pair address nat)) (contract (list (pair (pair address nat) nat)))) (list (pair address (list (pair address (pair nat nat)))))) (list (or (pair address (pair address nat)) (pair address (pair address nat))))`
 
 
 
@@ -1570,7 +1539,7 @@ Timestamp primitive.
 
 ### `TokenId`
 
-Token identifier as defined by [TZIP-12](https://gitlab.com/tzip/tzip/-/blob/eb1da57684599a266334a73babd7ba82dbbbce66/proposals/tzip-12/tzip-12.md#general).
+Token identifier as defined by [TZIP-12](https://gitlab.com/tzip/tzip/-/blob/1f83a3671cdff3ab4517bfa9ee5a57fc5276d4ff/proposals/tzip-12/tzip-12.md#general).
 
 **Structure:** [`Natural`](#types-Natural)
 
