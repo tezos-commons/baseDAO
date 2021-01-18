@@ -173,4 +173,22 @@ rec {
       };
     });
   });
+
+  # morley in nixpkgs is very old
+  morley = pkgs.haskellPackages.callHackageDirect {
+    pkg = "morley";
+    ver = "1.11.1";
+    sha256 = "0c9fg4f5dmji5wypa8qsq0bhj1p55l1f6nxdn0sdc721p5rchx28";
+  } {
+    uncaught-exception = pkgs.haskellPackages.callHackageDirect {
+      pkg = "uncaught-exception";
+      ver = "0.1.0";
+      sha256 = "0fqrhyf2jn3ayp3aiirw6mms37w3nwk4h3i7l4hqw481ps0ml16d";
+    } {};
+    cryptonite = pkgs.haskell.lib.doJailbreak (pkgs.haskellPackages.callHackageDirect {
+      pkg = "cryptonite";
+      ver = "0.27";
+      sha256 = "0y8mazalbkbvw60757av1s6q5b8rpyks4lzf5c6dhp92bb0rj5y7";
+    } {});
+  };
 }

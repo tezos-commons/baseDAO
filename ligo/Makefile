@@ -4,6 +4,13 @@
 # Ligo executable
 LIGO ?= ligo
 
+# Morley executable used for contract optimization
+MORLEY ?= morley
+
+# Env variable to determine whether the resulting contract should
+# be optimized via morley
+OPTIMIZE ?= false
+
 # Compile code
 BUILD = $(LIGO) compile-contract --syntax cameligo
 
@@ -27,6 +34,10 @@ $(OUT)/baseDAO.tz: src/**
 	sed -i '/^ *$$/d' $(OUT)/baseDAO.tz
 	sed -i 's/^[{ ] //g' $(OUT)/baseDAO.tz
 	sed -i '$$s/[}] *$$//' $(OUT)/baseDAO.tz
+ifeq ($(OPTIMIZE), true)
+	# ============== Optimizing contract ============== #
+	$(MORLEY) optimize --contract $(OUT)/baseDAO.tz --output $(OUT)/baseDAO.tz
+endif
 
 test: $(OUT)/baseDAO.tz
 	$(MAKE) -C .. test PACKAGE=baseDAO-ligo-tests \
