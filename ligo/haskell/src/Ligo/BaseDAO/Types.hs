@@ -9,8 +9,7 @@ module Ligo.BaseDAO.Types
   , ProposeParamsL
   , CustomEntrypointsL
   , ProposalL (..)
-  , VoteParamL
-  , ParameterL (..)
+  , ParameterL
   , StorageL (..)
   , ConfigL (..)
   , FullStorage (..)
