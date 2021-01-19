@@ -63,8 +63,10 @@ Compile-time value parameters are captured by the `Config` type (parameterized b
 data Config contractExtra proposalMetadata = Config
   { daoName :: Text
   -- ^ Name of the DAO.
+  -- Only used in documentation generator and does not get stored in @Storage@.
   , daoDescription :: Text
   -- ^ Description of the DAO.
+  -- Only used in documentation generator and does not get stored in @Storage@.
   , proposalCheck :: Lambda
       (ProposeParams proposalMetadata, Storage contractExtra proposalMetadata) Bool
   -- ^ A lambda used to verify whether a proposal can be submitted.

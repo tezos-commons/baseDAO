@@ -106,7 +106,11 @@ instance HasAnnotation FA2.Parameter
 
 data Config contractExtra proposalMetadata otherParam = Config
   { cDaoName :: Text
+  -- ^ Name of the DAO.
+  -- Only used in documentation generator and does not get stored in @Storage@.
   , cDaoDescription :: Markdown
+  -- ^ Description of the DAO.
+  -- Only used in documentation generator and does not get stored in @Storage@.
 
   , cProposalCheck :: forall s store.
         StorageC store contractExtra proposalMetadata
@@ -598,8 +602,8 @@ instance a `CanCastTo` SomeType
 
 type ProposalKey pm = Hash Blake2b $ Packed (ProposeParams pm, Address)
 
--- | Proposal type which will be stored in 'Storage' `sProposals`
--- `pVoters` is needed due to we need to keep track of voters to be able to
+-- | Proposal type which will be stored in 'Storage' @sProposals@
+-- @pVoters@ is needed due to we need to keep track of voters to be able to
 -- unfreeze their tokens.
 data Proposal proposalMetadata = Proposal
   { pUpvotes             :: Natural
@@ -737,7 +741,7 @@ allTokenIds = [unfrozenTokenId, frozenTokenId]
 -- Helper
 ------------------------------------------------------------------------
 
--- Useful type when `iter` with a counter
+-- | Useful type when @iter@ with a counter
 type Counter = (("currentCount" :! Natural), Natural)
 
 baseDaoAnnOptions :: AnnOptions
