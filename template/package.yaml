@@ -88,8 +88,6 @@ executables:
     - baseDAO
     - morley
     - lorentz
-    - optparse-applicative
     - universum
-    - with-utf8
     generated-other-modules:
     - Paths_templateDAO

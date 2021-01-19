@@ -35,8 +35,7 @@ library
   default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns RebindableSyntax
   ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-unused-do-bind
   build-depends:
-      HUnit
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , baseDAO
     , cleveland
     , containers
@@ -47,7 +46,6 @@ library
     , morley-ledgers
     , morley-metadata
     , named
-    , tasty
     , template-haskell
     , universum
   default-language: Haskell2010
@@ -97,14 +95,10 @@ test-suite baseDAO-test
     , cleveland
     , containers
     , fmt
-    , lens
     , lorentz
     , morley
-    , morley-ledgers
-    , morley-metadata
     , named
     , tasty
     , tasty-hunit-compat
-    , template-haskell
     , universum
   default-language: Haskell2010
