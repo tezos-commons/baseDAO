@@ -28,8 +28,8 @@ which will save the compiled contract in `out/baseDAO.tz`.
 
 ## Generating `Storage`
 
-Currently we don't provide any convenient way to generate the storage, so you'll
-need to do so manually.
+Currently we don't provide any convenient way to generate `BaseDAO` storage,
+but you can use [RegistryDAO Storage generation](#registrydao) as example.
 
 We will work on this in future versions.
 
@@ -49,3 +49,22 @@ You can use the `Makefile` to do so as well:
 make test
 ```
 For more detail about LIGO tests, check out its [README.md](./haskell/test/)
+
+## Example contracts
+
+### RegistryDAO
+
+The storage, including configuration for the RegistryDAO
+[specification](https://github.com/tqtezos/baseDAO/blob/master/docs/registry.md)
+is included in `src/registryDAO.mligo`. You can convert this into a
+Michelson expression during the BaseDAO origination using the `ligo
+compile-storage` command as follows.
+
+```
+
+The `default_registry_DAO_full_storage` is a LIGO function defined in
+`ligo/src/RegistryDAO.mligo`, which returns a LIGO expression for storage,
+which is converted into Michelson using the `compile-storage` command. The
+arguments to this function are the admin address, the token address and the
+configuration parameters described in the Registry spec, which are 'a', 'b',
+'s_max', 'c' and 'd'.
