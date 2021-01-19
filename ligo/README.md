@@ -57,11 +57,10 @@ For more detail about LIGO tests, check out its [README.md](./haskell/test/)
 The storage, including configuration for the RegistryDAO [specification](https://github.com/tqtezos/baseDAO/blob/master/docs/registry.md)
 is included in `ligo/src/registryDAO.mligo`. You can convert this into a
 Michelson expression during the BaseDAO origination using the `ligo
-compile-storage` command as follows.
+compile-storage` command, which is included in the Makefile so it can be run using `make`.
 
 ```bash
-ligo compile-storage ligo/src/registryDAO.mligo base_DAO_contract \
-    'default_registry_DAO_full_storage(("tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" : address), ("tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" : address), 0n, 0n, 0n, 0n, 0n)'
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" s_max=12n a=1n b=0n c=1n d=1n out/registryDAO_storage.tz
 ```
 
 The `default_registry_DAO_full_storage` is a LIGO function defined in

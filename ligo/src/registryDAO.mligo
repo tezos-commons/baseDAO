@@ -11,6 +11,11 @@
 // storage expression.
 #include "base_DAO.mligo"
 
+type dummy_storage = ((address * address * nat * nat * nat * nat * nat) -> full_storage)
+
+let dummy (action, store : parameter * dummy_storage) : operation list * dummy_storage
+  = (([] : operation list), store)
+
 let require_extra_value (key_name, ce : string * contract_extra) : bytes =
     match Map.find_opt key_name ce with
       Some (packed_b) -> packed_b
