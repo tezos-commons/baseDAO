@@ -27,7 +27,7 @@ data TreasuryDaoContractExtra = TreasuryDaoContractExtra
   , ceSlashDivisionValue :: Natural -- d
   , ceMinXtzAmount :: Mutez -- y
   , ceMaxXtzAmount :: Mutez -- z
-  , ceMaxProposalSize :: Natural --z
+  , ceMaxProposalSize :: Natural -- s_max
   }
   deriving stock (Generic)
   deriving anyclass (IsoValue)
@@ -47,7 +47,7 @@ instance Default TreasuryDaoContractExtra where
     , ceSlashDivisionValue = 1 -- d
     , ceMinXtzAmount = toMutez 1 -- y
     , ceMaxXtzAmount = toMutez 10000 -- z
-    , ceMaxProposalSize = 1000 --z
+    , ceMaxProposalSize = 1000 -- s_max
     }
 
 -- | A Treasury DAO proposal, contains list of transfers of 2 types:

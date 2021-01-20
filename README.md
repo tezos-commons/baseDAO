@@ -9,7 +9,7 @@ This repository provides:
 * Instantiations of this template:
   1. Simplest implementation with no custom logic ([TrivialDAO contract](./src/Lorentz/Contracts/TrivialDAO.hs))
   2. A simple example with custom logic called [GameDAO](./src/Lorentz/Contracts/GameDAO.hs).
-  3. Two more practical DAO contracts: [RegistryDAO](./src/Lorentz/Contracts/RegistryDAO.hs) and [TreasuryDAO](./src/Lorentz/Contracts/TreasuryDAO.hs).
+  3. Two more practical DAO contracts: [RegistryDAO](./ligo/src/registryDAO.mligo) and [TreasuryDAO](./ligo/src/treasuryDAO.mligo).
 * A [template package](./template) that one can copy and use to create their own DAO.
 
 BaseDAO currently has an in-development interface called [Homebase](https://github.com/dOrgTech/homebase-app) which enables users to create and manage DAOs created with the BaseDAO framework.
