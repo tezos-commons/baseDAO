@@ -60,7 +60,20 @@ Michelson expression during the BaseDAO origination using the `ligo
 compile-storage` command, which is included in the Makefile so it can be run using `make`.
 
 ```bash
-make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" s_max=12n a=1n b=0n c=1n d=1n out/registryDAO_storage.tz
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" s_max=12n a=1n b=0n c=1n d=1n out/registryDAO_storage.tz
+```
+
+All the arguments to the above command are optional, and will be filled with
+following dummy addresses and default values.
+
+```
+admin_address = "tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af"
+token_address = "tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af"
+a = 1n
+b = 0n
+s_max = 100n
+c = 1n
+d = 0n
 ```
 
 The `default_registry_DAO_full_storage` is a LIGO function defined in

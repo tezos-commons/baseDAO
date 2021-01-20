@@ -11,11 +11,6 @@
 // storage expression.
 #include "base_DAO.mligo"
 
-type dummy_storage = ((address * address * nat * nat * nat * nat * nat) -> full_storage)
-
-let dummy (action, store : parameter * dummy_storage) : operation list * dummy_storage
-  = (([] : operation list), store)
-
 let require_extra_value (key_name, ce : string * contract_extra) : bytes =
     match Map.find_opt key_name ce with
       Some (packed_b) -> packed_b
@@ -174,11 +169,11 @@ let default_registry_DAO_full_storage (admin, token_address, a, b, s_max, c, d
     extra = Map.literal [
           ("registry" , Bytes.pack (Map.empty : registry));
           ("registry_affected" , Bytes.pack (Map.empty : registry_affected));
-          ("a" , Bytes.pack a); // frozen_scale_value
-          ("b" , Bytes.pack b); // frozen_extra_value
-          ("s_max" , Bytes.pack s_max); // max_proposal_size
-          ("c" , Bytes.pack c); // slash_scale_value
-          ("d" , Bytes.pack d); // slash_division_value
+          ("a" , Bytes.pack (Some (a))); // frozen_scale_value
+          ("b" , Bytes.pack (Some (b))); // frozen_extra_value
+          ("s_max" , Bytes.pack (Some (s_max))); // max_proposal_size
+          ("c" , Bytes.pack (Some (c))); // slash_scale_value
+          ("d" , Bytes.pack (Some (d))); // slash_division_value
           ];
   } in
   let new_config = { fs.1 with

@@ -45,10 +45,10 @@ endif
 
 $(OUT)/registryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
 $(OUT)/registryDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/registryDAO_storage.tz : a = 0n
+$(OUT)/registryDAO_storage.tz : a = 1n
 $(OUT)/registryDAO_storage.tz : b = 0n
-$(OUT)/registryDAO_storage.tz : s_max = 0n
-$(OUT)/registryDAO_storage.tz : c = 0n
+$(OUT)/registryDAO_storage.tz : s_max = 100n
+$(OUT)/registryDAO_storage.tz : c = 1n
 $(OUT)/registryDAO_storage.tz : d = 0n
 $(OUT)/registryDAO_storage.tz: src/**
 
