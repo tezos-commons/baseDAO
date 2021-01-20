@@ -29,7 +29,7 @@ Documentation of the actually implemented smart contract is generated automatica
 Further steps are given in assumption that `stack` tool is used to compile the project.
 For how to obtain `stack` see [The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial.
 
-Also, you may need the very basic knowledge of Haskell and Lorentz, if this is your first time writing contracts on Lorentz, consider reading [the Lorentz documentation](https://gitlab.com/morley-framework/morley/-/blob/1fdefdb8c081235971cacc002b6704b709349d5c/code/lorentz/README.md).
+Also, you may need the very basic knowledge of Haskell and Lorentz if choosing the Lorentz variant. Consider reading [the Lorentz documentation](https://gitlab.com/morley-framework/morley/-/blob/1fdefdb8c081235971cacc002b6704b709349d5c/code/lorentz/README.md).
 
 ## Build Instructions
 
