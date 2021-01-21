@@ -77,8 +77,8 @@ instance TypeHasDoc AgoraPostId where
   typeDocMdDescription = "Describe an Agora post ID."
 
 data TransferType
-  = XtzTransferType XtzTransfer
-  | TokenTransferType TokenTransfer
+  = Xtz_transfer_type XtzTransfer
+  | Token_transfer_type TokenTransfer
   deriving stock Generic
   deriving anyclass IsoValue
 

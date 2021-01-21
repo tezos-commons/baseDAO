@@ -171,7 +171,7 @@ checkTokenBalance
   => FA2.TokenId -> TAddress param
   -> Address -> Natural
   -> m ()
-checkTokenBalance tokenId dao addr expectedValue = do
+checkTokenBalance tokenId dao addr expectedValue = withFrozenCallStack $ do
   consumer <- originateSimple "consumer" [] contractConsumer
 
   callFrom (AddressResolved addr) dao (Call @"Balance_of")
@@ -209,14 +209,16 @@ permitProtect author (toSign, a) = do
     , ppPermit = Just Permit{..}
     }
 
-sendXtz :: MonadNettest caps base m => Address -> m ()
-sendXtz addr = do
+sendXtz
+  :: (MonadNettest caps base m, HasCallStack, NiceParameter pm)
+  => Address -> EpName -> pm -> m ()
+sendXtz addr epName pm = withFrozenCallStack $ do
   let transferData = TransferData
         { tdFrom = nettestAddress
         , tdTo = AddressResolved addr
         , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
-        , tdEntrypoint = DefEpName
-        , tdParameter = ()
+        , tdEntrypoint = epName
+        , tdParameter = pm
         }
   transfer transferData
 

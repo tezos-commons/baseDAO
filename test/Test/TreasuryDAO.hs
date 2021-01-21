@@ -13,6 +13,7 @@ import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
+import BaseDAO.ShareTest.Common (sendXtz)
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.TreasuryDAO
@@ -113,7 +114,7 @@ flushXtzTransfer :: (Monad m) => NettestImpl m -> m ()
 flushXtzTransfer = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig def config
 
-  sendXtz (toAddress dao)
+  sendXtz (toAddress dao) DefEpName ()
 
 
   let proposal = xtzTransferProposalMetadata owner2 -- transfer from dao to owner2
@@ -145,7 +146,7 @@ tokenTransferProposalMetadata :: Address -> Address -> Address -> TreasuryDaoPro
 tokenTransferProposalMetadata contractAddr fromAddr toAddr = TreasuryDaoProposalMetadata
   { npAgoraPostId = AgoraPostId 1
   , npTransfers =
-      [ TokenTransferType $ TokenTransfer
+      [ Token_transfer_type $ TokenTransfer
           { ttContractAddress = contractAddr
           , ttTransferList =
               [ FA2.TransferItem
@@ -164,7 +165,7 @@ xtzTransferProposalMetadata :: Address -> TreasuryDaoProposalMetadata
 xtzTransferProposalMetadata toAddr = TreasuryDaoProposalMetadata
   { npAgoraPostId = AgoraPostId 1
   , npTransfers =
-      [ XtzTransferType $ XtzTransfer
+      [ Xtz_transfer_type $ XtzTransfer
           { xtAmount = toMutez 2
           , xtRecipient = toAddr
           }

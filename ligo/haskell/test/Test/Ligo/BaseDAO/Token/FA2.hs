@@ -14,7 +14,6 @@ import Test.Tasty (TestTree, testGroup)
 import Lorentz.Contracts.BaseDAO.Types
 
 import qualified BaseDAO.ShareTest.FA2 as Share
-import qualified Ligo.BaseDAO.ConfigDesc as Ligo
 import qualified Ligo.BaseDAO.Types as Ligo
 
 import Test.Ligo.BaseDAO.Common
@@ -60,7 +59,7 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
         $ uncapsNettest $ Share.adminTransferScenario originateLigoDao
     , nettestScenario "transfer frozen tokens"
         $ uncapsNettest $ Share.adminTransferFrozenScenario
-        $ originateLigoDaoWithBalance Ligo.dynRecUnsafe (Ligo.ConfigDesc ())
+        $ originateLigoDaoWithBalance Ligo.dynRecUnsafe Ligo.defaultConfigL
             (\owner1 owner2 ->
                 [ ((owner1, frozenTokenId), 100)
                 , ((owner2, frozenTokenId), 100)
