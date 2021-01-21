@@ -89,17 +89,17 @@ library:
     - Paths_baseDAO_ligo_meta
   dependencies:
     - baseDAO
+    - cleveland
     - containers
     - fmt
-    - named
+    - lens
+    - lorentz
     - morley
     - morley-ledgers
     - morley-metadata
-    - lens
-    - lorentz
+    - named
     - template-haskell
     - universum
-    - cleveland
 
 executables:
   baseDAO-ligo-meta:
@@ -125,15 +125,18 @@ tests:
     - '"-with-rtsopts=-N -A64m -AL256m"'
 
     dependencies:
+    - HUnit
     - baseDAO
     - baseDAO-ligo-meta
+    - bytestring
     - cleveland
     - containers
     - fmt
-    - HUnit
     - lorentz
-    - named
     - morley
+    - morley-ledgers
+    - named
+    - o-clock
     - tasty
     - tasty-hunit-compat
     - universum

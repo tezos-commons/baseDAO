@@ -80,6 +80,7 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Token.FA2
       Test.Ligo.BaseDAO.Types
+      Test.Ligo.RegistryDAO
       Paths_baseDAO_ligo_meta
   hs-source-dirs:
       test
@@ -92,12 +93,15 @@ test-suite baseDAO-test
     , base >=4.7 && <5
     , baseDAO
     , baseDAO-ligo-meta
+    , bytestring
     , cleveland
     , containers
     , fmt
     , lorentz
     , morley
+    , morley-ledgers
     , named
+    , o-clock
     , tasty
     , tasty-hunit-compat
     , universum
