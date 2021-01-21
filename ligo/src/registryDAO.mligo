@@ -16,7 +16,12 @@ let require_extra_value (key_name, ce : string * contract_extra) : bytes =
       Some (packed_b) -> packed_b
     | None -> (failwith "CONFIG_VALUE_NOT_FOUND" : bytes)
 
-let require_unpacked_nat_opt (packed_b: bytes) : nat option =
+let require_unpacked_nat(packed_b: bytes) : nat =
+  match ((Bytes.unpack packed_b) : (nat option)) with
+    Some (v) -> v
+  | None -> (failwith "UNPACKING_FAILED" : nat)
+
+let require_unpacked_nat_opt(packed_b: bytes) : nat option =
   match ((Bytes.unpack packed_b) : ((nat option) option)) with
     Some (v) -> v
   | None -> (failwith "UNPACKING_FAILED" : nat option)
@@ -31,13 +36,13 @@ let require_unpacked_registry_affected (packed_b: bytes) : registry_affected =
     Some (v) -> v
   | None -> (failwith "UNPACKING_FAILED" : registry_affected)
 
-let lookup_config (key_name, ce : string * contract_extra) : nat option =
+let lookup_config (key_name, ce : string * contract_extra) : nat =
+    require_unpacked_nat(require_extra_value(key_name, ce))
+
+let lookup_config_in_proposal (key_name, ce : string * contract_extra) : nat option =
     require_unpacked_nat_opt(require_extra_value(key_name, ce))
 
-let require_config (key_name, ce : string * contract_extra) : nat =
-  match lookup_config (key_name, ce) with
-    Some (v) -> v
-  | None -> (failwith "REQUIRED_CONFIG_NOT_FOUND" : nat)
+let require_config (key_name, ce : string * contract_extra) : nat = lookup_config (key_name, ce)
 
 let apply_diff_registry (diff, registry : registry_diff * registry) : registry =
   let
@@ -136,11 +141,11 @@ let registry_DAO_decision_lambda (proposal, store : proposal * storage) : return
         | None -> (failwith "UNPACKING FAILED" : return)
       end
   | None ->
-      let m_frozen_scale_value = lookup_config ("a", proposal.metadata) in
-      let m_frozen_extra_value = lookup_config ("b", proposal.metadata) in
-      let m_max_proposal_size = lookup_config ("s_max", proposal.metadata) in
-      let m_slash_scale_value = lookup_config ("c", proposal.metadata) in
-      let m_slash_division_value = lookup_config ("d", proposal.metadata) in
+      let m_frozen_scale_value = lookup_config_in_proposal ("a", proposal.metadata) in
+      let m_frozen_extra_value = lookup_config_in_proposal ("b", proposal.metadata) in
+      let m_max_proposal_size = lookup_config_in_proposal ("s_max", proposal.metadata) in
+      let m_slash_scale_value = lookup_config_in_proposal ("c", proposal.metadata) in
+      let m_slash_division_value = lookup_config_in_proposal ("d", proposal.metadata) in
       let new_ce = match m_frozen_scale_value with
         Some (frozen_scale_value) -> Map.update "a" (Some (Bytes.pack (frozen_scale_value))) store.extra
         | None -> store.extra in
@@ -172,7 +177,7 @@ let default_registry_DAO_full_storage (admin, token_address, a, b, s_max, c, d
           ("a" , Bytes.pack a); // frozen_scale_value
           ("b" , Bytes.pack b); // frozen_extra_value
           ("s_max" , Bytes.pack s_max); // max_proposal_size
-          ("c" , Bytes.pack c); // slash_scale_value
+          ("c" , Bytes.pack c); // slashvalue
           ("d" , Bytes.pack d); // slash_division_value
           ];
   } in

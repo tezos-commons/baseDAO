@@ -69,6 +69,7 @@ rec {
           preBuild = ''
             mkdir -p ./ligo/haskell/test
             cp ${build-ligo} ./ligo/haskell/test/baseDAO.tz
+            cp ${build-ligo-registryDAO-storage} ./ligo/haskell/test/registryDAO_storage.tz
           '';
         };
       }
@@ -118,7 +119,15 @@ rec {
     src = ./ligo;
     nativeBuildInputs = [ ligo ];
     buildPhase = "make";
-    installPhase = "cp out/*.tz $out";
+    installPhase = "cp out/baseDAO.tz $out";
+  };
+
+  build-ligo-registryDAO-storage = pkgs.stdenv.mkDerivation {
+    name = "baseDAO-ligo";
+    src = ./ligo;
+    nativeBuildInputs = [ ligo ];
+    buildPhase = "make";
+    installPhase = "cp out/registryDAO_storage.tz $out";
   };
 
   # nixpkgs has weeder 2, but we use weeder 1
