@@ -24,6 +24,7 @@ import Michelson.Typed.Convert (untypeValue)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
 
+import BaseDAO.ShareTest.Common (makeProposalKey)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
@@ -52,7 +53,7 @@ test_RegistryDAO =
   [ testGroup "RegistryDAO Tests"
     [ nettestScenarioCaps "Calling the propose endpoint with an empty proposal works" $
         withOriginated 2
-          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin wallet1) $
+          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao -> let
             proposalMeta = DynamicRec mempty
             proposalSize = metadataSize proposalMeta
@@ -61,7 +62,7 @@ test_RegistryDAO =
 
     , nettestScenarioCaps "proposal exceeding s_max result in error" $
         withOriginated 2
-          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin wallet1) $
+          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao -> let
             -- In the explicitly set configuration s_max is set at 100.
             -- And here we create a proposal that is bigger then 100.
@@ -71,9 +72,9 @@ test_RegistryDAO =
             in callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
               & expectFailProposalCheck
 
-    , nettestScenarioCaps "fails if required tokens are not frozen" $
+    , nettestScenarioCaps "checks it fails if required tokens are not frozen" $
         withOriginated 2
-          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin wallet1) $
+          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao -> let
             proposalMeta = DynamicRec mempty
             -- Here we only freeze 2 tokens, but the proposal size and the configuration params
@@ -82,9 +83,9 @@ test_RegistryDAO =
             in callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams 2 proposalMeta)
               & expectFailProposalCheck
 
-    , nettestScenarioCaps "check that proposal correctly calculates required frozen tokens" $
+    , nettestScenarioCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
-          (\(admin: wallet1:_) -> setExtra @Natural [mt|b|] 2 $ initialStorageWithExplictRegistryDAOConfig admin wallet1) $
+          (\(admin: wallet1:_) -> setExtra @Natural [mt|b|] 2 $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao -> let
             proposalMeta = DynamicRec mempty
             -- Here the proposal size and the configuration params
@@ -92,7 +93,7 @@ test_RegistryDAO =
             -- because proposal size happen to be 6 here.
             in callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams 8 proposalMeta)
 
-    , nettestScenarioCaps "check proposal correctly calculates frees frozen tokens when rejecting" $ do
+    , nettestScenarioCaps "checks it correctly calculates tokens to unfreeze when rejecting" $ do
         let a = 2
         let b = 0
         let c = 1
@@ -102,7 +103,7 @@ test_RegistryDAO =
             setExtra @Natural [mt|a|] a $
             setExtra @Natural [mt|b|] b $
             setExtra @Natural [mt|c|] c $
-            setExtra @Natural [mt|d|] d $ initialStorageWithExplictRegistryDAOConfig admin wallet1) $
+            setExtra @Natural [mt|d|] d $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
 
           \(admin: wallet1: _) _ baseDao -> let
             proposalMeta1 = DynamicRec $ Map.fromList $ [([mt|key1|], "val"), ([mt|key2|], "val")] -- 44
@@ -128,10 +129,61 @@ test_RegistryDAO =
 
               let spent = div (requiredFrozen * c) d
 
-              checkStorage (AddressResolved $ unTAddress consumer) (toVal [[FA2.BalanceResponseItem balanceRequestItem (100 - spent)]])
+              checkStorage (AddressResolved $ unTAddress consumer) (toVal [[FA2.BalanceResponseItem balanceRequestItem (defaultTokenBalance - spent)]])
+
+    , nettestScenarioCaps "checks it correctly executes the proposal that has won" $ do
+        let a = 1
+        let b = 0
+        let c = 1
+        let d = 1
+        withOriginated 3
+          (\(admin: wallet1: voter1:_) -> setExtra @Natural [mt|d|] 2 $
+            setExtra @Natural [mt|a|] a $
+            setExtra @Natural [mt|b|] b $
+            setExtra @Natural [mt|c|] c $
+            setExtra @Natural [mt|s_max|] 100 $
+            setExtra @Natural [mt|d|] d $ initialStorageWithExplictRegistryDAOConfig admin [wallet1, voter1]) $
+
+          \(admin: wallet1: voter1 : _) _ baseDao -> let
+            -- We currently have s_max of 100, but the following proposal is ~  320 bytes long.
+            largeProposalMeta = DynamicRec $ Map.fromList $ [(mkMTextUnsafe ("long_key" <> (show @_ @Int t)), "long_value") | t <- [1..10]]
+            largeProposalSize = metadataSize largeProposalMeta
+
+            in do
+              runIO $ putTextLn $ show largeProposalSize
+              let requiredFrozen = largeProposalSize * a + b
+
+              -- We expect this to fail because s_max is 100 and proposal size is ~ 320.
+              callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
+                & expectFailProposalCheck
+
+              -- We create a new proposal to increase s_max to largeProposalSize + 1.
+              let sMaxUpdateproposalMeta1 = DynamicRec $ Map.fromList
+                    [([mt|s_max|], lPackValueRaw $ Just ((largeProposalSize + 1) :: Natural))
+                    ,([mt|a|], lPackValueRaw @(Maybe Natural) Nothing)
+                    ,([mt|b|], lPackValueRaw @(Maybe Natural) Nothing)
+                    ,([mt|c|], lPackValueRaw @(Maybe Natural) Nothing)
+                    ,([mt|d|], lPackValueRaw @(Maybe Natural) Nothing)
+                    ]
+              let sMaxUpdateproposalSize1 = metadataSize sMaxUpdateproposalMeta1
+              let requiredFrozenForUpdate = sMaxUpdateproposalSize1 * a + b
+
+              callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1)
+
+              -- Then we send 2 upvotes for the proposal (as min quorum is 2)
+              let proposalKey = makeProposalKey @ProposalMetadataL (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
+              callFrom (AddressResolved voter1) baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
+
+              advanceTime (day 12) -- voting period is 11 days.
+              callFrom (AddressResolved admin) baseDao (Call @"Flush") (1 :: Natural)
+
+              -- Now we expect this to work
+              callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
     ]
  ]
  where
+
+   defaultTokenBalance :: Natural = 1000
 
    metadataSize :: DynamicRec "pm" -> Natural
    metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md
@@ -142,20 +194,20 @@ test_RegistryDAO =
    -- RegistryDAO configuration values using the setExtra function below, and
    -- initialize the contract using it. This let us have the lambdas from LIGO
    -- in storage, and allows to tweak RegistryDAO configuration in tests.
-   initialStorage :: Address -> Address -> FullStorage
-   initialStorage admin wallet1 = let
+   initialStorage :: Address -> [Address] -> FullStorage
+   initialStorage admin wallets = let
       fs = fromVal ($(fetchValue @FullStorage "ligo/haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
       oldStorage = fsStorage fs
-      newStorage = oldStorage { sAdmin = admin, sLedger = BigMap $ Map.fromList [((wallet1, FA2.theTokenId), 100)] }
+      newStorage = oldStorage { sAdmin = admin, sLedger = BigMap $ Map.fromList [((w, FA2.theTokenId), defaultTokenBalance) | w <- wallets] }
       in fs { fsStorage = newStorage }
 
-   initialStorageWithExplictRegistryDAOConfig :: Address -> Address -> FullStorage
-   initialStorageWithExplictRegistryDAOConfig admin wallet1 =
+   initialStorageWithExplictRegistryDAOConfig :: Address -> [Address] -> FullStorage
+   initialStorageWithExplictRegistryDAOConfig admin wallets =
       setExtra @Natural [mt|a|] 1 $
       setExtra @Natural [mt|b|] 0 $
       setExtra @Natural [mt|c|] 1 $
       setExtra @Natural [mt|d|] 1 $
-      setExtra @Natural [mt|s_max|] 100 (initialStorage admin wallet1)
+      setExtra @Natural [mt|s_max|] 100 (initialStorage admin wallets)
 
    setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
    setExtra key v (s@FullStorage {..}) = let
