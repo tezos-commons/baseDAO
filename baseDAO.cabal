@@ -25,6 +25,7 @@ library
       BaseDAO.CLI
       BaseDAO.ShareTest.Common
       BaseDAO.ShareTest.FA2
+      BaseDAO.ShareTest.Management
       BaseDAO.ShareTest.OffChainViews
       BaseDAO.ShareTest.Proposal
       BaseDAO.ShareTest.Proposal.Bounds

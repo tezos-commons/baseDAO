@@ -5,7 +5,6 @@
 
 module Test.Common
   ( checkTokenBalance
-  , withOriginated
   , originateTrivialDao
   , originateBaseDaoWithConfig
   , originateBaseDaoWithBalance
@@ -28,27 +27,6 @@ import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.TrivialDAO as DAO
-
--- | Function that originates the contract and also make a bunch of
--- address (the `addrCount` arg determines the count) for use within
--- the tests. It is not pretty, but IMO it makes the test a bit less
--- verbose.
-withOriginated
-  :: MonadNettest caps base m
-  => Integer
-  -> ([Address] -> (Storage () ()))
-  -> ([Address] -> TAddress (Parameter () Empty) -> m a)
-  -> m a
-withOriginated addrCount storageFn tests = do
-  addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
-  baseDao <- originate $ OriginateData
-    { odFrom = nettestAddress
-    , odName = "BaseDAO Test Contract"
-    , odBalance = zeroMutez
-    , odStorage = storageFn addresses
-    , odContract = DAO.baseDaoContract DAO.defaultConfig
-    }
-  tests addresses baseDao
 
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.

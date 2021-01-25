@@ -12,7 +12,6 @@ module BaseDAO.ShareTest.Common
 
   , mkFA2View
   , checkTokenBalance
-  , withOriginated
   , originateTrivialDao
   , originateBaseDaoWithConfig
   , originateBaseDaoWithBalance
@@ -21,7 +20,6 @@ module BaseDAO.ShareTest.Common
   , addDataToSign
   , permitProtect
   , sendXtz
-  , expectMigrated
   , ProposalMetadataFromNum (..)
   , createSampleProposal
   ) where
@@ -54,27 +52,6 @@ expectFailed
   . (MonadNettest caps base m)
   => Address -> MText -> m () -> m ()
 expectFailed addr val = flip expectFailure (NettestFailedWith addr val)
-
--- | Function that originates the contract and also make a bunch of
--- address (the `addrCount` arg determines the count) for use within
--- the tests. It is not pretty, but IMO it makes the test a bit less
--- verbose.
-withOriginated
-  :: MonadNettest caps base m
-  => Integer
-  -> ([Address] -> (Storage () ()))
-  -> ([Address] -> TAddress (Parameter () Empty) -> m a)
-  -> m a
-withOriginated addrCount storageFn tests = do
-  addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
-  baseDao <- originate $ OriginateData
-    { odFrom = nettestAddress
-    , odName = "BaseDAO Test Contract"
-    , odBalance = zeroMutez
-    , odStorage = storageFn addresses
-    , odContract = DAO.baseDaoContract DAO.defaultConfig
-    }
-  tests addresses baseDao
 
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.
@@ -221,11 +198,6 @@ sendXtz addr epName pm = withFrozenCallStack $ do
         , tdParameter = pm
         }
   transfer transferData
-
-expectMigrated
-  :: (MonadNettest caps base m)
-  => Address -> m a -> m ()
-expectMigrated addr = expectCustomError #mIGRATED addr
 
 -- | Since in LIGO proposal metadata type is fixed but is inconvenient to work
 -- with, we need a way to abstract away from that complexity - this problem
