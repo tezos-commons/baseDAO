@@ -48,10 +48,30 @@ type IsLorentz = Bool
 
 -- | Used for check error from ligo contract
 expectFailed
- :: forall caps base m
-  . (MonadNettest caps base m)
-  => Address -> MText -> m () -> m ()
-expectFailed addr val = flip expectFailure (NettestFailedWith addr val)
+ :: forall caps base m a
+  . (MonadNettest caps base m, HasCallStack)
+  => Address -> MText -> m a -> m ()
+expectFailed addr val = withFrozenCallStack $
+  flip expectFailure (NettestFailedWith addr val)
+
+-- -- | Used for check error from ligo contract
+-- expectFailed
+--  :: forall caps base m
+--   . (MonadNettest caps base m, HasCallStack)
+--   => Address -> MText -> m () -> m ()
+-- expectFailed addr val ma =
+--   expectFailed "FA2_TOKEN_UNDEFINED ma
+--     `catch`
+--       (\_ -> expectFailedText addr val ma)
+  -- let mb = expectFailed "FA2_TOKEN_UNDEFINED ma
+  -- in withFrozenCallStack $
+  --     try @_ @SomeException mb >>= \case
+  --       Right _ -> mb
+  --       Left _ -> expectFailedText addr val ma
+
+-- expectStringError :: _
+-- expectStringError val act =
+
 
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.

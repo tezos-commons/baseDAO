@@ -22,6 +22,7 @@ import Lorentz
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
+import Lorentz.Helper (failAsText)
 import Universum hiding (drop, swap, (>>))
 import Util.Markdown
 
@@ -215,7 +216,7 @@ decisionLambda = do
     toField #pmConsumerAddr
     contractCallingUnsafe @MText DefEpName
     ifSome nop $ do
-      failCustom_ #fAIL_DECISION_LAMBDA
+      failAsText #fAIL_DECISION_LAMBDA
     push zeroMutez
   transferTokens
   nil; swap; cons

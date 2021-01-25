@@ -161,12 +161,12 @@ updatingOperatorScenario originateFn = do
         }
 
   callFrom (AddressResolved owner2) dao (Call @"Transfer") transferParams
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectFailed (toAddress dao) [mt|FA2_NOT_OPERATOR|]
   callFrom (AddressResolved owner1) dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
-    & expectCustomError_ #nOT_OWNER
+    & expectFailed (toAddress dao) [mt|NOT_OWNER|]
 
   callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
-    & expectCustomError_ #nOT_OWNER
+    & expectFailed (toAddress dao) [mt|NOT_OWNER|]
 
 lowBalanceScenario
   :: forall caps base m param
@@ -243,7 +243,7 @@ badOperatorScenario originateFn = do
             } ]
         } ]
   callFrom (AddressResolved op3) dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectFailed (toAddress dao) [mt|FA2_NOT_OPERATOR|]
 
 emptyTransferListScenario
   :: forall caps base m param
@@ -276,9 +276,9 @@ validateTokenScenario originateFn = do
   callWith (params unfrozenTokenId)
 
   callWith (params frozenTokenId)
-    & expectCustomError_ #fROZEN_TOKEN_NOT_TRANSFERABLE
+    & expectFailed (toAddress dao) [mt|FROZEN_TOKEN_NOT_TRANSFERABLE|]
   callWith (params unknownTokenId)
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectFailed (toAddress dao) [mt|FA2_TOKEN_UNDEFINED|]
 
 validateTokenOwnerScenario
   :: forall caps base m param
@@ -300,9 +300,9 @@ validateTokenOwnerScenario originateFn = do
   callWith (params unfrozenTokenId)
 
   callWith (params frozenTokenId)
-    & expectCustomError_ #fROZEN_TOKEN_NOT_TRANSFERABLE
+    & expectFailed (toAddress dao) [mt|FROZEN_TOKEN_NOT_TRANSFERABLE|]
   callWith (params unknownTokenId)
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectFailed (toAddress dao) [mt|FA2_TOKEN_UNDEFINED|]
 
 
 noForeignMoneyScenario
@@ -321,7 +321,7 @@ noForeignMoneyScenario originateFn = do
             } ]
         } ]
   callFrom (AddressResolved op1) dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectFailed (toAddress dao) [mt|FA2_NOT_OPERATOR|]
 
 noForeignMoneyOwnerScenario
   :: forall caps base m param
@@ -339,13 +339,13 @@ noForeignMoneyOwnerScenario originateFn = do
             } ]
         } ]
   callFrom (AddressResolved owner1) dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectFailed (toAddress dao) [mt|FA2_NOT_OPERATOR|]
 
 balanceOfOwnerScenario
   :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
+  . (MonadNettest caps base m, FA2.ParameterC param, HasCallStack)
   => OriginateFn param m -> m ()
-balanceOfOwnerScenario originateFn = do
+balanceOfOwnerScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), _, dao, _) <- originateFn
   consumer <- originateSimple "consumer" [] contractConsumer
   let
@@ -356,7 +356,7 @@ balanceOfOwnerScenario originateFn = do
   callWith (params [ FA2.BalanceRequestItem owner1 frozenTokenId ])
   callWith (params [])
   callWith (params [ FA2.BalanceRequestItem owner1 unknownTokenId ])
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectFailed (toAddress dao) [mt|FA2_TOKEN_UNDEFINED|]
 
 adminTransferScenario
   :: forall caps base m param

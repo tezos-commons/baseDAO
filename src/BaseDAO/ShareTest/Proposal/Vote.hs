@@ -38,7 +38,7 @@ voteNonExistingProposal _ originateFn = do
         }
 
   callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
-    & expectCustomError_ #pROPOSAL_NOT_EXIST
+    & expectFailed (toAddress dao) [mt|PROPOSAL_NOT_EXIST|]
 
 voteMultiProposals
   :: forall pm param config caps base m.
@@ -98,7 +98,7 @@ insufficientTokenVote _ originateFn = do
         ]
 
   callFrom (AddressResolved owner2) dao (Call @"Vote") params
-    & expectCustomError_ #vOTING_INSUFFICIENT_BALANCE
+    & expectFailed (toAddress dao) [mt|VOTING_INSUFFICIENT_BALANCE|]
 
 voteOutdatedProposal
   :: forall pm param config caps base m.
@@ -124,7 +124,7 @@ voteOutdatedProposal _ originateFn = do
   callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
   advanceTime (sec 25)
   callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
-    & expectCustomError_ #vOTING_PERIOD_OVER
+    & expectFailed (toAddress dao) [mt|VOTING_PERIOD_OVER|]
 
 voteWithPermit
   :: forall pm param config caps base m.

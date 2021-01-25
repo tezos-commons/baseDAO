@@ -24,7 +24,7 @@ import Michelson.Typed.Convert (untypeValue)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
 
-import BaseDAO.ShareTest.Common (makeProposalKey)
+import BaseDAO.ShareTest.Common (expectFailed, makeProposalKey)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
@@ -70,7 +70,7 @@ test_RegistryDAO =
               [(mkMTextUnsafe ("long_key" <> (show @_ @Int t)), "long_value") | t <- [1..10]]
             proposalSize = metadataSize proposalMeta
             in callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-              & expectFailProposalCheck
+              & expectFailProposalCheck (toAddress baseDao)
 
     , nettestScenarioCaps "checks it fails if required tokens are not frozen" $
         withOriginated 2
@@ -81,7 +81,7 @@ test_RegistryDAO =
             -- a, b set to 1 and 0 means that it requires 6 tokens to be frozen (6 * 1 + 0)
             -- because proposal size happen to be 6 here.
             in callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams 2 proposalMeta)
-              & expectFailProposalCheck
+              & expectFailProposalCheck (toAddress baseDao)
 
     , nettestScenarioCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
@@ -155,7 +155,7 @@ test_RegistryDAO =
 
               -- We expect this to fail because s_max is 100 and proposal size is ~ 320.
               callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
-                & expectFailProposalCheck
+                & expectFailProposalCheck (toAddress baseDao)
 
               -- We create a new proposal to increase s_max to largeProposalSize + 1.
               let sMaxUpdateproposalMeta1 = DynamicRec $ Map.fromList
@@ -219,5 +219,5 @@ test_RegistryDAO =
 
 expectFailProposalCheck
   :: (MonadNettest caps base m)
-  => m a -> m ()
-expectFailProposalCheck = expectCustomError_ #fAIL_PROPOSAL_CHECK
+  => Address -> m a -> m ()
+expectFailProposalCheck daoAddr = expectFailed daoAddr [mt|FAIL_PROPOSAL_CHECK|]

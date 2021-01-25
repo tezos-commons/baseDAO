@@ -30,6 +30,7 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 import Lorentz.Contracts.BaseDAO.Token.FA2 (convertOperatorParam)
 import Lorentz.Contracts.BaseDAO.Types
+import Lorentz.Helper (failAsText)
 import qualified Paths_baseDAO as Paths
 
 -- | Piece of metadata defined by user.
@@ -184,7 +185,7 @@ tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
               dup
               dip $ do
                 get
-                ifSome nop $ failCustom_ #fA2_TOKEN_UNDEFINED
+                ifSome nop $ failAsText #fA2_TOKEN_UNDEFINED
               pair
       ]
   }

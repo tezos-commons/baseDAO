@@ -16,7 +16,8 @@ import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
-import BaseDAO.ShareTest.Common (OriginateFn, checkTokenBalance, makeProposalKey, sendXtz)
+import BaseDAO.ShareTest.Common
+  (OriginateFn, checkTokenBalance, expectFailed, makeProposalKey, sendXtz)
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.TreasuryDAO.Types
@@ -66,7 +67,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
     proposalSize = metadataSize proposalMeta
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
 
@@ -149,11 +150,11 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
 
   -- due to smaller than y (min mutez allow)
   callFrom (AddressResolved owner1) dao (Call @"Propose") (proposeParams 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   -- due to bigger than z (max mutez allow)
   callFrom (AddressResolved owner1) dao (Call @"Propose") (proposeParams 6)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3) owner1

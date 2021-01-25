@@ -114,7 +114,7 @@ fa2Handler = do
 -- ensureZeroTransfer = do
 --   amount
 --   push zeroMutez
---   if IsEq then nop else failCustom_ #fORBIDDEN_XTZ
+--   if IsEq then nop else failAsText #fORBIDDEN_XTZ
 
 pushFuncContext
   :: (KnownValue ce, KnownValue pm)

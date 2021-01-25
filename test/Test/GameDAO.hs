@@ -16,7 +16,8 @@ import Time (sec)
 
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.GameDAO
-import Test.Common
+import BaseDAO.ShareTest.Common (checkTokenBalance, expectFailed)
+import Test.Common (makeProposalKey, originateBaseDaoWithConfig)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -43,7 +44,7 @@ validProposal = uncapsNettest $ do
   callFrom (AddressResolved owner1) dao (Call @"Propose") (DAO.ProposeParams
     { ppFrozenToken = 20
     , ppProposalMetadata = sampleMetadataContent $ toAddress consumer
-    }) & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    }) & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") (DAO.ProposeParams
     { ppFrozenToken = 15

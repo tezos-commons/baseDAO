@@ -60,7 +60,7 @@ test_BaseDAO_Management =
             , tdEntrypoint = unsafeBuildEpName "transfer_ownership"
             , tdParameter = (#newOwner .! wallet1)
             }
-          & expectForbiddenXTZ
+          & expectForbiddenXTZ (toAddress baseDao)
 
     , nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $
         transferOwnership withOriginated initialStorage

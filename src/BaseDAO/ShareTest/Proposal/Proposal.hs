@@ -55,7 +55,7 @@ rejectProposal _ originateFn = do
         }
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") params
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
 insufficientTokenProposal
   :: forall pm param config caps base m.
@@ -72,7 +72,7 @@ insufficientTokenProposal _ originateFn = do
         }
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") params
-    & expectCustomError_ #pROPOSAL_INSUFFICIENT_BALANCE
+    & expectFailed (toAddress dao) [mt|PROPOSAL_INSUFFICIENT_BALANCE|]
 
 nonUniqueProposal
   :: forall pm param config caps base m.
@@ -85,7 +85,7 @@ nonUniqueProposal _ originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   _ <- createSampleProposal 1 owner1 dao
   createSampleProposal 1 owner1 dao
-    & expectCustomError_ #pROPOSAL_NOT_UNIQUE
+    & expectFailed (toAddress dao) [mt|PROPOSAL_NOT_UNIQUE|]
 
 voteValidProposal
   :: forall pm param config caps base m.

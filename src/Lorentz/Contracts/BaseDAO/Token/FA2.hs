@@ -18,6 +18,8 @@ import Lorentz.Contracts.BaseDAO.Doc (balanceOfDoc, transferDoc, updateOperators
 import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface
+import Lorentz.Helper (failAsText)
+
 
 defaultPermissionsDescriptor :: PermissionsDescriptor
 defaultPermissionsDescriptor = PermissionsDescriptor
@@ -83,8 +85,8 @@ transfer = do
           dig @5
           dup
           if_ (dug @5) $
-            failCustom_ #fROZEN_TOKEN_NOT_TRANSFERABLE
-        else failCustom_ #fA2_TOKEN_UNDEFINED
+            failAsText #fROZEN_TOKEN_NOT_TRANSFERABLE
+        else failAsText #fA2_TOKEN_UNDEFINED
       pair
       dup
       dig @3
@@ -117,7 +119,7 @@ transfer = do
         swap
         pair
         mem
-        if_ nop (failCustom_ #fA2_NOT_OPERATOR)
+        if_ nop (failAsText #fA2_NOT_OPERATOR)
 
 debitFrom
   :: forall store ce pm. (StorageC store ce pm, IsoValue store)
@@ -251,7 +253,7 @@ balanceOf = do
         push frozenTokenId
         if IsEq
         then nop
-        else failCustom_ #fA2_TOKEN_UNDEFINED
+        else failAsText #fA2_TOKEN_UNDEFINED
       swap
       pair
       dig @3
@@ -302,7 +304,7 @@ addOperator = do
   Lorentz.sender
   if IsEq
   then nop
-  else failCustom_ #nOT_OWNER
+  else failAsText #nOT_OWNER
   stackType @("owner" :! Address : "operator" :! Address : Storage ce pm : s)
   pair
   swap
@@ -335,7 +337,7 @@ removeOperator = do
   Lorentz.sender
   if IsEq
   then nop
-  else failCustom_ #nOT_OWNER
+  else failAsText #nOT_OWNER
   stackType @("owner" :! Address : "operator" :! Address : Storage ce pm : s)
   pair
   swap
@@ -380,4 +382,4 @@ validateOperatorToken = do
     push frozenTokenId
     if IsEq
     then failUsing [mt|OPERATION_PROHIBITED|]
-    else failCustom_ #fA2_TOKEN_UNDEFINED
+    else failAsText #fA2_TOKEN_UNDEFINED

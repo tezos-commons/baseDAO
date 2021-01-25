@@ -31,7 +31,4 @@ let transfer_contract_tokens
     Some contract ->
       let transfer_operation = Tezos.transaction param.params 0mutez contract
       in (([transfer_operation] : operation list), store)
-  | None ->
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-        ("FAIL_TRANSFER_CONTRACT_TOKENS", ()) : return)
-
+  | None -> (failwith("FAIL_TRANSFER_CONTRACT_TOKENS"): return)

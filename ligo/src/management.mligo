@@ -32,9 +32,7 @@ let transfer_ownership
 let accept_ownership(param, store : unit * storage) : return =
   if store.pending_owner = Tezos.sender
     then (([] : operation list), { store with admin = store.pending_owner })
-    else
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-        ("NOT_PENDING_ADMIN", ()) : return)
+    else (failwith("NOT_PENDING_ADMIN"): return)
 
 (*
  * Auth check for admin and sets the migration status to 'MigratingTo' using
@@ -51,17 +49,13 @@ let migrate(param, store : migrate_param * storage) : return =
  *)
 let confirm_migration(param, store : unit * storage) : return =
   match store.migration_status with
-    Not_in_migration ->
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-        ("NOT_MIGRATING", ()) : return)
+    Not_in_migration -> (failwith("NOT_MIGRATING"): return)
   | MigratingTo (new_addr) -> if new_addr = Tezos.sender
       then (([] : operation list), { store with migration_status = MigratedTo (new_addr) })
-      else
-        ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-          ("NOT_MIGRATION_TARGET", ()) : return)
+      else (failwith("NOT_MIGRATION_TARGET"): return)
   | MigratedTo (new_addr)  ->
-      ([%Michelson ({| { FAILWITH } |} : string * address -> return)]
-        ("MIGRATED", new_addr) : return)
+    ([%Michelson ({| { FAILWITH } |} : string * address -> return)]
+      ("MIGRATED", new_addr) : return)
 
 (*
  * Call a custom entrypoint. Looks up the packed code for entrypoint using the entrypoint
@@ -81,10 +75,6 @@ let call_custom(param, full_storage : custom_ep_param * full_storage) : return_w
       begin
         match ((Bytes.unpack ep_code) : ((bytes * full_storage) -> return_with_full_storage) option) with
           Some lambda -> lambda (packed_param, full_storage)
-        | None ->
-            ([%Michelson ({| { FAILWITH } |} : string * unit -> return_with_full_storage)]
-              ("UNPACKING_FAILED", ()) : return_with_full_storage)
+        | None -> (failwith("UNPACKING_FAILED"): return_with_full_storage)
       end
-  | None ->
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> return_with_full_storage)]
-        ("ENTRYPOINT_NOT_FOUND", ()) : return_with_full_storage)
+  | None -> (failwith("ENTRYPOINT_NOT_FOUND"): return_with_full_storage)

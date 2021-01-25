@@ -26,9 +26,7 @@ let base_DAO_contract
             | M_right (fbp) ->
                 let result =
                   if Tezos.amount > 0tez
-                    then
-                      ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-                        ("FORBIDDEN_XTZ", ()) : return)
+                    then (failwith("FORBIDDEN_XTZ"): return)
                     else
                       begin
                         match fbp with

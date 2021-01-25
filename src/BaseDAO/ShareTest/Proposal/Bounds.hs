@@ -32,7 +32,7 @@ setVotingPeriod _ originateFn = do
   let param = 60 * 60 -- 1 hour
 
   callFrom (AddressResolved owner1) dao (Call @"Set_voting_period") param
-    & expectCustomError_ #nOT_ADMIN
+    & expectFailed (toAddress dao) [mt|NOT_ADMIN|]
 
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") param
   -- TODO [#31]: checkStorage
@@ -51,7 +51,7 @@ setQuorumThreshold _ originateFn = do
   let param = 100
 
   callFrom (AddressResolved owner1) dao (Call @"Set_quorum_threshold") param
-    & expectCustomError_ #nOT_ADMIN
+    & expectFailed (toAddress dao) [mt|NOT_ADMIN|]
 
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") param
   -- TODO [#31]: checkStorage
@@ -77,7 +77,7 @@ proposalBoundedValue _ originateFn = do
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") params
   callFrom (AddressResolved owner1) dao (Call @"Propose") params
-    & expectCustomError_ #mAX_PROPOSALS_REACHED
+    & expectFailed (toAddress dao) [mt|MAX_PROPOSALS_REACHED|]
 
 votesBoundedValue
   :: forall pm param config caps base m.
@@ -107,7 +107,7 @@ votesBoundedValue _ originateFn = do
 
   callFrom (AddressResolved owner1) dao (Call @"Vote") [downvote]
   callFrom (AddressResolved owner1) dao (Call @"Vote") [upvote]
-    & expectCustomError_ #mAX_VOTES_REACHED
+    & expectFailed (toAddress dao) [mt|MAX_VOTES_REACHED|]
 
 quorumThresholdBound
   :: forall pm param config caps base m.
@@ -127,9 +127,9 @@ quorumThresholdBound _ originateFn = do
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 2
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 0
-    & expectCustomError_ #oUT_OF_BOUND_QUORUM_THRESHOLD
+    & expectFailed (toAddress dao) [mt|OUT_OF_BOUND_QUORUM_THRESHOLD|]
   callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 3
-    & expectCustomError_ #oUT_OF_BOUND_QUORUM_THRESHOLD
+    & expectFailed (toAddress dao) [mt|OUT_OF_BOUND_QUORUM_THRESHOLD|]
 
 votingPeriodBound
   :: forall pm param config caps base m.
@@ -149,6 +149,6 @@ votingPeriodBound _ originateFn = do
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 1
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 2
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 0
-    & expectCustomError_ #oUT_OF_BOUND_VOTING_PERIOD
+    & expectFailed (toAddress dao) [mt|OUT_OF_BOUND_VOTING_PERIOD|]
   callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 3
-    & expectCustomError_ #oUT_OF_BOUND_VOTING_PERIOD
+    & expectFailed (toAddress dao) [mt|OUT_OF_BOUND_VOTING_PERIOD|]

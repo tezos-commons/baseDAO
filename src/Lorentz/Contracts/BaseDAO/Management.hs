@@ -16,6 +16,8 @@ import Lorentz.Contracts.BaseDAO.Doc
 import Lorentz.Contracts.BaseDAO.Types
 import Lorentz.Contracts.ManagedLedger.Doc (DRequireRole(..))
 
+import Lorentz.Helper (failAsText)
+
 -- | Set the value of pending owner in storage
 -- using the address in parameter.
 transferOwnership
@@ -80,11 +82,11 @@ confirmMigration = do
   doc $ DRequireRole "migration target contract"
   stGetField #sMigrationStatus
   caseT @MigrationStatus
-    ( #cNotInMigration /-> failCustom_ #nOT_MIGRATING
+    ( #cNotInMigration /-> failAsText #nOT_MIGRATING
     , #cMigratingTo /-> do
         dup
         sender
-        if IsEq then nop else failCustom_ #nOT_MIGRATION_TARGET
+        if IsEq then nop else failAsText #nOT_MIGRATION_TARGET
         wrap_ @MigrationStatus #cMigratedTo
         stSetField #sMigrationStatus
     , #cMigratedTo /-> failCustom #mIGRATED
@@ -98,7 +100,7 @@ authorizePendingOwner = do
   doc $ DRequireRole "pending owner"
   stGetField #sPendingOwner
   sender
-  if IsEq then nop else failCustom_ #nOT_PENDING_ADMIN
+  if IsEq then nop else failAsText #nOT_PENDING_ADMIN
 
 -- Authorise administrator.
 authorizeAdmin ::
@@ -106,4 +108,4 @@ authorizeAdmin ::
 authorizeAdmin = do
   doc $ DRequireRole "administrator"
   stGetField #sAdmin; sender;
-  if IsEq then nop else failCustom_ #nOT_ADMIN
+  if IsEq then nop else failAsText #nOT_ADMIN

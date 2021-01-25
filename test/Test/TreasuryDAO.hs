@@ -18,7 +18,10 @@ import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.TreasuryDAO
 import Lorentz.Contracts.TreasuryDAO.Types
-import Test.Common
+
+import BaseDAO.ShareTest.Common (checkTokenBalance, expectFailed)
+import Test.Common (makeProposalKey
+  , originateBaseDaoWithConfig, originateBaseDaoWithBalance)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -56,10 +59,10 @@ validProposal = uncapsNettest $ do
       expectedToken = fromInteger $ toInteger $ length $ lPackValueRaw proposal
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") (params $ expectedToken - 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") (params $ expectedToken + 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   -- Expected token is 58 in this case
   _ <- createSampleProposal expectedToken proposal owner1 dao

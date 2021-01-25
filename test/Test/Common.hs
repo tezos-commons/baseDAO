@@ -4,8 +4,7 @@
 {-# LANGUAGE NumericUnderscores #-}
 
 module Test.Common
-  ( checkTokenBalance
-  , originateTrivialDao
+  ( originateTrivialDao
   , originateBaseDaoWithConfig
   , originateBaseDaoWithBalance
   , originateTrivialDaoWithBalance
@@ -18,7 +17,6 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Named (defaults, (!))
 import Util.Named ((.!))
@@ -103,32 +101,6 @@ originateTrivialDao
   :: (MonadNettest caps base m)
   => m ((Address, Address), (Address, Address), TAddress (DAO.Parameter () Empty), Address)
 originateTrivialDao = originateBaseDao ()
-
--- | Create FA2 View
-mkFA2View
-  :: forall paramFa a r contract. ToContractRef r contract
-  => a
-  -> contract
-  -> FA2.FA2View paramFa a r
-mkFA2View a c = FA2.FA2View (mkView a c)
-
--- | Helper function to check a user balance of a particular token
-checkTokenBalance
-  :: (NiceParameterFull (Parameter pm op), MonadNettest caps base m)
-  => FA2.TokenId -> TAddress (DAO.Parameter pm op)
-  -> Address -> Natural
-  -> m ()
-checkTokenBalance tokenId dao addr expectedValue = do
-  consumer <- originateSimple "consumer" [] contractConsumer
-
-  callFrom (AddressResolved addr) dao (Call @"Balance_of")
-    (mkFA2View [ FA2.BalanceRequestItem
-      { briOwner = addr
-      , briTokenId = tokenId
-      } ] consumer)
-
-  checkStorage (AddressResolved $ toAddress consumer)
-    (toVal [[((addr, tokenId), expectedValue)]] )
 
 makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ProposalKey pm
 makeProposalKey params owner = toHashHs $ lPackValue (params, owner)

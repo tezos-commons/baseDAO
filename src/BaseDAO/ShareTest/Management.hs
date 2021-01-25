@@ -38,6 +38,7 @@ import Lorentz hiding ((>>))
 import Morley.Nettest
 import Util.Named
 
+import BaseDAO.ShareTest.Common
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 
 type WithOriginateFn m param st = Integer
@@ -54,7 +55,7 @@ transferOwnership
 transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
     callFrom (AddressResolved wallet1) baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
-      & expectNotAdmin
+      & expectNotAdmin (toAddress baseDao)
 
 setPendingOwner
   :: forall caps base m param pm st
@@ -94,7 +95,7 @@ rewritePendingOwner withOriginatedFn initialStorage =
         (#newOwner .! wallet2)
       -- Make the accept ownership call from wallet1 and see that it fails
       callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
+        & expectNotPendingOwner (toAddress baseDao)
       -- Make the accept ownership call from wallet1 and see that it works
       callFrom (AddressResolved wallet2) baseDao (Call @"Accept_ownership") ()
 
@@ -112,7 +113,7 @@ invalidatePendingOwner withOriginatedFn initialStorage =
       -- Make the accept ownership call from wallet1 and see that it fails
       -- with 'not pending owner' error
       callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
+        & expectNotPendingOwner (toAddress baseDao)
 
 respectMigratedState
   :: forall caps base m param pm st
@@ -138,7 +139,7 @@ authenticateSender withOriginatedFn initialStorage =
       callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       callFrom (AddressResolved wallet2) baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
+        & expectNotPendingOwner (toAddress baseDao)
 
 changeToPendingAdmin
   :: forall caps base m param pm st
@@ -159,7 +160,7 @@ noPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[_, wallet1] baseDao -> do
       callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
-      & expectNotPendingOwner
+      & expectNotPendingOwner (toAddress baseDao)
 
 pendingOwnerNotTheSame
   :: forall caps base m param pm st
@@ -171,7 +172,7 @@ pendingOwnerNotTheSame withOriginatedFn initialStorage =
       callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       callFrom (AddressResolved owner) baseDao (Call @"Accept_ownership") ()
-      & expectNotPendingOwner
+      & expectNotPendingOwner (toAddress baseDao)
 
 acceptOwnerRespectMigration
   :: forall caps base m param pm st
@@ -195,7 +196,7 @@ migrationAuthenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[_, newAddress1, randomAddress] baseDao -> do
       callFrom (AddressResolved randomAddress) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-        & expectNotAdmin
+        & expectNotAdmin (toAddress baseDao)
 
 migrationSetPendingOwner
   :: forall caps base m param pm st
@@ -240,7 +241,7 @@ confirmMigAuthenticateSender withOriginatedFn initialStorage =
       callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
       -- We test this by calling `confirmMigration` and seeing that it does not fail
       callFrom (AddressResolved randomAddress) baseDao (Call @"Confirm_migration") ()
-        & expectNotMigrationTarget
+        & expectNotMigrationTarget (toAddress baseDao)
 
 confirmMigAuthenticateState
   :: forall caps base m param pm st
@@ -250,7 +251,7 @@ confirmMigAuthenticateState withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[_, newAddress1] baseDao -> do
       callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
-        & expectNotMigrating
+        & expectNotMigrating (toAddress baseDao)
 
 confirmMigFinalize
   :: forall caps base m param pm st
@@ -267,23 +268,23 @@ confirmMigFinalize withOriginatedFn initialStorage =
 
 expectNotAdmin
   :: (MonadNettest caps base m)
-  => m a -> m ()
-expectNotAdmin = expectCustomError_ #nOT_ADMIN
+  => Address -> m a -> m ()
+expectNotAdmin addr = expectFailed addr [mt|NOT_ADMIN|]
 
 expectNotPendingOwner
   :: (MonadNettest caps base m)
-  => m a -> m ()
-expectNotPendingOwner = expectCustomError_ #nOT_PENDING_ADMIN
+  => Address -> m a -> m ()
+expectNotPendingOwner addr = expectFailed addr [mt|NOT_PENDING_ADMIN|]
 
 expectNotMigrating
   :: (MonadNettest caps base m)
-  => m a -> m ()
-expectNotMigrating = expectCustomError_ #nOT_MIGRATING
+  => Address -> m a -> m ()
+expectNotMigrating addr = expectFailed addr [mt|NOT_MIGRATING|]
 
 expectNotMigrationTarget
   :: (MonadNettest caps base m)
-  => m a -> m ()
-expectNotMigrationTarget = expectCustomError_ #nOT_MIGRATION_TARGET
+  => Address -> m a -> m ()
+expectNotMigrationTarget addr = expectFailed addr [mt|NOT_MIGRATION_TARGET|]
 
 expectMigrated
   :: (MonadNettest caps base m)
@@ -292,5 +293,5 @@ expectMigrated addr = expectCustomError #mIGRATED addr
 
 expectForbiddenXTZ
   :: (MonadNettest caps base m)
-  => m a -> m ()
-expectForbiddenXTZ = expectCustomError_ #fORBIDDEN_XTZ
+  => Address -> m a -> m ()
+expectForbiddenXTZ addr = expectFailed addr [mt|FORBIDDEN_XTZ|]

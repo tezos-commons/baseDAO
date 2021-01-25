@@ -13,11 +13,11 @@ import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
-import BaseDAO.ShareTest.Common (sendXtz)
+import BaseDAO.ShareTest.Common (checkTokenBalance, expectFailed, sendXtz)
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.RegistryDAO
 import Lorentz.Contracts.RegistryDAO.Types
-import Test.Common
+import Test.Common (makeProposalKey, originateBaseDaoWithConfig)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -53,10 +53,10 @@ validProposal = uncapsNettest $ do
       expectedToken = fromInteger $ toInteger $ length $ lPackValueRaw longNormalProposalMetadata
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") (params $ expectedToken - 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   callFrom (AddressResolved owner1) dao (Call @"Propose") (params $ expectedToken + 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   -- Expected token is 58 in this case
   _ <- createSampleProposal (getTokensAmount longNormalProposalMetadata) longNormalProposalMetadata owner1 dao
@@ -98,7 +98,7 @@ validConfigProposal = uncapsNettest $ do
 
   -- Fail due too big proposal size
   _ <- createSampleProposal ((getTokensAmount longNormalProposalMetadata) + 5) longNormalProposalMetadata owner1 dao
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectFailed (toAddress dao) [mt|FAIL_PROPOSAL_CHECK|]
 
   -- Expected token is 58 + 5 in this case
   _ <- createSampleProposal ((getTokensAmount normalProposalMetadata) + 5) normalProposalMetadata owner1 dao

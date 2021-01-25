@@ -14,6 +14,7 @@ import Lorentz.Contracts.BaseDAO.Management (authorizeAdmin, ensureNotMigrated)
 import Lorentz.Contracts.BaseDAO.Token.FA2 (creditTo, debitFrom)
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Helper (failAsText)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -68,7 +69,7 @@ transferContractTokens = do
     toField #tcContractAddress
     contractCalling @FA2.Parameter (Call @"Transfer")
     ifSome nop $ do
-      failCustom_ #fAIL_TRANSFER_CONTRACT_TOKENS
+      failAsText #fAIL_TRANSFER_CONTRACT_TOKENS
     push zeroMutez
   transferTokens
   nil; swap; cons

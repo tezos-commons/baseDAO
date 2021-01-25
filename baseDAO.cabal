@@ -51,6 +51,7 @@ library
       Lorentz.Contracts.TreasuryDAO.Doc
       Lorentz.Contracts.TreasuryDAO.Types
       Lorentz.Contracts.TrivialDAO
+      Lorentz.Helper
   other-modules:
       Paths_baseDAO
   autogen-modules:
