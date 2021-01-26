@@ -12,7 +12,6 @@ import Morley.Nettest.Tasty (nettestScenario)
 import Test.Tasty (TestTree, testGroup)
 
 import qualified BaseDAO.ShareTest.Token as Share
-import Ligo.BaseDAO.ConfigDesc
 import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Test.Ligo.BaseDAO.Common
@@ -23,7 +22,7 @@ test_BaseDAO_Token :: TestTree
 test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   [ nettestScenario "can burn tokens from any accounts"
       $ uncapsNettest $ Share.burnScenario
-        $ originateLigoDaoWithBalance dynRecUnsafe (ConfigDesc ())
+        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfigL
           (\o1 _ ->
               [ ((o1, DAO.unfrozenTokenId), 10)
               , ((o1, DAO.frozenTokenId), 10)
@@ -31,7 +30,7 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
           )
   , nettestScenario "can mint tokens to any accounts"
       $ uncapsNettest $ Share.mintScenario
-        $ originateLigoDaoWithBalance dynRecUnsafe (ConfigDesc ())
+        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfigL
           (\o1 _ ->
               [ ((o1, DAO.unfrozenTokenId), 0)
               , ((o1, DAO.frozenTokenId), 0)

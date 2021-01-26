@@ -97,6 +97,11 @@ let treasury_DAO_decision_lambda (proposal, store : proposal * storage) : return
     ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
         ("FAIL_DECISION_LAMBDA", ()) : return)
 
+// A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
+// prohibit non-zero xtz transfer.
+let receive_xtz_entrypoint (params, full_storage : bytes * full_storage): return_with_full_storage =
+  (([]: operation list), full_storage)
+
 // -------------------------------------
 // Storage Generator
 // -------------------------------------
@@ -120,5 +125,6 @@ let default_treasury_DAO_full_storage (admin, token_address, contract_extra
     proposal_check = treasury_DAO_proposal_check;
     rejected_proposal_return_value = treasury_DAO_rejected_proposal_return_value;
     decision_lambda = treasury_DAO_decision_lambda;
+    custom_entrypoints = Map.literal ["receive_xtz", Bytes.pack (receive_xtz_entrypoint)]
     } in
   (new_storage, new_config)

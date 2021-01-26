@@ -81,6 +81,7 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Token.FA2
       Test.Ligo.BaseDAO.Types
       Test.Ligo.RegistryDAO
+      Test.Ligo.TreasuryDAO
       Paths_baseDAO_ligo_meta
   hs-source-dirs:
       test

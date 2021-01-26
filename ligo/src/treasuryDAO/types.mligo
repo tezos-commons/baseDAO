@@ -20,7 +20,8 @@ type token_transfer =
   }
 
 type transfer_type =
-    Xtz_transfer_type of xtz_transfer
+  [@layout:comb]
+  | Xtz_transfer_type of xtz_transfer
   | Token_transfer_type of token_transfer
 
 
