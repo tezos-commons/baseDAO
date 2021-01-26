@@ -33,6 +33,7 @@ import Morley.Nettest
 import Util.Named
 
 import BaseDAO.ShareTest.Common
+import BaseDAO.ShareTest.Management (expectMigrated)
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
