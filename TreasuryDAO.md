@@ -1,6 +1,6 @@
 # Treasury DAO
 
-**Code revision:** [94dd4a7](https://github.com/tqtezos/baseDAO/tree/94dd4a71192ee6e865fb2c9518c7f893eeace275) *(Fri Jan 22 21:56:29 2021 +0530)*
+**Code revision:** [c1160b8](https://github.com/tqtezos/baseDAO/tree/c1160b83d417bd751966a0039b90558b9836f832) *(Tue Jan 26 18:06:19 2021 +0700)*
 
 
 
@@ -703,7 +703,7 @@ is decreased by the same value.
 
 **Argument:** 
   + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`TreasuryDaoProposalMetadata`](#types-TreasuryDaoProposalMetadata)
-  + **In Michelson:** `(pair (nat %frozen_token) (pair %proposal_metadata (nat %agora_post_id) (list %transfers (or (pair %transfer_type (mutez %amount) (address %recipient)) (pair %transfer_type (address %contract_address) (list %transfer_list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))))))`
+  + **In Michelson:** `(pair (nat %frozen_token) (pair %proposal_metadata (nat %agora_post_id) (list %transfers (or (pair (mutez %amount) (address %recipient)) (pair (address %contract_address) (list %transfer_list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))))))`
     + **Example:** <span id="example-id">`Pair 0 (Pair 0 { Left (Pair 100 "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB") })`</span>
 
 <details>
@@ -1564,8 +1564,8 @@ Describes a transfer operation
 Describe the transfer type of the Treasury proposal which are: token transfer type and xtz transfer type.
 
 **Structure:** *one of* 
-+ **XtzTransferType**[`XtzTransfer`](#types-XtzTransfer)
-+ **TokenTransferType**[`TokenTransfer`](#types-TokenTransfer)
++ **Xtz_transfer_type**[`XtzTransfer`](#types-XtzTransfer)
++ **Token_transfer_type**[`TokenTransfer`](#types-TokenTransfer)
 
 
 **Final Michelson representation:** `or (pair mutez address) (pair address (list (pair address (list (pair address (pair nat nat))))))`
