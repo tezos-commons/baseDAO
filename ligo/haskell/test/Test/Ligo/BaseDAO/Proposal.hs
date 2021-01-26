@@ -8,8 +8,9 @@ module Test.Ligo.BaseDAO.Proposal
 import Test.Tasty (TestTree)
 
 import BaseDAO.ShareTest.Proposal
+import Ligo.BaseDAO.Types (dynRecUnsafe)
 import Test.Ligo.BaseDAO.Common
 
 test_BaseDAO_Proposal :: TestTree
 test_BaseDAO_Proposal =
-  mkBaseDaoProposalTests originateLigoDaoWithConfig
+  mkBaseDaoProposalTests (originateLigoDaoWithConfigDesc dynRecUnsafe)

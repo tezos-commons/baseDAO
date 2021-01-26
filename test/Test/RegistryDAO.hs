@@ -13,6 +13,7 @@ import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
+import BaseDAO.ShareTest.Common (sendXtz)
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.RegistryDAO
 import Lorentz.Contracts.RegistryDAO.Types
@@ -67,8 +68,7 @@ validConfigProposal :: (Monad m) => NettestImpl m -> m ()
 validConfigProposal = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig def configBS
 
-  sendXtz owner1 -- fixes "Balance is too low" error in CI.
-
+  sendXtz owner1 DefEpName () -- fixes "Balance is too low" error in CI.
 
   let
     (configMetadata :: RegistryDaoProposalMetadata ByteString ByteString) = ConfigProposalType $ ConfigProposal

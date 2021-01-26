@@ -91,11 +91,10 @@ Michelson expression during the BaseDAO origination using the `ligo
 compile-storage` command as follows.
 
 ```bash
-ligo compile-storage ligo/src/treasuryDAO.mligo base_DAO_contract \
-    'default_treasury_DAO_full_storage(("tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" : address), ("tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" : address), (0n, 0n, 0n, 0n, 0n, 0mutez, 100mutez))'
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" s_max=12n a=1n b=0n c=1n d=1n y=0mutez z=100mutez out/treasuryDAO_storage.tz
 ```
 
-The `default_treasury_DAO_full_storage` is a LIGO function defined in
+This uses the `default_treasury_DAO_full_storage` which is a LIGO function defined in
 `ligo/src/treasuryDAO.mligo`, which returns a LIGO expression for storage,
 which is converted into Michelson using the `compile-storage` command.
 

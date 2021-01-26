@@ -22,7 +22,7 @@ OUT ?= out
 
 .PHONY: all clean test
 
-all: $(OUT)/baseDAO.tz $(OUT)/registryDAO_storage.tz
+all: $(OUT)/baseDAO.tz $(OUT)/registryDAO_storage.tz $(OUT)/treasuryDAO_storage.tz
 
 # Compile LIGO contract into its michelson representation.
 $(OUT)/baseDAO.tz: src/**
@@ -58,10 +58,30 @@ $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compilation successful ============== #
 	# See "$(OUT)/registryDAO_storage.tz" for compilation result #
 
-test: $(OUT)/baseDAO.tz $(OUT)/registryDAO_storage.tz
+
+$(OUT)/treasuryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/treasuryDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/treasuryDAO_storage.tz : a = 0n
+$(OUT)/treasuryDAO_storage.tz : b = 0n
+$(OUT)/treasuryDAO_storage.tz : s_max = 0n
+$(OUT)/treasuryDAO_storage.tz : c = 0n
+$(OUT)/treasuryDAO_storage.tz : d = 0n
+$(OUT)/treasuryDAO_storage.tz : y = 0mutez
+$(OUT)/treasuryDAO_storage.tz : z = 100mutez
+$(OUT)/treasuryDAO_storage.tz: src/**
+
+	# ============== Compiling TreasuryDAO storage ============== #
+	mkdir -p $(OUT)
+	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz src/treasuryDAO.mligo base_DAO_contract 'default_treasury_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), (${a}, $(b), $(s_max), $(c), $(d), $(y), $(z)))'
+	# ============== Compilation successful ============== #
+	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
+
+
+test: $(OUT)/baseDAO.tz $(OUT)/registryDAO_storage.tz $(OUT)/treasuryDAO_storage.tz
 	$(MAKE) -C .. test PACKAGE=baseDAO-ligo-meta \
     BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
-    REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz
+    REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
+    TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
 
 clean:
 	rm -rf $(OUT)

@@ -11,7 +11,6 @@ module Test.Common
   , originateBaseDaoWithBalance
   , originateTrivialDaoWithBalance
   , makeProposalKey
-  , sendXtz
   ) where
 
 import Universum
@@ -155,14 +154,3 @@ checkTokenBalance tokenId dao addr expectedValue = do
 
 makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ProposalKey pm
 makeProposalKey params owner = toHashHs $ lPackValue (params, owner)
-
-sendXtz :: MonadNettest caps base m => Address -> m ()
-sendXtz addr = do
-  let transferData = TransferData
-        { tdFrom = nettestAddress
-        , tdTo = AddressResolved addr
-        , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
-        , tdEntrypoint = DefEpName
-        , tdParameter = ()
-        }
-  transfer transferData

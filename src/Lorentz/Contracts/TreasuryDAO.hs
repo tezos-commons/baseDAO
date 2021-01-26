@@ -52,7 +52,7 @@ treasuryDaoProposalCheck = do
       push True; swap -- track whether or not it contains proper xtz amount
       iter $ do
         caseT
-          ( #cXtzTransferType /-> do
+          ( #cXtz_transfer_type /-> do
               toFieldNamed #xtAmount;
               duupX @3; stToField #sExtra
               dupTop2;
@@ -67,7 +67,7 @@ treasuryDaoProposalCheck = do
                 dropN @3
                 push False
 
-          , #cTokenTransferType /-> do
+          , #cToken_transfer_type /-> do
               drop;
           )
       dip drop
@@ -112,7 +112,7 @@ decisionLambda = do
   dig @2
   iter $ do
     caseT
-      ( #cXtzTransferType /-> do
+      ( #cXtz_transfer_type /-> do
           stackType @(XtzTransfer : Bool : [Operation] : store : s)
           getField #xtRecipient;
           contractCallingUnsafe @() DefEpName
@@ -125,7 +125,7 @@ decisionLambda = do
             ) $ do
               dropN @2; push True -- set to True due to fail operation
 
-      , #cTokenTransferType /-> do
+      , #cToken_transfer_type /-> do
           getField #ttContractAddress
           contractCalling @FA2.Parameter (Call @"Transfer")
           ifSome (do
