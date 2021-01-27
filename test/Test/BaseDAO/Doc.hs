@@ -13,7 +13,7 @@ import Test.Tasty (TestTree, testGroup)
 import Lorentz (cCode)
 import Lorentz.Contracts.GameDAO (gameDaoContract)
 import Lorentz.Contracts.TrivialDAO (trivialDaoContract)
-import Lorentz.Test
+import Lorentz.Test hiding (withSender)
 
 test_baseDAO_documentation :: TestTree
 test_baseDAO_documentation = testGroup "trivial baseDAO documentation" $

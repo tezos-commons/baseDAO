@@ -95,8 +95,7 @@ originateBaseDaoWithBalance contractExtra configDesc balFunc = do
 
   let
     originateData = OriginateData
-      { odFrom = nettestAddress
-      , odName = "BaseDAO"
+      { odName = "BaseDAO"
       , odBalance = toMutez 0
       , odStorage =
           ( mkStorage
@@ -111,7 +110,7 @@ originateBaseDaoWithBalance contractExtra configDesc balFunc = do
             }
       , odContract = DAO.baseDaoContract config
       }
-  dao <- originate originateData
+  dao <- withSender (nettestAddress) $ originate originateData
 
   pure ((owner1, operator1), (owner2, operator2), dao, admin)
 
@@ -151,7 +150,7 @@ checkTokenBalance
 checkTokenBalance tokenId dao addr expectedValue = withFrozenCallStack $ do
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  callFrom (AddressResolved addr) dao (Call @"Balance_of")
+  withSender (AddressResolved addr) $ call dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = addr
       , briTokenId = tokenId
@@ -191,13 +190,12 @@ sendXtz
   => Address -> EpName -> pm -> m ()
 sendXtz addr epName pm = withFrozenCallStack $ do
   let transferData = TransferData
-        { tdFrom = nettestAddress
-        , tdTo = AddressResolved addr
+        { tdTo = AddressResolved addr
         , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
         , tdEntrypoint = epName
         , tdParameter = pm
         }
-  transfer transferData
+  withSender (nettestAddress) $ transfer transferData
 
 -- | Since in LIGO proposal metadata type is fixed but is inconvenient to work
 -- with, we need a way to abstract away from that complexity - this problem
@@ -223,7 +221,7 @@ createSampleProposal counter owner1 dao = do
         , ppProposalMetadata = proposalMetadataFromNum counter
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)
 
 -- TODO: Implement this via [#31] instead
@@ -234,7 +232,7 @@ createSampleProposal counter owner1 dao = do
 --   owner :: Address <- newAddress "owner"
 --   consumer <- originateSimple "consumer" [] contractConsumer
 --   -- | If the proposal exists, there should be no error
---   callFrom (AddressResolved owner) dao (Call @"Proposal_metadata") (mkView proposalKey consumer)
+--   withSender (AddressResolved owner) $ call dao (Call @"Proposal_metadata") (mkView proposalKey consumer)
 
 -- TODO [#31]: See this ISSUES: https://gitlab.com/morley-framework/morley/-/issues/415#note_435327096
 -- Check if certain field in storage

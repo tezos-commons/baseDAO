@@ -38,9 +38,8 @@ withOriginated
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
-  baseDao <- originateUntyped $ UntypedOriginateData
-    { uodFrom = nettestAddress
-    , uodName = "BaseDAO Test Contract"
+  baseDao <- withSender (nettestAddress) $ originateUntyped $ UntypedOriginateData
+    { uodName = "BaseDAO Test Contract"
     , uodBalance = zeroMutez
     , uodStorage = untypeValue $ toVal $ storageFn addresses
     , uodContract = convertContract baseDAOContractLigo
@@ -54,12 +53,12 @@ test_BaseDAO_Management =
     [ nettestScenarioCaps "Contract forbids XTZ transfer" $
         withOriginated 2 (\(owner:_) -> initialStorage owner) $ \[owner, wallet1] baseDao ->
           transfer TransferData
-            { tdFrom = AddressResolved owner
-            , tdTo = AddressResolved $ unTAddress baseDao
+            { tdTo = AddressResolved $ unTAddress baseDao
             , tdAmount = unsafeMkMutez 1
             , tdEntrypoint = unsafeBuildEpName "transfer_ownership"
             , tdParameter = (#newOwner .! wallet1)
             }
+          & withSender (AddressResolved owner)
           & expectForbiddenXTZ
 
     , nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $

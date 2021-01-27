@@ -28,7 +28,7 @@ module BaseDAO.ShareTest.FA2
 import Universum
 
 import Lorentz hiding ((>>))
-import Lorentz.Test
+import Lorentz.Test hiding (withSender)
 import Morley.Nettest
 import Util.Named
 
@@ -55,7 +55,7 @@ zeroTransferScenario originateFn = do
             } ]
         } ]
 
-  callFrom (AddressResolved nonexistent) dao (Call @"Transfer") params
+  withSender (AddressResolved nonexistent) $ call dao (Call @"Transfer") params
 
 validTransferScenario
   :: forall caps base m param
@@ -71,12 +71,12 @@ validTransferScenario originateFn = do
             , tdAmount = 10
             } ]
         } ]
-  callFrom (AddressResolved op1) dao (Call @"Transfer") params
+  withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
 
   -- Check the balance
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  callFrom (AddressResolved owner2) dao (Call @"Balance_of")
+  withSender (AddressResolved owner2) $ call dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = owner2
       , briTokenId = unfrozenTokenId
@@ -100,11 +100,11 @@ validTransferOwnerScenario originateFn = do
             } ]
         } ]
 
-  callFrom (AddressResolved owner1) dao (Call @"Transfer") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
   -- Check the balance
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  callFrom (AddressResolved owner2) dao (Call @"Balance_of")
+  withSender (AddressResolved owner2) $ call dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = owner2
       , briTokenId = unfrozenTokenId
@@ -125,9 +125,9 @@ updatingOperatorAfterMigrationScenario originateFn = do
         , opTokenId = unfrozenTokenId
         }
 
-  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
-  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.AddOperator params]
+  withSender (AddressResolved admin) $ call dao (Call @"Migrate") (#newAddress .! newAddress1)
+  withSender (AddressResolved newAddress1) $ call dao (Call @"Confirm_migration") ()
+  withSender (AddressResolved owner1) $ call dao (Call @"Update_operators") [FA2.AddOperator params]
     & expectCustomError #mIGRATED newAddress1
 
 updatingOperatorScenario
@@ -149,10 +149,10 @@ updatingOperatorScenario originateFn = do
             , tdAmount = 10
             } ]
         } ]
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.AddOperator params]
-  callFrom (AddressResolved owner2) dao (Call @"Transfer") transferParams
+  withSender (AddressResolved owner1) $ call dao (Call @"Update_operators") [FA2.AddOperator params]
+  withSender (AddressResolved owner2) $ call dao (Call @"Transfer") transferParams
 
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.RemoveOperator params]
+  withSender (AddressResolved owner1) $ call dao (Call @"Update_operators") [FA2.RemoveOperator params]
 
   let notOwnerParams = FA2.OperatorParam
         { opOwner = owner2
@@ -160,12 +160,12 @@ updatingOperatorScenario originateFn = do
         , opTokenId = unfrozenTokenId
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Transfer") transferParams
+  withSender (AddressResolved owner2) $ call dao (Call @"Transfer") transferParams
     & expectCustomError_ #fA2_NOT_OPERATOR
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
+  withSender (AddressResolved owner1) $ call dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
     & expectCustomError_ #nOT_OWNER
 
-  callFrom (AddressResolved owner1) dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
+  withSender (AddressResolved owner1) $ call dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
     & expectCustomError_ #nOT_OWNER
 
 lowBalanceScenario
@@ -183,7 +183,7 @@ lowBalanceScenario originateFn = do
             , tdAmount = 200
             } ]
         } ]
-  callFrom (AddressResolved op1) dao (Call @"Transfer") params
+  withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
 
 lowBalanceOwnerScenario
@@ -201,7 +201,7 @@ lowBalanceOwnerScenario originateFn = do
             , tdAmount = 200
             } ]
         } ]
-  callFrom (AddressResolved owner1) dao (Call @"Transfer") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
 
 noSourceAccountScenario
@@ -223,7 +223,7 @@ noSourceAccountScenario originateFn = do
 
   -- Failed with 'fA2_INSUFFICIENT_BALANCE' due to nonexistent account is treated
   -- as an existing account with 0 balance.
-  callFrom (AddressResolved nonexistent) dao (Call @"Transfer") params
+  withSender (AddressResolved nonexistent) $ call dao (Call @"Transfer") params
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 1, #present .! 0)
 
 badOperatorScenario
@@ -242,7 +242,7 @@ badOperatorScenario originateFn = do
             , tdAmount = 0
             } ]
         } ]
-  callFrom (AddressResolved op3) dao (Call @"Transfer") params
+  withSender (AddressResolved op3) $ call dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
 emptyTransferListScenario
@@ -251,7 +251,7 @@ emptyTransferListScenario
   => OriginateFn param m -> m ()
 emptyTransferListScenario originateFn = do
   ((_, op1), _, dao, _) <- originateFn
-  callFrom (AddressResolved op1) dao (Call @"Transfer") []
+  withSender (AddressResolved op1) $ call dao (Call @"Transfer") []
 
 unknownTokenId :: FA2.TokenId
 unknownTokenId = FA2.TokenId 2
@@ -271,7 +271,7 @@ validateTokenScenario originateFn = do
             , tdAmount = 10
             } ]
         } ]
-      callWith = callFrom (AddressResolved op1) dao (Call @"Transfer")
+      callWith = withSender (AddressResolved op1) . call dao (Call @"Transfer")
 
   callWith (params unfrozenTokenId)
 
@@ -295,7 +295,7 @@ validateTokenOwnerScenario originateFn = do
             , tdAmount = 10
             } ]
         } ]
-      callWith = callFrom (AddressResolved owner1) dao (Call @"Transfer")
+      callWith = withSender (AddressResolved owner1) . call dao (Call @"Transfer")
 
   callWith (params unfrozenTokenId)
 
@@ -320,7 +320,7 @@ noForeignMoneyScenario originateFn = do
             , tdAmount = 10
             } ]
         } ]
-  callFrom (AddressResolved op1) dao (Call @"Transfer") params
+  withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
 noForeignMoneyOwnerScenario
@@ -338,7 +338,7 @@ noForeignMoneyOwnerScenario originateFn = do
             , tdAmount = 10
             } ]
         } ]
-  callFrom (AddressResolved owner1) dao (Call @"Transfer") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
 balanceOfOwnerScenario
@@ -350,7 +350,7 @@ balanceOfOwnerScenario originateFn = do
   consumer <- originateSimple "consumer" [] contractConsumer
   let
     params requestItems = mkFA2View requestItems consumer
-    callWith = callFrom (AddressResolved owner1) dao (Call @"Balance_of")
+    callWith = withSender (AddressResolved owner1) . call dao (Call @"Balance_of")
 
   callWith (params [ FA2.BalanceRequestItem owner1 unfrozenTokenId ])
   callWith (params [ FA2.BalanceRequestItem owner1 frozenTokenId ])
@@ -373,7 +373,7 @@ adminTransferScenario originateFn = do
             , tdAmount = 10
             } ]
         } ]
-  callFrom (AddressResolved admin) dao (Call @"Transfer") params
+  withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
 
 
 adminTransferFrozenScenario
@@ -392,7 +392,7 @@ adminTransferFrozenScenario originateFn = do
             , tdAmount = 10
             } ]
         } ]
-  callFrom (AddressResolved admin) dao (Call @"Transfer") params
+  withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
 
 transferAfterMigrationScenario
   :: forall caps base m param pm
@@ -410,9 +410,9 @@ transferAfterMigrationScenario originateFn = do
             } ]
         } ]
 
-  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
-  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
-  callFrom (AddressResolved op1) dao (Call @"Transfer") params
+  withSender (AddressResolved admin) $ call dao (Call @"Migrate") (#newAddress .! newAddress1)
+  withSender (AddressResolved newAddress1) $ call dao (Call @"Confirm_migration") ()
+  withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
     & expectMigrated newAddress1
 
 balanceOfRequestAfterMigrationScenario
@@ -424,10 +424,10 @@ balanceOfRequestAfterMigrationScenario originateFn = do
   consumer <- originateSimple "consumer" [] contractConsumer
   let
     params requestItems = mkFA2View requestItems consumer
-    callWith = callFrom (AddressResolved owner1) dao (Call @"Balance_of")
+    callWith = withSender (AddressResolved owner1) . call dao (Call @"Balance_of")
 
-  callFrom (AddressResolved admin) dao (Call @"Migrate") (#newAddress .! newAddress1)
-  callFrom (AddressResolved newAddress1) dao (Call @"Confirm_migration") ()
+  withSender (AddressResolved admin) $ call dao (Call @"Migrate") (#newAddress .! newAddress1)
+  withSender (AddressResolved newAddress1) $ call dao (Call @"Confirm_migration") ()
 
   callWith (params [ FA2.BalanceRequestItem owner1 unfrozenTokenId ])
     & expectMigrated newAddress1

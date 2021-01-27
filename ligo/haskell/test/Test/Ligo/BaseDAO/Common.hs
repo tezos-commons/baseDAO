@@ -62,13 +62,12 @@ originateLigoDaoWithBalance extra configL balFunc = do
 
   let
     originateData = UntypedOriginateData
-      { uodFrom = nettestAddress
-      , uodName = "BaseDAO"
+      { uodName = "BaseDAO"
       , uodBalance = toMutez 0
       , uodStorage = untypeValue $ toVal $ fullStorage
       , uodContract = convertContract baseDAOContractLigo
       }
-  daoUntyped <- originateUntyped originateData
+  daoUntyped <- withSender nettestAddress $ originateUntyped originateData
   let dao = TAddress @ParameterL daoUntyped
 
   pure ((owner1, operator1), (owner2, operator2), dao, admin)

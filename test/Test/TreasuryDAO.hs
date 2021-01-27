@@ -55,10 +55,10 @@ validProposal = uncapsNettest $ do
         }
       expectedToken = fromInteger $ toInteger $ length $ lPackValueRaw proposal
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (params $ expectedToken - 1)
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") (params $ expectedToken - 1)
     & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (params $ expectedToken + 1)
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") (params $ expectedToken + 1)
     & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
   -- Expected token is 58 in this case
@@ -83,7 +83,7 @@ flushTokenTransfer = uncapsNettest $ do
         , opOperator = toAddress dao
         , opTokenId = DAO.unfrozenTokenId
         }
-  callFrom (AddressResolved owner2) dao (Call @"Update_operators") [FA2.AddOperator opParams]
+  withSender (AddressResolved owner2) $ call dao (Call @"Update_operators") [FA2.AddOperator opParams]
 
   let proposal = tokenTransferProposalMetadata (toAddress dao) owner2 owner1 -- transfer token from owner2 -> owner1
       expectedToken = getTokensAmount proposal
@@ -100,9 +100,9 @@ flushTokenTransfer = uncapsNettest $ do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 210
@@ -132,9 +132,9 @@ flushXtzTransfer = uncapsNettest $ do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
 --   -- TODO: check xtz balance
 
@@ -188,5 +188,5 @@ createSampleProposal t pm owner1 dao = do
         , ppProposalMetadata = pm
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)

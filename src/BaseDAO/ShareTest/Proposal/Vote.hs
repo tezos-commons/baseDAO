@@ -9,7 +9,7 @@ module BaseDAO.ShareTest.Proposal.Vote
 import Universum
 
 import Lorentz hiding ((>>))
-import Lorentz.Test
+import Lorentz.Test hiding (withSender)
 import Morley.Nettest
 
 import BaseDAO.ShareTest.Common
@@ -37,7 +37,7 @@ voteNonExistingProposal _ originateFn = do
         , vProposalKey = HashUnsafe "\11\12\13"
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
     & expectCustomError_ #pROPOSAL_NOT_EXIST
 
 voteMultiProposals
@@ -66,7 +66,7 @@ voteMultiProposals _ originateFn = do
             }
         ]
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") params
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
   checkTokenBalance (unfrozenTokenId) dao owner2 95
   checkTokenBalance (frozenTokenId) dao owner2 5
   -- TODO [#31]: check storage if the vote update the proposal properly
@@ -97,7 +97,7 @@ insufficientTokenVote _ originateFn = do
             }
         ]
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") params
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
     & expectCustomError_ #vOTING_INSUFFICIENT_BALANCE
 
 voteOutdatedProposal
@@ -113,7 +113,7 @@ voteOutdatedProposal _ originateFn = do
   -- Create sample proposal
   key1 <- createSampleProposal 1 owner1 dao
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 20
+  withSender (AddressResolved admin) $ call dao (Call @"Set_voting_period") 20
 
   let params = NoPermit VoteParam
         { vVoteType = True
@@ -121,9 +121,9 @@ voteOutdatedProposal _ originateFn = do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
   advanceTime (sec 25)
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
     & expectCustomError_ #vOTING_PERIOD_OVER
 
 voteWithPermit
@@ -146,7 +146,7 @@ voteWithPermit _ originateFn = do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dao owner1 12
 
 voteWithPermitNonce
@@ -178,20 +178,20 @@ voteWithPermitNonce _ originateFn = do
   params3 <- permitProtect (AddressResolved owner1) signed3
 
   -- Good nonce
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params1]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params1]
 
   -- Outdated nonce
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params1]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params1]
     & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
   -- Nonce from future
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params3]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params3]
     & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
   -- Good nonce after the previous successful entrypoint call
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params2]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params2]
 
   -- Check counter
   consumer <- originateSimple "consumer" [] contractConsumer
-  callFrom (AddressResolved owner1) dao (Call @"GetVotePermitCounter") (mkView () consumer)
+  withSender (AddressResolved owner1) $ call dao (Call @"GetVotePermitCounter") (mkView () consumer)
   checkStorage (AddressResolved $ toAddress consumer) (toVal [2 :: Natural])

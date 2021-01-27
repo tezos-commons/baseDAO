@@ -32,7 +32,7 @@ validProposal  _ originateFn = do
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   checkTokenBalance frozenTokenId dao owner1 10
   checkTokenBalance unfrozenTokenId dao owner1 90
   -- TODO [#31]: Currently proposalId is expected to be knowned (checkInStorage)
@@ -54,7 +54,7 @@ rejectProposal _ originateFn = do
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
     & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
 insufficientTokenProposal
@@ -71,7 +71,7 @@ insufficientTokenProposal _ originateFn = do
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
     & expectCustomError_ #pROPOSAL_INSUFFICIENT_BALANCE
 
 nonUniqueProposal
@@ -105,7 +105,7 @@ voteValidProposal _ originateFn = do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [params]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
   checkTokenBalance (unfrozenTokenId) dao owner2 98
   checkTokenBalance (frozenTokenId) dao owner2 2
   -- TODO [#31]: check if the vote is updated properly

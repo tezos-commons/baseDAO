@@ -38,9 +38,8 @@ withOriginated
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
   let storage = storageFn addresses
-  baseDao <- originateUntyped $ UntypedOriginateData
-    { uodFrom = nettestAddress
-    , uodName = "BaseDAO - RegistryDAO Test Contract"
+  baseDao <- withSender nettestAddress $ originateUntyped $ UntypedOriginateData
+    { uodName = "BaseDAO - RegistryDAO Test Contract"
     , uodBalance = zeroMutez
     , uodStorage = untypeValue $ toVal storage
     , uodContract = convertContract baseDAOContractLigo
@@ -57,7 +56,7 @@ test_RegistryDAO =
           \(_:wallet1:_) _ baseDao -> let
             proposalMeta = DynamicRec mempty
             proposalSize = metadataSize proposalMeta
-            in callFrom (AddressResolved wallet1) baseDao (Call @"Propose")
+            in withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose")
               (ProposeParams proposalSize proposalMeta)
 
     , nettestScenarioCaps "proposal exceeding s_max result in error" $
@@ -69,7 +68,7 @@ test_RegistryDAO =
             proposalMeta = DynamicRec $ Map.fromList $
               [(mkMTextUnsafe ("long_key" <> (show @_ @Int t)), "long_value") | t <- [1..10]]
             proposalSize = metadataSize proposalMeta
-            in callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
+            in withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
               & expectFailProposalCheck
 
     , nettestScenarioCaps "checks it fails if required tokens are not frozen" $
@@ -80,7 +79,7 @@ test_RegistryDAO =
             -- Here we only freeze 2 tokens, but the proposal size and the configuration params
             -- a, b set to 1 and 0 means that it requires 6 tokens to be frozen (6 * 1 + 0)
             -- because proposal size happen to be 6 here.
-            in callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams 2 proposalMeta)
+            in withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose") (ProposeParams 2 proposalMeta)
               & expectFailProposalCheck
 
     , nettestScenarioCaps "check it correctly calculates required frozen tokens" $
@@ -91,7 +90,7 @@ test_RegistryDAO =
             -- Here the proposal size and the configuration params
             -- a, b set to 1 and 2 means that it requires 8 tokens to be frozen (6 * 1 + 2)
             -- because proposal size happen to be 6 here.
-            in callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams 8 proposalMeta)
+            in withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose") (ProposeParams 8 proposalMeta)
 
     , nettestScenarioCaps "checks it correctly calculates tokens to unfreeze when rejecting" $ do
         let a = 2
@@ -111,10 +110,10 @@ test_RegistryDAO =
 
             in do
               let requiredFrozen = proposalSize1 * a + b
-              callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
+              withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
 
               advanceTime (day 12) -- voting period is 11 days.
-              callFrom (AddressResolved admin) baseDao (Call @"Flush") (1 :: Natural)
+              withSender (AddressResolved admin) $ call baseDao (Call @"Flush") (1 :: Natural)
 
               -- Since we have a = 2, c = 1 and d = 2
               -- After the rejection above, we expect that (2 * proposalSize1/2) tokens
@@ -125,7 +124,7 @@ test_RegistryDAO =
               consumer <- originateSimple "consumer" [] (contractConsumer @[FA2.BalanceResponseItem])
               let balanceRequestItem = FA2.BalanceRequestItem { briOwner = wallet1, briTokenId = FA2.theTokenId }
               let balanceRequest = FA2.mkFA2View [balanceRequestItem] consumer
-              callFrom (AddressResolved wallet1) baseDao (Call @"Balance_of") balanceRequest
+              withSender (AddressResolved wallet1) $ call baseDao (Call @"Balance_of") balanceRequest
 
               let spent = div (requiredFrozen * c) d
 
@@ -154,7 +153,7 @@ test_RegistryDAO =
               let requiredFrozen = largeProposalSize * a + b
 
               -- We expect this to fail because s_max is 100 and proposal size is ~ 320.
-              callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
+              withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
                 & expectFailProposalCheck
 
               -- We create a new proposal to increase s_max to largeProposalSize + 1.
@@ -168,17 +167,17 @@ test_RegistryDAO =
               let sMaxUpdateproposalSize1 = metadataSize sMaxUpdateproposalMeta1
               let requiredFrozenForUpdate = sMaxUpdateproposalSize1 * a + b
 
-              callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1)
+              withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose") (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1)
 
               -- Then we send 2 upvotes for the proposal (as min quorum is 2)
               let proposalKey = makeProposalKey @ProposalMetadataL (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
-              callFrom (AddressResolved voter1) baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
+              withSender (AddressResolved voter1) $ call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
 
               advanceTime (day 12) -- voting period is 11 days.
-              callFrom (AddressResolved admin) baseDao (Call @"Flush") (1 :: Natural)
+              withSender (AddressResolved admin) $ call baseDao (Call @"Flush") (1 :: Natural)
 
               -- Now we expect this to work
-              callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
+              withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
     ]
  ]
  where

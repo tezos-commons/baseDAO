@@ -31,10 +31,10 @@ setVotingPeriod _ originateFn = do
 
   let param = 60 * 60 -- 1 hour
 
-  callFrom (AddressResolved owner1) dao (Call @"Set_voting_period") param
+  withSender (AddressResolved owner1) $ call dao (Call @"Set_voting_period") param
     & expectCustomError_ #nOT_ADMIN
 
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") param
+  withSender (AddressResolved admin) $ call dao (Call @"Set_voting_period") param
   -- TODO [#31]: checkStorage
 
 setQuorumThreshold
@@ -50,10 +50,10 @@ setQuorumThreshold _ originateFn = do
 
   let param = 100
 
-  callFrom (AddressResolved owner1) dao (Call @"Set_quorum_threshold") param
+  withSender (AddressResolved owner1) $ call dao (Call @"Set_quorum_threshold") param
     & expectCustomError_ #nOT_ADMIN
 
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") param
+  withSender (AddressResolved admin) $ call dao (Call @"Set_quorum_threshold") param
   -- TODO [#31]: checkStorage
 
 proposalBoundedValue
@@ -75,8 +75,8 @@ proposalBoundedValue _ originateFn = do
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
     & expectCustomError_ #mAX_PROPOSALS_REACHED
 
 votesBoundedValue
@@ -105,8 +105,8 @@ votesBoundedValue _ originateFn = do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Vote") [downvote]
-  callFrom (AddressResolved owner1) dao (Call @"Vote") [upvote]
+  withSender (AddressResolved owner1) $ call dao (Call @"Vote") [downvote]
+  withSender (AddressResolved owner1) $ call dao (Call @"Vote") [upvote]
     & expectCustomError_ #mAX_VOTES_REACHED
 
 quorumThresholdBound
@@ -124,11 +124,11 @@ quorumThresholdBound _ originateFn = do
         , cmMaxQuorumThreshold = Just 2
         }
     )
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 1
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 2
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 0
+  withSender (AddressResolved admin) $ call dao (Call @"Set_quorum_threshold") 1
+  withSender (AddressResolved admin) $ call dao (Call @"Set_quorum_threshold") 2
+  withSender (AddressResolved admin) $ call dao (Call @"Set_quorum_threshold") 0
     & expectCustomError_ #oUT_OF_BOUND_QUORUM_THRESHOLD
-  callFrom (AddressResolved admin) dao (Call @"Set_quorum_threshold") 3
+  withSender (AddressResolved admin) $ call dao (Call @"Set_quorum_threshold") 3
     & expectCustomError_ #oUT_OF_BOUND_QUORUM_THRESHOLD
 
 votingPeriodBound
@@ -146,9 +146,9 @@ votingPeriodBound _ originateFn = do
         , cmMaxVotingPeriod = Just 2
         }
     )
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 1
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 2
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 0
+  withSender (AddressResolved admin) $ call dao (Call @"Set_voting_period") 1
+  withSender (AddressResolved admin) $ call dao (Call @"Set_voting_period") 2
+  withSender (AddressResolved admin) $ call dao (Call @"Set_voting_period") 0
     & expectCustomError_ #oUT_OF_BOUND_VOTING_PERIOD
-  callFrom (AddressResolved admin) dao (Call @"Set_voting_period") 3
+  withSender (AddressResolved admin) $ call dao (Call @"Set_voting_period") 3
     & expectCustomError_ #oUT_OF_BOUND_VOTING_PERIOD
