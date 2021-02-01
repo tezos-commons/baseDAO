@@ -28,7 +28,7 @@ burnScenario originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn
 
   withSender (AddressResolved owner1) $ call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
-    & expectCustomError_ #nOT_ADMIN
+    & expectCustomErrorUnit #nOT_ADMIN
 
   withSender (AddressResolved admin) $ call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 100)
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
@@ -49,7 +49,7 @@ mintScenario originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn
 
   withSender (AddressResolved owner1) $ call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 10)
-    & expectCustomError_ #nOT_ADMIN
+    & expectCustomErrorUnit #nOT_ADMIN
 
   withSender (AddressResolved admin) $ call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 100)
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100
@@ -84,7 +84,7 @@ transferContractTokensScenario originateFn = do
         }
 
   withSender (AddressResolved owner1) $ call dao (Call @"Transfer_contract_tokens") param
-    & expectCustomError_ #nOT_ADMIN
+    & expectCustomErrorUnit #nOT_ADMIN
 
   withSender (AddressResolved admin) $ call dao (Call @"Transfer_contract_tokens") param
   checkTokenBalance (DAO.unfrozenTokenId) fa2Contract target_owner1 90

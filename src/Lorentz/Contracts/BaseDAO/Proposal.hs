@@ -396,12 +396,12 @@ setQuorumThreshold Config{..} = do
   dup
   push cMaxQuorumThreshold; toNamed #maxValue
   if #maxValue <. #newValue then
-    failCustom_ #oUT_OF_BOUND_QUORUM_THRESHOLD
+    failCustomText #oUT_OF_BOUND_QUORUM_THRESHOLD
   else do
     dup
     push cMinQuorumThreshold; toNamed #minValue
     if #minValue >. #newValue then
-      failCustom_ #oUT_OF_BOUND_QUORUM_THRESHOLD
+      failCustomText #oUT_OF_BOUND_QUORUM_THRESHOLD
     else do
       fromNamed #newValue
       stSetField #sQuorumThreshold

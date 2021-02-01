@@ -66,7 +66,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
     proposalSize = metadataSize proposalMeta
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectCustomErrorUnit #fAIL_PROPOSAL_CHECK
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
 
@@ -149,11 +149,11 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
 
   -- due to smaller than y (min mutez allow)
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (proposeParams 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectCustomErrorUnit #fAIL_PROPOSAL_CHECK
 
   -- due to bigger than z (max mutez allow)
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (proposeParams 6)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectCustomErrorUnit #fAIL_PROPOSAL_CHECK
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3) owner1

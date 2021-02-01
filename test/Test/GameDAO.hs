@@ -43,7 +43,7 @@ validProposal = uncapsNettest $ do
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (DAO.ProposeParams
     { ppFrozenToken = 20
     , ppProposalMetadata = sampleMetadataContent $ toAddress consumer
-    }) & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    }) & expectCustomErrorUnit #fAIL_PROPOSAL_CHECK
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (DAO.ProposeParams
     { ppFrozenToken = 15

@@ -56,10 +56,10 @@ validProposal = uncapsNettest $ do
       expectedToken = fromInteger $ toInteger $ length $ lPackValueRaw proposal
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (params $ expectedToken - 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectCustomErrorUnit #fAIL_PROPOSAL_CHECK
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") (params $ expectedToken + 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    & expectCustomErrorUnit #fAIL_PROPOSAL_CHECK
 
   -- Expected token is 58 in this case
   _ <- createSampleProposal expectedToken proposal owner1 dao
