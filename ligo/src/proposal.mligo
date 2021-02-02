@@ -155,9 +155,13 @@ let check_vote_limit_reached
           ("MAX_VOTES_REACHED", ()) : vote_param)
     else vote_param
 
-let vote(votes, config, store : vote_param_permited list * config * storage): return =
+// Note: we require this because we want to put the entrypoint in a lamba and so
+// we need the contract address to be provided (can't use 'SELF_ADDRESS').
+let vote_with_self
+  (votes, ctrt_address, config, store : vote_param_permited list * address * config * storage)
+    : return =
   let accept_vote = fun (store, pp : storage * vote_param_permited) ->
-    let (param, author, store) = verify_permit_protected_vote (pp, store) in
+    let (param, author, store) = verify_permit_protected_vote (pp, ctrt_address, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
     let vote_param = check_vote_limit_reached (config, proposal, param) in
     let store = ensure_voting_period_is_not_over (proposal, store) in
@@ -168,6 +172,9 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
   ( ([] : operation list)
   , List.fold accept_vote votes store
   )
+
+let vote(votes, config, store : vote_param_permited list * config * storage): return =
+  vote_with_self(votes, Tezos.self_address, config, store)
 
 // -----------------------------------------------------------------
 // Admin entrypoints

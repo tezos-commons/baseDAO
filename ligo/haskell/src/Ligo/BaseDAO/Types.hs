@@ -7,16 +7,21 @@ module Ligo.BaseDAO.Types
   , ProposalMetadataL
   , ContractExtraL
   , ProposeParamsL
-  , CustomEntrypointsL
+  , RunningParameter (..)
+  , StartupParameter
   , ProposalL (..)
   , ParameterL
   , StorageL (..)
   , ConfigL (..)
+  , ConfiguredStorage (..)
+  , StorableEntrypoint
+  , StartupStorage (..)
   , FullStorage (..)
   , DynamicRec (..)
   , dynRecUnsafe
   , mkStorageL
   , mkConfigL
+  , mkStartupStorage
   , defaultConfigL
   , mkFullStorageL
 
@@ -49,9 +54,9 @@ newtype DynamicRec n = DynamicRec { unDynamic :: Map MText ByteString }
 dynRecUnsafe :: DynamicRec n
 dynRecUnsafe = DynamicRec mempty
 
+-- TODO consider making these both 'BigMap's instead
 type ProposalMetadataL = DynamicRec "pm"
 type ContractExtraL = DynamicRec "ce"
-type CustomEntrypointsL = DynamicRec "ep"
 
 type ProposeParamsL = ProposeParams ProposalMetadataL
 type ProposalKeyL = ProposalKey ProposalMetadataL
@@ -100,9 +105,16 @@ data MigratableParam
   | XtzForbidden ForbidXTZParam
   deriving stock (Show)
 
-data ParameterL
+data RunningParameter
   = Migratable MigratableParam
   | Transfer_contract_tokens TransferContractTokensParam
+  deriving stock (Show)
+
+type StartupParameter = Maybe (MText, Maybe ByteString)
+
+data ParameterL
+  = Startup StartupParameter
+  | Running RunningParameter
   deriving stock (Show)
 
 data StorageL = StorageL
@@ -171,20 +183,17 @@ data ConfigL = ConfigL
 
   , cMaxVotingPeriod :: Natural
   , cMinVotingPeriod :: Natural
-
-  , cCustomEntrypoints :: CustomEntrypointsL
   }
   deriving stock (Show)
 
-mkConfigL :: [(MText, ByteString)] -> ConfigL
-mkConfigL customEps = ConfigL
+mkConfigL :: ConfigL
+mkConfigL = ConfigL
   { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
       dropN @2; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
       drop; nil
-  , cCustomEntrypoints = DynamicRec $ M.fromList customEps
 
   , cMaxVotingPeriod = 60 * 60 * 24 * 30
   , cMinVotingPeriod = 1
@@ -197,11 +206,33 @@ mkConfigL customEps = ConfigL
   }
 
 defaultConfigL :: ConfigL
-defaultConfigL = mkConfigL []
+defaultConfigL = mkConfigL
+
+data ConfiguredStorage = ConfiguredStorage
+  { csStorage :: StorageL
+  , csConfig  :: ConfigL
+  }
+  deriving stock (Show)
+
+type StorableEntrypoint = '[ByteString, ConfiguredStorage] :-> '[[Operation], StorageL]
+
+data StartupStorage = StartupStorage
+  { ssStartingUp :: Bool
+  , ssStoredEntrypoints :: BigMap MText StorableEntrypoint
+  }
+  deriving stock (Show)
+
+mkStartupStorage
+  :: [(MText, StorableEntrypoint)]
+  -> StartupStorage
+mkStartupStorage customEps = StartupStorage
+  { ssStartingUp = True
+  , ssStoredEntrypoints = BigMap $ M.fromList customEps
+  }
 
 data FullStorage = FullStorage
-  { fsStorage :: StorageL
-  , fsConfig :: ConfigL
+  { fsStartup    :: StartupStorage
+  , fsConfigured :: ConfiguredStorage
   }
   deriving stock (Show)
 
@@ -211,11 +242,14 @@ mkFullStorageL
   -> "quorumThreshold" :? Natural
   -> "extra" :! ContractExtraL
   -> "metadata" :! TZIP16.MetadataMap BigMap
-  -> "customEps" :? [(MText, ByteString)]
+  -> "customEps" :? [(MText, StorableEntrypoint)]
   -> FullStorage
 mkFullStorageL admin vp qt extra md cEps = FullStorage
-  { fsStorage = mkStorageL admin vp qt extra md
-  , fsConfig = mkConfigL (argDef #customEps [] cEps)
+  { fsStartup = mkStartupStorage (argDef #customEps [] cEps)
+  , fsConfigured = ConfiguredStorage
+    { csStorage = mkStorageL admin vp qt extra md
+    , csConfig = mkConfigL
+    }
   }
 
 -- Instances
@@ -234,7 +268,12 @@ deriving anyclass instance IsoValue ForbidXTZParam
 instance ParameterHasEntrypoints ForbidXTZParam where
   type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
 
-customGeneric "ParameterL" ligoLayout
+customGeneric "RunningParameter" ligoCombLayout
+deriving anyclass instance IsoValue RunningParameter
+instance ParameterHasEntrypoints RunningParameter where
+  type ParameterEntrypointsDerivation RunningParameter = EpdDelegate
+
+customGeneric "ParameterL" ligoCombLayout
 deriving anyclass instance IsoValue ParameterL
 instance ParameterHasEntrypoints ParameterL where
   type ParameterEntrypointsDerivation ParameterL = EpdDelegate
@@ -244,6 +283,12 @@ deriving anyclass instance IsoValue StorageL
 
 customGeneric "ConfigL" ligoLayout
 deriving anyclass instance IsoValue ConfigL
+
+customGeneric "ConfiguredStorage" ligoCombLayout
+deriving anyclass instance IsoValue ConfiguredStorage
+
+customGeneric "StartupStorage" ligoLayout
+deriving anyclass instance IsoValue StartupStorage
 
 deriving stock instance Generic FullStorage
 deriving anyclass instance IsoValue FullStorage

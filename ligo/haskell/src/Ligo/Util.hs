@@ -5,6 +5,7 @@
 module Ligo.Util
   ( fetchContract
   , fetchValue
+  , fetchValues
   ) where
 
 import Universum
@@ -13,7 +14,9 @@ import Fmt (pretty)
 import qualified Language.Haskell.TH as TH
 import Language.Haskell.TH.Syntax (qAddDependentFile)
 import qualified Language.Haskell.TH.Syntax as TH
+import System.Directory (listDirectory)
 import System.Environment (lookupEnv)
+import System.FilePath ((</>))
 
 import Michelson.Parser
 import Michelson.Test.Import
@@ -26,9 +29,10 @@ import Michelson.Typed
 -- types in error messages on types mismatch.
 fetchContract :: forall cp st. (KnownT cp, KnownT st) => String -> TH.ExpQ
 fetchContract envKey = do
-  (path, contract) <- readDependentSource "ligo/haskell/test/baseDAO.tz"  envKey
+  path <- resolveSourcePath "ligo/haskell/test/baseDAO.tz" envKey
                           -- ↑ This default path works on CI.
                           -- There it's relative to the repo root, apparently.
+  contract <- readDependentSource path
 
   case readContract @cp @st path contract of
     Left e ->
@@ -47,7 +51,22 @@ fetchContract envKey = do
 -- | Reads a Michelson expression into a known typed value at compile type.
 fetchValue :: forall st. KnownT (ToT st) => FilePath -> String -> TH.ExpQ
 fetchValue defaultPath envKey = do
-  valueLiteral <- snd <$> readDependentSource defaultPath envKey
+  path <- resolveSourcePath defaultPath envKey
+  valueLiteral <- readDependentSource path
+  verifiedFetchedValue @st valueLiteral
+
+-- | Reads several Michelson expression from a directory into a list of
+-- known typed value at compile type.
+fetchValues :: forall st. KnownT (ToT st) => FilePath -> String -> TH.ExpQ
+fetchValues defaultPath envKey = do
+  dirPath <- resolveSourcePath defaultPath envKey
+  filePaths <- liftIO $ listDirectory dirPath
+  valueLiterals <- forM (map (dirPath </>) filePaths) readDependentSource
+  TH.listE $ map (verifiedFetchedValue @st) valueLiterals
+
+
+verifiedFetchedValue :: forall st. KnownT (ToT st) => Text -> TH.ExpQ
+verifiedFetchedValue valueLiteral =
   case readTypedValue_ @(ToT st) valueLiteral of
     Left e ->
       -- Emit a compiler error if the value cannot be read.
@@ -55,24 +74,28 @@ fetchValue defaultPath envKey = do
     Right _ ->
       -- Emit a haskell expression that reads the value.
       [|
-        -- Note: it's ok to use `error` here, because we just proved that the contract
-        -- can be parsed+typechecked.
-        either (error . pretty) id $
-          readTypedValue_ valueLiteral
+        -- Note: it's ok to use `error` here, because we just proved that the
+        -- value can be parsed+typechecked.
+        either (error . pretty) fromVal $ readTypedValue_ valueLiteral
       |]
 
 readDependentSource
   :: forall m. (MonadIO m, TH.Quasi m)
   => FilePath
-  -> String
-  -> m (FilePath, Text)
-readDependentSource defaultPath envKey = do
-  path <- fromMaybe defaultPath <$> liftIO (lookupEnv envKey)
+  -> m Text
+readDependentSource path = do
   -- We cannot use 'embedFile' directly because it returns Exp,
   -- doing the following should be equivalent
   qAddDependentFile path
-  contents <- readFile path
-  pure (path, contents)
+  readFile path
+
+resolveSourcePath
+  :: forall m. (MonadIO m, TH.Quasi m)
+  => FilePath
+  -> String
+  -> m FilePath
+resolveSourcePath defaultPath envKey =
+  fromMaybe defaultPath <$> liftIO (lookupEnv envKey)
 
 readTypedValue_ :: forall st. (KnownT st) => Text -> Either Text (Value st)
 readTypedValue_ valueLiteral = do

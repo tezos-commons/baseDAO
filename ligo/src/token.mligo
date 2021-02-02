@@ -7,12 +7,6 @@
 #include "types.mligo"
 #include "token/fa2.mligo"
 
-let call_fa2(param, store : fa2_parameter * storage) : return =
-  match param with
-    Transfer (p) -> transfer (p, store)
-  | Balance_of (p) -> balance_of(p, store)
-  | Update_operators (p) -> update_operators(p, store)
-
 let burn(param, store : burn_param * storage) : return =
   let store = authorize_admin(store) in
   let ledger = debit_from (param.amount, param.from_, param.token_id, store.ledger)

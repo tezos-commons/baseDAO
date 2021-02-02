@@ -6,15 +6,6 @@
 #include "types.mligo"
 #include "common.mligo"
 
-[@inline]
-let ensure_not_migrated (storage : storage): storage =
-  match storage.migration_status with
-      Not_in_migration -> storage
-    | MigratingTo (p) -> storage
-    | MigratedTo (new_addr) ->
-        ([%Michelson ({| { FAILWITH } |} : string * address -> storage)]
-          ("MIGRATED", new_addr) : storage)
-
 (*
  * Auth checks for admin and store the address in parameter to the
  * 'pending_owner' field in storage.
@@ -62,28 +53,3 @@ let confirm_migration(param, store : unit * storage) : return =
   | MigratedTo (new_addr)  ->
       ([%Michelson ({| { FAILWITH } |} : string * address -> return)]
         ("MIGRATED", new_addr) : return)
-
-(*
- * Call a custom entrypoint. Looks up the packed code for entrypoint using the entrypoint
- * name in the parameter. Then unpacks the code to a lambda of type 'bytes -> return'.
- * Then just pass the bytes from parameter to this lambda return the resulting value.
- *
- * NO AUTH CHECKS ARE DONE.
- *)
-let call_custom(param, full_storage : custom_ep_param * full_storage) : return_with_full_storage =
-  let ep_name = param.0 in
-  let config = full_storage.1 in
-  let packed_param = param.1 in
-
-  match Map.find_opt ep_name config.custom_entrypoints with
-    Some (ep_code) ->
-      begin
-        match ((Bytes.unpack ep_code) : ((bytes * full_storage) -> return_with_full_storage) option) with
-          Some lambda -> lambda (packed_param, full_storage)
-        | None ->
-            ([%Michelson ({| { FAILWITH } |} : string * unit -> return_with_full_storage)]
-              ("UNPACKING_FAILED", ()) : return_with_full_storage)
-      end
-  | None ->
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> return_with_full_storage)]
-        ("ENTRYPOINT_NOT_FOUND", ()) : return_with_full_storage)
