@@ -1,8 +1,5 @@
 # BaseDAO LIGO
 
-__Note: This is currently in a very raw stage and can be originated only using
-[this approach](https://gitlab.com/tezos/tezos/-/issues/1053#note_481537115).__
-
 This is the LIGO implementation of BaseDAO, written in the cameLIGO dialect.
 
 The main differences with its [Lorentz counterpart](/README.md) are:
@@ -28,17 +25,59 @@ which will save the compiled contract in `out/baseDAO.tz`.
 
 ## Generating `Storage`
 
-Currently we don't provide any convenient way to generate `BaseDAO` storage,
-but you can use [RegistryDAO Storage generation](#registrydao) as example.
+Defaults for the storage, including configuration, are included in the
+`ligo/src/defaults.mligo` file.
+This can be converted to a Michelson expression with the `ligo compile-storage`
+command, which is included in the Makefile so it can be run using `make`.
 
-We will work on this in future versions.
+```bash
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" out/trivialDAO_storage.tz
+```
 
-## Using the contract
+Note: Both arguments are optional and will be equal to the values above if not
+specified.
+
+Note also that `make all` will generate `out/trivialDAO_storage.tz` with these
+default values as well, beside compiling the contract itself.
+
+For a more interesting example you can use the
+[RegistryDAO Storage generation](#registrydao) instead.
+
+## Originating and starting up the contract
 
 You will need [tezos-client](http://tezos.gitlab.io/introduction/howtoget.html) or similar software to originate and interact with the contract on the Tezos network.
 
 For example, if you have compiled the contract and obtained a storage (`<storage>`) as described above you can originate it with:
 `tezos-client originate contract myDAO transferring 1 from alice running out/baseDAO.tz --init <storage>`
+
+Origination, however, won't be enough to make full use of the contract.
+Due to the size limitations of Tezos, baseDAO will store its entrypoints as
+lambdas inside its storage.
+
+Because of this the contract starts in a "startup" mode and a series of operations
+is necessary to load these entrypoint lambdas into the contract, before it can
+be actually used.
+
+All the standard entrypoint lambdas are provided in `ligo/src/startup.mligo`
+(with some more information) and can be complied into parameters to push them to
+the contract with the `ligo compile-parameter` command.
+
+This is also included in the `Makefile` and using `make all` will provide each
+parameter in the `out/entrypoints` directory.
+
+For example, to load (or override) an entrypoint into the storage, you can use:
+`tezos-client transfer 0 from alice to myDAO --arg <ep_parameter>`
+which can also be used to load custom entrypoints.
+
+As long as "startup" mode is going on only the `admin` can call a stored
+entrypoint.
+
+To remove a previously loaded entrypoint you can instead use
+`tezos-client transfer 0 from alice to myDAO --arg '(Left (Some (Pair "<ep_name>", None)))'`
+
+Once all the entrypoints are loaded, you can exit the "startup" mode using:
+`tezos-client transfer 0 from alice to myDAO --arg '(Left (None))'`
+IMPORTANT: this is irreversible, be careful when doing so.
 
 ## Testing
 
@@ -55,9 +94,9 @@ For more detail about LIGO tests, check out its [README.md](./haskell/test/)
 ### RegistryDAO
 
 The storage, including configuration for the RegistryDAO [specification](https://github.com/tqtezos/baseDAO/blob/master/docs/registry.md)
-is included in `ligo/src/registryDAO.mligo`. You can convert this into a
-Michelson expression during the BaseDAO origination using the `ligo
-compile-storage` command, which is included in the Makefile so it can be run using `make`.
+is included in `ligo/src/registryDAO.mligo`.
+As with the default storage this can be generated with the `ligo
+compile-storage` command, or `make`:
 
 ```bash
 make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" s_max=12n a=1n b=0n c=1n d=1n out/registryDAO_storage.tz

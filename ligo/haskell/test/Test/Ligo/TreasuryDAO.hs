@@ -49,12 +49,10 @@ metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md
 validProposal :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ withFrozenCallStack do
   ((owner1, _), (owner2, _), dao, _) <-
-      originateTreasuryDaoWithBalance
-          (\owner1_ owner2_ ->
-              [ ((owner1_, DAO.unfrozenTokenId), 200)
-              , ((owner2_, DAO.unfrozenTokenId), 200)
-              ]
-          )
+    withDefaultStartup $ originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
+      [ ((owner1_, DAO.unfrozenTokenId), 200)
+      , ((owner2_, DAO.unfrozenTokenId), 200)
+      ]
   let
     proposalMeta = DynamicRec $ Map.fromList $
       [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
@@ -76,12 +74,10 @@ validProposal = uncapsNettest $ withFrozenCallStack do
 flushTokenTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   ((owner1, _), (owner2, _), dao, admin) <-
-      originateTreasuryDaoWithBalance
-          (\owner1_ owner2_ ->
-              [ ((owner1_, DAO.unfrozenTokenId), 200)
-              , ((owner2_, DAO.unfrozenTokenId), 100)
-              ]
-          )
+    withDefaultStartup $ originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
+      [ ((owner1_, DAO.unfrozenTokenId), 200)
+      , ((owner2_, DAO.unfrozenTokenId), 100)
+      ]
 
   -- Set RegistryDAO as operator of the address that is mean to transfer the tokens
   let opParams = FA2.OperatorParam
@@ -128,12 +124,10 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
 flushXtzTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   ((owner1, _), (owner2, _), dao, admin) <-
-      originateTreasuryDaoWithBalance
-        (\owner1_ owner2_ ->
-            [ ((owner1_, DAO.unfrozenTokenId), 100)
-            , ((owner2_, DAO.unfrozenTokenId), 100)
-            ]
-        )
+    withDefaultStartup $ originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
+      [ ((owner1_, DAO.unfrozenTokenId), 100)
+      , ((owner2_, DAO.unfrozenTokenId), 100)
+      ]
 
   sendXtz (toAddress dao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
@@ -202,8 +196,9 @@ originateTreasuryDaoWithBalance
  :: forall caps base m. (MonadNettest caps base m)
  => (Address -> Address -> [(LedgerKey, LedgerValue)]) -> OriginateFn ParameterL m
 originateTreasuryDaoWithBalance bal =
-  let fs = fromVal ($(fetchValue @FullStorage "ligo/haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
-      testExtra = (sExtra $ fsStorage fs)
+  let fs = $(fetchValue @FullStorage "ligo/haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH")
+      configStore = fsConfigured fs
+      testExtra = (sExtra $ csStorage configStore)
         & setExtra @Natural [mt|a|] 1
         & setExtra @Natural [mt|b|] 0
         & setExtra @Natural [mt|c|] 1
@@ -211,8 +206,9 @@ originateTreasuryDaoWithBalance bal =
         & setExtra @Natural [mt|s_max|] 1000
         & setExtra @Natural [mt|y|] 2
         & setExtra @Natural [mt|z|] 5
+      customEps = Map.toList . unBigMap . ssStoredEntrypoints $ fsStartup fs
 
-  in originateLigoDaoWithBalance testExtra (fsConfig fs) bal
+  in originateLigoDaoWithBalance customEps testExtra (csConfig configStore) bal
   where
     setExtra :: forall a n. NicePackedValue a => MText -> a -> DynamicRec n -> DynamicRec n
     setExtra key v extra =

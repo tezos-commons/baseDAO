@@ -9,6 +9,7 @@ module Test.Ligo.RegistryDAO
   ) where
 
 import Universum
+import qualified Universum.Unsafe as Unsafe
 
 import qualified Data.ByteString as BS
 import qualified Data.Map as Map
@@ -28,6 +29,7 @@ import BaseDAO.ShareTest.Common (makeProposalKey)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
+import Test.Ligo.BaseDAO.Common
 
 withOriginated
   :: MonadNettest caps base m
@@ -45,6 +47,7 @@ withOriginated addrCount storageFn tests = do
     , uodStorage = untypeValue $ toVal storage
     , uodContract = convertContract baseDAOContractLigo
     }
+  defaultStartupContract (Unsafe.head addresses) baseDao
   tests addresses storage (TAddress baseDao)
 
 -- | We test non-token entrypoints of the BaseDAO contract here
@@ -180,41 +183,45 @@ test_RegistryDAO =
               -- Now we expect this to work
               callFrom (AddressResolved wallet1) baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
     ]
- ]
- where
+  ]
+  where
+    defaultTokenBalance :: Natural = 1000
 
-   defaultTokenBalance :: Natural = 1000
+    metadataSize :: DynamicRec "pm" -> Natural
+    metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md
 
-   metadataSize :: DynamicRec "pm" -> Natural
-   metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md
-
-   -- Here we parse the storage value from compiled ligo storage, which
-   -- contains the RegistryDAO lambdas implemented in LIGO, and we just use
-   -- `fromVal` to convert it to a 'FullStorage'. Then we can set the
-   -- RegistryDAO configuration values using the setExtra function below, and
-   -- initialize the contract using it. This let us have the lambdas from LIGO
-   -- in storage, and allows to tweak RegistryDAO configuration in tests.
-   initialStorage :: Address -> [Address] -> FullStorage
-   initialStorage admin wallets = let
-      fs = fromVal ($(fetchValue @FullStorage "ligo/haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
-      oldStorage = fsStorage fs
+    -- Here we parse the storage value from compiled ligo storage, which
+    -- contains the RegistryDAO lambdas implemented in LIGO, and we just use
+    -- `fromVal` to convert it to a 'FullStorage'. Then we can set the
+    -- RegistryDAO configuration values using the setExtra function below, and
+    -- initialize the contract using it. This let us have the lambdas from LIGO
+    -- in storage, and allows to tweak RegistryDAO configuration in tests.
+    initialStorage :: Address -> [Address] -> FullStorage
+    initialStorage admin wallets = let
+      fs = $(fetchValue @FullStorage "ligo/haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH")
+      oldConfigured = fsConfigured fs
+      oldStorage = csStorage oldConfigured
       newStorage = oldStorage { sAdmin = admin, sLedger = BigMap $ Map.fromList [((w, FA2.theTokenId), defaultTokenBalance) | w <- wallets] }
-      in fs { fsStorage = newStorage }
+      newConfigured = oldConfigured { csStorage = newStorage }
+      in fs { fsConfigured = newConfigured }
 
-   initialStorageWithExplictRegistryDAOConfig :: Address -> [Address] -> FullStorage
-   initialStorageWithExplictRegistryDAOConfig admin wallets =
+    initialStorageWithExplictRegistryDAOConfig :: Address -> [Address] -> FullStorage
+    initialStorageWithExplictRegistryDAOConfig admin wallets =
       setExtra @Natural [mt|a|] 1 $
       setExtra @Natural [mt|b|] 0 $
       setExtra @Natural [mt|c|] 1 $
       setExtra @Natural [mt|d|] 1 $
       setExtra @Natural [mt|s_max|] 100 (initialStorage admin wallets)
 
-   setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
-   setExtra key v (s@FullStorage {..}) = let
-    oldExtra = unDynamic $ sExtra fsStorage
-    newExtra = Map.insert key (lPackValueRaw v) oldExtra
-    newStorage = fsStorage { sExtra = DynamicRec newExtra }
-    in s { fsStorage = newStorage }
+    setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
+    setExtra key v fs = let
+      oldConfigured = fsConfigured fs
+      oldStorage = csStorage oldConfigured
+      oldExtra = unDynamic $ sExtra oldStorage
+      newExtra = Map.insert key (lPackValueRaw v) oldExtra
+      newStorage = oldStorage { sExtra = DynamicRec newExtra }
+      newConfigured = oldConfigured { csStorage = newStorage }
+      in fs { fsConfigured = newConfigured }
 
 
 expectFailProposalCheck
