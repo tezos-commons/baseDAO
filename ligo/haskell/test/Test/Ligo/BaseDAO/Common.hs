@@ -1,5 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
+{-# LANGUAGE NumericUnderscores #-}
 
 module Test.Ligo.BaseDAO.Common
   ( originateLigoDaoWithBalance
@@ -120,22 +121,34 @@ defaultStartupContract
   -> Address -- ^ baseDao
   -> m ()
 defaultStartupContract admin baseDao = do
-  forM_ baseDAOEntrypointsParameter $ \epParam ->
-    transfer TransferData
+    -- We need to make sure that 'admin' has enough funds to process all the
+    -- startup calls, so we transfer more money to it, unless it already exists
+    -- from previous scenarios aldready and has a sufficient balance.
+    currBalance <- getBalance $ AddressResolved admin
+    when (currBalance < toMutez 2_e6) $ do  -- < 2 XTZ
+      nettestAddr :: Address <- resolveNettestAddress
+      transfer TransferData
+        { tdFrom = AddressResolved nettestAddr
+        , tdTo = AddressResolved admin
+        , tdAmount = toMutez $ 3_e6 -- 3 XTZ
+        , tdEntrypoint = DefEpName
+        , tdParameter = ()
+        }
+    -- load each entrypoint in the contract
+    forM_ baseDAOEntrypointsParameter makeStartupTransfer
+    -- close up
+    makeStartupTransfer Nothing
+  where
+    makeStartupTransfer
+      :: MonadNettest caps base m
+      => StartupParameter -> m ()
+    makeStartupTransfer param = transfer TransferData
       { tdFrom = AddressResolved admin
       , tdTo = AddressResolved baseDao
       , tdAmount = unsafeMkMutez 1
-      , tdEntrypoint = DefEpName
-      , tdParameter = epParam
+      , tdEntrypoint = unsafeBuildEpName "startup"
+      , tdParameter = param
       }
-  -- close up
-  transfer TransferData
-    { tdFrom = AddressResolved admin
-    , tdTo = AddressResolved baseDao
-    , tdAmount = unsafeMkMutez 1
-    , tdEntrypoint = unsafeBuildEpName "startup"
-    , tdParameter = Nothing :: StartupParameter
-    }
 
 -- | Wrapper function that modifies a 'OriginateFn' to also run
 -- 'defaultStartupContract' before returning the result.

@@ -58,25 +58,29 @@ Because of this the contract starts in a "startup" mode and a series of operatio
 is necessary to load these entrypoint lambdas into the contract, before it can
 be actually used.
 
+To load (or override) an entrypoint into the storage, you can use:
+`tezos-client transfer 0 from alice to myDAO --entrypoint 'startup' --arg '(Some (Pair "<ep_name>", (Some <ep_bytes>)))'`
+which can also be used to load custom entrypoints.
+
+For example, a simple custom entrypoint might look like:
+`tezos-client transfer 0 from alice to myDAO --entrypoint 'startup' --arg '(Some (Pair "simple_ep" (Some 0x05020000000a03170316053d036d0342)))'`
+
 All the standard entrypoint lambdas are provided in `ligo/src/startup.mligo`
 (with some more information) and can be complied into parameters to push them to
 the contract with the `ligo compile-parameter` command.
 
 This is also included in the `Makefile` and using `make all` will provide each
-parameter in the `out/entrypoints` directory.
-
-For example, to load (or override) an entrypoint into the storage, you can use:
-`tezos-client transfer 0 from alice to myDAO --arg <ep_parameter>`
-which can also be used to load custom entrypoints.
+parameter in the `out/entrypoints` directory, whose content is ready to be passed
+as `--arg` to the command above.
 
 As long as "startup" mode is going on only the `admin` can call a stored
 entrypoint.
 
 To remove a previously loaded entrypoint you can instead use
-`tezos-client transfer 0 from alice to myDAO --arg '(Left (Some (Pair "<ep_name>", None)))'`
+`tezos-client transfer 0 from alice to myDAO --entrypoint 'startup' --arg '(Some (Pair "<ep_name>", None))'`
 
 Once all the entrypoints are loaded, you can exit the "startup" mode using:
-`tezos-client transfer 0 from alice to myDAO --arg '(Left (None))'`
+`tezos-client transfer 0 from alice to myDAO --entrypoint 'startup' --arg 'None'`
 IMPORTANT: this is irreversible, be careful when doing so.
 
 ## Testing

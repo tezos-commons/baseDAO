@@ -70,7 +70,7 @@ endif
 $(OUT)/entrypoints/%.tz: src/**
 	# ==== Compiling parameter for storable entrypoint ==== #
 	mkdir -p $(OUT)/entrypoints
-	$(BUILD_PARAMETER) --output-file $(OUT)/entrypoints/$*.tz src/startup.mligo base_DAO_contract 'make_ep_param("$*", storable_$*)'
+	$(BUILD_PARAMETER) --output-file $(OUT)/entrypoints/$*.tz src/startup.mligo startup_contract 'make_ep_param("$*", storable_$*)'
 	# ============== Compilation successful =============== #
 	# See "$(OUT)/entrypoints/$*.tz" for compilation result #
 	#

@@ -16,6 +16,6 @@ baseDAOContractLigo :: Contract (ToT ParameterL) (ToT FullStorage)
 baseDAOContractLigo =
   $(fetchContract @(ToT ParameterL) @(ToT FullStorage) "BASEDAO_LIGO_PATH")
 
-baseDAOEntrypointsParameter :: [ParameterL]
+baseDAOEntrypointsParameter :: [StartupParameter]
 baseDAOEntrypointsParameter =
-  $(fetchValues @ParameterL "ligo/haskell/test/entrypoints" "BASEDAO_LIGO_EPS_DIR_PATH")
+  $(fetchValues @StartupParameter "ligo/haskell/test/entrypoints" "BASEDAO_LIGO_EPS_DIR_PATH")
