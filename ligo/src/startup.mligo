@@ -26,9 +26,9 @@
 
 // Helpers
 
-let make_ep_param (ep_name, stored_ep : string * storable_entrypoint) : parameter =
+let make_ep_param (ep_name, stored_ep : string * storable_entrypoint) : startup_parameter =
   let packed_ep = Bytes.pack stored_ep in
-  (M_left (Some (ep_name, Some packed_ep)) : parameter)
+  (Some (ep_name, Some packed_ep) : startup_parameter)
 
 // Management
 

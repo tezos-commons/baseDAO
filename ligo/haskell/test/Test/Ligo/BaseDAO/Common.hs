@@ -120,22 +120,20 @@ defaultStartupContract
   -> Address -- ^ baseDao
   -> m ()
 defaultStartupContract admin baseDao = do
-  forM_ baseDAOEntrypointsParameter $ \epParam ->
-    transfer TransferData
+    forM_ baseDAOEntrypointsParameter makeStartupTransfer
+    -- close up
+    makeStartupTransfer Nothing
+  where
+    makeStartupTransfer
+      :: MonadNettest caps base m
+      => StartupParameter -> m ()
+    makeStartupTransfer param = transfer TransferData
       { tdFrom = AddressResolved admin
       , tdTo = AddressResolved baseDao
       , tdAmount = unsafeMkMutez 1
-      , tdEntrypoint = DefEpName
-      , tdParameter = epParam
+      , tdEntrypoint = unsafeBuildEpName "startup"
+      , tdParameter = param
       }
-  -- close up
-  transfer TransferData
-    { tdFrom = AddressResolved admin
-    , tdTo = AddressResolved baseDao
-    , tdAmount = unsafeMkMutez 1
-    , tdEntrypoint = unsafeBuildEpName "startup"
-    , tdParameter = Nothing :: StartupParameter
-    }
 
 -- | Wrapper function that modifies a 'OriginateFn' to also run
 -- 'defaultStartupContract' before returning the result.
