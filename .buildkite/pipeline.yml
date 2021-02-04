@@ -75,9 +75,8 @@ steps:
     if: *not_scheduled
     commands:
     - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
-    # Running only on emulator for now due to oversized operations
     - nix run -f ci.nix tezos-client -c
-      ./result/bin/baseDAO-test --nettest-no-run-network
+      ./result/bin/baseDAO-test
       -A localhost -P 8735
 
   - label: weeder
