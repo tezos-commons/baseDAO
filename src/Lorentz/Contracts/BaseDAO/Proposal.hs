@@ -39,7 +39,7 @@ checkIfProposalExist
   => (ProposalKey pm : store : s) :-> (Proposal pm : s)
 checkIfProposalExist = do
   stGet #sProposals
-  ifSome nop (failCustom_ #pROPOSAL_NOT_EXIST)
+  ifSome nop (failCustomNoArg #pROPOSAL_NOT_EXIST)
 
 ensureVotingPeriodIsNotOver
   :: forall store ce pm s. (KnownValue pm, StorageC store ce pm)
@@ -52,7 +52,7 @@ ensureVotingPeriodIsNotOver = do
   toNamed #expectedEndDate
   now; toNamed #currentDate
   if #currentDate >=. #expectedEndDate then
-    failCustom_ #vOTING_PERIOD_OVER
+    failCustomNoArg #vOTING_PERIOD_OVER
   else
     nop
 
@@ -64,7 +64,7 @@ ensureProposalIsUnique = do
   sender; swap; pair; toProposalKey
   stMem #sProposals
   if Holds then
-    failCustom_ #pROPOSAL_NOT_UNIQUE
+    failCustomNoArg #pROPOSAL_NOT_UNIQUE
   else nop
 
 ------------------------------------------------------------------------
@@ -80,7 +80,7 @@ checkIsProposalValid Config{..} = do
   if Holds then
     nop
   else
-    failCustom_ #fAIL_PROPOSAL_CHECK
+    failCustomNoArg #fAIL_PROPOSAL_CHECK
 
 checkProposerUnfrozenToken
   :: forall store ce pm. (StorageC store ce pm)
@@ -92,7 +92,7 @@ checkProposerUnfrozenToken = do
   pair
 
   stGet #sLedger; ifSome nop $ do
-    constructT
+    constructT @("required" :! Natural, "present" :! Natural)
       ( fieldCtor $ getField #ppFrozenToken >> toNamed #required
       , fieldCtor $ push (0 :: Natural) >> toNamed #present
       )
@@ -103,7 +103,7 @@ checkProposerUnfrozenToken = do
   duupX @2
   toFieldNamed #ppFrozenToken
   if #ppFrozenToken >. #current_balance then
-    failCustom_ #pROPOSAL_INSUFFICIENT_BALANCE
+    failCustomNoArg #pROPOSAL_INSUFFICIENT_BALANCE
   else do
     nop
 
@@ -118,7 +118,7 @@ checkProposalLimitReached Config{..} = do
   toNamed #currentAmount
   push (cMaxProposals); toNamed #maxAmount
   if #maxAmount <=. #currentAmount then
-    failCustom_ #mAX_PROPOSALS_REACHED
+    failCustomNoArg #mAX_PROPOSALS_REACHED
   else nop
 
 -- | Freeze the account's unfrozen token associated with the address
@@ -235,7 +235,7 @@ checkVoterUnfrozenToken = do
 
   stGet #sLedger; ifSome nop
     ( do
-        constructT
+        constructT @("required" :! Natural, "present" :! Natural)
           ( fieldCtor $ getField #vVoteAmount >> toNamed #required
           , fieldCtor $ push (0 :: Natural) >> toNamed #present
           )
@@ -247,7 +247,7 @@ checkVoterUnfrozenToken = do
   duupX @2
   toFieldNamed #vVoteAmount
   if #vVoteAmount >. #currentBalance then
-    failCustom_ #vOTING_INSUFFICIENT_BALANCE
+    failCustomNoArg #vOTING_INSUFFICIENT_BALANCE
   else do
     nop
 
@@ -310,7 +310,7 @@ checkVoteLimitReached Config{..} = do
 
   push cMaxVotes; toNamed #maxAmount
   if #maxAmount <. #newAmount then
-    failCustom_ #mAX_VOTES_REACHED
+    failCustomNoArg #mAX_VOTES_REACHED
   else nop
 
 -- | Vote
@@ -370,12 +370,12 @@ setVotingPeriod Config{..}= do
   dup
   push cMaxVotingPeriod; toNamed #maxValue
   if #maxValue <. #newValue then
-    failCustom_ #oUT_OF_BOUND_VOTING_PERIOD
+    failCustomNoArg #oUT_OF_BOUND_VOTING_PERIOD
   else do
     dup
     push cMinVotingPeriod; toNamed #minValue
     if #minValue >. #newValue then
-      failCustom_ #oUT_OF_BOUND_VOTING_PERIOD
+      failCustomNoArg #oUT_OF_BOUND_VOTING_PERIOD
     else do
       fromNamed #newValue
       stSetField #sVotingPeriod
@@ -396,12 +396,12 @@ setQuorumThreshold Config{..} = do
   dup
   push cMaxQuorumThreshold; toNamed #maxValue
   if #maxValue <. #newValue then
-    failCustom_ #oUT_OF_BOUND_QUORUM_THRESHOLD
+    failCustomNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
   else do
     dup
     push cMinQuorumThreshold; toNamed #minValue
     if #minValue >. #newValue then
-      failCustom_ #oUT_OF_BOUND_QUORUM_THRESHOLD
+      failCustomNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
     else do
       fromNamed #newValue
       stSetField #sQuorumThreshold
@@ -423,7 +423,7 @@ checkBalanceLessThanFrozenValue = do
   push frozenTokenId; swap; pair
 
   stGet #sLedger; ifSome nop $ do
-    failCustom_ #pROPOSER_NOT_EXIST_IN_LEDGER
+    failCustomNoArg #pROPOSER_NOT_EXIST_IN_LEDGER
 
   stackType @[Natural, Address, store, "unfreeze_value" :! Natural, Proposal pm, ProposalKey pm, [Operation]]
   toNamed #actual_frozen_value
@@ -716,9 +716,9 @@ dropProposal config = do
       toField #pStartDate; deleteProposal
       swap; pair
     else do
-      failCustom_ #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
+      failCustomNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
   else do
-    failCustom_ #fAIL_DROP_PROPOSAL_NOT_OVER
+    failCustomNoArg #fAIL_DROP_PROPOSAL_NOT_OVER
 
 ensureNot :: forall a s.
   ( NiceParameter a, NiceStorage a
@@ -728,6 +728,6 @@ ensureNot input = do
   dup; toNamed #val
   push input; toNamed #input
   if #input ==. #val then
-    failCustom_ #bAD_ENTRYPOINT_PARAMETER
+    failCustomNoArg #bAD_ENTRYPOINT_PARAMETER
   else
     nop

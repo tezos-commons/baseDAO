@@ -83,7 +83,7 @@ transfer = do
           dig @5
           dup
           if_ (dug @5) $
-            failCustom_ #fROZEN_TOKEN_NOT_TRANSFERABLE
+            failCustomNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE
         else failCustom_ #fA2_TOKEN_UNDEFINED
       pair
       dup
@@ -337,7 +337,7 @@ addOperator = do
   Lorentz.sender
   if IsEq
   then nop
-  else failCustom_ #nOT_OWNER
+  else failCustomNoArg #nOT_OWNER
   stackType @("owner" :! Address : "operator" :! Address : Storage ce pm : s)
   pair
   swap
@@ -370,7 +370,7 @@ removeOperator = do
   Lorentz.sender
   if IsEq
   then nop
-  else failCustom_ #nOT_OWNER
+  else failCustomNoArg #nOT_OWNER
   stackType @("owner" :! Address : "operator" :! Address : Storage ce pm : s)
   pair
   swap

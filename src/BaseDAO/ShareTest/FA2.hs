@@ -173,9 +173,9 @@ updatingOperatorScenario originateFn = do
     & expectCustomError_ #fA2_NOT_OPERATOR
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
-      & expectCustomError_ #nOT_OWNER
+      & expectCustomErrorNoArg #nOT_OWNER
     call dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
-      & expectCustomError_ #nOT_OWNER
+      & expectCustomErrorNoArg #nOT_OWNER
 
 lowBalanceScenario
   :: forall caps base m param
@@ -286,7 +286,7 @@ validateTokenScenario originateFn = do
   callWith (params unfrozenTokenId)
 
   callWith (params frozenTokenId)
-    & expectCustomError_ #fROZEN_TOKEN_NOT_TRANSFERABLE
+    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE
   callWith (params unknownTokenId)
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 
@@ -311,7 +311,7 @@ validateTokenOwnerScenario originateFn = do
   callWith (params unfrozenTokenId)
 
   callWith (params frozenTokenId)
-    & expectCustomError_ #fROZEN_TOKEN_NOT_TRANSFERABLE
+    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE
   callWith (params unknownTokenId)
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 

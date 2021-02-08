@@ -153,7 +153,7 @@ instance EntrypointKindHasDoc GameDaoCustomEntrypointsKind where
 
 ----------------------------------------------------------------------------
 
-type instance ErrorArg "fAIL_DECISION_LAMBDA" = ()
+type instance ErrorArg "fAIL_DECISION_LAMBDA" = NoErrorArg
 
 instance CustomErrorHasDoc "fAIL_DECISION_LAMBDA" where
   customErrClass = ErrClassActionException
@@ -215,7 +215,7 @@ decisionLambda = do
     toField #pmConsumerAddr
     contractCallingUnsafe @MText DefEpName
     ifSome nop $ do
-      failCustom_ #fAIL_DECISION_LAMBDA
+      failCustomNoArg #fAIL_DECISION_LAMBDA
     push zeroMutez
   transferTokens
   nil; swap; cons

@@ -33,7 +33,7 @@ setVotingPeriod _ originateFn = do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Set_voting_period") param
-    & expectCustomError_ #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN
 
   withSender (AddressResolved admin) $
     call dao (Call @"Set_voting_period") param
@@ -54,7 +54,7 @@ setQuorumThreshold _ originateFn = do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Set_quorum_threshold") param
-    & expectCustomError_ #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN
 
   withSender (AddressResolved admin) $
     call dao (Call @"Set_quorum_threshold") param
@@ -82,7 +82,7 @@ proposalBoundedValue _ originateFn = do
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Propose") params
     call dao (Call @"Propose") params
-      & expectCustomError_ #mAX_PROPOSALS_REACHED
+      & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
 
 votesBoundedValue
   :: forall pm param config caps base m.
@@ -112,7 +112,7 @@ votesBoundedValue _ originateFn = do
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Vote") [downvote]
     call dao (Call @"Vote") [upvote]
-      & expectCustomError_ #mAX_VOTES_REACHED
+      & expectCustomErrorNoArg #mAX_VOTES_REACHED
 
 quorumThresholdBound
   :: forall pm param config caps base m.
@@ -133,9 +133,9 @@ quorumThresholdBound _ originateFn = do
     call dao (Call @"Set_quorum_threshold") 1
     call dao (Call @"Set_quorum_threshold") 2
     call dao (Call @"Set_quorum_threshold") 0
-      & expectCustomError_ #oUT_OF_BOUND_QUORUM_THRESHOLD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
     call dao (Call @"Set_quorum_threshold") 3
-      & expectCustomError_ #oUT_OF_BOUND_QUORUM_THRESHOLD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
 
 votingPeriodBound
   :: forall pm param config caps base m.
@@ -156,6 +156,6 @@ votingPeriodBound _ originateFn = do
     call dao (Call @"Set_voting_period") 1
     call dao (Call @"Set_voting_period") 2
     call dao (Call @"Set_voting_period") 0
-      & expectCustomError_ #oUT_OF_BOUND_VOTING_PERIOD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD
     call dao (Call @"Set_voting_period") 3
-      & expectCustomError_ #oUT_OF_BOUND_VOTING_PERIOD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD

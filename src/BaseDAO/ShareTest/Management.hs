@@ -289,22 +289,22 @@ confirmMigFinalize withOriginatedFn initialStorage =
 expectNotAdmin
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotAdmin = expectCustomError_ #nOT_ADMIN
+expectNotAdmin = expectCustomErrorNoArg #nOT_ADMIN
 
 expectNotPendingOwner
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotPendingOwner = expectCustomError_ #nOT_PENDING_ADMIN
+expectNotPendingOwner = expectCustomErrorNoArg #nOT_PENDING_ADMIN
 
 expectNotMigrating
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotMigrating = expectCustomError_ #nOT_MIGRATING
+expectNotMigrating = expectCustomErrorNoArg #nOT_MIGRATING
 
 expectNotMigrationTarget
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectNotMigrationTarget = expectCustomError_ #nOT_MIGRATION_TARGET
+expectNotMigrationTarget = expectCustomErrorNoArg #nOT_MIGRATION_TARGET
 
 expectMigrated
   :: (MonadNettest caps base m)
@@ -314,4 +314,4 @@ expectMigrated addr = expectCustomError #mIGRATED addr
 expectForbiddenXTZ
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectForbiddenXTZ = expectCustomError_ #fORBIDDEN_XTZ
+expectForbiddenXTZ = expectCustomErrorNoArg #fORBIDDEN_XTZ
