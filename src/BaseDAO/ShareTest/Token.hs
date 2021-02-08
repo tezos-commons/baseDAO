@@ -39,9 +39,10 @@ burnScenario originateFn = do
       & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
 
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
-    checkTokenBalance (DAO.unfrozenTokenId) dao owner1 0
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 0
+  withSender (AddressResolved admin) $
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 5)
-    checkTokenBalance (DAO.frozenTokenId) dao owner1 5
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 5
 
 mintScenario
   :: forall caps base m param pm
@@ -56,9 +57,10 @@ mintScenario originateFn = do
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 100)
-    checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100
+  withSender (AddressResolved admin) $
     call dao (Call @"Mint") (DAO.MintParam owner1 DAO.frozenTokenId 50)
-    checkTokenBalance (DAO.frozenTokenId) dao owner1 50
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 50
 
 transferContractTokensScenario
   :: forall caps base m param pm

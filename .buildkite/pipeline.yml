@@ -62,24 +62,39 @@ steps:
           packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
         -c bats ./scripts/test.bats
 
-  - label: test
+  - label: test-local-chain-007
     env:
       TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8735"
     if: *not_scheduled
     commands: &test
     - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
-    - export TASTY_NETTEST_DATA_DIR="$(mktemp -d --tmpdir="$PWD")"
+    - export TASTY_NETTEST_DATA_DIR="$(mktemp -d --tmpdir="$$PWD")"
     - nix run -f ci.nix tezos-client -c
       ./result/bin/baseDAO-test --nettest-run-network
 
-  - label: ligo-test
+  - label: test-local-chain-008
+    env:
+      TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8734"
     if: *not_scheduled
-    commands:
+    commands: *test
+
+  - label: ligo-test-local-chain-007
+    env:
+      TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8735"
+    if: *not_scheduled
+    commands: &ligo-test
     - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
     # Running only on emulator for now due to oversized operations
+    # Switch to --nettest-run-network in #124
     - nix run -f ci.nix tezos-client -c
       ./result/bin/baseDAO-test --nettest-no-run-network
-      -A localhost -P 8735
+
+  # TODO [#124] Uncomment
+  # - label: ligo-test-local-chain-008
+  #   env:
+  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8734"
+  #   if: *not_scheduled
+  #   commands: *ligo-test
 
   - label: weeder
     if: *not_scheduled
@@ -107,6 +122,46 @@ steps:
       automatic:
         limit: 1
     timeout_in_minutes: 150
+
+  - label: scheduled edonet test
+    if: build.source == "schedule"
+    env:
+      TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
+    # use another agent for long scheduled jobs
+    agents:
+      queue: "scheduled"
+    commands: *test
+    retry:
+      automatic:
+        limit: 1
+    timeout_in_minutes: 150
+
+  # TODO [#124] Uncomment
+  # - label: scheduled delphinet ligo test
+  #   if: build.source == "schedule"
+  #   env:
+  #     TASTY_NETTEST_NODE_ENDPOINT: "http://delphi.testnet.tezos.serokell.team:8732"
+  #   # use another agent for long scheduled jobs
+  #   agents:
+  #     queue: "scheduled"
+  #   commands: *ligo-test
+  #   retry:
+  #     automatic:
+  #       limit: 1
+  #   timeout_in_minutes: 150
+
+  # - label: scheduled edonet ligo test
+  #   if: build.source == "schedule"
+  #   env:
+  #     TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
+  #   # use another agent for long scheduled jobs
+  #   agents:
+  #     queue: "scheduled"
+  #   commands: *ligo-test
+  #   retry:
+  #     automatic:
+  #       limit: 1
+  #   timeout_in_minutes: 150
 
 # Autodoc
   - label: contract doc development
