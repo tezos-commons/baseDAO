@@ -18,8 +18,7 @@ let call_stored_ep
   let config_store = full_store.1 in
   match Map.find_opt ep_name startup_store.stored_entrypoints with
   | Some lambda -> lambda(packed_param, config_store)
-  | None -> ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-              ("ENTRYPOINT_NOT_FOUND", ()) : return)
+  | None -> (failwith("ENTRYPOINT_NOT_FOUND") : return)
 
 (*
  * Returns name and packed parameter of a stored entrypoint that is part of FA2.
@@ -46,8 +45,7 @@ let fa2_eps(param : fa2_parameter) : (string * bytes) =
 let requiring_no_xtz (param : forbid_xtz_params) : (string * bytes) =
   // check for no xtz
   if Tezos.amount > 0tez
-  then ([%Michelson ({| { FAILWITH } |} : string * unit -> (string * bytes))]
-        ("FORBIDDEN_XTZ", ()) : (string * bytes))
+  then (failwith("FORBIDDEN_XTZ") : (string * bytes))
   else
     match param with
     | Call_FA2 p -> fa2_eps p

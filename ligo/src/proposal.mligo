@@ -21,22 +21,19 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
   match Map.find_opt proposal_key store.proposals with
     Some p -> p
   | None ->
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> proposal)]
-        ("PROPOSAL_NOT_EXIST", ()))
+      (failwith("PROPOSAL_NOT_EXIST") : proposal)
 
 [@inline]
 let ensure_voting_period_is_not_over (proposal, store : proposal * storage): storage =
   if Tezos.now >= proposal.start_date + int(store.voting_period)
-    then ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-          ("VOTING_PERIOD_OVER", ()) : storage)
+    then (failwith("VOTING_PERIOD_OVER") : storage)
     else store
 
 [@inline]
 let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
   let proposal_key = to_proposal_key(propose_params, Tezos.sender) in
   if Map.mem proposal_key store.proposals
-    then ([%Michelson ({| { FAILWITH } |} : string * unit -> proposal_key)]
-        ("PROPOSAL_NOT_UNIQUE", ()) : proposal_key)
+    then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
     else proposal_key
 
 // -----------------------------------------------------------------
@@ -47,8 +44,7 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
 let check_is_proposal_valid (config, propose_params, store : config * propose_params * storage): storage =
   if config.proposal_check (propose_params, store.extra)
     then store
-    else ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-          ("FAIL_PROPOSAL_CHECK", ()) : storage)
+    else (failwith("FAIL_PROPOSAL_CHECK") : storage)
 
 [@inline]
 let check_proposer_unfrozen_token (propose_params, ledger : propose_params * ledger): ledger =
@@ -58,15 +54,13 @@ let check_proposer_unfrozen_token (propose_params, ledger : propose_params * led
         ("FA2_INSUFFICIENT_BALANCE", (propose_params.frozen_token, 0n)) : ledger)
   | Some current_balance ->
     if propose_params.frozen_token > current_balance
-      then ([%Michelson ({| { FAILWITH } |} : string * unit -> ledger)]
-            ("PROPOSAL_INSUFFICIENT_BALANCE", ()) : ledger)
+      then (failwith("PROPOSAL_INSUFFICIENT_BALANCE") : ledger)
       else ledger
 
 [@inline]
 let check_proposal_limit_reached (config, propose_params, store : config * propose_params * storage): storage =
   if config.max_proposals <= List.length store.proposal_key_list_sort_by_date
-    then ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-          ("MAX_PROPOSALS_REACHED", ()) : storage)
+    then (failwith("MAX_PROPOSALS_REACHED") : storage)
     else store
 
 let freeze (tokens, addr, ledger, total_supply : nat * address * ledger * total_supply): (ledger * total_supply) =
@@ -124,8 +118,7 @@ let check_voter_unfrozen_token (vote_param, author, store : vote_param * address
     | Some value -> value
     in
   if vote_param.vote_amount > current_balance
-    then ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-          ("VOTING_INSUFFICIENT_BALANCE", ()) : storage)
+    then (failwith("VOTING_INSUFFICIENT_BALANCE") : storage)
     else store
 
 [@inline]
@@ -153,8 +146,7 @@ let submit_vote (proposal, vote_param, author, store : proposal * vote_param * a
 let check_vote_limit_reached
     (config, proposal, vote_param : config * proposal * vote_param): vote_param =
   if config.max_votes < proposal.upvotes + proposal.downvotes + vote_param.vote_amount
-    then ([%Michelson ({| { FAILWITH } |} : string * unit -> vote_param)]
-          ("MAX_VOTES_REACHED", ()) : vote_param)
+    then (failwith("MAX_VOTES_REACHED") : vote_param)
     else vote_param
 
 // Note: we require this because we want to put the entrypoint in a lamba and so
@@ -190,8 +182,7 @@ let set_voting_period(new_period, config, store : voting_period * config * stora
   let store =
     if   config.max_voting_period < new_period
       || config.min_voting_period > new_period
-      then ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-            ("OUT_OF_BOUND_VOTING_PERIOD", ()) : storage)
+      then (failwith("OUT_OF_BOUND_VOTING_PERIOD") : storage)
       else store
     in
   let store = { store with voting_period = new_period } in
@@ -205,8 +196,7 @@ let set_quorum_threshold(new_threshold, config, store : quorum_threshold * confi
   let store =
     if   config.max_quorum_threshold < new_threshold
       || config.min_quorum_threshold > new_threshold
-      then ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-            ("OUT_OF_BOUND_QUORUM_THRESHOLD", ()) : storage)
+      then (failwith("OUT_OF_BOUND_QUORUM_THRESHOLD") : storage)
       else store
     in
   let store = { store with quorum_threshold = new_threshold } in
@@ -220,8 +210,7 @@ let check_balance_less_then_frozen_value
   let actual_frozen_value =
     match Map.find_opt (addr, frozen_token_id) store.ledger with
       None ->
-        ([%Michelson ({| { FAILWITH } |} : string * unit -> nat)]
-          ("PROPOSER_NOT_EXIST_IN_LEDGER", ()) : nat)
+        (failwith("PROPOSER_NOT_EXIST_IN_LEDGER") : nat)
     | Some value -> value
     in
   if unfreeze_value > actual_frozen_value
@@ -325,8 +314,7 @@ let flush(n, config, store : nat * config * storage): return =
   let store =
     if n = 0n
       then
-        ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-          ("BAD_ENTRYPOINT_PARAMETER", ()) : storage)
+        (failwith("BAD_ENTRYPOINT_PARAMETER") : storage)
       else store
     in
 
@@ -359,8 +347,6 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
       let store = delete_proposal (proposal.start_date, proposal_key, store) in
       (([] : operation list), store)
     else
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-        ("FAIL_DROP_PROPOSAL_NOT_ACCEPTED", ()) : return)
+      (failwith("FAIL_DROP_PROPOSAL_NOT_ACCEPTED") : return)
   else
-    ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-      ("FAIL_DROP_PROPOSAL_NOT_OVER", ()) : return)
+    (failwith("FAIL_DROP_PROPOSAL_NOT_OVER") : return)
