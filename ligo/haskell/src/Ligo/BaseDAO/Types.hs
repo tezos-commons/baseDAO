@@ -172,9 +172,9 @@ mkStorageL admin votingPeriod quorumThreshold extra metadata =
     quorumThresholdDef = 4
 
 data ConfigL = ConfigL
-  { cProposalCheck :: '[ProposeParamsL, StorageL] :-> '[Bool]
-  , cRejectedProposalReturnValue :: '[ProposalL, StorageL] :-> '["slash_amount" :! Natural]
-  , cDecisionLambda :: '[ProposalL, StorageL] :-> '[List Operation, StorageL]
+  { cProposalCheck :: '[ProposeParamsL, ContractExtraL] :-> '[Bool]
+  , cRejectedProposalReturnValue :: '[ProposalL, ContractExtraL] :-> '["slash_amount" :! Natural]
+  , cDecisionLambda :: '[ProposalL, ContractExtraL] :-> '[List Operation, ContractExtraL]
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural

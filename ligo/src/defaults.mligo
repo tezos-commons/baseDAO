@@ -4,9 +4,9 @@
 #include "types.mligo"
 
 let default_config : config = {
-    proposal_check = (fun (params, store : propose_params * storage) -> true);
-    rejected_proposal_return_value = (fun (proposal, store : proposal * storage) -> 0n);
-    decision_lambda = (fun (proposal, store : proposal * storage) -> (([] : (operation list)), store));
+    proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
+    rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
+    decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
 
     max_proposals = 500n;
     max_votes = 1000n;
