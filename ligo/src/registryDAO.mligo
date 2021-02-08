@@ -80,11 +80,11 @@ let apply_diff_affected (proposal_key, diff, ce : proposal_key *
  * and a and b are from storage configuration.
  * 2. proposal size < s_max where s_max is from stored configuration.
  *)
-let registry_DAO_proposal_check (params, store : propose_params * storage) : bool =
+let registry_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
   let proposal_size = Bytes.size(Bytes.pack(params.proposal_metadata)) in
-  let frozen_scale_value = require_config ("a", store.extra) in
-  let frozen_extra_value = require_config ("b", store.extra) in
-  let max_proposal_size = require_config ("s_max", store.extra) in
+  let frozen_scale_value = require_config ("a", extras) in
+  let frozen_extra_value = require_config ("b", extras) in
+  let max_proposal_size = require_config ("s_max", extras) in
   let requred_token_lock = frozen_scale_value * proposal_size + frozen_extra_value
   in (params.frozen_token = requred_token_lock) && (proposal_size < max_proposal_size)
 
@@ -93,9 +93,9 @@ let registry_DAO_proposal_check (params, store : propose_params * storage) : boo
  * are specified by the DAO creator in configuration and frozen is the amount
  * that was frozen by the proposer.
  *)
-let registry_DAO_rejected_proposal_return_value (params, store : proposal * storage) : nat =
-  let slash_scale_value = require_config ("c", store.extra) in
-  let slash_division_value = require_config ("d", store.extra)
+let registry_DAO_rejected_proposal_return_value (params, extras : proposal * contract_extra) : nat =
+  let slash_scale_value = require_config ("c", extras) in
+  let slash_division_value = require_config ("d", extras)
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
 (*
@@ -113,32 +113,34 @@ let registry_DAO_rejected_proposal_return_value (params, store : proposal * stor
  * "b", "s_max", "c" and "d".  'None' values are ignored and 'Some' values are
  * used for updating corresponding configuraton.
  *)
-let registry_DAO_decision_lambda (proposal, store : proposal * storage) : return =
+let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
+    : operation list * contract_extra =
   let propose_param : propose_params = {
     frozen_token = proposal.proposer_frozen_token;
     proposal_metadata = proposal.metadata
     } in
   let proposal_key = to_proposal_key (propose_param, proposal.proposer) in
   match Map.find_opt "agoraPostID" proposal.metadata with
-    Some (packed_b) ->
+  | Some (packed_b) ->
       begin
         match ((Bytes.unpack packed_b) : (nat option)) with
-          Some (agora_post_id) ->
+        | Some (agora_post_id) ->
             begin
               match Map.find_opt "updates" proposal.metadata with
-                Some (packed_b) ->
+              | Some (packed_b) ->
                   begin
                     match ((Bytes.unpack packed_b) : (registry_diff option)) with
-                      Some (diff) ->
-                        let ce_after_registry_update = apply_diff(diff, store.extra) in
+                    | Some (diff) ->
+                        let ce_after_registry_update = apply_diff(diff, extras) in
                         let ce_after_registry_affected_update =
                           apply_diff_affected(proposal_key, diff, ce_after_registry_update) in
-                          (([] : operation list), { store with extra = ce_after_registry_affected_update })
-                    | None -> (failwith "UPDATES_UNPACKING_FAILED" : return)
+                          (([] : operation list), ce_after_registry_affected_update)
+                    | None ->
+                      (failwith "UPDATES_UNPACKING_FAILED" : operation list * contract_extra)
                   end
-              | None -> (failwith "UPDATES_NOT_FOUND" : return)
+              | None -> (failwith "UPDATES_NOT_FOUND" : operation list * contract_extra)
             end
-        | None -> (failwith "UNPACKING FAILED" : return)
+        | None -> (failwith "UNPACKING FAILED" : operation list * contract_extra)
       end
   | None ->
       let m_frozen_scale_value = lookup_config_in_proposal ("a", proposal.metadata) in
@@ -147,25 +149,30 @@ let registry_DAO_decision_lambda (proposal, store : proposal * storage) : return
       let m_slash_scale_value = lookup_config_in_proposal ("c", proposal.metadata) in
       let m_slash_division_value = lookup_config_in_proposal ("d", proposal.metadata) in
       let new_ce = match m_frozen_scale_value with
-        Some (frozen_scale_value) -> Map.update "a" (Some (Bytes.pack (frozen_scale_value))) store.extra
-        | None -> store.extra in
+        | Some (frozen_scale_value) ->
+            Map.update "a" (Some (Bytes.pack (frozen_scale_value))) extras
+        | None -> extras in
 
       let new_ce = match m_frozen_extra_value with
-        Some (frozen_scale_value) -> Map.update "b" (Some (Bytes.pack (frozen_scale_value))) new_ce
+        | Some (frozen_scale_value) ->
+            Map.update "b" (Some (Bytes.pack (frozen_scale_value))) new_ce
         | None -> new_ce in
 
       let new_ce = match m_max_proposal_size with
-        Some (max_proposal_size) -> Map.update "s_max" (Some (Bytes.pack (max_proposal_size))) new_ce
+        | Some (max_proposal_size) ->
+            Map.update "s_max" (Some (Bytes.pack (max_proposal_size))) new_ce
         | None -> new_ce in
 
       let new_ce = match m_slash_scale_value with
-        Some (slash_scale_value) -> Map.update "c" (Some (Bytes.pack (slash_scale_value))) new_ce
+        | Some (slash_scale_value) ->
+            Map.update "c" (Some (Bytes.pack (slash_scale_value))) new_ce
         | None -> new_ce in
 
       let new_ce = match m_slash_division_value with
-        Some (slash_division_value) -> Map.update "d" (Some (Bytes.pack (slash_division_value))) new_ce
+        | Some (slash_division_value) ->
+            Map.update "d" (Some (Bytes.pack (slash_division_value))) new_ce
         | None -> new_ce
-      in (([] : operation list), { store with extra = new_ce })
+      in (([] : operation list), new_ce)
 
 let default_registry_DAO_full_storage (admin, token_address, a, b, s_max, c, d
     : (address * address * nat * nat * nat * nat * nat)) : full_storage =

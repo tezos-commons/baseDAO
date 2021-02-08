@@ -237,9 +237,9 @@ type parameter = (startup_parameter, "startup", running_parameter, "") michelson
 // -- Config -- //
 
 type config =
-  { proposal_check : propose_params * storage -> bool
-  ; rejected_proposal_return_value : proposal * storage -> nat
-  ; decision_lambda : proposal * storage -> operation list * storage
+  { proposal_check : propose_params * contract_extra -> bool
+  ; rejected_proposal_return_value : proposal * contract_extra -> nat
+  ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
 
   ; max_proposals : nat
   ; max_votes : nat

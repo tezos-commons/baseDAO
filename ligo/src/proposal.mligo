@@ -45,7 +45,7 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
 
 [@inline]
 let check_is_proposal_valid (config, propose_params, store : config * propose_params * storage): storage =
-  if config.proposal_check (propose_params, store)
+  if config.proposal_check (propose_params, store.extra)
     then store
     else ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
           ("FAIL_PROPOSAL_CHECK", ()) : storage)
@@ -243,13 +243,13 @@ let burn_slash_amount (slash_amount, frozen_tokens, addr, store : nat * nat * ad
 
 let unfreeze_proposer_and_voter_token
   (rejected_proposal_return, is_accepted, proposal, proposal_key, store :
-    (proposal * storage -> nat) * bool * proposal * proposal_key * storage): storage =
+    (proposal * contract_extra -> nat) * bool * proposal * proposal_key * storage): storage =
   // unfreeze_proposer_token
   let (tokens, store) =
     if is_accepted
     then (proposal.proposer_frozen_token, store)
     else
-      let slash_amount = rejected_proposal_return (proposal, store) in
+      let slash_amount = rejected_proposal_return (proposal, store.extra) in
       let frozen_tokens = proposal.proposer_frozen_token in
       let store = burn_slash_amount(slash_amount, frozen_tokens, proposal.proposer, store) in
       let tokens =
@@ -301,7 +301,9 @@ let handle_proposal_is_over
     let store = unfreeze_proposer_and_voter_token (config.rejected_proposal_return_value, cond, proposal, proposal_key, store) in
     let (new_ops, store) =
       if cond
-      then config.decision_lambda (proposal, store)
+      then
+        let (ops, new_extra) = config.decision_lambda (proposal, store.extra)
+        in (ops, { store with extra = new_extra })
       else (([] : operation list), store)
     in
     let cons = fun (l, e : operation list * operation) -> e :: l in
