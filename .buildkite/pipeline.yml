@@ -63,13 +63,14 @@ steps:
         -c bats ./scripts/test.bats
 
   - label: test
+    env:
+      TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8735"
     if: *not_scheduled
-    commands:
+    commands: &test
     - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
-    # Emulator + local chain for Delphi protocol
+    - export TASTY_NETTEST_DATA_DIR="$(mktemp -d --tmpdir="$PWD")"
     - nix run -f ci.nix tezos-client -c
       ./result/bin/baseDAO-test --nettest-run-network
-      -A localhost -P 8735
 
   - label: ligo-test
     if: *not_scheduled
@@ -96,15 +97,12 @@ steps:
 
   - label: scheduled delphinet test
     if: build.source == "schedule"
+    env:
+      TASTY_NETTEST_NODE_ENDPOINT: "http://delphi.testnet.tezos.serokell.team:8732"
     # use another agent for long scheduled jobs
     agents:
       queue: "scheduled"
-    commands:
-    - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
-    # Emulator + testnet for Delphi protocol
-    - nix run -f ci.nix tezos-client -c
-      ./result/bin/baseDAO-test --nettest-run-network
-      -A delphi.testnet.tezos.serokell.team -P 8732
+    commands: *test
     retry:
       automatic:
         limit: 1

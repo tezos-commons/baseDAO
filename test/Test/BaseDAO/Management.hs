@@ -30,8 +30,7 @@ withOriginated
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
   baseDao <- originate $ OriginateData
-    { odFrom = nettestAddress
-    , odName = "BaseDAO Test Contract"
+    { odName = "BaseDAO Test Contract"
     , odBalance = zeroMutez
     , odStorage = storageFn addresses
     , odContract = DAO.baseDaoContract DAO.defaultConfig

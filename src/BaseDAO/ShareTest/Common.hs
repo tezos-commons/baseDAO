@@ -95,8 +95,7 @@ originateBaseDaoWithBalance contractExtra configDesc balFunc = do
 
   let
     originateData = OriginateData
-      { odFrom = nettestAddress
-      , odName = "BaseDAO"
+      { odName = "BaseDAO"
       , odBalance = toMutez 0
       , odStorage =
           ( mkStorage
@@ -151,7 +150,7 @@ checkTokenBalance
 checkTokenBalance tokenId dao addr expectedValue = withFrozenCallStack $ do
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  callFrom (AddressResolved addr) dao (Call @"Balance_of")
+  withSender (AddressResolved addr) $ call dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = addr
       , briTokenId = tokenId
@@ -191,8 +190,7 @@ sendXtz
   => Address -> EpName -> pm -> m ()
 sendXtz addr epName pm = withFrozenCallStack $ do
   let transferData = TransferData
-        { tdFrom = nettestAddress
-        , tdTo = AddressResolved addr
+        { tdTo = AddressResolved addr
         , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
         , tdEntrypoint = epName
         , tdParameter = pm
@@ -223,7 +221,7 @@ createSampleProposal counter owner1 dao = do
         , ppProposalMetadata = proposalMetadataFromNum counter
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)
 
 -- TODO: Implement this via [#31] instead

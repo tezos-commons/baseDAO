@@ -72,8 +72,7 @@ originateLigoDaoWithBalance customEps extra configL balFunc = do
 
   let
     originateData = UntypedOriginateData
-      { uodFrom = nettestAddress
-      , uodName = "BaseDAO"
+      { uodName = "BaseDAO"
       , uodBalance = toMutez 0
       , uodStorage = untypeValue $ toVal $ fullStorage
       , uodContract = convertContract baseDAOContractLigo
