@@ -207,26 +207,39 @@ type migratable_parameter =
   (custom_ep_param, "CallCustom", forbid_xtz_params, "") michelson_or
 
 (*
- * Full parameter of the contract. Made up of entrypoints that could get
- * migrated, and 'Transfer_contract_tokens' which should keep working even
- * after migration.
+ * Full parameter of the running (aka not starting up) contract.
+ * Made up of entrypoints that could get migrated, and 'Transfer_contract_tokens'
+ * which should keep working even after migration.
  *)
-type parameter =
+type running_parameter =
   (migratable_parameter, "", transfer_contract_tokens_param, "Transfer_contract_tokens") michelson_or
+
+(*
+ * Full parameter of the starting up contract.
+ * This is used to load or remove lambdas for the entrypoint into the contract
+ * before it can actually be used.
+ *
+ * The outer-most 'option' is used to either modify an entrypoint ('Some') or
+ * put the contract in "running mode" ('None').
+ * The 'string' is the name associated to an entrypoint (custom or not)
+ * and the 'bytes' should contain the relative packed 'storable_entrypoint' or
+ * 'None' to remove it from the contract.
+ *)
+type startup_parameter = (string * (bytes option)) option
+
+(*
+ * Full parameter of the contract.
+ * Made of a 'Left' option for a startup process or the 'Right' on to interact
+ * with the running contract.
+ *)
+type parameter = (startup_parameter, "startup", running_parameter, "") michelson_or
 
 // -- Config -- //
 
-type custom_entrypoints = (string, bytes) map
-
-type decision_lambda_input =
-  { proposal : proposal
-  ; storage : storage
-  }
-
 type config =
-  { proposal_check : propose_params * storage -> bool
-  ; rejected_proposal_return_value : proposal * storage -> nat
-  ; decision_lambda : proposal * storage -> operation list * storage
+  { proposal_check : propose_params * contract_extra -> bool
+  ; rejected_proposal_return_value : proposal * contract_extra -> nat
+  ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
 
   ; max_proposals : nat
   ; max_votes : nat
@@ -234,22 +247,40 @@ type config =
   ; min_quorum_threshold : nat
   ; max_voting_period : nat
   ; min_voting_period : nat
-
-  ; custom_entrypoints : custom_entrypoints
   }
 
-type full_storage = storage * config
+type configured_storage = storage * config
+
+(*
+ * The type of an entrypoint that can be stored in the storage.
+ * Note that it is only able to affect the 'storage' and that it receives its
+ * parameter as packed 'bytes'.
+ *)
+type storable_entrypoint = (bytes * configured_storage) -> (operation list * storage)
+
+(*
+ * big_map containing all the entrypoints, indexed by a string
+ * representing their name, each being a lambda with access to full_storage and
+ * a packed parameter.
+ *)
+type stored_entrypoints = (string, storable_entrypoint) big_map
+
+(*
+ * Part of the 'full_storage' that can only be modified during the startup phase
+ * of the contract.
+ * It contains the stored 'storable_entrypoint' as well as the startup flag.
+ *)
+type startup_storage =
+  { starting_up : bool
+  ; stored_entrypoints : stored_entrypoints
+  }
+
+type full_storage = startup_storage * configured_storage
 
 // -- Misc -- //
 
 type return = operation list * storage
 
-type return_with_full_storage = operation list * full_storage
-
 let nil_op = ([] : operation list)
-
-// Remove this when everything is covered
-[@inline]
-let not_implemented (func : string) = (failwith(func ^ " is not implemented"): return)
 
 #endif  // TYPES_H included

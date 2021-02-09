@@ -1,10 +1,14 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
+{-# LANGUAGE NumericUnderscores #-}
 
 module Test.Ligo.BaseDAO.Common
   ( originateLigoDaoWithBalance
   , originateLigoDaoWithConfigDesc
   , originateLigoDao
+
+  , defaultStartupContract
+  , withDefaultStartup
   ) where
 
 import Universum
@@ -12,7 +16,10 @@ import Universum
 import Named (defaults, (!))
 
 import Lorentz
+import Michelson.Typed.Convert (convertContract, untypeValue)
+import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
+import Tezos.Core (unsafeMkMutez)
 import Util.Named
 
 import BaseDAO.ShareTest.Common (OriginateFn)
@@ -22,15 +29,15 @@ import qualified Data.Set as S
 import Ligo.BaseDAO.ConfigDesc
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
-import Michelson.Typed.Convert (convertContract, untypeValue)
 
 originateLigoDaoWithBalance
  :: forall caps base m. (MonadNettest caps base m)
- => ContractExtraL
+ => [(MText, StorableEntrypoint)]
+ -> ContractExtraL
  -> ConfigL
  -> (Address -> Address -> [(LedgerKey, LedgerValue)])
  -> OriginateFn ParameterL m
-originateLigoDaoWithBalance extra configL balFunc = do
+originateLigoDaoWithBalance customEps extra configL balFunc = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
   owner2 :: Address <- newAddress "owner2"
@@ -45,19 +52,22 @@ originateLigoDaoWithBalance extra configL balFunc = do
         ]
 
   let fullStorage = FullStorage
-        { fsStorage =
-            ( mkStorageL
-              ! #extra extra
-              ! #admin admin
-              ! #votingPeriod (cMinVotingPeriod configL)
-              ! #quorumThreshold (cMinQuorumThreshold configL)
-              ! #metadata mempty
-              ! defaults
-            )
-            { sLedger = bal
-            , sOperators = operators
-            }
-        , fsConfig = configL
+        { fsStartup = mkStartupStorage customEps
+        , fsConfigured = ConfiguredStorage
+          { csStorage =
+              ( mkStorageL
+                ! #extra extra
+                ! #admin admin
+                ! #votingPeriod (cMinVotingPeriod configL)
+                ! #quorumThreshold (cMinQuorumThreshold configL)
+                ! #metadata mempty
+                ! defaults
+              )
+              { sLedger = bal
+              , sOperators = operators
+              }
+          , csConfig = configL
+          }
         }
 
   let
@@ -79,7 +89,7 @@ originateLigoDaoWithConfig
  -> ConfigL
  -> OriginateFn ParameterL m
 originateLigoDaoWithConfig extra configL =
-  originateLigoDaoWithBalance extra configL
+  originateLigoDaoWithBalance [] extra configL
     (\owner1_ owner2_ ->
     [ ((owner1_, unfrozenTokenId), 100)
     , ((owner2_, unfrozenTokenId), 100)
@@ -91,7 +101,7 @@ originateLigoDaoWithConfigDesc
  -> ConfigDesc ConfigL
  -> OriginateFn ParameterL m
 originateLigoDaoWithConfigDesc extra config =
-  originateLigoDaoWithBalance extra (fillConfig config defaultConfigL)
+  originateLigoDaoWithBalance [] extra (fillConfig config defaultConfigL)
     (\owner1_ owner2_ ->
     [ ((owner1_, unfrozenTokenId), 100)
     , ((owner2_, unfrozenTokenId), 100)
@@ -102,3 +112,51 @@ originateLigoDao
  => OriginateFn ParameterL m
 originateLigoDao =
   originateLigoDaoWithConfig dynRecUnsafe defaultConfigL
+
+-- | Default startup procedure that loads the entrypoints into the contract
+-- (from 'baseDAOEntrypointsParameter') before closing the startup phase.
+defaultStartupContract
+  :: MonadNettest caps base m
+  => Address -- ^ admin
+  -> Address -- ^ baseDao
+  -> m ()
+defaultStartupContract admin baseDao = do
+    -- We need to make sure that 'admin' has enough funds to process all the
+    -- startup calls, so we transfer more money to it, unless it already exists
+    -- from previous scenarios aldready and has a sufficient balance.
+    currBalance <- getBalance $ AddressResolved admin
+    when (currBalance < toMutez 2_e6) $ do  -- < 2 XTZ
+      nettestAddr :: Address <- resolveNettestAddress
+      transfer TransferData
+        { tdFrom = AddressResolved nettestAddr
+        , tdTo = AddressResolved admin
+        , tdAmount = toMutez $ 3_e6 -- 3 XTZ
+        , tdEntrypoint = DefEpName
+        , tdParameter = ()
+        }
+    -- load each entrypoint in the contract
+    forM_ baseDAOEntrypointsParameter makeStartupTransfer
+    -- close up
+    makeStartupTransfer Nothing
+  where
+    makeStartupTransfer
+      :: MonadNettest caps base m
+      => StartupParameter -> m ()
+    makeStartupTransfer param = transfer TransferData
+      { tdFrom = AddressResolved admin
+      , tdTo = AddressResolved baseDao
+      , tdAmount = unsafeMkMutez 1
+      , tdEntrypoint = unsafeBuildEpName "startup"
+      , tdParameter = param
+      }
+
+-- | Wrapper function that modifies a 'OriginateFn' to also run
+-- 'defaultStartupContract' before returning the result.
+withDefaultStartup
+  :: MonadNettest caps base m
+  => OriginateFn ParameterL m
+  -> OriginateFn ParameterL m
+withDefaultStartup originateFn = do
+  res@(_, _, baseDao, admin) <- originateFn
+  defaultStartupContract admin $ unTAddress baseDao
+  pure res

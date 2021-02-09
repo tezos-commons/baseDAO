@@ -4,9 +4,9 @@
 #include "types.mligo"
 
 let default_config : config = {
-    proposal_check = (fun (params, store : propose_params * storage) -> true);
-    rejected_proposal_return_value = (fun (proposal, store : proposal * storage) -> 0n);
-    decision_lambda = (fun (proposal, store : proposal * storage) -> (([] : (operation list)), store));
+    proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
+    rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
+    decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
 
     max_proposals = 500n;
     max_votes = 1000n;
@@ -14,7 +14,6 @@ let default_config : config = {
     min_quorum_threshold = 1n;
     max_voting_period = 2592000n; // 60 * 60 * 24 * 30
     min_voting_period = 1n;
-    custom_entrypoints = (Map.empty : (string, bytes) map);
     }
 
 let default_storage (admin , token_address : (address * address)) : storage = {
@@ -33,5 +32,10 @@ let default_storage (admin , token_address : (address * address)) : storage = {
     permits_counter = 0n;
 }
 
+let default_startup_storage : startup_storage = {
+    starting_up = true;
+    stored_entrypoints = (Big_map.empty : stored_entrypoints);
+    }
+
 let default_full_storage (admin, token_address : (address * address)) : full_storage =
-  (default_storage (admin, token_address), default_config)
+  (default_startup_storage, (default_storage (admin, token_address), default_config))

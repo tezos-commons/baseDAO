@@ -91,6 +91,8 @@ library:
     - baseDAO
     - cleveland
     - containers
+    - directory
+    - filepath
     - fmt
     - lens
     - lorentz
