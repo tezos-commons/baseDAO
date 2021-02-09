@@ -9,6 +9,7 @@ module Test.Ligo.BaseDAO.Management
   ) where
 
 import Universum
+import qualified Universum.Unsafe as Unsafe
 
 import Test.Tasty (TestTree, testGroup)
 import Named (defaults, (!))
@@ -25,6 +26,7 @@ import Util.Named
 import BaseDAO.ShareTest.Management
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
+import Test.Ligo.BaseDAO.Common (defaultStartupContract)
 
 -- | Function that originates the contract and also make a bunch of
 -- address (the `addrCount` arg determines the count) for use within
@@ -45,6 +47,8 @@ withOriginated addrCount storageFn tests = do
     , uodStorage = untypeValue $ toVal $ storageFn addresses
     , uodContract = convertContract baseDAOContractLigo
     }
+  defaultStartupContract (Unsafe.head addresses) baseDao
+
   tests addresses (TAddress baseDao)
 
 -- | We test non-token entrypoints of the BaseDAO contract here
@@ -126,22 +130,21 @@ test_BaseDAO_Management =
   ]
 
   where
-
-    testCustomEntrypoint :: ('[(ByteString, FullStorage)] :-> '[([Operation], FullStorage)])
+    testCustomEntrypoint :: StorableEntrypoint
     testCustomEntrypoint =
       -- Unpack an address from packed bytes and set it as admin
-      L.unpair #
       L.unpackRaw @Address #
       L.ifNone
         (L.unit # L.failWith)
-        ((L.dip (L.getField #fsStorage)) # setField #sAdmin # setField #fsStorage) #
-      L.nil # pair
+        ( (L.dip (L.toField #csStorage)) # setField #sAdmin
+        ) #
+      L.nil
 
     initialStorage admin = mkFullStorageL
       ! #admin admin
       ! #extra dynRecUnsafe
       ! #metadata mempty
       ! #customEps
-          [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)
+          [ ([mt|testCustomEp|], testCustomEntrypoint)
           ]
       ! defaults

@@ -13,6 +13,7 @@ import Test.Tasty (TestTree, testGroup)
 
 import Lorentz.Contracts.BaseDAO.Types
 
+import BaseDAO.ShareTest.Common (OriginateFn)
 import qualified BaseDAO.ShareTest.FA2 as Share
 import qualified Ligo.BaseDAO.Types as Ligo
 
@@ -24,42 +25,42 @@ test_BaseDAO_FA2 :: TestTree
 test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
   [ testGroup "Operator:"
       [ nettestScenario "allows zero transfer from non-existent operator"
-          $ uncapsNettest $ Share.zeroTransferScenario originateLigoDao
+          $ uncapsNettest $ Share.zeroTransferScenario startedUpLigoDao
       , nettestScenario "allows valid transfer and check balance"
-          $ uncapsNettest $ Share.validTransferScenario originateLigoDao
+          $ uncapsNettest $ Share.validTransferScenario startedUpLigoDao
       , nettestScenario "validates token id"
-          $ uncapsNettest $ Share.validateTokenScenario originateLigoDao
+          $ uncapsNettest $ Share.validateTokenScenario startedUpLigoDao
       , nettestScenario "accepts an empty list of transfers"
-          $ uncapsNettest $ Share.emptyTransferListScenario originateLigoDao
+          $ uncapsNettest $ Share.emptyTransferListScenario startedUpLigoDao
       , nettestScenario "aborts if there is a failure (due to low balance)"
-          $ uncapsNettest $ Share.lowBalanceScenario originateLigoDao
+          $ uncapsNettest $ Share.lowBalanceScenario startedUpLigoDao
       , nettestScenario "aborts if there is a failure (due to non existent source account)"
-          $ uncapsNettest $ Share.noSourceAccountScenario originateLigoDao
+          $ uncapsNettest $ Share.noSourceAccountScenario startedUpLigoDao
       , nettestScenario "aborts if there is a failure (due to bad operator)"
-          $ uncapsNettest $ Share.badOperatorScenario originateLigoDao
+          $ uncapsNettest $ Share.badOperatorScenario startedUpLigoDao
       , nettestScenario "cannot transfer foreign money"
-          $ uncapsNettest $ Share.noForeignMoneyScenario originateLigoDao
+          $ uncapsNettest $ Share.noForeignMoneyScenario startedUpLigoDao
       ]
   , testGroup "Owner:"
       [ nettestScenario "allows valid transfer and check balance"
-          $ uncapsNettest $ Share.validTransferOwnerScenario originateLigoDao
+          $ uncapsNettest $ Share.validTransferOwnerScenario startedUpLigoDao
       , nettestScenario "allows updating operator "
-          $ uncapsNettest $ Share.updatingOperatorScenario originateLigoDao
+          $ uncapsNettest $ Share.updatingOperatorScenario startedUpLigoDao
       , nettestScenario "allows balanceOf request"
-          $ uncapsNettest $ Share.balanceOfOwnerScenario originateLigoDao
+          $ uncapsNettest $ Share.balanceOfOwnerScenario startedUpLigoDao
       , nettestScenario "validates token id"
-          $ uncapsNettest $ Share.validateTokenOwnerScenario originateLigoDao
+          $ uncapsNettest $ Share.validateTokenOwnerScenario startedUpLigoDao
       , nettestScenario "aborts if there is a failure (due to low balance)"
-          $ uncapsNettest $ Share.lowBalanceOwnerScenario originateLigoDao
+          $ uncapsNettest $ Share.lowBalanceOwnerScenario startedUpLigoDao
       , nettestScenario "cannot transfer foreign money"
-          $ uncapsNettest $ Share.noForeignMoneyOwnerScenario originateLigoDao
+          $ uncapsNettest $ Share.noForeignMoneyOwnerScenario startedUpLigoDao
       ]
   , testGroup "Admin:"
     [ nettestScenario "transfer tokens from any address to any address"
-        $ uncapsNettest $ Share.adminTransferScenario originateLigoDao
+        $ uncapsNettest $ Share.adminTransferScenario startedUpLigoDao
     , nettestScenario "transfer frozen tokens"
-        $ uncapsNettest $ Share.adminTransferFrozenScenario
-        $ originateLigoDaoWithBalance Ligo.dynRecUnsafe Ligo.defaultConfigL
+        $ uncapsNettest $ Share.adminTransferFrozenScenario $ withDefaultStartup
+        $ originateLigoDaoWithBalance [] Ligo.dynRecUnsafe Ligo.defaultConfigL
             (\owner1 owner2 ->
                 [ ((owner1, frozenTokenId), 100)
                 , ((owner2, frozenTokenId), 100)
@@ -68,10 +69,13 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
     ]
   , testGroup "Entrypoints respect migration status"
       [ nettestScenario "transfer respects migration status"
-          $ uncapsNettest $ Share.transferAfterMigrationScenario originateLigoDao
+          $ uncapsNettest $ Share.transferAfterMigrationScenario startedUpLigoDao
       , nettestScenario "update operator respects migration status "
-          $ uncapsNettest $ Share.updatingOperatorAfterMigrationScenario originateLigoDao
+          $ uncapsNettest $ Share.updatingOperatorAfterMigrationScenario startedUpLigoDao
       , nettestScenario "balanceOf request respects migration status"
-          $ uncapsNettest $ Share.balanceOfRequestAfterMigrationScenario originateLigoDao
+          $ uncapsNettest $ Share.balanceOfRequestAfterMigrationScenario startedUpLigoDao
       ]
   ]
+  where
+    startedUpLigoDao :: MonadNettest caps base m => OriginateFn Ligo.ParameterL m
+    startedUpLigoDao = withDefaultStartup originateLigoDao

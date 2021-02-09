@@ -9,9 +9,10 @@
 // This slightly differs from the Haskell version in that it already
 // returns packed data; LIGO does not let us return polymorphic DataToSign.
 [@inline]
-let vote_param_to_signed_data (param, store : vote_param * storage): bytes * storage =
+let vote_param_to_signed_data (param, ctrt_address, store : vote_param * address * storage)
+    : bytes * storage =
   ( Bytes.pack
-    ( (Tezos.chain_id, Tezos.self_address)
+    ( (Tezos.chain_id, ctrt_address)
     , (store.permits_counter, param)
     )
   , { store with permits_counter = store.permits_counter + 1n }
@@ -28,9 +29,10 @@ let checked_permit_sender (permit, data_to_sign : permit * bytes): address =
 // Check that permit is signed by its author, and return the author
 // and the parameter to work with.
 [@inline]
-let verify_permit_vote (permit, vote_param, store : permit * vote_param * storage)
+let verify_permit_vote
+  (permit, vote_param, ctrt_address, store : permit * vote_param * address * storage)
     : (vote_param * address * storage) =
-  let (data_to_sign, store) = vote_param_to_signed_data (vote_param, store) in
+  let (data_to_sign, store) = vote_param_to_signed_data (vote_param, ctrt_address, store) in
   let permit_sender = checked_permit_sender (permit, data_to_sign) in
   (vote_param, permit_sender, store)
 
@@ -38,11 +40,11 @@ let verify_permit_vote (permit, vote_param, store : permit * vote_param * storag
 // carried under permit protection.
 [@inline]
 let verify_permit_protected_vote
-    (permited, store : vote_param_permited * storage)
+  (permited, ctrt_address, store : vote_param_permited * address * storage)
     : vote_param * address * storage =
   match permited.permit with
     None -> (permited.argument, Tezos.sender, store)
-  | Some permit -> verify_permit_vote (permit, permited.argument, store)
+  | Some permit -> verify_permit_vote (permit, permited.argument, ctrt_address, store)
 
 let get_vote_permit_counter (param, store : vote_permit_counter_param * storage) : return =
   ( Tezos.transaction store.permits_counter 0mutez param.callback

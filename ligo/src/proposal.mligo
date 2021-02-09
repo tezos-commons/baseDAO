@@ -33,7 +33,7 @@ let ensure_voting_period_is_not_over (proposal, store : proposal * storage): sto
 
 [@inline]
 let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
-  let proposal_key = to_proposal_key(propose_params, sender) in
+  let proposal_key = to_proposal_key(propose_params, Tezos.sender) in
   if Map.mem proposal_key store.proposals
     then ([%Michelson ({| { FAILWITH } |} : string * unit -> proposal_key)]
         ("PROPOSAL_NOT_UNIQUE", ()) : proposal_key)
@@ -45,24 +45,22 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
 
 [@inline]
 let check_is_proposal_valid (config, propose_params, store : config * propose_params * storage): storage =
-  if config.proposal_check (propose_params, store)
+  if config.proposal_check (propose_params, store.extra)
     then store
     else ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
           ("FAIL_PROPOSAL_CHECK", ()) : storage)
 
 [@inline]
-let check_proposer_unfrozen_token (propose_params, store : propose_params * storage): storage =
-  let current_balance =
-    match Map.find_opt (Tezos.sender, unfrozen_token_id) store.ledger with
-      None ->
-        ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger_value)]
-          ("FA2_INSUFFICIENT_BALANCE", (propose_params.frozen_token, 0n)) : ledger_value)
-    | Some v -> v
-    in
-  if propose_params.frozen_token > current_balance
-    then ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-          ("PROPOSAL_INSUFFICIENT_BALANCE", ()) : storage)
-    else store
+let check_proposer_unfrozen_token (propose_params, ledger : propose_params * ledger): ledger =
+  match Map.find_opt (Tezos.sender, unfrozen_token_id) ledger with
+    None ->
+      ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)]
+        ("FA2_INSUFFICIENT_BALANCE", (propose_params.frozen_token, 0n)) : ledger)
+  | Some current_balance ->
+    if propose_params.frozen_token > current_balance
+      then ([%Michelson ({| { FAILWITH } |} : string * unit -> ledger)]
+            ("PROPOSAL_INSUFFICIENT_BALANCE", ()) : ledger)
+      else ledger
 
 [@inline]
 let check_proposal_limit_reached (config, propose_params, store : config * propose_params * storage): storage =
@@ -71,16 +69,16 @@ let check_proposal_limit_reached (config, propose_params, store : config * propo
           ("MAX_PROPOSALS_REACHED", ()) : storage)
     else store
 
-let freeze (tokens, addr, store : nat * address * storage): storage =
-  let store = debit_from (tokens, addr, unfrozen_token_id, store) in
-  let store = credit_to (tokens, addr, frozen_token_id, store) in
-  store
+let freeze (tokens, addr, ledger : nat * address * ledger): ledger =
+  let ledger = debit_from (tokens, addr, unfrozen_token_id, ledger) in
+  let ledger = credit_to (tokens, addr, frozen_token_id, ledger) in
+  ledger
 
 [@inline]
-let unfreeze (tokens, addr, store : nat * address * storage): storage =
-  let store = debit_from (tokens, addr, frozen_token_id, store) in
-  let store = credit_to (tokens, addr, unfrozen_token_id, store) in
-  store
+let unfreeze (tokens, addr, ledger : nat * address * ledger): ledger =
+  let ledger = debit_from (tokens, addr, frozen_token_id, ledger) in
+  let ledger = credit_to (tokens, addr, unfrozen_token_id, ledger) in
+  ledger
 
 let add_proposal (propose_params, store : propose_params * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
@@ -104,10 +102,10 @@ let add_proposal (propose_params, store : propose_params * storage): storage =
 let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, param, store) in
-  let store = check_proposer_unfrozen_token (param, store) in
+  let ledger = check_proposer_unfrozen_token (param, store.ledger) in
 
-  let store = freeze (param.frozen_token, Tezos.sender, store) in
-  let store = add_proposal (param, store) in
+  let ledger = freeze (param.frozen_token, Tezos.sender, ledger) in
+  let store = add_proposal (param, {store with ledger = ledger}) in
   ( ([] : operation list)
   , store
   )
@@ -134,8 +132,6 @@ let check_voter_unfrozen_token (vote_param, author, store : vote_param * address
 let submit_vote (proposal, vote_param, author, store : proposal * vote_param * address * storage): storage =
   let proposal_key = vote_param.proposal_key in
 
-  let store = freeze (vote_param.vote_amount, author, store) in
-
   let proposal =
     if vote_param.vote_type
       then { proposal with upvotes = proposal.upvotes + vote_param.vote_amount }
@@ -147,7 +143,8 @@ let submit_vote (proposal, vote_param, author, store : proposal * vote_param * a
     } in
 
   { store with
-    proposals = Map.add proposal_key proposal store.proposals
+      ledger = freeze (vote_param.vote_amount, author, store.ledger)
+    ; proposals = Map.add proposal_key proposal store.proposals
   }
 
 [@inline]
@@ -158,9 +155,14 @@ let check_vote_limit_reached
           ("MAX_VOTES_REACHED", ()) : vote_param)
     else vote_param
 
-let vote(votes, config, store : vote_param_permited list * config * storage): return =
+// Note: we require this because we want to put the entrypoint in a lamba and so
+// we need the contract address to be provided (can't use 'SELF_ADDRESS' because
+// currently LIGO compiles it to 'SELF; ADDRESS').
+let vote_with_self
+  (votes, ctrt_address, config, store : vote_param_permited list * address * config * storage)
+    : return =
   let accept_vote = fun (store, pp : storage * vote_param_permited) ->
-    let (param, author, store) = verify_permit_protected_vote (pp, store) in
+    let (param, author, store) = verify_permit_protected_vote (pp, ctrt_address, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
     let vote_param = check_vote_limit_reached (config, proposal, param) in
     let store = ensure_voting_period_is_not_over (proposal, store) in
@@ -171,6 +173,9 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
   ( ([] : operation list)
   , List.fold accept_vote votes store
   )
+
+let vote(votes, config, store : vote_param_permited list * config * storage): return =
+  vote_with_self(votes, Tezos.self_address, config, store)
 
 // -----------------------------------------------------------------
 // Admin entrypoints
@@ -223,7 +228,7 @@ let check_balance_less_then_frozen_value
 
 [@inline]
 let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
-  debit_from(tokens, addr, frozen_token_id, store)
+  {store with ledger = debit_from(tokens, addr, frozen_token_id, store.ledger)}
 
 // Burn the "slash_amount" calculated by "config.rejected_proposal_return_value".
 // See the Haskell version for details.
@@ -237,14 +242,14 @@ let burn_slash_amount (slash_amount, frozen_tokens, addr, store : nat * nat * ad
   burn_frozen_token (to_burn, addr, store)
 
 let unfreeze_proposer_and_voter_token
-  (config, is_accepted, proposal, proposal_key, store :
-    config * bool * proposal * proposal_key * storage): storage =
+  (rejected_proposal_return, is_accepted, proposal, proposal_key, store :
+    (proposal * contract_extra -> nat) * bool * proposal * proposal_key * storage): storage =
   // unfreeze_proposer_token
   let (tokens, store) =
     if is_accepted
     then (proposal.proposer_frozen_token, store)
     else
-      let slash_amount = config.rejected_proposal_return_value (proposal, store) in
+      let slash_amount = rejected_proposal_return (proposal, store.extra) in
       let frozen_tokens = proposal.proposer_frozen_token in
       let store = burn_slash_amount(slash_amount, frozen_tokens, proposal.proposer, store) in
       let tokens =
@@ -256,12 +261,12 @@ let unfreeze_proposer_and_voter_token
     in
   let tokens = check_balance_less_then_frozen_value
               (tokens, proposal.proposer, proposal, proposal_key, store) in
-  let store = unfreeze(tokens, proposal.proposer, store) in
+  let ledger = unfreeze(tokens, proposal.proposer, store.ledger) in
   // unfreeze_voter_token
-  let do_unfreeze = fun (store, (addr, tokens) : storage * (address * nat)) ->
-    unfreeze(tokens, addr, store)
+  let do_unfreeze = fun (ledger, (addr, tokens) : ledger * (address * nat)) ->
+    unfreeze(tokens, addr, ledger)
     in
-  List.fold do_unfreeze proposal.voters store
+  {store with ledger = List.fold do_unfreeze proposal.voters ledger}
 
 [@inline]
 let is_voting_period_over (proposal, store : proposal * storage): bool =
@@ -293,10 +298,12 @@ let handle_proposal_is_over
     let cond =    do_total_vote_meet_quorum_threshold(proposal, store)
                && proposal.upvotes > proposal.downvotes
     in
-    let store = unfreeze_proposer_and_voter_token (config, cond, proposal, proposal_key, store) in
+    let store = unfreeze_proposer_and_voter_token (config.rejected_proposal_return_value, cond, proposal, proposal_key, store) in
     let (new_ops, store) =
       if cond
-      then config.decision_lambda (proposal, store)
+      then
+        let (ops, new_extra) = config.decision_lambda (proposal, store.extra)
+        in (ops, { store with extra = new_extra })
       else (([] : operation list), store)
     in
     let cons = fun (l, e : operation list * operation) -> e :: l in
@@ -339,7 +346,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
     if   do_total_vote_meet_quorum_threshold(proposal, store)
       && proposal.upvotes > proposal.downvotes
     then
-      let store = unfreeze_proposer_and_voter_token (config, true, proposal, proposal_key, store) in
+      let store = unfreeze_proposer_and_voter_token (config.rejected_proposal_return_value, true, proposal, proposal_key, store) in
       let store = delete_proposal (proposal.start_date, proposal_key, store) in
       (([] : operation list), store)
     else
