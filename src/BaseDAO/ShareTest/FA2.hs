@@ -360,9 +360,9 @@ balanceOfOwnerScenario originateFn = do
 
 adminTransferScenario
   :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
+  . (MonadNettest caps base m, FA2.ParameterC param, HasCallStack)
   => OriginateFn param m -> m ()
-adminTransferScenario originateFn = do
+adminTransferScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateFn
 
   let params = [ FA2.TransferItem
@@ -378,9 +378,9 @@ adminTransferScenario originateFn = do
 
 adminTransferFrozenScenario
   :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
+  . (MonadNettest caps base m, FA2.ParameterC param, HasCallStack)
   => OriginateFn param m -> m ()
-adminTransferFrozenScenario originateFn = do
+adminTransferFrozenScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), (owner2, _), dao, admin)
     <- originateFn
 

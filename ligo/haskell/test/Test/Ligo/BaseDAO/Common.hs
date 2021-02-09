@@ -30,13 +30,13 @@ import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 
 originateLigoDaoWithBalance
- :: forall caps base m. (MonadNettest caps base m)
+ :: forall caps base m. (MonadNettest caps base m, HasCallStack)
  => [(MText, StorableEntrypoint)]
  -> ContractExtraL
  -> ConfigL
  -> (Address -> Address -> [(LedgerKey, LedgerValue)])
  -> OriginateFn ParameterL m
-originateLigoDaoWithBalance customEps extra configL balFunc = do
+originateLigoDaoWithBalance customEps extra configL balFunc = withFrozenCallStack $ do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
   owner2 :: Address <- newAddress "owner2"
@@ -138,10 +138,10 @@ defaultStartupContract admin baseDao = do
 -- | Wrapper function that modifies a 'OriginateFn' to also run
 -- 'defaultStartupContract' before returning the result.
 withDefaultStartup
-  :: MonadNettest caps base m
+  :: (MonadNettest caps base m, HasCallStack)
   => OriginateFn ParameterL m
   -> OriginateFn ParameterL m
-withDefaultStartup originateFn = do
+withDefaultStartup originateFn = withFrozenCallStack $ do
   res@(_, _, baseDao, admin) <- originateFn
   defaultStartupContract admin $ unTAddress baseDao
   pure res

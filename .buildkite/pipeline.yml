@@ -62,14 +62,14 @@ steps:
           packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
         -c bats ./scripts/test.bats
 
-  - label: test
-    if: *not_scheduled
-    commands:
-    - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
-    # Emulator + local chain for Delphi protocol
-    - nix run -f ci.nix tezos-client -c
-      ./result/bin/baseDAO-test --nettest-run-network
-      -A localhost -P 8735
+  # - label: test
+  #   if: *not_scheduled
+  #   commands:
+  #   - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
+  #   # Emulator + local chain for Delphi protocol
+  #   - nix run -f ci.nix tezos-client -c
+  #     ./result/bin/baseDAO-test --nettest-run-network
+  #     -A localhost -P 8735
 
   - label: ligo-test
     if: *not_scheduled
