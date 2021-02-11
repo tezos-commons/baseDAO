@@ -66,8 +66,7 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
 
   let
     originateData = OriginateData
-      { odFrom = nettestAddress
-      , odName = "BaseDAO"
+      { odName = "BaseDAO"
       , odBalance = toMutez 0
       , odStorage =
           ( mkStorage
@@ -121,7 +120,7 @@ checkTokenBalance
 checkTokenBalance tokenId dao addr expectedValue = do
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  callFrom (AddressResolved addr) dao (Call @"Balance_of")
+  withSender (AddressResolved addr) $ call dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = addr
       , briTokenId = tokenId

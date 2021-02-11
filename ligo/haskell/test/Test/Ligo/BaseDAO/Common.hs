@@ -72,8 +72,7 @@ originateLigoDaoWithBalance customEps extra configL balFunc = do
 
   let
     originateData = UntypedOriginateData
-      { uodFrom = nettestAddress
-      , uodName = "BaseDAO"
+      { uodName = "BaseDAO"
       , uodBalance = toMutez 0
       , uodStorage = untypeValue $ toVal $ fullStorage
       , uodContract = convertContract baseDAOContractLigo
@@ -126,10 +125,8 @@ defaultStartupContract admin baseDao = do
     -- from previous scenarios aldready and has a sufficient balance.
     currBalance <- getBalance $ AddressResolved admin
     when (currBalance < toMutez 2_e6) $ do  -- < 2 XTZ
-      nettestAddr :: Address <- resolveNettestAddress
       transfer TransferData
-        { tdFrom = AddressResolved nettestAddr
-        , tdTo = AddressResolved admin
+        { tdTo = AddressResolved admin
         , tdAmount = toMutez $ 3_e6 -- 3 XTZ
         , tdEntrypoint = DefEpName
         , tdParameter = ()
@@ -142,9 +139,9 @@ defaultStartupContract admin baseDao = do
     makeStartupTransfer
       :: MonadNettest caps base m
       => StartupParameter -> m ()
-    makeStartupTransfer param = transfer TransferData
-      { tdFrom = AddressResolved admin
-      , tdTo = AddressResolved baseDao
+    makeStartupTransfer param = withSender (AddressResolved admin) $
+      transfer TransferData
+      { tdTo = AddressResolved baseDao
       , tdAmount = unsafeMkMutez 1
       , tdEntrypoint = unsafeBuildEpName "startup"
       , tdParameter = param

@@ -63,10 +63,12 @@ validProposal = uncapsNettest $ withFrozenCallStack do
       ]
     proposalSize = metadataSize proposalMeta
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
     & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 166
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 34
@@ -85,7 +87,8 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
         , opOperator = toAddress dao
         , opTokenId = DAO.unfrozenTokenId
         }
-  callFrom (AddressResolved owner2) dao (Call @"Update_operators") [FA2.AddOperator opParams]
+  withSender (AddressResolved owner2) $
+    call dao (Call @"Update_operators") [FA2.AddOperator opParams]
 
 
   let
@@ -99,7 +102,8 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
     proposalSize = metadataSize proposalMeta
     proposeParams = ProposeParams proposalSize proposalMeta
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") proposeParams
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams owner1
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 166
@@ -112,9 +116,9 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 210
@@ -141,15 +145,16 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
       ]
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
+  withSender (AddressResolved owner1) $ do
   -- due to smaller than y (min mutez allow)
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (proposeParams 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    call dao (Call @"Propose") (proposeParams 1)
+      & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
   -- due to bigger than z (max mutez allow)
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (proposeParams 6)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    call dao (Call @"Propose") (proposeParams 6)
+      & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (proposeParams 3)
+    call dao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3) owner1
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 94
@@ -162,9 +167,9 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
 --   -- TODO: check xtz balance
 

@@ -53,7 +53,7 @@ transferOwnership
   => WithOriginateFn m param st -> WithStorage st -> m ()
 transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
-    callFrom (AddressResolved wallet1) baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
+    withSender (AddressResolved wallet1) $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
       & expectNotAdmin
 
 setPendingOwner
@@ -63,9 +63,9 @@ setPendingOwner
 setPendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-        callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
+        withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
-        callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
+        withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
 
 notSetAdmin
   :: forall caps base m param pm st
@@ -74,12 +74,13 @@ notSetAdmin
 notSetAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
-        (#newOwner .! wallet1)
-      -- Make the call once again to make sure the admin still retains admin
-      -- privileges
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
-        (#newOwner .! wallet1)
+      withSender (AddressResolved owner) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
+        -- Make the call once again to make sure the admin still retains admin
+        -- privileges
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
 
 rewritePendingOwner
   :: forall caps base m param pm st
@@ -88,15 +89,16 @@ rewritePendingOwner
 rewritePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
-        (#newOwner .! wallet1)
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
-        (#newOwner .! wallet2)
+      withSender (AddressResolved owner) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet2)
       -- Make the accept ownership call from wallet1 and see that it fails
-      callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
+      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner
       -- Make the accept ownership call from wallet1 and see that it works
-      callFrom (AddressResolved wallet2) baseDao (Call @"Accept_ownership") ()
+      withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
 
 invalidatePendingOwner
   :: forall caps base m param pm st
@@ -105,13 +107,14 @@ invalidatePendingOwner
 invalidatePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
-        (#newOwner .! wallet1)
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
-        (#newOwner .! owner)
+      withSender (AddressResolved owner) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! owner)
       -- Make the accept ownership call from wallet1 and see that it fails
       -- with 'not pending owner' error
-      callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
+      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner
 
 respectMigratedState
@@ -121,10 +124,13 @@ respectMigratedState
 respectMigratedState withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1, newOwner] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
       -- We test this by calling `confirmMigration` and seeing that it does not fail
-      callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Transfer_ownership")
         (#newOwner .! newOwner)
         & expectMigrated newAddress1
 
@@ -135,9 +141,9 @@ authenticateSender
 authenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
+      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
-      callFrom (AddressResolved wallet2) baseDao (Call @"Accept_ownership") ()
+      withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner
 
 changeToPendingAdmin
@@ -147,9 +153,9 @@ changeToPendingAdmin
 changeToPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
+      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
-      callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
+      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
 
 noPendingAdmin
   :: forall caps base m param pm st
@@ -158,8 +164,9 @@ noPendingAdmin
 noPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[_, wallet1] baseDao -> do
-      callFrom (AddressResolved wallet1) baseDao (Call @"Accept_ownership") ()
-      & expectNotPendingOwner
+      withSender (AddressResolved wallet1) $
+        call baseDao (Call @"Accept_ownership") ()
+        & expectNotPendingOwner
 
 pendingOwnerNotTheSame
   :: forall caps base m param pm st
@@ -167,10 +174,10 @@ pendingOwnerNotTheSame
   => WithOriginateFn m param st -> WithStorage st -> m ()
 pendingOwnerNotTheSame withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, wallet1] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Transfer_ownership")
+    \[owner, wallet1] baseDao -> withSender (AddressResolved owner) $ do
+      call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
-      callFrom (AddressResolved owner) baseDao (Call @"Accept_ownership") ()
+      call baseDao (Call @"Accept_ownership") ()
       & expectNotPendingOwner
 
 acceptOwnerRespectMigration
@@ -180,10 +187,13 @@ acceptOwnerRespectMigration
 acceptOwnerRespectMigration withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
       -- We test this by calling `confirmMigration` and seeing that it does not fail
-      callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
-      callFrom (AddressResolved owner) baseDao (Call @"Accept_ownership") ()
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved owner) $ call
+        baseDao (Call @"Accept_ownership") ()
         & expectMigrated newAddress1
 
 
@@ -194,7 +204,8 @@ migrationAuthenticateSender
 migrationAuthenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[_, newAddress1, randomAddress] baseDao -> do
-      callFrom (AddressResolved randomAddress) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      withSender (AddressResolved randomAddress) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
         & expectNotAdmin
 
 migrationSetPendingOwner
@@ -204,9 +215,11 @@ migrationSetPendingOwner
 migrationSetPendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
       -- We test this by calling `confirmMigration` and seeing that it does not fail
-      callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
 
 migrationOverwritePrevious
   :: forall caps base m param pm st
@@ -215,10 +228,12 @@ migrationOverwritePrevious
 migrationOverwritePrevious withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1, newAddress2] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress2)
+      withSender(AddressResolved owner) $ do
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress2)
       -- We test this by calling `confirmMigration` and seeing that it does not fail
-      callFrom (AddressResolved newAddress2) baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved newAddress2) $
+        call baseDao (Call @"Confirm_migration") ()
 
 migrationAllowCallUntilConfirm
   :: forall caps base m param pm st
@@ -226,9 +241,9 @@ migrationAllowCallUntilConfirm
   => WithOriginateFn m param st -> WithStorage st -> m ()
 migrationAllowCallUntilConfirm withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1, newAddress2] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress2)
+    \[owner, newAddress1, newAddress2] baseDao -> withSender (AddressResolved owner) $ do
+      call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      call baseDao (Call @"Migrate") (#newAddress .! newAddress2)
 
 confirmMigAuthenticateSender
   :: forall caps base m param pm st
@@ -237,9 +252,11 @@ confirmMigAuthenticateSender
 confirmMigAuthenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1, randomAddress] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      withSender (AddressResolved owner) $ call
+        baseDao (Call @"Migrate") (#newAddress .! newAddress1)
       -- We test this by calling `confirmMigration` and seeing that it does not fail
-      callFrom (AddressResolved randomAddress) baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved randomAddress) $
+        call baseDao (Call @"Confirm_migration") ()
         & expectNotMigrationTarget
 
 confirmMigAuthenticateState
@@ -249,7 +266,8 @@ confirmMigAuthenticateState
 confirmMigAuthenticateState withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[_, newAddress1] baseDao -> do
-      callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
         & expectNotMigrating
 
 confirmMigFinalize
@@ -259,10 +277,13 @@ confirmMigFinalize
 confirmMigFinalize withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1] baseDao -> do
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
       -- We test this by calling `confirmMigration` and seeing that it does not fail
-      callFrom (AddressResolved newAddress1) baseDao (Call @"Confirm_migration") ()
-      callFrom (AddressResolved owner) baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
         & expectMigrated newAddress1
 
 expectNotAdmin
