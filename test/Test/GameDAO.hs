@@ -40,15 +40,18 @@ validProposal = uncapsNettest $ do
   ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def config
 
   -- Fail due to proposing new content require 50 token.
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (DAO.ProposeParams
-    { ppFrozenToken = 20
-    , ppProposalMetadata = sampleMetadataContent $ toAddress consumer
-    }) & expectCustomError_ #fAIL_PROPOSAL_CHECK
+  withSender (AddressResolved owner1) $ do
+    call dao (Call @"Propose")
+      (DAO.ProposeParams
+        { ppFrozenToken = 20
+        , ppProposalMetadata = sampleMetadataContent $ toAddress consumer
+        }) & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (DAO.ProposeParams
-    { ppFrozenToken = 15
-    , ppProposalMetadata = sampleMetadataBalance $ toAddress consumer
-    })
+    call dao (Call @"Propose")
+      (DAO.ProposeParams
+       { ppFrozenToken = 15
+       , ppProposalMetadata = sampleMetadataBalance $ toAddress consumer
+       })
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 15
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 85
@@ -73,12 +76,12 @@ flushAcceptedProposals = uncapsNettest $ do
         , vVoteAmount = 1
         , vProposalKey = key1
         }
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote, downvote]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote, downvote]
   checkTokenBalance (DAO.frozenTokenId) dao owner2 3
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 97
 
   advanceTime (sec 21)
-  callFrom (AddressResolved admin) dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100 -- proposer
@@ -97,7 +100,7 @@ callDefaultEp :: (Monad m) => NettestImpl m -> m ()
 callDefaultEp = uncapsNettest $ do
   ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def config
 
-  callFrom (AddressResolved owner1) dao CallDefault ()
+  withSender (AddressResolved owner1) $ call dao CallDefault ()
 
 -------------------------------------------------------------------------------
 -- Helper
@@ -143,5 +146,5 @@ createSampleProposal pm owner1 dao = do
         , ppProposalMetadata = pm
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)

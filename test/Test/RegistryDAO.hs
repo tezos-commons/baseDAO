@@ -52,11 +52,12 @@ validProposal = uncapsNettest $ do
         }
       expectedToken = fromInteger $ toInteger $ length $ lPackValueRaw longNormalProposalMetadata
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (params $ expectedToken - 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+  withSender (AddressResolved owner1) $ do
+    call dao (Call @"Propose") (params $ expectedToken - 1)
+      & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") (params $ expectedToken + 1)
-    & expectCustomError_ #fAIL_PROPOSAL_CHECK
+    call dao (Call @"Propose") (params $ expectedToken + 1)
+      & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
   -- Expected token is 58 in this case
   _ <- createSampleProposal (getTokensAmount longNormalProposalMetadata) longNormalProposalMetadata owner1 dao
@@ -91,10 +92,10 @@ validConfigProposal = uncapsNettest $ do
         , vProposalKey = key1
         }
 
-  callFrom (AddressResolved owner2) dao (Call @"Vote") [upvote]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
 
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   -- Fail due too big proposal size
   _ <- createSampleProposal ((getTokensAmount longNormalProposalMetadata) + 5) longNormalProposalMetadata owner1 dao
@@ -107,7 +108,7 @@ validConfigProposal = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 37
 
   advanceTime (sec 20)
-  callFrom (AddressResolved admin) dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   -- Only half are returned
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
@@ -157,5 +158,5 @@ createSampleProposal t pm owner1 dao = do
         , ppProposalMetadata = pm
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Propose") params
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)

@@ -27,18 +27,21 @@ burnScenario
 burnScenario originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn
 
-  callFrom (AddressResolved owner1) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
     & expectCustomError_ #nOT_ADMIN
 
-  callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 100)
-    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
+  withSender (AddressResolved admin) $ do
+    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 100)
+      & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
 
-  callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 100)
-    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
+    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 100)
+      & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
 
-  callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
+    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 0
-  callFrom (AddressResolved admin) dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 5)
+  withSender (AddressResolved admin) $
+    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 5)
   checkTokenBalance (DAO.frozenTokenId) dao owner1 5
 
 mintScenario
@@ -48,12 +51,15 @@ mintScenario
 mintScenario originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn
 
-  callFrom (AddressResolved owner1) dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 10)
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 10)
     & expectCustomError_ #nOT_ADMIN
 
-  callFrom (AddressResolved admin) dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 100)
+  withSender (AddressResolved admin) $ do
+    call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 100)
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100
-  callFrom (AddressResolved admin) dao (Call @"Mint") (DAO.MintParam owner1 DAO.frozenTokenId 50)
+  withSender (AddressResolved admin) $
+    call dao (Call @"Mint") (DAO.MintParam owner1 DAO.frozenTokenId 50)
   checkTokenBalance (DAO.frozenTokenId) dao owner1 50
 
 transferContractTokensScenario
@@ -68,7 +74,8 @@ transferContractTokensScenario originateFn = do
         , opOperator = toAddress dao
         , opTokenId = DAO.unfrozenTokenId
         }
-  callFrom (AddressResolved target_owner1) fa2Contract (Call @"Update_operators") [FA2.AddOperator addParams]
+  withSender (AddressResolved target_owner1) $
+    call fa2Contract (Call @"Update_operators") [FA2.AddOperator addParams]
 
   let transferParams = [ FA2.TransferItem
             { tiFrom = target_owner1
@@ -83,10 +90,12 @@ transferContractTokensScenario originateFn = do
         , DAO.tcParams = transferParams
         }
 
-  callFrom (AddressResolved owner1) dao (Call @"Transfer_contract_tokens") param
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Transfer_contract_tokens") param
     & expectCustomError_ #nOT_ADMIN
 
-  callFrom (AddressResolved admin) dao (Call @"Transfer_contract_tokens") param
+  withSender (AddressResolved admin) $
+    call dao (Call @"Transfer_contract_tokens") param
   checkTokenBalance (DAO.unfrozenTokenId) fa2Contract target_owner1 90
   checkTokenBalance (DAO.unfrozenTokenId) fa2Contract target_owner2 110
 
