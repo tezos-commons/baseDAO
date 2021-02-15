@@ -69,16 +69,16 @@ let check_proposal_limit_reached (config, propose_params, store : config * propo
           ("MAX_PROPOSALS_REACHED", ()) : storage)
     else store
 
-let freeze (tokens, addr, ledger : nat * address * ledger): ledger =
-  let ledger = debit_from (tokens, addr, unfrozen_token_id, ledger) in
-  let ledger = credit_to (tokens, addr, frozen_token_id, ledger) in
-  ledger
+let freeze (tokens, addr, ledger, total_supply : nat * address * ledger * total_supply): (ledger * total_supply) =
+  let (ledger, total_supply) = debit_from (tokens, addr, unfrozen_token_id, ledger, total_supply) in
+  let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
+  (ledger, total_supply)
 
 [@inline]
-let unfreeze (tokens, addr, ledger : nat * address * ledger): ledger =
-  let ledger = debit_from (tokens, addr, frozen_token_id, ledger) in
-  let ledger = credit_to (tokens, addr, unfrozen_token_id, ledger) in
-  ledger
+let unfreeze (tokens, addr, ledger, total_supply : nat * address * ledger * total_supply): (ledger * total_supply) =
+  let (ledger, total_supply) = debit_from (tokens, addr, frozen_token_id, ledger, total_supply) in
+  let (ledger, total_supply) = credit_to (tokens, addr, unfrozen_token_id, ledger, total_supply) in
+  (ledger, total_supply)
 
 let add_proposal (propose_params, store : propose_params * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
@@ -104,8 +104,8 @@ let propose (param, config, store : propose_params * config * storage): return =
   let store = check_proposal_limit_reached (config, param, store) in
   let ledger = check_proposer_unfrozen_token (param, store.ledger) in
 
-  let ledger = freeze (param.frozen_token, Tezos.sender, ledger) in
-  let store = add_proposal (param, {store with ledger = ledger}) in
+  let (ledger, total_supply) = freeze (param.frozen_token, Tezos.sender, ledger, store.total_supply) in
+  let store = add_proposal (param, {store with ledger = ledger; total_supply = total_supply}) in
   ( ([] : operation list)
   , store
   )
@@ -141,9 +141,11 @@ let submit_vote (proposal, vote_param, author, store : proposal * vote_param * a
     { proposal with
       voters = (author, vote_param.vote_amount) :: proposal.voters
     } in
+  let (ledger, total_supply) = freeze (vote_param.vote_amount, author, store.ledger, store.total_supply) in
 
   { store with
-      ledger = freeze (vote_param.vote_amount, author, store.ledger)
+      ledger = ledger
+    ; total_supply = total_supply
     ; proposals = Map.add proposal_key proposal store.proposals
   }
 
@@ -228,7 +230,8 @@ let check_balance_less_then_frozen_value
 
 [@inline]
 let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
-  {store with ledger = debit_from(tokens, addr, frozen_token_id, store.ledger)}
+  let (ledger, total_supply) = debit_from(tokens, addr, frozen_token_id, store.ledger, store.total_supply)
+  in {store with ledger = ledger; total_supply = total_supply}
 
 // Burn the "slash_amount" calculated by "config.rejected_proposal_return_value".
 // See the Haskell version for details.
@@ -261,12 +264,16 @@ let unfreeze_proposer_and_voter_token
     in
   let tokens = check_balance_less_then_frozen_value
               (tokens, proposal.proposer, proposal, proposal_key, store) in
-  let ledger = unfreeze(tokens, proposal.proposer, store.ledger) in
+  let (ledger, total_supply) = unfreeze(tokens, proposal.proposer, store.ledger, store.total_supply) in
+
   // unfreeze_voter_token
-  let do_unfreeze = fun (ledger, (addr, tokens) : ledger * (address * nat)) ->
-    unfreeze(tokens, addr, ledger)
-    in
-  {store with ledger = List.fold do_unfreeze proposal.voters ledger}
+  let do_unfreeze = fun
+        ( (ledger, total_supply), (addr, tokens)
+        : (ledger * total_supply) * (address * nat)
+        ) -> unfreeze(tokens, addr, ledger, total_supply) in
+
+  let (ledger, total_supply) = List.fold do_unfreeze proposal.voters (ledger, total_supply) in
+  {store with ledger = ledger; total_supply = total_supply}
 
 [@inline]
 let is_voting_period_over (proposal, store : proposal * storage): bool =
@@ -298,7 +305,8 @@ let handle_proposal_is_over
     let cond =    do_total_vote_meet_quorum_threshold(proposal, store)
                && proposal.upvotes > proposal.downvotes
     in
-    let store = unfreeze_proposer_and_voter_token (config.rejected_proposal_return_value, cond, proposal, proposal_key, store) in
+    let store = unfreeze_proposer_and_voter_token
+          (config.rejected_proposal_return_value, cond, proposal, proposal_key, store) in
     let (new_ops, store) =
       if cond
       then
@@ -346,7 +354,8 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
     if   do_total_vote_meet_quorum_threshold(proposal, store)
       && proposal.upvotes > proposal.downvotes
     then
-      let store = unfreeze_proposer_and_voter_token (config.rejected_proposal_return_value, true, proposal, proposal_key, store) in
+      let store = unfreeze_proposer_and_voter_token
+            (config.rejected_proposal_return_value, true, proposal, proposal_key, store) in
       let store = delete_proposal (proposal.start_date, proposal_key, store) in
       (([] : operation list), store)
     else

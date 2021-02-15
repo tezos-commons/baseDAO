@@ -9,6 +9,7 @@ module BaseDAO.ShareTest.Common
   ( OriginateFn
   , IsLorentz
   , expectFailed
+  , totalSupplyFromLedger
 
   , mkFA2View
   , checkTokenBalance
@@ -52,6 +53,14 @@ expectFailed
   . (MonadNettest caps base m)
   => Address -> MText -> m () -> m ()
 expectFailed addr val = flip expectFailure (NettestFailedWith addr val)
+
+totalSupplyFromLedger :: Ledger -> TotalSupply
+totalSupplyFromLedger (BigMap ledger) =
+  M.foldrWithKey (\(_, tokenId) val totalSup ->
+      M.adjust ((+) val) tokenId totalSup
+    )
+    (M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)])
+    ledger
 
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.
@@ -106,6 +115,7 @@ originateBaseDaoWithBalance contractExtra configDesc balFunc = do
           ! #metadata mempty
           ! defaults
           ) { sLedger = BigMap bal
+            , sTotalSupply = totalSupplyFromLedger (BigMap bal)
             , sOperators = BigMap operators
             }
       , odContract = DAO.baseDaoContract config

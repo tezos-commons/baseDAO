@@ -37,6 +37,7 @@ all: \
 	$(OUT)/entrypoints/drop_proposal.tz \
 	$(OUT)/entrypoints/flush.tz \
 	$(OUT)/entrypoints/get_vote_permit_counter.tz \
+	$(OUT)/entrypoints/get_total_supply.tz \
 	$(OUT)/entrypoints/migrate.tz \
 	$(OUT)/entrypoints/mint.tz \
 	$(OUT)/entrypoints/propose.tz \

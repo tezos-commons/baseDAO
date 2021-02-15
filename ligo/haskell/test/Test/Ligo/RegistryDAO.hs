@@ -25,7 +25,7 @@ import Michelson.Typed.Convert (untypeValue)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
 
-import BaseDAO.ShareTest.Common (makeProposalKey)
+import BaseDAO.ShareTest.Common (totalSupplyFromLedger, makeProposalKey)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
@@ -210,7 +210,14 @@ test_RegistryDAO =
       fs = $(fetchValue @FullStorage "ligo/haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH")
       oldConfigured = fsConfigured fs
       oldStorage = csStorage oldConfigured
-      newStorage = oldStorage { sAdmin = admin, sLedger = BigMap $ Map.fromList [((w, FA2.theTokenId), defaultTokenBalance) | w <- wallets] }
+
+      ledger = BigMap $ Map.fromList [((w, FA2.theTokenId), defaultTokenBalance) | w <- wallets]
+
+      newStorage = oldStorage
+        { sAdmin = admin
+        , sLedger = ledger
+        , sTotalSupply = totalSupplyFromLedger ledger
+        }
       newConfigured = oldConfigured { csStorage = newStorage }
       in fs { fsConfigured = newConfigured }
 

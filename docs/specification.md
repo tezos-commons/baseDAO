@@ -253,6 +253,8 @@ Full list:
 * [`drop_proposal`](#drop_proposal)
 * [`migrate`](#migrate)
 * [`confirm_migration`](#confirm_migration)
+* [`GetVotePermitCounter`](#getvotepermitcounter)
+* [`get_total_supply`](#get_total_supply)
 
 Format:
 ```
@@ -815,10 +817,31 @@ data Parameter proposalMetadata otherParam
 
 Parameter (in Michelson):
 ```
-nat
+(pair %getVotePermitCounter
+  (unit %param)
+  (contract %callback nat)
+)
 ```
 
 - For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
+
+### **get_total_supply**
+
+```haskell
+data Parameter proposalMetadata otherParam
+  = Get_total_supply (View TokenId Natural)
+```
+
+Parameter (in Michelson):
+```
+(pair %get_total_supply
+  (nat %token_id)
+  (contract %callback nat)
+)
+```
+
+- Return the total number of tokens for the given token id.
+- Fail with `FA2_TOKEN_UNDEFINED` if the given token id is not equal to `0` or `1`.
 
 ## Custom entrypoints
 

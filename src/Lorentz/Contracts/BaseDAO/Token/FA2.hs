@@ -119,100 +119,135 @@ transfer = do
         mem
         if_ nop (failCustom_ #fA2_NOT_OPERATOR)
 
+
+increaseTotalSupply
+  :: forall store ce pm s. (StorageC store ce pm)
+  => TokenId : Natural : store : s :-> store : s
+increaseTotalSupply = do
+  duupX @3; duupX @2
+  stackType @(TokenId : store : TokenId : Natural : store : s)
+  stGet #sTotalSupply
+  -- TokenId should always be presented in the map
+  ifSome nop (failCustom_ #fA2_TOKEN_UNDEFINED)
+
+  stackType @(Natural : TokenId : Natural : store : s)
+  dip swap; add
+  some
+  swap; stUpdate #sTotalSupply
+
+
+decreaseTotalSupply
+  :: forall store ce pm s. (StorageC store ce pm)
+  => TokenId : Natural : store : s :-> store : s
+decreaseTotalSupply = do
+  duupX @3; duupX @2
+  stackType @(TokenId : store : TokenId : Natural : store : s)
+  stGet #sTotalSupply
+  -- TokenId should always be presented in the map
+  ifSome nop (failCustom_ #fA2_TOKEN_UNDEFINED)
+
+  stackType @(Natural : TokenId : Natural : store : s)
+  dip swap; sub; isNat
+  -- Decreasing total_supply below 0 should never happen
+  ifSome nop (failCustom_ #nEGATIVE_TOTAL_SUPPLY)
+
+  some
+  swap; stUpdate #sTotalSupply
+
 debitFrom
   :: forall store ce pm. (StorageC store ce pm, IsoValue store)
   => DebitFromFunc store
 debitFrom = mkCachedFunc $ do
-  dig @2
-  unpair
-  dig @3
-  pair
-  dig @2
-  stGetField #sLedger
-  dig @2
-  dupTop2
-  get
+  dip do
+    dip unpair
+    pair
+    dip $ toNamed #required
+  stackType @[store, (Address, TokenId), "required" :! Natural]
+  dup; duupX @3
+  stGet #sLedger
+
   ifSome ifKeyExists ifKeyDoesntExist
   where
     ifKeyExists
-      :: '[Natural, (Address, TokenId), Ledger, store, Natural]
+      :: '[Natural, store, (Address, TokenId), "required" :! Natural]
       :-> '[store]
     ifKeyExists = do
-      dig @4
-      dupTop2
-      rsub
-      isNat
+      -- Ensure total_supply is properly decreased
+      swap
+      duupX @4; fromNamed #required
+      duupX @4; cdr
+      decreaseTotalSupply; swap
+
+      stackType @[Natural, store, (Address, TokenId), "required" :! Natural]
+      duupX @4; fromNamed #required; duupX @2
+      sub; isNat; dip $ toNamed #present
+
+      stackType @[Maybe Natural, "present" :! Natural, store, (Address, TokenId), "required" :! Natural]
+
+      -- Ensure sufficient balance
       ifSome
         (do
-          some
-          swap
-          drop @Natural
-          swap
-          drop @Natural
-          swap
-          update
-          stSetField #sLedger)
+          dip (drop @("present" :! Natural))
+          some; dip swap; swap; stUpdate #sLedger
+          dip (drop @( "required" :! Natural))
+        )
         (do
-          toNamed #required
-          swap
-          toNamed #present
-          swap
-          pair
-          failCustom #fA2_INSUFFICIENT_BALANCE)
+          dip (dropN @2); swap; pair
+          failCustom #fA2_INSUFFICIENT_BALANCE
+        )
 
     ifKeyDoesntExist
-      :: [(Address, TokenId), Ledger, store, Natural]
+      :: [store, (Address, TokenId), "required" :! Natural]
       :-> '[store]
     ifKeyDoesntExist = do
-      dropN @2
-      swap
-      push @Natural 0
-      dupTop2
-      if IsLt
-      then do
-        toNamed #present
-        swap
-        toNamed #required
-        pair
+      dip drop; swap
+      dup; fromNamed #required; push @Natural 0
+      if IsEq then
+        drop
+      else do
+        push @Natural 0; toNamed #present
+        swap; pair
         failCustom #fA2_INSUFFICIENT_BALANCE
-      else (dropN @2)
 
 creditTo
   :: forall pm ce store. (StorageC store ce pm, IsoValue store)
   => CreditToFunc store
 creditTo = mkCachedFunc $ do
-  dig @2
-  unpair
-  dig @3
-  pair
-  dig @2
-  stGetField #sLedger
-  dig @2
-  dupTop2
-  get
+  dip do
+    dip unpair
+    pair
+    dip $ toNamed #updated
+
+  stackType @[store, (Address, TokenId), "updated" :! Natural]
+
+  -- Ensure total_supply is properly increased
+  duupX @3; fromNamed #updated
+  duupX @3; cdr
+  increaseTotalSupply
+  stackType @[store, (Address, TokenId), "updated" :! Natural]
+
+  dup; duupX @3
+  stGet #sLedger
+
   ifSome ifKeyExists ifKeyDoesntExist
   where
     ifKeyExists
-      :: Natural : (Address, TokenId) : Ledger : store : Natural : '[]
-      :-> store : '[]
+      :: '[Natural, store, (Address, TokenId), "updated" :! Natural]
+      :-> '[store]
     ifKeyExists = do
-      dig @4
-      add
-      some
-      swap
-      update
-      stSetField #sLedger
+      dig @3; fromNamed #updated; add
+
+      stackType @[Natural, store, (Address, TokenId)]
+      some; dip swap; swap; stUpdate #sLedger
+
 
     ifKeyDoesntExist
-      :: (Address, TokenId) : Ledger : store : Natural : '[]
-      :-> store : '[]
+      :: [store, (Address, TokenId), "updated" :! Natural]
+      :-> '[store]
     ifKeyDoesntExist = do
-      dig @3
-      some
-      swap
-      update
-      stSetField #sLedger
-
+      swap; dig @2; fromNamed #updated
+      some; swap
+      stUpdate #sLedger
 
 balanceOf
   :: forall ce pm s. (IsoValue ce, KnownValue pm)

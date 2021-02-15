@@ -102,6 +102,16 @@ flushAcceptedProposals _ originateFn = do
   checkTokenBalance (frozenTokenId) dao owner2 0
   checkTokenBalance (unfrozenTokenId) dao owner2 100 -- voter
 
+  -- Check total supply (After flush, no changes are made.)
+  consumer <- originateSimple "consumer" [] contractConsumer
+  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView unfrozenTokenId consumer)
+  checkStorage (AddressResolved $ toAddress consumer) (toVal [200 :: Natural]) -- initial = 200
+
+  consumer2 <- originateSimple "consumer" [] contractConsumer
+  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView frozenTokenId consumer2)
+  checkStorage (AddressResolved $ toAddress consumer2) (toVal [0 :: Natural]) -- initial = 0
+
+
 flushAcceptedProposalsWithAnAmount
   :: forall pm param config caps base m.
     ( MonadNettest caps base m, ProposalMetadataFromNum pm

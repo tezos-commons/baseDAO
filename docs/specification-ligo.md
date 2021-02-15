@@ -273,6 +273,7 @@ Full list:
 * [`migrate`](#migrate)
 * [`confirm_migration`](#confirm_migration)
 * [`GetVotePermitCounter`](#getvotepermitcounter)
+* [`get_total_supply`](#get_total_supply)
 * [`startup`](#startup)
 * [`CallCustom`](#callcustom)
 
@@ -859,6 +860,29 @@ Parameter (in Michelson):
 ```
 
 - For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
+
+### **get_total_supply**
+
+```ocaml
+type get_total_supply_param =
+  [@layout:comb]
+  { token_id : token_id
+  ; callback : nat contract
+  }
+
+Get_total_supply of get_total_supply_param
+```
+
+Parameter (in Michelson):
+```
+(pair %get_total_supply
+  (nat %token_id)
+  (contract %callback nat)
+)
+```
+
+- Return the total number of tokens for the given token id.
+- Fail with `FA2_TOKEN_UNDEFINED` if the given token id is not equal to `0` or `1`.
 
 ## Startup mode
 

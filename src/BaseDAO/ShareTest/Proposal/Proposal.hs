@@ -10,6 +10,7 @@ module BaseDAO.ShareTest.Proposal.Proposal
 import Universum
 
 import Lorentz hiding ((>>))
+import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 
 import BaseDAO.ShareTest.Common
@@ -35,6 +36,16 @@ validProposal  _ originateFn = do
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   checkTokenBalance frozenTokenId dao owner1 10
   checkTokenBalance unfrozenTokenId dao owner1 90
+
+  -- Check total supply
+  consumer <- originateSimple "consumer" [] contractConsumer
+  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView unfrozenTokenId consumer)
+  checkStorage (AddressResolved $ toAddress consumer) (toVal [190 :: Natural]) -- initial = 200
+
+  consumer2 <- originateSimple "consumer" [] contractConsumer
+  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView frozenTokenId consumer2)
+  checkStorage (AddressResolved $ toAddress consumer2) (toVal [10 :: Natural]) -- initial = 0
+
   -- TODO [#31]: Currently proposalId is expected to be knowned (checkInStorage)
 
   -- TODO [#31]

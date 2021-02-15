@@ -11,6 +11,7 @@ module Lorentz.Contracts.BaseDAO.Types
   , Ledger
   , LedgerKey
   , LedgerValue
+  , TotalSupply
 
   , Parameter (..)
   , ParameterC
@@ -70,6 +71,7 @@ import Universum (Each, Num(..))
 
 import Control.Lens (makeLensesFor)
 import qualified Data.Kind as Kind
+import qualified Data.Map as M
 
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
@@ -196,6 +198,12 @@ type LedgerKey = (Address, FA2.TokenId)
 type LedgerValue = Natural
 
 ------------------------------------------------------------------------
+-- Total Supply
+------------------------------------------------------------------------
+
+type TotalSupply = Map FA2.TokenId Natural
+
+------------------------------------------------------------------------
 -- Storage/Parameter
 ------------------------------------------------------------------------
 
@@ -243,6 +251,7 @@ data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Stor
   , sPermitsCounter :: Nonce
 
   , sMetadata :: TZIP16.MetadataMap BigMap
+  , sTotalSupply :: TotalSupply
   }
   deriving stock (Generic, Show)
 
@@ -276,6 +285,10 @@ instance (IsoValue ce, KnownValue pm) =>
     StoreHasSubmap (Storage ce pm) "sProposals" (ProposalKey pm) (Proposal pm) where
   storeSubmapOps = storeSubmapOpsDeeper #sProposals
 
+instance (IsoValue ce, IsoValue pm) =>
+    StoreHasSubmap (Storage ce pm) "sTotalSupply" FA2.TokenId Natural where
+  storeSubmapOps = storeSubmapOpsDeeper #sTotalSupply
+
 type StorageC store ce pm =
   ( StorageContains store
     [ "sLedger" := LedgerKey ~> LedgerValue
@@ -294,6 +307,7 @@ type StorageC store ce pm =
     , "sProposalKeyListSortByDate" := Set (Timestamp, ProposalKey pm)
 
     , "sPermitsCounter" := Nonce
+    , "sTotalSupply" := FA2.TokenId ~> Natural
     ]
   , StoreHasField store "sExtra" ce
     -- TODO: remove ^^^ once we use
@@ -319,6 +333,7 @@ data Parameter proposalMetadata otherParam
   | Transfer_contract_tokens TransferContractTokensParam
   | Transfer_ownership TransferOwnershipParam
   | Vote [PermitProtected $ VoteParam proposalMetadata]
+  | Get_total_supply (View (FA2.TokenId) Natural)
   deriving stock (Generic, Show)
 
 -- Note: using this for calling entrypoints with polymorphic arguments may
@@ -340,6 +355,7 @@ type ParameterC param proposalMetadata =
     , "Transfer_contract_tokens" :> TransferContractTokensParam
     , "Transfer_ownership" :> TransferOwnershipParam
     , VoteEp proposalMetadata
+    , "Get_total_supply" :> (View FA2.TokenId Natural)
     ]
   , FA2.ParameterC param
   )
@@ -386,6 +402,7 @@ mkStorage admin votingPeriod quorumThreshold extra metadata =
   , sPermitsCounter = Nonce 0
 
   , sMetadata = arg #metadata metadata
+  , sTotalSupply = M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)]
   }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
@@ -901,14 +918,20 @@ type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_OVER" = ()
 instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_OVER" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
-    "An error occurred why trying to drop a proposal due to the proposal's voting period is not over"
+    "An error occurred when trying to drop a proposal due to the proposal's voting period is not over"
 
 type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" = ()
 
 instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
-    "An error occurred why trying to drop a proposal due to the proposal is not an accepted proposal"
+    "An error occurred when trying to drop a proposal due to the proposal is not an accepted proposal"
+
+type instance ErrorArg "nEGATIVE_TOTAL_SUPPLY" = ()
+
+instance CustomErrorHasDoc "nEGATIVE_TOTAL_SUPPLY" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause = "An error occured when trying to burn an amount of token more than its current total supply"
 
 ------------------------------------------------
 -- Instances

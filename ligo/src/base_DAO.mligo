@@ -64,8 +64,11 @@ let requiring_no_xtz (param : forbid_xtz_params) : (string * bytes) =
     | Burn p -> ("burn", Bytes.pack p)
     | Mint p -> ("mint", Bytes.pack p)
     | GetVotePermitCounter p ->
-      let callback_address = Tezos.address(p.callback)
-      in ("get_vote_permit_counter", Bytes.pack (p.param, callback_address))
+        let callback_address = Tezos.address(p.callback)
+        in ("get_vote_permit_counter", Bytes.pack (p.param, callback_address))
+    | Get_total_supply p ->
+        let callback_address = Tezos.address(p.callback)
+        in ("get_total_supply", Bytes.pack (p.token_id, callback_address))
 
 (*
  * Returns name and packed parameter of a stored entrypoint that requires the
