@@ -85,6 +85,10 @@ baseDaoContract config@Config{..} = toContract $ docGroup (DName cDaoName) $ do
       , #cTransfer_contract_tokens /-> transferContractTokens
       , #cTransfer_ownership /-> transferOwnership
       , #cVote /-> vote config
+      , #cGet_total_supply /-> view_ $ do
+          doc $ DDescription getTotalSupplyDoc
+          stGet #sTotalSupply
+          ifSome nop (failCustom_ #fA2_TOKEN_UNDEFINED)
       )
   where
     -- By default we insert the CAST instruction at the beginning of

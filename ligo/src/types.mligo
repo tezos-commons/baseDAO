@@ -21,6 +21,8 @@ type ledger_key = address * token_id
 type ledger_value = nat
 type ledger = (ledger_key, ledger_value) big_map
 
+type total_supply = (token_id, nat) map
+
 type transfer_destination =
   [@layout:comb]
   { to_ : address
@@ -125,6 +127,7 @@ type storage =
   ; proposals : (proposal_key, proposal) big_map
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
   ; permits_counter : nonce
+  ; total_supply : total_supply
   }
 
 // -- Parameter -- //
@@ -179,6 +182,12 @@ type vote_permit_counter_param =
   ; callback : nat contract
   }
 
+type get_total_supply_param =
+  [@layout:comb]
+  { token_id : token_id
+  ; callback : nat contract
+  }
+
 (*
  * Entrypoints that forbids Tz transfers
  *)
@@ -197,6 +206,7 @@ type forbid_xtz_params =
   | Burn of burn_param
   | Mint of mint_param
   | GetVotePermitCounter of vote_permit_counter_param
+  | Get_total_supply of get_total_supply_param
 
 (*
  * Entrypoints that should not work after migration.
@@ -282,5 +292,9 @@ type full_storage = startup_storage * configured_storage
 type return = operation list * storage
 
 let nil_op = ([] : operation list)
+
+let unfrozen_token_id: nat = 0n
+
+let frozen_token_id: nat = 1n
 
 #endif  // TYPES_H included

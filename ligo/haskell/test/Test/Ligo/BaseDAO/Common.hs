@@ -22,7 +22,7 @@ import Morley.Nettest
 import Tezos.Core (unsafeMkMutez)
 import Util.Named
 
-import BaseDAO.ShareTest.Common (OriginateFn)
+import BaseDAO.ShareTest.Common (OriginateFn, totalSupplyFromLedger)
 import BaseDAO.ShareTest.Proposal.Config ()
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -65,6 +65,7 @@ originateLigoDaoWithBalance customEps extra configL balFunc = do
               )
               { sLedger = bal
               , sOperators = operators
+              , sTotalSupply = totalSupplyFromLedger bal
               }
           , csConfig = configL
           }

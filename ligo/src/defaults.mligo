@@ -30,6 +30,10 @@ let default_storage (admin , token_address : (address * address)) : storage = {
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     proposal_key_list_sort_by_date = (Set.empty : (timestamp * proposal_key) set);
     permits_counter = 0n;
+    total_supply = Map.literal
+        [ (frozen_token_id, 0n)
+        ; (unfrozen_token_id, 0n)
+        ]
 }
 
 let default_startup_storage : startup_storage = {

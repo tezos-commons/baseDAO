@@ -23,9 +23,11 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   [ nettestScenario "can burn tokens from any accounts"
       $ uncapsNettest $ Share.burnScenario . withDefaultStartup
         $ originateLigoDaoWithBalance [] dynRecUnsafe defaultConfigL
-          (\o1 _ ->
+          (\o1 o2 ->
               [ ((o1, DAO.unfrozenTokenId), 10)
               , ((o1, DAO.frozenTokenId), 10)
+              , ((o2, DAO.unfrozenTokenId), 10) -- for total supply
+              , ((o2, DAO.frozenTokenId), 10)-- for total supply
               ]
           )
   , nettestScenario "can mint tokens to any accounts"
