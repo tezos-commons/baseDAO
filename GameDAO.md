@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [33972ff](https://github.com/tqtezos/baseDAO/tree/33972ff6a131a9cfbe2dfb9d4887f41902848c90) *(Thu Feb 11 16:23:50 2021 +0300)*
+**Code revision:** [f08d4ef](https://github.com/tqtezos/baseDAO/tree/f08d4ef9f16a41bbde35c91bfc7f337c5f3b3014) *(Mon Feb 15 18:42:18 2021 +0700)*
 
 
 
@@ -34,6 +34,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [transfer_contract_tokens](#entrypoints-transfer_contract_tokens)
   - [transfer_ownership](#entrypoints-transfer_ownership)
   - [vote](#entrypoints-vote)
+  - [get_total_supply](#entrypoints-get_total_supply)
 
 **[Definitions](#definitions)**
 
@@ -59,6 +60,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [Integer](#types-Integer)
   - [ItemChange](#types-ItemChange)
   - [List](#types-List)
+  - [Map](#types-Map)
   - [Maybe](#types-Maybe)
   - [MigrationStatus](#types-MigrationStatus)
   - [MintParam](#types-MintParam)
@@ -104,6 +106,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [MAX_VOTES_REACHED](#errors-MAX_VOTES_REACHED)
   - [MIGRATED](#errors-MIGRATED)
   - [MISSIGNED](#errors-MISSIGNED)
+  - [NEGATIVE_TOTAL_SUPPLY](#errors-NEGATIVE_TOTAL_SUPPLY)
   - [NOT_ADMIN](#errors-NOT_ADMIN)
   - [NOT_MIGRATING](#errors-NOT_MIGRATING)
   - [NOT_MIGRATION_TARGET](#errors-NOT_MIGRATION_TARGET)
@@ -163,8 +166,9 @@ Storage type for baseDAO contract
   * ***sProposalKeyListSortByDate*** :[`Set`](#types-Set) ([`Timestamp`](#types-Timestamp), [`Hash`](#types-Hash) [`Blake2b`](#hash-alg-Blake2b) ([`Packed`](#types-Packed) ([`ProposeParams`](#types-ProposeParams) [`Text`](#types-Text), [`Address`](#types-Address))))
   * ***sPermitsCounter*** :[`Nonce`](#types-Nonce)
   * ***sMetadata*** :[`BigMap`](#types-BigMap) [`Text`](#types-Text) [`ByteString`](#types-ByteString)
+  * ***sTotalSupply*** :[`Map`](#types-Map) [`TokenId`](#types-TokenId) [`Natural`](#types-Natural)
 
-**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair address (pair address (or unit (or address address))))) (pair (pair nat (pair nat nat)) (pair (pair (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))) (set (pair timestamp bytes))) (pair nat (big_map string bytes))))`
+**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair (pair address address) (pair (or unit (or address address)) nat))) (pair (pair nat (pair nat (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))))) (pair (pair (set (pair timestamp bytes)) nat) (pair (big_map string bytes) (map nat nat))))`
 
 
 
@@ -239,6 +243,10 @@ only if the given address has enough tokens to burn.
 * [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
 
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
+
+* [`NEGATIVE_TOTAL_SUPPLY`](#errors-NEGATIVE_TOTAL_SUPPLY) — An error occured when trying to burn an amount of token more than its current total supply
 
 
 
@@ -342,6 +350,8 @@ It is also prohibited to send frozen tokens in this case.
 * [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
 
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`NEGATIVE_TOTAL_SUPPLY`](#errors-NEGATIVE_TOTAL_SUPPLY) — An error occured when trying to burn an amount of token more than its current total supply
 
 
 
@@ -541,9 +551,13 @@ failing decision lambda.
 
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
 
-* [`FAIL_DROP_PROPOSAL_NOT_ACCEPTED`](#errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED) — An error occurred why trying to drop a proposal due to the proposal is not an accepted proposal
+* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
 
-* [`FAIL_DROP_PROPOSAL_NOT_OVER`](#errors-FAIL_DROP_PROPOSAL_NOT_OVER) — An error occurred why trying to drop a proposal due to the proposal's voting period is not over
+* [`NEGATIVE_TOTAL_SUPPLY`](#errors-NEGATIVE_TOTAL_SUPPLY) — An error occured when trying to burn an amount of token more than its current total supply
+
+* [`FAIL_DROP_PROPOSAL_NOT_ACCEPTED`](#errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED) — An error occurred when trying to drop a proposal due to the proposal is not an accepted proposal
+
+* [`FAIL_DROP_PROPOSAL_NOT_OVER`](#errors-FAIL_DROP_PROPOSAL_NOT_OVER) — An error occurred when trying to drop a proposal due to the proposal's voting period is not over
 
 
 
@@ -585,6 +599,10 @@ If the proposal is accepted, the decision lambda is called.
 * [`PROPOSER_NOT_EXIST_IN_LEDGER`](#errors-PROPOSER_NOT_EXIST_IN_LEDGER) — Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
 
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
+
+* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
+
+* [`NEGATIVE_TOTAL_SUPPLY`](#errors-NEGATIVE_TOTAL_SUPPLY) — An error occured when trying to burn an amount of token more than its current total supply
 
 * [`FAIL_DECISION_LAMBDA`](#errors-FAIL_DECISION_LAMBDA) — Trying to execute decision lambda but result in errors.
 
@@ -684,6 +702,8 @@ Provides the amount of tokens of the given address.
 
 * [`NOT_ADMIN`](#errors-NOT_ADMIN) — Received an operation that require administrative privileges from an address that is not the current administrator
 
+* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
+
 
 
 <a name="entrypoints-propose"></a>
@@ -721,6 +741,10 @@ is decreased by the same value.
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
 
 * [`PROPOSAL_INSUFFICIENT_BALANCE`](#errors-PROPOSAL_INSUFFICIENT_BALANCE) — Trying to propose a proposal without having enough unfrozen token
+
+* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
+
+* [`NEGATIVE_TOTAL_SUPPLY`](#errors-NEGATIVE_TOTAL_SUPPLY) — An error occured when trying to burn an amount of token more than its current total supply
 
 * [`PROPOSAL_NOT_UNIQUE`](#errors-PROPOSAL_NOT_UNIQUE) — Trying to propose a proposal that is already existed in the Storage.
 
@@ -907,6 +931,39 @@ The sender must have an amount required for all votings.
 * [`FA2_INSUFFICIENT_BALANCE`](#errors-FA2_INSUFFICIENT_BALANCE) — The source of a transfer did not contain sufficient tokens
 
 * [`VOTING_INSUFFICIENT_BALANCE`](#errors-VOTING_INSUFFICIENT_BALANCE) — Trying to vote on a proposal without having enough unfrozen token
+
+* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
+
+* [`NEGATIVE_TOTAL_SUPPLY`](#errors-NEGATIVE_TOTAL_SUPPLY) — An error occured when trying to burn an amount of token more than its current total supply
+
+
+
+<a name="entrypoints-get_total_supply"></a>
+
+---
+
+### `get_total_supply`
+
+Return the total number of tokens for the given token-id if known or fail if not.
+
+
+**Argument:** 
+  + **In Haskell:** [`View`](#types-View) [`TokenId`](#types-TokenId) [`Natural`](#types-Natural)
+  + **In Michelson:** `(pair (nat %viewParam) (contract %viewCallbackTo nat))`
+    + **Example:** <span id="example-id">`Pair 0 "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `get_total_supply` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+**Possible errors:**
+* [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
 
 
 
@@ -1232,6 +1289,18 @@ Describe the update of a specific item.
 List primitive.
 
 **Final Michelson representation (example):** `[Integer]` = `list int`
+
+
+
+<a name="types-Map"></a>
+
+---
+
+### `Map`
+
+Map primitive.
+
+**Final Michelson representation (example):** `Map Integer Natural` = `map int nat`
 
 
 
@@ -1805,7 +1874,7 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Class:** Action exception
 
-**Fires if:** An error occurred why trying to drop a proposal due to the proposal is not an accepted proposal
+**Fires if:** An error occurred when trying to drop a proposal due to the proposal is not an accepted proposal
 
 **Representation:** `("FAIL_DROP_PROPOSAL_NOT_ACCEPTED", ())`.
 
@@ -1817,7 +1886,7 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Class:** Action exception
 
-**Fires if:** An error occurred why trying to drop a proposal due to the proposal's voting period is not over
+**Fires if:** An error occurred when trying to drop a proposal due to the proposal's voting period is not over
 
 **Representation:** `("FAIL_DROP_PROPOSAL_NOT_OVER", ())`.
 
@@ -1920,6 +1989,18 @@ Provided error argument will be of type [`Address`](#types-Address).
 **Representation:** `("MISSIGNED", <error argument>)`.
 
 Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`](#types-DataToSign) [`SomeType`](#types-SomeType)).
+
+<a name="errors-NEGATIVE_TOTAL_SUPPLY"></a>
+
+---
+
+### `NEGATIVE_TOTAL_SUPPLY`
+
+**Class:** Action exception
+
+**Fires if:** An error occured when trying to burn an amount of token more than its current total supply
+
+**Representation:** `("NEGATIVE_TOTAL_SUPPLY", ())`.
 
 <a name="errors-NOT_ADMIN"></a>
 
