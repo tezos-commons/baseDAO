@@ -10,6 +10,7 @@ module BaseDAO.ShareTest.Token
 import Universum
 
 import Lorentz hiding ((>>))
+import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Util.Named
 
@@ -22,9 +23,9 @@ import BaseDAO.ShareTest.Common
 
 burnScenario
   :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, DAO.ParameterC param pm)
+  . (MonadNettest caps base m, FA2.ParameterC param, DAO.ParameterC param pm, HasCallStack)
   => OriginateFn param m -> m ()
-burnScenario originateFn = do
+burnScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), _, dao, admin) <- originateFn
 
   withSender (AddressResolved owner1) $
@@ -32,11 +33,11 @@ burnScenario originateFn = do
     & expectCustomError_ #nOT_ADMIN
 
   withSender (AddressResolved admin) $ do
-    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 100)
-      & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
+    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 11)
+      & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 11, #present .! 10)
 
-    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 100)
-      & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 100, #present .! 10)
+    call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 11)
+      & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 11, #present .! 10)
 
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 0
@@ -44,11 +45,20 @@ burnScenario originateFn = do
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 5)
   checkTokenBalance (DAO.frozenTokenId) dao owner1 5
 
+  -- Check total supply
+  consumer <- originateSimple "consumer" [] contractConsumer
+  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView DAO.unfrozenTokenId consumer)
+  checkStorage (AddressResolved $ toAddress consumer) (toVal [10 :: Natural]) -- initial = 20
+
+  consumer2 <- originateSimple "consumer" [] contractConsumer
+  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView DAO.frozenTokenId consumer2)
+  checkStorage (AddressResolved $ toAddress consumer2) (toVal [15 :: Natural]) -- initial = 20
+
 mintScenario
   :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, DAO.ParameterC param pm)
+  . (MonadNettest caps base m, FA2.ParameterC param, DAO.ParameterC param pm, HasCallStack)
   => OriginateFn param m -> m ()
-mintScenario originateFn = do
+mintScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), _, dao, admin) <- originateFn
 
   withSender (AddressResolved owner1) $
@@ -61,6 +71,15 @@ mintScenario originateFn = do
   withSender (AddressResolved admin) $
     call dao (Call @"Mint") (DAO.MintParam owner1 DAO.frozenTokenId 50)
   checkTokenBalance (DAO.frozenTokenId) dao owner1 50
+
+  -- Check total supply
+  consumer <- originateSimple "consumer" [] contractConsumer
+  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView DAO.unfrozenTokenId consumer)
+  checkStorage (AddressResolved $ toAddress consumer) (toVal [100 :: Natural]) -- initial = 0
+
+  consumer2 <- originateSimple "consumer" [] contractConsumer
+  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView DAO.frozenTokenId consumer2)
+  checkStorage (AddressResolved $ toAddress consumer2) (toVal [50 :: Natural]) -- initial = 0
 
 transferContractTokensScenario
   :: forall caps base m param pm

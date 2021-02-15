@@ -5,10 +5,6 @@
 
 #include "../types.mligo"
 
-
-let unfrozen_token_id: nat = 0n
-let frozen_token_id: nat = 1n
-
 // -----------------------------------------------------------------
 // Helper
 // -----------------------------------------------------------------
@@ -26,27 +22,49 @@ let check_sender (from_ , store : address * storage): address =
         ("FA2_NOT_OPERATOR", ()) : address)
 
 [@inline]
-let debit_from (amt, from_, token_id, ledger: nat * address * token_id * ledger): ledger =
+let debit_from (amt, from_, token_id, ledger, total_supply: nat * address * token_id * ledger * total_supply): (ledger * total_supply) =
   match Big_map.find_opt (from_, token_id) ledger with
     Some bal ->
-      begin
-        match Michelson.is_nat (bal - amt) with
-          Some new_bal -> Big_map.update (from_, token_id) (Some new_bal) ledger
+
+      let new_total_supply =
+        match Map.find_opt token_id total_supply with
+          Some current_total_supply ->
+            (match Michelson.is_nat (current_total_supply - amt) with
+              Some new_total_supply ->
+                new_total_supply
+            | None ->
+                (failwith("NEGATIVE_TOTAL_SUPPLY") : nat)
+            )
         | None ->
-            ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)] ("FA2_INSUFFICIENT_BALANCE", (amt, bal)) : ledger)
-      end
+            (failwith("FA2_TOKEN_UNDEFINED") : nat)
+
+      in (match Michelson.is_nat (bal - amt) with
+            Some new_bal ->
+              let ledger = Big_map.update (from_, token_id) (Some new_bal) ledger in
+              let total_supply = Map.update token_id (Some new_total_supply) total_supply in
+              (ledger, total_supply)
+          | None ->
+              ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> (ledger * total_supply))] ("FA2_INSUFFICIENT_BALANCE", (amt, bal)) : (ledger * total_supply))
+         )
+
   | None ->
-      if (amt = 0n) then ledger // We allow 0 transfer
+      if (amt = 0n) then (ledger, total_supply) // We allow 0 transfer
       else
-        ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)] ("FA2_INSUFFICIENT_BALANCE", (amt, 0n)) : ledger)
+        ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> (ledger * total_supply))] ("FA2_INSUFFICIENT_BALANCE", (amt, 0n)) : (ledger * total_supply))
 
 [@inline]
-let credit_to (amt, to_, token_id, ledger : nat * address * nat * ledger): ledger =
-  let new_bal =
-    match Big_map.find_opt (to_, token_id) ledger with
-      Some bal -> bal + amt
-    | None -> amt
-  in Big_map.update (to_, token_id) (Some new_bal) ledger
+let credit_to (amt, to_, token_id, ledger, total_supply : nat * address * nat * ledger * total_supply): (ledger * total_supply) =
+  match Map.find_opt token_id total_supply with
+    Some current_total_supply ->
+      let new_bal =
+        match Big_map.find_opt (to_, token_id) ledger with
+          Some bal -> bal + amt
+        | None -> amt
+      in  let ledger = Big_map.update (to_, token_id) (Some new_bal) ledger in
+          let total_supply = Map.update token_id (Some (current_total_supply + amt)) total_supply in
+          (ledger, total_supply)
+  | None ->
+      (failwith("FA2_TOKEN_UNDEFINED") : (ledger * total_supply))
 
 // -----------------------------------------------------------------
 // Transfer
@@ -69,9 +87,13 @@ let transfer_item (store, ti : storage * transfer_item): storage =
               ("FA2_TOKEN_UNDEFINED", ()) : token_id)
       in
       let ledger = store.ledger in
-      let ledger = debit_from(tx.amount, valid_from_, valid_token_id, ledger) in
-      let ledger = credit_to(tx.amount, tx.to_, valid_token_id, ledger) in
-      { store with ledger = ledger }
+      let total_supply = store.total_supply in
+      let (ledger, total_supply) = debit_from(tx.amount, valid_from_, valid_token_id, ledger, total_supply) in
+      let (ledger, total_supply) = credit_to(tx.amount, tx.to_, valid_token_id, ledger, total_supply) in
+      { store with
+        ledger = ledger
+      ; total_supply = total_supply
+      }
     )
   in List.fold transfer_one ti.txs store
 

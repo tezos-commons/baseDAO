@@ -45,21 +45,21 @@ addr2 = unsafeParseAddress "tz1R2kv7Uzr8mgeJYEgi7KGQiHFbCg3WN6YC"
 mkFA2Tests
   :: (IsoValue store)
   => store -> DAO.MetadataSettings store -> TestTree
-mkFA2Tests defaultStorage mc = testGroup "FA2 off-chain views"
+mkFA2Tests storage mc = testGroup "FA2 off-chain views"
   [ testGroup "is_operator" $
     let checkOperator st param =
           runView @Bool (DAO.isOperatorView mc) st (ViewParam param)
     in
     [ testCase "Empty storage" $
         checkOperator
-          defaultStorage
+          storage
           FA2.OperatorParam
             { opOwner = addr1, opOperator = addr2, opTokenId = FA2.theTokenId }
         @?= Right False
 
     , testCase "Present operator" $
         let
-          store = defaultStorage &~
+          store = storage &~
             DAO.mcOperatorsL mc .= BigMap (one ((#owner .! addr1, #operator .! addr2), ()))
         in
           checkOperator store FA2.OperatorParam
@@ -69,7 +69,7 @@ mkFA2Tests defaultStorage mc = testGroup "FA2 off-chain views"
     , testCase "Invalid token_id" $
         assertBool "Unexpectedly succeeded" . isLeft $
         checkOperator
-          defaultStorage
+          storage
           FA2.OperatorParam
             { opOwner = addr1, opOperator = addr2, opTokenId = FA2.TokenId 5 }
     ]
@@ -77,7 +77,18 @@ mkFA2Tests defaultStorage mc = testGroup "FA2 off-chain views"
   , testGroup "token_metadata" $
     [ testCase "Get frozen tokens metadata" $
         runView @(FA2.TokenId, FA2.TokenMetadata)
-          (DAO.tokenMetadataView mc) defaultStorage (ViewParam DAO.frozenTokenId)
+          (DAO.tokenMetadataView mc) storage (ViewParam DAO.frozenTokenId)
         @?= Right (DAO.frozenTokenId, DAO.mcFrozenTokenMetadata DAO.defaultMetadataConfig)
+    ]
+  , testGroup "get_total_supply" $
+    let checkTotalSupply st param =
+          runView @Natural (DAO.getTotalSupplyView mc) st (ViewParam param)
+    in
+    [ testCase "Get unfrozen token total supply" $
+        checkTotalSupply storage DAO.unfrozenTokenId
+          @?= Right 100
+    , testCase "Get frozen token total supply" $
+        checkTotalSupply storage DAO.frozenTokenId
+          @?= Right 200
     ]
   ]

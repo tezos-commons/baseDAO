@@ -91,6 +91,7 @@ data ForbidXTZParam
   | Drop_proposal ProposalKeyL
   | Flush Natural
   | GetVotePermitCounter (View () Nonce)
+  | Get_total_supply (View FA2.TokenId Natural)
   | Migrate MigrateParam
   | Mint MintParam
   | Propose ProposeParamsL
@@ -131,6 +132,7 @@ data StorageL = StorageL
   , sQuorumThreshold :: QuorumThreshold
   , sTokenAddress :: Address
   , sVotingPeriod :: VotingPeriod
+  , sTotalSupply :: TotalSupply
   }
   deriving stock (Show)
 
@@ -143,6 +145,9 @@ instance StoreHasSubmap StorageL "sLedger" LedgerKey LedgerValue where
 
 instance StoreHasSubmap StorageL "sOperators" ("owner" :! Address, "operator" :! Address) () where
   storeSubmapOps = storeSubmapOpsDeeper #sOperators
+
+instance StoreHasSubmap StorageL "sTotalSupply" FA2.TokenId Natural where
+  storeSubmapOps = storeSubmapOpsDeeper #sTotalSupply
 
 mkStorageL
   :: "admin" :! Address
@@ -166,6 +171,7 @@ mkStorageL admin votingPeriod quorumThreshold extra metadata =
     , sQuorumThreshold = argDef #quorumThreshold quorumThresholdDef quorumThreshold
     , sTokenAddress = genesisAddress
     , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
+    , sTotalSupply = M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)]
     }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days

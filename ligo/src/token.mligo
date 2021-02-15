@@ -9,13 +9,13 @@
 
 let burn(param, store : burn_param * storage) : return =
   let store = authorize_admin(store) in
-  let ledger = debit_from (param.amount, param.from_, param.token_id, store.ledger)
-  in (([] : operation list), { store with ledger = ledger })
+  let (ledger, total_supply) = debit_from (param.amount, param.from_, param.token_id, store.ledger, store.total_supply)
+  in (([] : operation list), { store with ledger = ledger; total_supply = total_supply})
 
 let mint(param, store : mint_param * storage) : return =
   let store = authorize_admin(store) in
-  let ledger = credit_to (param.amount, param.to_, param.token_id, store.ledger)
-  in (([] : operation list), {store with ledger = ledger})
+  let (ledger, total_supply) = credit_to (param.amount, param.to_, param.token_id, store.ledger, store.total_supply)
+  in (([] : operation list), {store with ledger = ledger; total_supply = total_supply})
 
 let transfer_contract_tokens
     (param, store : transfer_contract_tokens_param * storage) : return =

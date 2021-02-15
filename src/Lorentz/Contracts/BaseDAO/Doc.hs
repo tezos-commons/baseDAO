@@ -27,6 +27,7 @@ module Lorentz.Contracts.BaseDAO.Doc
    , transferContractTokensDoc
 
    , getVotePermitCounterDoc
+   , getTotalSupplyDoc
 
    , callCustomDoc
    ) where
@@ -175,6 +176,11 @@ getVotePermitCounterDoc = [md|
 
   Return value increases by number of votes where a permit was provided
   with each successful call of an entrypoint.
+  |]
+
+getTotalSupplyDoc :: Markdown
+getTotalSupplyDoc = [md|
+  Return the total number of tokens for the given token-id if known or fail if not.
   |]
 
 callCustomDoc :: Markdown

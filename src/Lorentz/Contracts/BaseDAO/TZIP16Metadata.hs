@@ -14,6 +14,7 @@ module Lorentz.Contracts.BaseDAO.TZIP16Metadata
   , allTokensView
   , isOperatorView
   , tokenMetadataView
+  , getTotalSupplyView
   ) where
 
 import qualified Universum as U
@@ -48,6 +49,7 @@ data MetadataSettings store =
     [ "sLedger" := LedgerKey ~> LedgerValue
     , "sOperators" := Operator ~> ()
     , "sPermitsCounter" := Nonce
+    , "sTotalSupply" := FA2.TokenId ~> Natural
     ]
   =>
   MetadataSettings
@@ -102,9 +104,8 @@ baseDAOViews = U.sequence
   [ getBalanceView
   , allTokensView
   , isOperatorView
-    -- total_supply is skipped since the necessary info is not tracked
-    -- TODO [#126]: implement it some day
   , tokenMetadataView
+  , getTotalSupplyView
 
   , permitsCounterView
   ]
@@ -186,6 +187,21 @@ tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
                 get
                 ifSome nop $ failCustom_ #fA2_TOKEN_UNDEFINED
               pair
+      ]
+  }
+
+getTotalSupplyView :: forall store. DaoView store
+getTotalSupplyView MetadataSettings{ msConfig = MetadataConfig{..} } = View
+  { vName = "get_total_supply"
+  , vDescription = Just
+      "Return the total number of tokens for the given token-id if known or fail if not."
+  , vPure = Just True
+  , vImplementations =
+      [ VIMichelsonStorageView $
+          mkMichelsonStorageView @store @Natural Nothing [] $
+            compileViewCode_ $ WithParam @FA2.TokenId $ do
+              stGet #sTotalSupply
+              ifSome nop $ failCustom_ #fA2_TOKEN_UNDEFINED
       ]
   }
 

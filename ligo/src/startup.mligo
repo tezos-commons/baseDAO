@@ -8,9 +8,9 @@
 // This module exports a 'make_ep_param' function that can create the 'parameter'
 // to fill an entrypoint and several 'storable_<ep_name>' functions that are
 // lambdas that can be used with said helper function.
-// These correspond to their entrypoint code, except for 'balance_of' and
-// 'get_vote_permit_counter' (which cannot receive a contract directly so they
-// need to get an address instead) as well as 'vote' (that cannot execute the
+// These correspond to their entrypoint code, except for 'balance_of',
+// 'get_vote_permit_counter', and 'get_total_supply' (which cannot receive a contract
+// directly so they need to get an address instead) as well as 'vote' (that cannot execute the
 // 'SELF_ADDRESS' instruction in a lambda, so it needs to receive it as well).
 
 
@@ -96,6 +96,19 @@ let storable_get_vote_permit_counter (packed_param, config_store : bytes * confi
       | Some callback_contract ->
         let ep_param = {param = unit_par; callback = callback_contract}
         in get_vote_permit_counter(ep_param, config_store.0)
+      | None -> (failwith "UNPACKING_FAILED" : return)
+    end
+  | None -> (failwith "ENTRYPOINT_NOT_FOUND" : return)
+
+let storable_get_total_supply (packed_param, config_store : bytes * configured_storage) : return =
+  match ((Bytes.unpack packed_param) : (token_id * address) option) with
+  | Some param ->
+      begin
+      let (token_id, callback_address) = param in
+      match (Tezos.get_contract_opt(callback_address) : nat contract option) with
+      | Some callback_contract ->
+        let ep_param = {token_id = token_id; callback = callback_contract}
+        in get_total_supply(ep_param, config_store.0)
       | None -> (failwith "UNPACKING_FAILED" : return)
     end
   | None -> (failwith "ENTRYPOINT_NOT_FOUND" : return)
