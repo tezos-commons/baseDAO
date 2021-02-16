@@ -81,7 +81,7 @@ steps:
 
   - label: test-local-chain-008
     env:
-      TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8734"
+      TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
     if: *not_scheduled
     commands: *nettest
 
@@ -106,7 +106,7 @@ steps:
   #
   # - label: ligo-test-local-chain-008
   #   env:
-  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8734"
+  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
   #   if: *not_scheduled
   #   commands: *ligo-nettest
 
