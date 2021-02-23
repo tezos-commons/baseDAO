@@ -41,6 +41,7 @@ import Util.Main (wrapMain)
 import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
+import qualified Lorentz.Contracts.RegistryDAO as RegistryDAO
 
 ------------------------------------------------------------------------
 -- DAO
@@ -159,6 +160,7 @@ metadataConfigParser = do
 data AllCmdLnArgs
   = ContractRegistryCmd CmdLnArgs
   | PrintMetadata DAO.MetadataConfig
+  | PrintMetadataRegistry DAO.MetadataConfig
 
 allArgsParser :: DGitRevision -> ContractRegistry -> Opt.Parser AllCmdLnArgs
 allArgsParser gitRev registry = asum
@@ -169,6 +171,11 @@ allArgsParser gitRev registry = asum
       mkCommandParser "print-metadata"
         (PrintMetadata <$> metadataConfigParser)
         "Print known part of TZIP-16 metadata."
+
+  , Opt.hsubparser $
+      mkCommandParser "print-metadata-registry"
+        (PrintMetadataRegistry <$> metadataConfigParser)
+        "Print known part of TZIP-16 metadata for RegistryDAO contract."
   ]
 
 mkCommandParser
@@ -191,7 +198,10 @@ serveContractRegistry execName gitRev contracts version =
         runContractRegistry contracts cmdLnArgs
       PrintMetadata config ->
         putTextLn . decodeUtf8 . encodePretty $
-          DAO.knownBaseDAOMetadata (DAO.mkMetadataSettings config)
+          DAO.knownBaseDAOMetadata (DAO.mkMetadataSettings @() @() config)
+      PrintMetadataRegistry config ->
+        putTextLn . decodeUtf8 . encodePretty $
+          (RegistryDAO.knownRegistryDAOMetadata @MText @MText config)
 
 contractRegistryProgramInfo
   :: Version

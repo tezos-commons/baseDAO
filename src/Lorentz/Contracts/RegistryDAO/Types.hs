@@ -11,6 +11,7 @@ module Lorentz.Contracts.RegistryDAO.Types
   , ConfigProposal (..)
   , IsoRegistryDaoProposalMetadata
   , AgoraPostId (..)
+  , UpdateReceivers
   ) where
 
 import Lorentz
@@ -20,6 +21,7 @@ import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 
 data RegistryDaoContractExtra k v = RegistryDaoContractExtra
   { ceRegistry :: BigMap k (RegistryEntry k v)
+  , ceProposalReceivers :: Set Address
   , ceFrozenScaleValue :: Natural
   , ceFrozenExtraValue :: Natural
   , ceSlashScaleValue :: Natural
@@ -48,6 +50,7 @@ instance (Ord k, NiceComparable k, IsoValue v, TypeHasDoc k, TypeHasDoc v)
 instance Default (RegistryDaoContractExtra k v) where
   def = RegistryDaoContractExtra
     { ceRegistry = def
+    , ceProposalReceivers = def
     , ceFrozenScaleValue = 1
     , ceFrozenExtraValue = 0
     , ceSlashScaleValue = 1
@@ -86,6 +89,7 @@ instance (NiceComparable k, Ord k, IsoValue v, TypeHasDoc k, TypeHasDoc v)
 data RegistryDaoProposalMetadata k v
   = NormalProposalType (NormalProposal k v)
   | ConfigProposalType ConfigProposal
+  | UpdateReceiversType UpdateReceivers
   deriving stock (Generic)
 
 type IsoRegistryDaoProposalMetadata k v = (NiceComparable k, Ord k, IsoValue k, KnownValue v)
@@ -140,6 +144,21 @@ instance HasAnnotation AgoraPostId where
 
 instance TypeHasDoc AgoraPostId where
   typeDocMdDescription = "Describe an Agora post ID."
+
+-- | Special proposal that allow updating reciever proposal list
+data UpdateReceivers
+  = AddReceivers [Address]
+  | RemoveReceivers [Address]
+  deriving stock (Generic)
+  deriving anyclass (IsoValue)
+
+instance HasAnnotation UpdateReceivers where
+  annOptions = DAO.baseDaoAnnOptions
+
+instance TypeHasDoc UpdateReceivers where
+  typeDocMdDescription =
+    "Describe a proposal in Registry DAO. It is used to \
+    \update the list of receiver proposal contract addresses stored in contract extra"
 
 -- | Special proposal that allow updating certain scale values in 'contractExtra'
 data ConfigProposal = ConfigProposal

@@ -14,6 +14,7 @@ Application-level types can be stored as part of the contract's metadata as spec
 Extra storage data:
 1. `big_map k v` is the actual key-value storage.
 2. `big_map k proposalId` for each `k` stores IDs of the proposal that affected `k` last time.
+3. `set address` is the set of successful-proposal receiver contract addresses.
 
 We store these two `big_map`s separately because we want to include `proposalId` for deleted keys as well.
 Alternatively, we can merge them and store `option v` values.
@@ -26,6 +27,10 @@ Every proposal includes (`proposalMetadata`):
 
 Another type of proposal is used to update parameters specified below,
 it takes 5 `option nat` values (called `s_max`, `a`, `b`, `c` and `d` below).
+
+Yet a third type of proposal is used to update the set of successful-proposal receiver contract
+addresses. This proposal accept a parameter that has two constructors. The proposal can add to,
+or remove from the set of addresses.
 
 Configuration lambdas are implemented as follows:
 
