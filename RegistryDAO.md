@@ -1,6 +1,6 @@
 # Registry DAO
 
-**Code revision:** [f573a0e](https://github.com/tqtezos/baseDAO/tree/f573a0e6462e5381da7f5a8186ba020f3853c7e1) *(Mon Feb 22 16:51:36 2021 +0300)*
+**Code revision:** [eaf5c7e](https://github.com/tqtezos/baseDAO/tree/eaf5c7e98e749217211cc95b11e8b6eb6945f0ae) *(Tue Feb 23 22:33:07 2021 +0530)*
 
 
 
@@ -92,6 +92,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [TransferDestination](#types-TransferDestination)
   - [TransferItem](#types-TransferItem)
   - [UpdateOperator](#types-UpdateOperator)
+  - [UpdateReceivers](#types-UpdateReceivers)
   - [View](#types-View)
   - [VoteParam](#types-VoteParam)
 - [Errors](#section-Errors)
@@ -671,7 +672,7 @@ is decreased by the same value.
 
 **Argument:** 
   + **In Haskell:** [`ProposeParams`](#types-ProposeParams) ([`RegistryDaoProposalMetadata`](#types-RegistryDaoProposalMetadata) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
-  + **In Michelson:** `(pair (nat %frozen_token) (or %proposal_metadata (pair %proposal_type (nat %agora_post_id) (list %diff (pair (bytes %key) (option %new_value bytes)))) (pair %proposal_type (pair (option %frozen_scale_value nat) (option %frozen_extra_value nat)) (pair (option %slash_scale_value nat) (pair (option %slash_division_value nat) (option %max_proposal_size nat))))))`
+  + **In Michelson:** `(pair (nat %frozen_token) (or %proposal_metadata (pair %proposal_type (nat %agora_post_id) (list %diff (pair (bytes %key) (option %new_value bytes)))) (or (pair %proposal_type (pair (option %frozen_scale_value nat) (option %frozen_extra_value nat)) (pair (option %slash_scale_value nat) (pair (option %slash_division_value nat) (option %max_proposal_size nat)))) (or %receivers_type (list %receivers address) (list %receivers address)))))`
     + **Example:** <span id="example-id">`Pair 0 (Left (Pair 0 { Pair 0x0a (Some 0x0a) }))`</span>
 
 <details>
@@ -1466,13 +1467,14 @@ Describe the contract extra fields of a registry DAO. It contain a registry as a
 
 **Structure (example):** `RegistryDaoContractExtra ByteString ByteString` = 
   * ***ceRegistry*** :[`BigMap`](#types-BigMap) [`ByteString`](#types-ByteString) ([`RegistryEntry`](#types-RegistryEntry) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
+  * ***ceProposalReceivers*** :[`Set`](#types-Set) [`Address`](#types-Address)
   * ***ceFrozenScaleValue*** :[`Natural`](#types-Natural)
   * ***ceFrozenExtraValue*** :[`Natural`](#types-Natural)
   * ***ceSlashScaleValue*** :[`Natural`](#types-Natural)
   * ***ceSlashDivisionValue*** :[`Natural`](#types-Natural)
   * ***ceMaxProposalSize*** :[`Natural`](#types-Natural)
 
-**Final Michelson representation (example):** `RegistryDaoContractExtra ByteString ByteString` = `pair (pair (big_map bytes (pair (option bytes) (pair bytes timestamp))) (pair nat nat)) (pair nat (pair nat nat))`
+**Final Michelson representation (example):** `RegistryDaoContractExtra ByteString ByteString` = `pair (pair (big_map bytes (pair (option bytes) (pair bytes timestamp))) (pair (set address) nat)) (pair (pair nat nat) (pair nat nat))`
 
 
 
@@ -1487,9 +1489,10 @@ Describe the metadata of a proposal in Registry DAO. In Registry DAO, there are 
 **Structure (example):** `RegistryDaoProposalMetadata ByteString ByteString` = *one of* 
 + **NormalProposalType**([`NormalProposal`](#types-NormalProposal) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString))
 + **ConfigProposalType**[`ConfigProposal`](#types-ConfigProposal)
++ **UpdateReceiversType**[`UpdateReceivers`](#types-UpdateReceivers)
 
 
-**Final Michelson representation (example):** `RegistryDaoProposalMetadata ByteString ByteString` = `or (pair nat (list (pair bytes (option bytes)))) (pair (pair (option nat) (option nat)) (pair (option nat) (pair (option nat) (option nat))))`
+**Final Michelson representation (example):** `RegistryDaoProposalMetadata ByteString ByteString` = `or (pair nat (list (pair bytes (option bytes)))) (or (pair (pair (option nat) (option nat)) (pair (option nat) (pair (option nat) (option nat)))) (or (list address) (list address)))`
 
 
 
@@ -1679,6 +1682,23 @@ Describes the operator update operation.
 
 
 **Final Michelson representation:** `or (pair address (pair address nat)) (pair address (pair address nat))`
+
+
+
+<a name="types-UpdateReceivers"></a>
+
+---
+
+### `UpdateReceivers`
+
+Describe a proposal in Registry DAO. It is used to update the list of receiver proposal contract addresses stored in contract extra
+
+**Structure:** *one of* 
++ **AddReceivers**([`List`](#types-List) [`Address`](#types-Address))
++ **RemoveReceivers**([`List`](#types-List) [`Address`](#types-Address))
+
+
+**Final Michelson representation:** `or (list address) (list address)`
 
 
 
