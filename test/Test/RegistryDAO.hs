@@ -82,8 +82,8 @@ validConfigProposal = uncapsNettest $ do
 
   key1 <- createSampleProposal (getTokensAmount configMetadata) configMetadata owner1 dao
 
-  checkTokenBalance (DAO.frozenTokenId) dao owner1 31
-  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 69
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 33
+  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 67
 
   let
     upvote = DAO.NoPermit DAO.VoteParam

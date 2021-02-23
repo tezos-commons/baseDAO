@@ -4,17 +4,23 @@
 -- | A Registry DAO can be used to store key value pair @(k, v)@
 module Lorentz.Contracts.RegistryDAO
   ( registryDaoContract
+  , knownRegistryDAOMetadata
   , config
   ) where
 
+import Data.Either (fromRight)
+import Fmt (pretty)
 import Lorentz
 import Universum ((*))
+import qualified Universum as U
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import qualified Lorentz.Contracts.BaseDAO.Proposal as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.RegistryDAO.Doc
 import Lorentz.Contracts.RegistryDAO.Types
+import Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
+import Morley.Metadata
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -128,7 +134,6 @@ decisionLambda = do
           swap
 
         drop @(DAO.ProposalKey (RegistryDaoProposalMetadata k v))
-        nil
     , #cConfigProposalType /-> do
         dip drop
         duupX @2; stToField #sExtra
@@ -138,8 +143,34 @@ decisionLambda = do
         duupX @2; toField #cpSlashDivisionValue; ifSome (setField #ceSlashDivisionValue) nop
         swap; toField #cpMaxProposalSize; ifSome (setField #ceMaxProposalSize) nop
         stSetField #sExtra
-        nil
+    , #cUpdateReceiversType /-> do
+        stackType @(UpdateReceivers ': (DAO.ProposalKey (RegistryDaoProposalMetadata k v)) : store : _)
+        dip (drop # stGetField #sExtra # getField #ceProposalReceivers)
+        stackType @(UpdateReceivers ': Set Address ': RegistryDaoContractExtra k v ': store : _)
+
+        -- Push a boolean value to indicate if we are adding addresses
+        -- or removing them. True to add and False to remove
+        caseT
+          ( #cAddReceivers /-> push True
+          , #cRemoveReceivers /-> push False
+          )
+        swap
+        stackType @([Address] ': Bool ': Set Address ': RegistryDaoContractExtra k v ': store : _)
+
+        -- Now we have the input addresses at the top
+        -- The boolean that indicate if we are adding or removing below it
+        -- and the current set of addresses, under it.
+        iter $ do
+          -- We put a copy of the boolean operation indicator on top of the stack
+          duupX @2
+          dip update
+        drop
+
+        stackType @(Set Address ': RegistryDaoContractExtra k v ': store : _)
+        setField #ceProposalReceivers
+        stSetField #sExtra
     )
+  nil
 
 config ::
   ( IsoRegistryDaoProposalMetadata k v
@@ -161,6 +192,46 @@ config = DAO.defaultConfig
 
   , DAO.cMaxVotes = 1000
   , DAO.cMaxProposals = 500
+  }
+
+type RegistryDaoStorage k v = DAO.Storage (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v)
+
+-- | Parts of metadata that can be filled just knowing the contract,
+-- without user's input.
+knownRegistryDAOMetadata
+  :: forall k v. IsoRegistryDaoProposalMetadata k v
+  => DAO.MetadataConfig
+  -> Metadata (ToT (RegistryDaoStorage k v))
+knownRegistryDAOMetadata cnf = let
+  settings = DAO.mkMetadataSettings @(RegistryDaoContractExtra k v) @(RegistryDaoProposalMetadata k v) cnf
+  baseMetadata = DAO.knownBaseDAOMetadata settings
+  baseViews = fromRight [] $ getViews baseMetadata
+  in baseMetadata <> (views ((registryDAOViews @k @v) <> baseViews))
+
+registryDAOViews
+  :: forall k v. IsoRegistryDaoProposalMetadata k v
+  => [TZIP16.View (ToT (RegistryDaoStorage k v))]
+registryDAOViews = [proposalReceiversListView @k @v]
+
+compileViewCode_ :: ViewCode st ret -> CompiledViewCode st ret
+compileViewCode_ = U.either (U.error . pretty) U.id . compileViewCode
+
+proposalReceiversListView
+  :: forall k v. IsoRegistryDaoProposalMetadata k v
+  =>  TZIP16.View (ToT (RegistryDaoStorage k v))
+proposalReceiversListView = TZIP16.View
+  { vName = "get_proposal_receivers_list"
+  , vDescription = Just "Get proposal receivers list from storage"
+  , vPure = Just True
+  , vImplementations =
+      [  VIMichelsonStorageView $
+          mkMichelsonStorageView @(RegistryDaoStorage k v) @(Set Address) Nothing [] $
+            compileViewCode_ $ WithParam @() $ do
+              drop
+              stToField #sExtra
+              stackType @(RegistryDaoContractExtra k v : _)
+              toField #ceProposalReceivers
+      ]
   }
 
 registryDaoContract ::

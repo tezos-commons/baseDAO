@@ -70,7 +70,7 @@ defaultMetadataConfig =
     }
 
 -- | Construct settings for Lorentz version of the contract.
-mkMetadataSettings :: MetadataConfig -> MetadataSettings (Storage () ())
+mkMetadataSettings :: (IsoValue ce, IsoValue pm) => MetadataConfig -> MetadataSettings (Storage ce pm)
 mkMetadataSettings msConfig = MetadataSettings
   { msConfig
   , mcOperatorsL = sOperatorsL

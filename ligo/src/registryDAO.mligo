@@ -11,30 +11,70 @@
 // storage expression.
 #include "base_DAO.mligo"
 
+(*
+ * Implements logic that differentiates between various proposals, and wraps
+ * the relavant data in appropriate constructors.
+ *)
+let extract_proposal (metadata : proposal_metadata) : proposal_type =
+  match Map.find_opt "agoraPostID" metadata with
+  | Some (packed_b) ->
+      begin
+        match ((Bytes.unpack packed_b) : (nat option)) with
+        | Some (agora_post_id) ->
+            begin
+              match Map.find_opt "updates" metadata with
+              | Some (packed_b) ->
+                  begin
+                    match ((Bytes.unpack packed_b) : (registry_diff option)) with
+                    | Some (diff) -> Normal_proposal diff
+                    | None ->
+                      (failwith "UPDATES_UNPACKING_FAILED" : proposal_type)
+                  end
+              | None -> (failwith "UPDATES_NOT_FOUND" : proposal_type)
+            end
+        | None -> (failwith "UNPACKING FAILED" : proposal_type)
+      end
+  | None ->
+      begin
+        match Map.find_opt "update_receivers" metadata with
+          | Some (packed_b) ->
+              begin
+                match ((Bytes.unpack packed_b) : update_receiver_param option) with
+                  | Some upr_param -> Update_receivers_proposal upr_param
+                  | None -> (failwith "UNPACKING FAILED" : proposal_type)
+              end
+          | None -> Configuration_proposal
+      end
+
 let require_extra_value (key_name, ce : string * contract_extra) : bytes =
     match Map.find_opt key_name ce with
-      Some (packed_b) -> packed_b
+    | Some (packed_b) -> packed_b
     | None -> (failwith "CONFIG_VALUE_NOT_FOUND" : bytes)
 
 let require_unpacked_nat(packed_b: bytes) : nat =
   match ((Bytes.unpack packed_b) : (nat option)) with
-    Some (v) -> v
+  | Some (v) -> v
   | None -> (failwith "UNPACKING_FAILED" : nat)
 
 let require_unpacked_nat_opt(packed_b: bytes) : nat option =
   match ((Bytes.unpack packed_b) : ((nat option) option)) with
-    Some (v) -> v
+  | Some (v) -> v
   | None -> (failwith "UNPACKING_FAILED" : nat option)
 
 let require_unpacked_registry (packed_b: bytes) : registry =
   match ((Bytes.unpack packed_b) : (registry option)) with
-    Some (v) -> v
+  | Some (v) -> v
   | None -> (failwith "UNPACKING_FAILED" : registry)
 
 let require_unpacked_registry_affected (packed_b: bytes) : registry_affected =
   match ((Bytes.unpack packed_b) : (registry_affected option)) with
-    Some (v) -> v
+  |  Some (v) -> v
   | None -> (failwith "UNPACKING_FAILED" : registry_affected)
+
+let require_unpacked_proposal_receivers (packed_b: bytes) : proposal_receivers =
+  match ((Bytes.unpack packed_b) : (proposal_receivers option)) with
+  | Some (v) -> v
+  | None -> (failwith "UNPACKING_FAILED" : proposal_receivers)
 
 let lookup_config (key_name, ce : string * contract_extra) : nat =
     require_unpacked_nat(require_extra_value(key_name, ce))
@@ -98,6 +138,13 @@ let registry_DAO_rejected_proposal_return_value (params, extras : proposal * con
   let slash_division_value = require_config ("d", extras)
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
+type update_fn = (address * address set) -> proposal_receivers
+
+let update_receivers(current_set, updates, update_fn : proposal_receivers * address list * update_fn) : proposal_receivers =
+  let
+    foldFn (existing, item : proposal_receivers * address) : proposal_receivers = update_fn (item, existing)
+  in List.fold foldFn updates current_set
+
 (*
  * Uses the keys in the proposal metadata to differentiate between configuration
  * proposal and normal proposals. If the map contains `agoraPostID` key, the proposal
@@ -120,29 +167,23 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     proposal_metadata = proposal.metadata
     } in
   let proposal_key = to_proposal_key (propose_param, proposal.proposer) in
-  match Map.find_opt "agoraPostID" proposal.metadata with
-  | Some (packed_b) ->
+  match extract_proposal(proposal.metadata) with
+  | Normal_proposal diff ->
+      let extras = apply_diff(diff, extras) in
+      let extras =
+        apply_diff_affected(proposal_key, diff, extras) in
+        (([] : operation list), extras)
+  | Update_receivers_proposal urp ->
+      let current_set = require_unpacked_proposal_receivers(require_extra_value("proposal_receivers", extras)) in
       begin
-        match ((Bytes.unpack packed_b) : (nat option)) with
-        | Some (agora_post_id) ->
-            begin
-              match Map.find_opt "updates" proposal.metadata with
-              | Some (packed_b) ->
-                  begin
-                    match ((Bytes.unpack packed_b) : (registry_diff option)) with
-                    | Some (diff) ->
-                        let ce_after_registry_update = apply_diff(diff, extras) in
-                        let ce_after_registry_affected_update =
-                          apply_diff_affected(proposal_key, diff, ce_after_registry_update) in
-                          (([] : operation list), ce_after_registry_affected_update)
-                    | None ->
-                      (failwith "UPDATES_UNPACKING_FAILED" : operation list * contract_extra)
-                  end
-              | None -> (failwith "UPDATES_NOT_FOUND" : operation list * contract_extra)
-            end
-        | None -> (failwith "UNPACKING FAILED" : operation list * contract_extra)
+        let new_set = match urp with
+          | Add_receivers receivers ->
+              update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.add i c))
+          | Remove_receivers receivers ->
+              update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.remove i c))
+        in (([] : operation list), Map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras)
       end
-  | None ->
+  | Configuration_proposal ->
       let m_frozen_scale_value = lookup_config_in_proposal ("a", proposal.metadata) in
       let m_frozen_extra_value = lookup_config_in_proposal ("b", proposal.metadata) in
       let m_max_proposal_size = lookup_config_in_proposal ("s_max", proposal.metadata) in
@@ -181,6 +222,7 @@ let default_registry_DAO_full_storage (admin, token_address, a, b, s_max, c, d
     extra = Map.literal [
           ("registry" , Bytes.pack (Map.empty : registry));
           ("registry_affected" , Bytes.pack (Map.empty : registry_affected));
+          ("proposal_receivers" , Bytes.pack (Set.empty : proposal_receivers));
           ("a" , Bytes.pack a); // frozen_scale_value
           ("b" , Bytes.pack b); // frozen_extra_value
           ("s_max" , Bytes.pack s_max); // max_proposal_size
@@ -194,3 +236,16 @@ let default_registry_DAO_full_storage (admin, token_address, a, b, s_max, c, d
     decision_lambda = registry_DAO_decision_lambda;
     } in
   (startup, (new_storage, new_config))
+
+
+// We are not using this right now, but just leaving here in case we might want it
+// soon.
+let successful_proposal_receiver_view (full_storage : full_storage): proposal_receivers =
+  match ((Map.find_opt "proposal_receivers" full_storage.1.0.extra) : bytes option) with
+    | Some (packed_b) ->
+        begin
+          match (Bytes.unpack packed_b : proposal_receivers option) with
+          | Some r -> r
+          | None -> ((failwith "Unpacking failed") : proposal_receivers)
+        end
+    | None -> (failwith "'proposal_receivers' key not found" : proposal_receivers)
