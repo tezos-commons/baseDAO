@@ -125,10 +125,10 @@ defaultStartupContract admin baseDao = do
     -- startup calls, so we transfer more money to it, unless it already exists
     -- from previous scenarios aldready and has a sufficient balance.
     currBalance <- getBalance $ AddressResolved admin
-    when (currBalance < toMutez 2_e6) $ do  -- < 2 XTZ
+    when (currBalance < toMutez 4_e6) $ do  -- < 4 XTZ
       transfer TransferData
         { tdTo = AddressResolved admin
-        , tdAmount = toMutez $ 3_e6 -- 3 XTZ
+        , tdAmount = toMutez $ 4_e6 -- 4 XTZ
         , tdEntrypoint = DefEpName
         , tdParameter = ()
         }
