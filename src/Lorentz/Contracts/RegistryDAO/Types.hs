@@ -162,11 +162,11 @@ instance TypeHasDoc UpdateReceivers where
 
 -- | Special proposal that allow updating certain scale values in 'contractExtra'
 data ConfigProposal = ConfigProposal
-  { cpFrozenScaleValue :: Maybe Natural -- a
-  , cpFrozenExtraValue :: Maybe Natural -- b
-  , cpSlashScaleValue :: Maybe Natural -- c
-  , cpSlashDivisionValue :: Maybe Natural -- d
-  , cpMaxProposalSize :: Maybe Natural -- s_max
+  { cpFrozenScaleValue :: Maybe Natural
+  , cpFrozenExtraValue :: Maybe Natural
+  , cpSlashScaleValue :: Maybe Natural
+  , cpSlashDivisionValue :: Maybe Natural
+  , cpMaxProposalSize :: Maybe Natural
   }
   deriving stock (Generic)
   deriving anyclass (IsoValue)

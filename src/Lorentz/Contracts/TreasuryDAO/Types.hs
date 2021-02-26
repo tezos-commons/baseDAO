@@ -21,13 +21,13 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 -- | TreasuryDAO has mainly configuration fields.
 data TreasuryDaoContractExtra = TreasuryDaoContractExtra
-  { ceFrozenScaleValue :: Natural -- a
-  , ceFrozenExtraValue :: Natural -- b
-  , ceSlashScaleValue :: Natural -- c
-  , ceSlashDivisionValue :: Natural -- d
-  , ceMinXtzAmount :: Mutez -- y
-  , ceMaxXtzAmount :: Mutez -- z
-  , ceMaxProposalSize :: Natural -- s_max
+  { ceFrozenScaleValue :: Natural
+  , ceFrozenExtraValue :: Natural
+  , ceSlashScaleValue :: Natural
+  , ceSlashDivisionValue :: Natural
+  , ceMinXtzAmount :: Mutez
+  , ceMaxXtzAmount :: Mutez
+  , ceMaxProposalSize :: Natural
   }
   deriving stock (Generic)
   deriving anyclass (IsoValue)
@@ -41,13 +41,13 @@ instance TypeHasDoc TreasuryDaoContractExtra where
 
 instance Default TreasuryDaoContractExtra where
   def = TreasuryDaoContractExtra
-    { ceFrozenScaleValue = 1 -- a
-    , ceFrozenExtraValue = 0 -- b
-    , ceSlashScaleValue = 1 -- c
-    , ceSlashDivisionValue = 1 -- d
-    , ceMinXtzAmount = toMutez 1 -- y
-    , ceMaxXtzAmount = toMutez 10000 -- z
-    , ceMaxProposalSize = 1000 -- s_max
+    { ceFrozenScaleValue = 1
+    , ceFrozenExtraValue = 0
+    , ceSlashScaleValue = 1
+    , ceSlashDivisionValue = 1
+    , ceMinXtzAmount = toMutez 1
+    , ceMaxXtzAmount = toMutez 10000
+    , ceMaxProposalSize = 1000
     }
 
 -- | A Treasury DAO proposal, contains list of transfers of 2 types:

@@ -73,11 +73,11 @@ validConfigProposal = uncapsNettest $ do
 
   let
     (configMetadata :: RegistryDaoProposalMetadata ByteString ByteString) = ConfigProposalType $ ConfigProposal
-        { cpFrozenScaleValue = Just 1 -- a
-        , cpFrozenExtraValue = Just 5 -- b
-        , cpSlashScaleValue = Just 1 -- c
-        , cpSlashDivisionValue = Just 2 -- d
-        , cpMaxProposalSize = Just 62 -- s_max
+        { cpFrozenScaleValue = Just 1
+        , cpFrozenExtraValue = Just 5
+        , cpSlashScaleValue = Just 1
+        , cpSlashDivisionValue = Just 2
+        , cpMaxProposalSize = Just 62
         }
 
   key1 <- createSampleProposal (getTokensAmount configMetadata) configMetadata owner1 dao
