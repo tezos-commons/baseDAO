@@ -16,6 +16,7 @@ module Ligo.BaseDAO.Types
   , DynamicRec (..)
   , dynRecUnsafe
   , mkStorageL
+  , mkMetadataMap
   , mkConfigL
   , defaultConfigL
   , mkFullStorageL
@@ -24,7 +25,7 @@ module Ligo.BaseDAO.Types
   ) where
 
 import Lorentz
-import Universum (One(..), fromIntegral, (*))
+import Universum (One(..), fromIntegral, maybe, (*))
 
 import Control.Lens (makeLensesFor)
 import qualified Data.Map as M
@@ -169,6 +170,20 @@ mkStorageL admin votingPeriod quorumThreshold extra metadata =
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
     quorumThresholdDef = 4
+
+mkMetadataMap
+  :: "metadataHostAddress" :! Address
+  -> "metadataHostChain" :? TZIP16.ExtChainId
+  -> "metadataKey" :! MText
+  -> TZIP16.MetadataMap BigMap
+mkMetadataMap hostAddress hostChain key =
+  TZIP16.metadataURI . TZIP16.tezosStorageUri host $ arg #metadataKey key
+  where
+    host = maybe
+      TZIP16.contractHost
+      TZIP16.foreignContractHost
+      (argF #metadataHostChain hostChain)
+      (arg #metadataHostAddress hostAddress)
 
 data ConfigL = ConfigL
   { cProposalCheck :: '[ProposeParamsL, ContractExtraL] :-> '[Bool]
