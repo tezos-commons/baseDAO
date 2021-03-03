@@ -88,32 +88,32 @@ $(OUT)/trivialDAO_storage.tz: src/**
 
 $(OUT)/registryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
 $(OUT)/registryDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/registryDAO_storage.tz : a = 1n
-$(OUT)/registryDAO_storage.tz : b = 0n
-$(OUT)/registryDAO_storage.tz : s_max = 100n
-$(OUT)/registryDAO_storage.tz : c = 1n
-$(OUT)/registryDAO_storage.tz : d = 0n
+$(OUT)/registryDAO_storage.tz : frozen_scale_value = 1n
+$(OUT)/registryDAO_storage.tz : frozen_extra_value = 0n
+$(OUT)/registryDAO_storage.tz : max_proposal_size = 100n
+$(OUT)/registryDAO_storage.tz : slash_scale_value = 1n
+$(OUT)/registryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
 	mkdir -p $(OUT)
-	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz src/registryDAO.mligo base_DAO_contract 'default_registry_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), ${a}, $(b), $(s_max), $(c), $(d))'
+	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz src/registryDAO.mligo base_DAO_contract 'default_registry_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), ${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value))'
 	# ================= Compilation successful ================= #
 	# See "$(OUT)/registryDAO_storage.tz" for compilation result #
 	#
 
 $(OUT)/treasuryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
 $(OUT)/treasuryDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/treasuryDAO_storage.tz : a = 0n
-$(OUT)/treasuryDAO_storage.tz : b = 0n
-$(OUT)/treasuryDAO_storage.tz : s_max = 0n
-$(OUT)/treasuryDAO_storage.tz : c = 0n
-$(OUT)/treasuryDAO_storage.tz : d = 0n
-$(OUT)/treasuryDAO_storage.tz : y = 0mutez
-$(OUT)/treasuryDAO_storage.tz : z = 100mutez
+$(OUT)/treasuryDAO_storage.tz : frozen_scale_value = 0n
+$(OUT)/treasuryDAO_storage.tz : frozen_extra_value = 0n
+$(OUT)/treasuryDAO_storage.tz : max_proposal_size = 0n
+$(OUT)/treasuryDAO_storage.tz : slash_scale_value = 0n
+$(OUT)/treasuryDAO_storage.tz : slash_division_value = 0n
+$(OUT)/treasuryDAO_storage.tz : min_xtz_amount = 0mutez
+$(OUT)/treasuryDAO_storage.tz : max_xtz_amount = 100mutez
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
 	mkdir -p $(OUT)
-	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz src/treasuryDAO.mligo base_DAO_contract 'default_treasury_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), (${a}, $(b), $(s_max), $(c), $(d), $(y), $(z)))'
+	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz src/treasuryDAO.mligo base_DAO_contract 'default_treasury_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), (${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(min_xtz_amount), $(max_xtz_amount)))'
 	# ============== Compilation successful ============== #
 	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
 	#

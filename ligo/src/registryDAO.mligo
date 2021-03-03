@@ -116,26 +116,27 @@ let apply_diff_affected (proposal_key, diff, ce : proposal_key *
 
 (*
  * Proposal check lambda : returns true if following two checks are true.
- * 1. if proposer has locked a * s + b where s = size(pack(proposalMetadata))
- * and a and b are from storage configuration.
- * 2. proposal size < s_max where s_max is from stored configuration.
+ * 1. if proposer has locked frozen_scale_value * s + frozen_extra_value
+ * where s = size(pack(proposalMetadata)) and frozen_scale_value and frozen_extra_value
+ * are from storage configuration.
+ * 2. proposal size < max_proposal_size where max_proposal_size is from stored configuration.
  *)
 let registry_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
   let proposal_size = Bytes.size(Bytes.pack(params.proposal_metadata)) in
-  let frozen_scale_value = require_config ("a", extras) in
-  let frozen_extra_value = require_config ("b", extras) in
-  let max_proposal_size = require_config ("s_max", extras) in
-  let requred_token_lock = frozen_scale_value * proposal_size + frozen_extra_value
-  in (params.frozen_token = requred_token_lock) && (proposal_size < max_proposal_size)
+  let frozen_scale_value = require_config ("frozen_scale_value", extras) in
+  let frozen_extra_value = require_config ("frozen_extra_value", extras) in
+  let max_proposal_size = require_config ("max_proposal_size", extras) in
+  let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value
+  in (params.frozen_token = required_token_lock) && (proposal_size < max_proposal_size)
 
 (*
- * Proposal rejection return lambda: returns `c * frozen / d`. where c and d
- * are specified by the DAO creator in configuration and frozen is the amount
- * that was frozen by the proposer.
+ * Proposal rejection return lambda: returns `slash_scale_value * frozen / slash_division_value`
+ * where slash_scale_value and slash_division_value are specified by the DAO creator
+ * in configuration and frozen is the amount that was frozen by the proposer.
  *)
 let registry_DAO_rejected_proposal_return_value (params, extras : proposal * contract_extra) : nat =
-  let slash_scale_value = require_config ("c", extras) in
-  let slash_division_value = require_config ("d", extras)
+  let slash_scale_value = require_config ("slash_scale_value", extras) in
+  let slash_division_value = require_config ("slash_division_value", extras)
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
 type update_fn = (address * address set) -> proposal_receivers
@@ -156,8 +157,9 @@ let update_receivers(current_set, updates, update_fn : proposal_receivers * addr
  * 'registry_affected' keys.
  *
  * For 'configuration' proposal, the code expects all the configuration keys
- * included in the proposal (or it throws an error). The expected keys are "a",
- * "b", "s_max", "c" and "d".  'None' values are ignored and 'Some' values are
+ * included in the proposal (or it throws an error). The expected keys are
+ * "frozen_scale_value", "frozen_extra_value", "max_proposal_size", "slash_scale_value"
+ * and "slash_division_value". 'None' values are ignored and 'Some' values are
  * used for updating corresponding configuraton.
  *)
 let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
@@ -184,38 +186,38 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
         in (([] : operation list), Map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras)
       end
   | Configuration_proposal ->
-      let m_frozen_scale_value = lookup_config_in_proposal ("a", proposal.metadata) in
-      let m_frozen_extra_value = lookup_config_in_proposal ("b", proposal.metadata) in
-      let m_max_proposal_size = lookup_config_in_proposal ("s_max", proposal.metadata) in
-      let m_slash_scale_value = lookup_config_in_proposal ("c", proposal.metadata) in
-      let m_slash_division_value = lookup_config_in_proposal ("d", proposal.metadata) in
+      let m_frozen_scale_value = lookup_config_in_proposal ("frozen_scale_value", proposal.metadata) in
+      let m_frozen_extra_value = lookup_config_in_proposal ("frozen_extra_value", proposal.metadata) in
+      let m_max_proposal_size = lookup_config_in_proposal ("max_proposal_size", proposal.metadata) in
+      let m_slash_scale_value = lookup_config_in_proposal ("slash_scale_value", proposal.metadata) in
+      let m_slash_division_value = lookup_config_in_proposal ("slash_division_value", proposal.metadata) in
       let new_ce = match m_frozen_scale_value with
         | Some (frozen_scale_value) ->
-            Map.update "a" (Some (Bytes.pack (frozen_scale_value))) extras
+            Map.update "frozen_scale_value" (Some (Bytes.pack (frozen_scale_value))) extras
         | None -> extras in
 
       let new_ce = match m_frozen_extra_value with
-        | Some (frozen_scale_value) ->
-            Map.update "b" (Some (Bytes.pack (frozen_scale_value))) new_ce
+        | Some (frozen_extra_value) ->
+            Map.update "frozen_extra_value" (Some (Bytes.pack (frozen_extra_value))) new_ce
         | None -> new_ce in
 
       let new_ce = match m_max_proposal_size with
         | Some (max_proposal_size) ->
-            Map.update "s_max" (Some (Bytes.pack (max_proposal_size))) new_ce
+            Map.update "max_proposal_size" (Some (Bytes.pack (max_proposal_size))) new_ce
         | None -> new_ce in
 
       let new_ce = match m_slash_scale_value with
         | Some (slash_scale_value) ->
-            Map.update "c" (Some (Bytes.pack (slash_scale_value))) new_ce
+            Map.update "slash_scale_value" (Some (Bytes.pack (slash_scale_value))) new_ce
         | None -> new_ce in
 
       let new_ce = match m_slash_division_value with
         | Some (slash_division_value) ->
-            Map.update "d" (Some (Bytes.pack (slash_division_value))) new_ce
+            Map.update "slash_division_value" (Some (Bytes.pack (slash_division_value))) new_ce
         | None -> new_ce
       in (([] : operation list), new_ce)
 
-let default_registry_DAO_full_storage (admin, token_address, a, b, s_max, c, d
+let default_registry_DAO_full_storage (admin, token_address, frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value
     : (address * address * nat * nat * nat * nat * nat)) : full_storage =
   let (startup, (store, config)) = default_full_storage (admin, token_address) in
   let new_storage = { store with
@@ -223,11 +225,11 @@ let default_registry_DAO_full_storage (admin, token_address, a, b, s_max, c, d
           ("registry" , Bytes.pack (Map.empty : registry));
           ("registry_affected" , Bytes.pack (Map.empty : registry_affected));
           ("proposal_receivers" , Bytes.pack (Set.empty : proposal_receivers));
-          ("a" , Bytes.pack a); // frozen_scale_value
-          ("b" , Bytes.pack b); // frozen_extra_value
-          ("s_max" , Bytes.pack s_max); // max_proposal_size
-          ("c" , Bytes.pack c); // slashvalue
-          ("d" , Bytes.pack d); // slash_division_value
+          ("frozen_scale_value" , Bytes.pack frozen_scale_value);
+          ("frozen_extra_value" , Bytes.pack frozen_extra_value);
+          ("max_proposal_size" , Bytes.pack max_proposal_size);
+          ("slash_scale_value" , Bytes.pack slash_scale_value);
+          ("slash_division_value" , Bytes.pack slash_division_value);
           ];
   } in
   let new_config = { config with

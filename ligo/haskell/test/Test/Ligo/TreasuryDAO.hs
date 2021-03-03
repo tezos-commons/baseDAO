@@ -146,11 +146,11 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
   withSender (AddressResolved owner1) $ do
-  -- due to smaller than y (min mutez allow)
+  -- due to smaller than min_xtz_amount
     call dao (Call @"Propose") (proposeParams 1)
       & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
-  -- due to bigger than z (max mutez allow)
+  -- due to bigger than max_xtz_amount
     call dao (Call @"Propose") (proposeParams 6)
       & expectCustomError_ #fAIL_PROPOSAL_CHECK
 
@@ -204,13 +204,13 @@ originateTreasuryDaoWithBalance bal =
   let fs = $(fetchValue @FullStorage "ligo/haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH")
       configStore = fsConfigured fs
       testExtra = (sExtra $ csStorage configStore)
-        & setExtra @Natural [mt|a|] 1
-        & setExtra @Natural [mt|b|] 0
-        & setExtra @Natural [mt|c|] 1
-        & setExtra @Natural [mt|d|] 1
-        & setExtra @Natural [mt|s_max|] 1000
-        & setExtra @Natural [mt|y|] 2
-        & setExtra @Natural [mt|z|] 5
+        & setExtra @Natural [mt|frozen_scale_value|] 1
+        & setExtra @Natural [mt|frozen_extra_value|] 0
+        & setExtra @Natural [mt|slash_scale_value|] 1
+        & setExtra @Natural [mt|slash_division_value|] 1
+        & setExtra @Natural [mt|max_proposal_size|] 1000
+        & setExtra @Natural [mt|min_xtz_amount|] 2
+        & setExtra @Natural [mt|max_xtz_amount|] 5
       customEps = Map.toList . unBigMap . ssStoredEntrypoints $ fsStartup fs
 
   in originateLigoDaoWithBalance customEps testExtra (csConfig configStore) bal
