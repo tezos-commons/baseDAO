@@ -25,11 +25,11 @@ let unpack_transfer_type_list (key_name, p : string * ((string, bytes) map)) : t
 
 let treasury_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
   let proposal_size = Bytes.size(Bytes.pack(params.proposal_metadata)) in
-  let frozen_scale_value = unpack_nat("a", extras) in
-  let frozen_extra_value = unpack_nat("b", extras) in
-  let max_proposal_size = unpack_nat("s_max", extras) in
-  let min_xtz_amount = unpack_tez("y", extras) in
-  let max_xtz_amount = unpack_tez("z", extras) in
+  let frozen_scale_value = unpack_nat("frozen_scale_value", extras) in
+  let frozen_extra_value = unpack_nat("frozen_extra_value", extras) in
+  let max_proposal_size = unpack_nat("max_proposal_size", extras) in
+  let min_xtz_amount = unpack_tez("min_xtz_amount", extras) in
+  let max_xtz_amount = unpack_tez("max_xtz_amount", extras) in
 
   let requred_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
 
@@ -52,8 +52,8 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
 
 
 let treasury_DAO_rejected_proposal_return_value (params, extras : proposal * contract_extra) : nat =
-  let slash_scale_value = unpack_nat("c", extras) in
-  let slash_division_value =  unpack_nat("d", extras)
+  let slash_scale_value = unpack_nat("slash_scale_value", extras) in
+  let slash_division_value =  unpack_nat("slash_division_value", extras)
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
 
@@ -111,16 +111,16 @@ let receive_xtz_entrypoint (params, config_store : bytes * configured_storage)
 let default_treasury_DAO_full_storage (admin, token_address, contract_extra
     : (address * address * treasury_contract_extra)) : full_storage =
   let (startup, (store, config)) = default_full_storage (admin, token_address) in
-  let (a, b, s_max, c, d, y, z) = contract_extra in
+  let (frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, min_xtz_amount, max_xtz_amount) = contract_extra in
   let new_storage = { store with
     extra = Map.literal [
-          ("a" , Bytes.pack a); // frozen_scale_value
-          ("b" , Bytes.pack b); // frozen_extra_value
-          ("s_max" , Bytes.pack s_max); // max_proposal_size
-          ("c" , Bytes.pack c); // slash_scale_value
-          ("d" , Bytes.pack d); // slash_division_value
-          ("y" , Bytes.pack y); // min_xtz_amount
-          ("z" , Bytes.pack z); // max_xtz_amount
+          ("frozen_scale_value" , Bytes.pack frozen_scale_value);
+          ("frozen_extra_value" , Bytes.pack frozen_extra_value);
+          ("max_proposal_size" , Bytes.pack max_proposal_size);
+          ("slash_scale_value" , Bytes.pack slash_scale_value);
+          ("slash_division_value" , Bytes.pack slash_division_value);
+          ("min_xtz_amount" , Bytes.pack min_xtz_amount);
+          ("max_xtz_amount" , Bytes.pack max_xtz_amount);
           ];
   } in
   let new_config = { config with

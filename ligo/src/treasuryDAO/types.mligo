@@ -39,11 +39,11 @@ type transfer_type =
  *)
 
 type treasury_contract_extra =
-  ( nat // a : frozen_scale_value
-  * nat // b : frozen_extra_value
-  * nat // s_max : max_proposal_size
-  * nat // c : slash_scale_value
-  * nat // d : slash_division_value
-  * tez // y : min_xtz_amount
-  * tez // z : max_xtz_amount
+  ( nat // frozen_scale_value
+  * nat // frozen_extra_value
+  * nat // max_proposal_size
+  * nat // slash_scale_value
+  * nat // slash_division_value
+  * tez // min_xtz_amount
+  * tez // max_xtz_amount
   )

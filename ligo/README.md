@@ -103,7 +103,7 @@ As with the default storage this can be generated with the `ligo
 compile-storage` command, or `make`:
 
 ```bash
-make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" s_max=12n a=1n b=0n c=1n d=1n out/registryDAO_storage.tz
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" max_proposal_size=12n frozen_scale_value=1n frozen_extra_value=0n slash_scale_value=1n slash_division_value=1n out/registryDAO_storage.tz
 ```
 
 All the arguments to the above command are optional, and will be filled with
@@ -112,19 +112,20 @@ following dummy addresses and default values.
 ```
 admin_address = "tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af"
 token_address = "tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af"
-a = 1n
-b = 0n
-s_max = 100n
-c = 1n
-d = 0n
+frozen_scale_value = 1n
+frozen_extra_value = 0n
+max_proposal_size = 100n
+slash_scale_value = 1n
+slash_division_value = 0n
 ```
 
 The `default_registry_DAO_full_storage` is a LIGO function defined in
 `ligo/src/registryDAO.mligo`, which returns a LIGO expression for storage,
 which is converted into Michelson using the `compile-storage` command. The
 arguments to this function are the admin address, the token address and the
-configuration parameters described in the Registry spec, which are `a`, `b`,
-`s_max`, `c` and `d`.
+configuration parameters described in the Registry spec, which are
+`frozen_scale_value`, `frozen-extra_value`, `max_proposal_size`,
+`slash_scale_value` and `slash_division_value`.
 
 ### TreasuryDAO
 
@@ -134,7 +135,7 @@ Michelson expression during the BaseDAO origination using the `ligo
 compile-storage` command as follows.
 
 ```bash
-make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" s_max=12n a=1n b=0n c=1n d=1n y=0mutez z=100mutez out/treasuryDAO_storage.tz
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" max_proposal_size=12n frozen_scale_value=1n frozen_extra_value=0n slash_scale_value=1n slash_division_value=1n min_xtz_amount=0mutez max_xtz_amount=100mutez out/treasuryDAO_storage.tz
 ```
 
 This uses the `default_treasury_DAO_full_storage` which is a LIGO function defined in
@@ -145,4 +146,10 @@ The arguments to this function are:
 - the admin address
 - the token address
 - a tuple value consisting of configuration parameters described in the Treasury spec which are:
-    - `a`, `b`, `s_max`, `c`, `d`, `x`, and `z`.
+    - `frozen_scale_value`,
+    - `frozen_extra_value`,
+    - `max_proposal_size`,
+    - `slash_scale_value`,
+    - `slash_division_value`,
+    - `min_xtz_value`,
+    - `max_xtz_value`.
