@@ -45,7 +45,7 @@ type DaoContract ce pm op =
 type DaoC ce pm op =
   ( NiceParameterFull (Parameter pm op), NiceStorage (Storage ce pm)
   , Each [IsoValue, HasAnnotation, TypeHasDoc] [pm, op]
-  , NicePackedValue pm
+  , NicePackedValue pm, NiceParameterFull pm, NiceParameterFull op
   , KnownValue ce, TypeHasDoc ce
   )
 

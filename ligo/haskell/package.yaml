@@ -76,9 +76,13 @@ ghc-options:
   -Wno-missing-local-signatures
   -Wno-monomorphism-restriction
   -Wno-implicit-prelude
+  -Wno-unused-packages
+  -Wno-prepositive-qualified-module
+  -Wno-missing-safe-haskell-mode
 
 dependencies:
-  - base >= 4.7 && < 5
+  - name: base-noprelude
+    version: ">= 4.7 && < 5"
 
 library:
   source-dirs: src
@@ -99,6 +103,7 @@ library:
     - morley
     - morley-ledgers
     - morley-metadata
+    - morley-prelude
     - named
     - template-haskell
     - universum
@@ -112,6 +117,7 @@ executables:
     - baseDAO
     - baseDAO-ligo-meta
     - morley
+    - morley-prelude
     - optparse-applicative
     - universum
 
@@ -137,6 +143,7 @@ tests:
     - lorentz
     - morley
     - morley-ledgers
+    - morley-prelude
     - named
     - o-clock
     - tasty

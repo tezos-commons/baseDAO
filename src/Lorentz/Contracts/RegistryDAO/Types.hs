@@ -62,7 +62,6 @@ instance IsoRegistryDaoProposalMetadata k v =>
     StoreHasSubmap (RegistryDaoContractExtra k v) "ceRegistry" k (RegistryEntry k v) where
   storeSubmapOps = storeSubmapOpsDeeper #ceRegistry
 
-
 data RegistryEntry k v = RegistryEntry
   { reValue :: Maybe v
    -- optional statistics on given proposal
@@ -100,6 +99,10 @@ instance IsoRegistryDaoProposalMetadata k v
 instance (HasAnnotation k, HasAnnotation v)
   => HasAnnotation (RegistryDaoProposalMetadata k v) where
     annOptions = DAO.baseDaoAnnOptions
+
+instance (IsoRegistryDaoProposalMetadata k v, HasAnnotation k, HasAnnotation v)
+  => ParameterHasEntrypoints (RegistryDaoProposalMetadata k v) where
+  type ParameterEntrypointsDerivation (RegistryDaoProposalMetadata k v) = EpdPlain
 
 instance (TypeHasDoc k, TypeHasDoc v)
   => TypeHasDoc (RegistryDaoProposalMetadata k v) where

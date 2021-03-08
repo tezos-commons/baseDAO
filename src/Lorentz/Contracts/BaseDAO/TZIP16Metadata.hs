@@ -191,7 +191,7 @@ tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
   }
 
 getTotalSupplyView :: forall store. DaoView store
-getTotalSupplyView MetadataSettings{ msConfig = MetadataConfig{..} } = View
+getTotalSupplyView MetadataSettings{ msConfig = MetadataConfig{} } = View
   { vName = "get_total_supply"
   , vDescription = Just
       "Return the total number of tokens for the given token-id if known or fail if not."

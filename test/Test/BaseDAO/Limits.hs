@@ -4,6 +4,9 @@
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
+-- TODO: Replace 'Empty' with 'Never' from morley
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 -- | Checks on that our contract fits into reasonable limits.
 module Test.BaseDAO.Limits
   ( test_Operation_size

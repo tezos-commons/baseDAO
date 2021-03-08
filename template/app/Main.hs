@@ -4,6 +4,9 @@
 {-# LANGUAGE RebindableSyntax #-}
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
+-- TODO: Replace 'Empty' with 'Never' from morley
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 -- | Template for DAO. Writing your own DAO can be starting from copying this
 -- module.
 --
