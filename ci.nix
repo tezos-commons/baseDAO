@@ -40,7 +40,7 @@ rec {
       {
         # common options for all local packages:
         packages = pkgs.lib.genAttrs local-packages-names (packageName: {
-          package.ghcOptions = with pkgs.lib; concatStringsSep " " (
+          ghcOptions = with pkgs.lib; (
             ["-O0" "-Werror"]
             # produce *.dump-hi files, required for weeder:
             ++ optionals (!release) ["-ddump-to-file" "-ddump-hi"]
