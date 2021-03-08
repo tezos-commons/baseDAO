@@ -217,6 +217,21 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
         | None -> new_ce
       in (([] : operation list), new_ce)
 
+// A custom entrypoint to fetch values from Registry
+let lookup_registry (params, full_store : bytes * full_storage) : operation list * storage =
+  let param : lookup_registry_param = match ((Bytes.unpack params) : lookup_registry_param option) with
+        | Some p -> p
+        | None -> (failwith "UNPACKING_FAILED" : lookup_registry_param) in
+  let view_contract : lookup_registry_view =
+      match (Tezos.get_contract_opt(param.callback) : lookup_registry_view option) with
+      | Some callback_contract -> callback_contract
+      | None -> (failwith "BAD_VIEW_CONTRACT": lookup_registry_view) in
+  let contract_extra = full_store.0.extra in
+  let registry : registry = require_unpacked_registry(require_extra_value("registry", contract_extra)) in
+  let value_at_key : registry_value option = Big_map.find_opt param.key registry in
+  let operation : operation = Tezos.transaction (param.key, value_at_key) 0mutez view_contract
+  in ((operation :: ([]: operation list)), full_store.0)
+
 let default_registry_DAO_full_storage (admin, token_address, frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, metadata_map
     : (address * address * nat * nat * nat * nat * nat * metadata_map)) : full_storage =
   let (store, config) = default_full_storage (admin, token_address, metadata_map) in
@@ -236,6 +251,7 @@ let default_registry_DAO_full_storage (admin, token_address, frozen_scale_value,
     proposal_check = registry_DAO_proposal_check;
     rejected_proposal_return_value = registry_DAO_rejected_proposal_return_value;
     decision_lambda = registry_DAO_decision_lambda;
+    custom_entrypoints = Map.literal [("receive_xtz", Bytes.pack (lookup_registry))];
     } in
   (new_storage, new_config)
 
