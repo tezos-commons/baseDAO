@@ -191,8 +191,6 @@ test_RegistryDAO =
 
     , nettestScenarioCaps "checks on-chain view correctly returns the registry value" $ do
         -- The default values assigned from initialStorageWithExplictRegistryDAOConfig function
-        let frozen_scale_value = 1
-        let frozen_extra_value = 0
         withOriginated 3
           (\(admin: wallet1: voter1:_) -> setExtra @Natural [mt|max_proposal_size|] 200 $
               initialStorageWithExplictRegistryDAOConfig admin [wallet1, voter1]) $

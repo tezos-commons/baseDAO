@@ -251,7 +251,7 @@ let default_registry_DAO_full_storage (admin, token_address, frozen_scale_value,
     proposal_check = registry_DAO_proposal_check;
     rejected_proposal_return_value = registry_DAO_rejected_proposal_return_value;
     decision_lambda = registry_DAO_decision_lambda;
-    custom_entrypoints = Map.literal [("receive_xtz", Bytes.pack (lookup_registry))];
+    custom_entrypoints = Map.literal [("lookup_registry", Bytes.pack (lookup_registry))];
     } in
   (new_storage, new_config)
 

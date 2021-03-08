@@ -6,7 +6,8 @@
 
 -- | A Registry DAO can be used to store key value pair @(k, v)@
 module Lorentz.Contracts.RegistryDAO
-  ( registryDaoContract
+  ( RegistryDAOCustomParam(..)
+  , registryDaoContract
   , knownRegistryDAOMetadata
   , config
   ) where
@@ -175,11 +176,44 @@ decisionLambda = do
     )
   nil
 
-config ::
+
+customEntrypointsHandler
+  :: forall k v s store.
   ( IsoRegistryDaoProposalMetadata k v
+  , NiceParameterFull (RegistryDAOCustomParam k v), NiceParameter (k, Maybe v)
+  , TypeHasDoc k, TypeHasDoc v
+  , DAO.StorageC store (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v)
+  ) => RegistryDAOCustomParam k v : store : s :-> List Operation : store : s
+customEntrypointsHandler = do
+  entryCase (Proxy @(RegistryDAOCustomParam k v))
+    ( #cLookupRegistry /->  do
+        view_ @(k, Maybe v)  $ do
+           dip $ do
+             stToField #sExtra
+             toField #ceRegistry
+             stackType @((BigMap k (RegistryEntry k v)) : _)
+           stackType @(k : (BigMap k (RegistryEntry k v)) : _)
+           dup
+           stackType @(k : k : (BigMap k (RegistryEntry k v)) : _)
+           dip $ do
+             get
+             stackType @(Maybe (RegistryEntry k v) : _)
+             ifSome (toField #reValue) none
+           stackType @(k : Maybe v : _)
+           pair
+        unpair
+    , #cNone /-> do
+        -- Needed due to cannot declare 1 sum type.
+        nil
+    )
+
+config :: forall k v.
+  ( IsoRegistryDaoProposalMetadata k v
+  , NiceParameterFull (RegistryDAOCustomParam k v), NiceParameter (k, Maybe v)
+  , TypeHasDoc k, TypeHasDoc v
   , NicePackedValue (RegistryDaoProposalMetadata k v)
   )
-  => DAO.Config (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v) Empty
+  => DAO.Config (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v) (RegistryDAOCustomParam k v)
 config = DAO.defaultConfig
   { DAO.cDaoName = "Registry DAO"
   , DAO.cDaoDescription = registryDaoDoc
@@ -195,6 +229,8 @@ config = DAO.defaultConfig
 
   , DAO.cMaxVotes = 1000
   , DAO.cMaxProposals = 500
+
+  , DAO.cCustomCall = customEntrypointsHandler @k @v
   }
 
 type RegistryDaoStorage k v = DAO.Storage (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v)
@@ -238,11 +274,11 @@ proposalReceiversListView = TZIP16.View
   }
 
 registryDaoContract ::
-  ( DAO.DaoC (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v) Empty
-
+  ( DAO.DaoC (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v) (RegistryDAOCustomParam k v)
+  , TypeHasDoc k, TypeHasDoc v
   -- shared
   , IsoRegistryDaoProposalMetadata k v
   ) => Contract
-      (DAO.Parameter (RegistryDaoProposalMetadata k v) Empty)
+      (DAO.Parameter (RegistryDaoProposalMetadata k v) (RegistryDAOCustomParam k v))
       (DAO.Storage (RegistryDaoContractExtra k v) (RegistryDaoProposalMetadata k v))
 registryDaoContract = DAO.baseDaoContract config
