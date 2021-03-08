@@ -141,20 +141,6 @@ rec {
     ver = "1.0.11";
     sha256 = "00vn1sjrsgagqhdzswh9jg0cgzdgwadnh02i2fcif9kr5h0khfw9";
   } { };
-  # gh in the nixpkgs is quite old and doesn't support release managing, so we're doing
-  # some ugly workarounds (because of https://github.com/NixOS/nixpkgs/issues/86349) to bump it
-  gh = (pkgs.callPackage "${pkgs.path}/pkgs/applications/version-management/git-and-tools/gh" {
-    buildGoModule = args: pkgs.buildGoModule (args // rec {
-      version = "1.2.0";
-      vendorSha256 = "0ybbwbw4vdsxdq4w75s1i0dqad844sfgs69b3vlscwfm6g3i9h51";
-      src = pkgs.fetchFromGitHub {
-        owner = "cli";
-        repo = "cli";
-        rev = "v${version}";
-        sha256 = "17hbgi1jh4p07r4p5mr7w7p01i6zzr28mn5i4jaki7p0jwfqbvvi";
-      };
-    });
-  });
 
   # morley in nixpkgs is very old
   morley = pkgs.haskellPackages.callHackageDirect {
