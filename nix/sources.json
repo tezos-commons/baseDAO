@@ -41,6 +41,13 @@
         "rev": "b6c3a9d4257bda78af46250a447ce78c5d2291a4",
         "type": "git"
     },
+    "morley": {
+        "sha256": "0g9mdqb7l85z8qa931lxmcqrzhscq6451plz1k18v738ylx4dxmj",
+        "type": "tarball",
+        "url": "https://gitlab.com/morley-framework/morley/-/archive/morley-1.13.0/morley-morley-1.13.0.tar.gz",
+        "url_template": "https://gitlab.com/morley-framework/morley/-/archive/morley-<version>/morley-morley-<version>.tar.gz",
+        "version": "1.13.0"
+    },
     "nixpkgs": {
         "branch": "master",
         "description": "Pinned Nixpkgs tree (master follows nixos-unstable-small, only tags have stable history)",
