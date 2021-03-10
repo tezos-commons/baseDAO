@@ -16,6 +16,7 @@ rec {
   weeder-hacks = import sources.haskell-nix-weeder { inherit pkgs; };
   tezos-client = (import "${sources.tezos-packaging}/nix/build/pkgs.nix" {}).ocamlPackages.tezos-client;
   ligo = (import "${sources.ligo}/nix" {}).ligo-bin;
+  morley = (import "${sources.morley}/ci.nix").packages.morley.exes.morley;
 
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
@@ -40,7 +41,7 @@ rec {
       {
         # common options for all local packages:
         packages = pkgs.lib.genAttrs local-packages-names (packageName: {
-          package.ghcOptions = with pkgs.lib; concatStringsSep " " (
+          ghcOptions = with pkgs.lib; (
             ["-O0" "-Werror"]
             # produce *.dump-hi files, required for weeder:
             ++ optionals (!release) ["-ddump-to-file" "-ddump-hi"]
@@ -134,43 +135,15 @@ rec {
     hs-pkgs = hs-pkgs-development;
     local-packages = local-packages;
   };
-  # nixpkgs has an older version of stack2cabal which doesn't build
-  # with new libraries, use a newer version
-  stack2cabal = pkgs.haskellPackages.callHackageDirect {
-    pkg = "stack2cabal";
-    ver = "1.0.11";
-    sha256 = "00vn1sjrsgagqhdzswh9jg0cgzdgwadnh02i2fcif9kr5h0khfw9";
-  } { };
-  # gh in the nixpkgs is quite old and doesn't support release managing, so we're doing
-  # some ugly workarounds (because of https://github.com/NixOS/nixpkgs/issues/86349) to bump it
-  gh = (pkgs.callPackage "${pkgs.path}/pkgs/applications/version-management/git-and-tools/gh" {
-    buildGoModule = args: pkgs.buildGoModule (args // rec {
-      version = "1.2.0";
-      vendorSha256 = "0ybbwbw4vdsxdq4w75s1i0dqad844sfgs69b3vlscwfm6g3i9h51";
-      src = pkgs.fetchFromGitHub {
-        owner = "cli";
-        repo = "cli";
-        rev = "v${version}";
-        sha256 = "17hbgi1jh4p07r4p5mr7w7p01i6zzr28mn5i4jaki7p0jwfqbvvi";
-      };
-    });
-  });
 
-  # morley in nixpkgs is very old
-  morley = pkgs.haskellPackages.callHackageDirect {
-    pkg = "morley";
-    ver = "1.11.1";
-    sha256 = "0c9fg4f5dmji5wypa8qsq0bhj1p55l1f6nxdn0sdc721p5rchx28";
-  } {
-    uncaught-exception = pkgs.haskellPackages.callHackageDirect {
-      pkg = "uncaught-exception";
-      ver = "0.1.0";
-      sha256 = "0fqrhyf2jn3ayp3aiirw6mms37w3nwk4h3i7l4hqw481ps0ml16d";
-    } {};
-    cryptonite = pkgs.haskell.lib.doJailbreak (pkgs.haskellPackages.callHackageDirect {
-      pkg = "cryptonite";
-      ver = "0.27";
-      sha256 = "0y8mazalbkbvw60757av1s6q5b8rpyks4lzf5c6dhp92bb0rj5y7";
-    } {});
-  };
+  # stack2cabal in nixpkgs is broken because fixes for ghc 8.10 have not
+  # been released to hackage yet, take sources from github
+  stack2cabal = pkgs.haskellPackages.stack2cabal.overrideAttrs (o: {
+    src = pkgs.fetchFromGitHub {
+      owner = "hasufell";
+      repo = "stack2cabal";
+      rev = "afa113beb77569ff21f03fade6ce39edc109598d";
+      sha256 = "1zwg1xkqxn5b9mmqafg87rmgln47zsmpgdkly165xdzg38smhmng";
+    };
+  });
 }
