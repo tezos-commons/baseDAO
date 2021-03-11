@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [ff854bb](https://github.com/tqtezos/baseDAO/tree/ff854bb5c5d32b9641445611ad5e8342806949bd) *(Thu Mar 11 18:50:12 2021 +0300)*
+**Code revision:** [1d5ca03](https://github.com/tqtezos/baseDAO/tree/1d5ca0323b0ee39bad5d7e3d09083f1b1f06b7d5) *(Thu Mar 11 19:35:50 2021 +0300)*
 
 
 
@@ -1813,9 +1813,7 @@ We distinquish several error classes:
 
 **Fires if:** Value passed to the entrypoint is not valid
 
-**Representation:** `(BAD_ENTRYPOINT_PARAMETER, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `BAD_ENTRYPOINT_PARAMETER`
 
 <a name="errors-FA2_INSUFFICIENT_BALANCE"></a>
 
@@ -1869,9 +1867,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to execute decision lambda but result in errors.
 
-**Representation:** `(FAIL_DECISION_LAMBDA, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `FAIL_DECISION_LAMBDA`
 
 <a name="errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED"></a>
 
@@ -1883,9 +1879,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** An error occurred when trying to drop a proposal due to the proposal is not an accepted proposal
 
-**Representation:** `(FAIL_DROP_PROPOSAL_NOT_ACCEPTED, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `FAIL_DROP_PROPOSAL_NOT_ACCEPTED`
 
 <a name="errors-FAIL_DROP_PROPOSAL_NOT_OVER"></a>
 
@@ -1897,9 +1891,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** An error occurred when trying to drop a proposal due to the proposal's voting period is not over
 
-**Representation:** `(FAIL_DROP_PROPOSAL_NOT_OVER, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `FAIL_DROP_PROPOSAL_NOT_OVER`
 
 <a name="errors-FAIL_PROPOSAL_CHECK"></a>
 
@@ -1911,9 +1903,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to propose a proposal that does not pass `proposalCheck`
 
-**Representation:** `(FAIL_PROPOSAL_CHECK, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `FAIL_PROPOSAL_CHECK`
 
 <a name="errors-FAIL_TRANSFER_CONTRACT_TOKENS"></a>
 
@@ -1925,9 +1915,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract.
 
-**Representation:** `(FAIL_TRANSFER_CONTRACT_TOKENS, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `FAIL_TRANSFER_CONTRACT_TOKENS`
 
 <a name="errors-FROZEN_TOKEN_NOT_TRANSFERABLE"></a>
 
@@ -1939,9 +1927,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** The sender tries to transfer frozen token
 
-**Representation:** `(FROZEN_TOKEN_NOT_TRANSFERABLE, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `FROZEN_TOKEN_NOT_TRANSFERABLE`
 
 <a name="errors-InternalError"></a>
 
@@ -1965,9 +1951,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to propose a proposal when proposals max amount is already reached
 
-**Representation:** `(MAX_PROPOSALS_REACHED, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `MAX_PROPOSALS_REACHED`
 
 <a name="errors-MAX_VOTES_REACHED"></a>
 
@@ -1979,9 +1963,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to vote on a proposal when the votes max amount of that proposal is already reached
 
-**Representation:** `(MAX_VOTES_REACHED, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `MAX_VOTES_REACHED`
 
 <a name="errors-MIGRATED"></a>
 
@@ -2035,9 +2017,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Received an operation that require administrative privileges from an address that is not the current administrator
 
-**Representation:** `(NOT_ADMIN, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `NOT_ADMIN`
 
 <a name="errors-NOT_MIGRATING"></a>
 
@@ -2049,9 +2029,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Recieved a confirm_migration call on a contract that is not in migration
 
-**Representation:** `(NOT_MIGRATING, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `NOT_MIGRATING`
 
 <a name="errors-NOT_MIGRATION_TARGET"></a>
 
@@ -2063,9 +2041,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Recieved a confirm_migration call on a contract from an address other than the new version
 
-**Representation:** `(NOT_MIGRATION_TARGET, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `NOT_MIGRATION_TARGET`
 
 <a name="errors-NOT_OWNER"></a>
 
@@ -2077,9 +2053,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** The sender of transaction is not owner
 
-**Representation:** `(NOT_OWNER, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `NOT_OWNER`
 
 <a name="errors-NOT_PENDING_ADMIN"></a>
 
@@ -2091,9 +2065,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Received an `accept_ownership` from an address other than what is in the pending owner field
 
-**Representation:** `(NOT_PENDING_ADMIN, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `NOT_PENDING_ADMIN`
 
 <a name="errors-OUT_OF_BOUND_QUORUM_THRESHOLD"></a>
 
@@ -2105,9 +2077,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to set quorum threshold that is out of bound
 
-**Representation:** `(OUT_OF_BOUND_QUORUM_THRESHOLD, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `OUT_OF_BOUND_QUORUM_THRESHOLD`
 
 <a name="errors-OUT_OF_BOUND_VOTING_PERIOD"></a>
 
@@ -2119,9 +2089,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to set voting period that is out of bound.
 
-**Representation:** `(OUT_OF_BOUND_VOTING_PERIOD, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `OUT_OF_BOUND_VOTING_PERIOD`
 
 <a name="errors-PROPOSAL_INSUFFICIENT_BALANCE"></a>
 
@@ -2133,9 +2101,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to propose a proposal without having enough unfrozen token
 
-**Representation:** `(PROPOSAL_INSUFFICIENT_BALANCE, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `PROPOSAL_INSUFFICIENT_BALANCE`
 
 <a name="errors-PROPOSAL_NOT_EXIST"></a>
 
@@ -2147,9 +2113,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to vote on a proposal that does not exist
 
-**Representation:** `(PROPOSAL_NOT_EXIST, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `PROPOSAL_NOT_EXIST`
 
 <a name="errors-PROPOSAL_NOT_UNIQUE"></a>
 
@@ -2161,9 +2125,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to propose a proposal that is already existed in the Storage.
 
-**Representation:** `(PROPOSAL_NOT_UNIQUE, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `PROPOSAL_NOT_UNIQUE`
 
 <a name="errors-PROPOSER_NOT_EXIST_IN_LEDGER"></a>
 
@@ -2175,9 +2137,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
 
-**Representation:** `(PROPOSER_NOT_EXIST_IN_LEDGER, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `PROPOSER_NOT_EXIST_IN_LEDGER`
 
 <a name="errors-VOTING_INSUFFICIENT_BALANCE"></a>
 
@@ -2189,9 +2149,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to vote on a proposal without having enough unfrozen token
 
-**Representation:** `(VOTING_INSUFFICIENT_BALANCE, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `VOTING_INSUFFICIENT_BALANCE`
 
 <a name="errors-VOTING_PERIOD_OVER"></a>
 
@@ -2203,9 +2161,7 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 
 **Fires if:** Trying to vote on a proposal that is already ended
 
-**Representation:** `(VOTING_PERIOD_OVER, <error argument>)`
-
-Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
+**Representation:** `VOTING_PERIOD_OVER`
 
 <a name="section-Referenced-hash-algorithms"></a>
 
