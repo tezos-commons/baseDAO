@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [89f7e01](https://github.com/tqtezos/baseDAO/tree/89f7e01f2f345b0df8c22d7fa8b6d4c5c829c77e) *(Wed Mar 10 12:13:01 2021 +0300)*
+**Code revision:** [ff854bb](https://github.com/tqtezos/baseDAO/tree/ff854bb5c5d32b9641445611ad5e8342806949bd) *(Thu Mar 11 18:50:12 2021 +0300)*
 
 
 
@@ -222,7 +222,7 @@ only if the given address has enough tokens to burn.
 
 **Argument:** 
   + **In Haskell:** [`BurnParam`](#types-BurnParam)
-  + **In Michelson:** `(pair (address %from_) (pair (nat %token_id) (nat %amount)))`
+  + **In Michelson:** `(pair address (pair nat nat))`
     + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0)`</span>
 
 <details>
@@ -261,7 +261,7 @@ Entrypoint to be called if you want to use one of FA2 entrypoints.
 
 **Argument:** 
   + **In Haskell:** [`Parameter`](#types-Parameter)
-  + **In Michelson:** `(or (or (pair (list %requests (pair (address %owner) (nat %token_id))) (contract %callback (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance))))) (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount))))))) (list (or (pair %add_operator (address %owner) (pair (address %operator) (nat %token_id))) (pair %remove_operator (address %owner) (pair (address %operator) (nat %token_id))))))`
+  + **In Michelson:** `(or (or (pair (list (pair address nat)) (contract (list (pair (pair address nat) nat)))) (list (pair address (list (pair address (pair nat nat)))))) (list (or (pair address (pair address nat)) (pair address (pair address nat)))))`
     + **Example:** <span id="example-id">`Left (Left (Pair { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" 0 } "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"))`</span>
 
 <details>
@@ -290,7 +290,7 @@ The entrypoint supports both frozen and unfrozen tokens.
 
 **Argument:** 
   + **In Haskell:** [`View`](#types-View) ([`List`](#types-List) [`BalanceRequestItem`](#types-BalanceRequestItem)) ([`List`](#types-List) [`BalanceResponseItem`](#types-BalanceResponseItem))
-  + **In Michelson:** `(pair (list %requests (pair (address %owner) (nat %token_id))) (contract %callback (list (pair (pair %request (address %owner) (nat %token_id)) (nat %balance)))))`
+  + **In Michelson:** `(pair (list (pair address nat)) (contract (list (pair (pair address nat) nat))))`
     + **Example:** <span id="example-id">`Pair { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" 0 } "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
 <details>
@@ -327,7 +327,7 @@ It is also prohibited to send frozen tokens in this case.
 
 **Argument:** 
   + **In Haskell:** [`List`](#types-List) [`TransferItem`](#types-TransferItem)
-  + **In Michelson:** `(list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount))))))`
+  + **In Michelson:** `(list (pair address (list (pair address (pair nat nat)))))`
     + **Example:** <span id="example-id">`{ Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0) } }`</span>
 
 <details>
@@ -374,7 +374,7 @@ Each owner must be equal to sender, or the entrypoint fails.
 
 **Argument:** 
   + **In Haskell:** [`List`](#types-List) [`UpdateOperator`](#types-UpdateOperator)
-  + **In Michelson:** `(list (or (pair %add_operator (address %owner) (pair (address %operator) (nat %token_id))) (pair %remove_operator (address %owner) (pair (address %operator) (nat %token_id)))))`
+  + **In Michelson:** `(list (or (pair address (pair address nat)) (pair address (pair address nat))))`
     + **Example:** <span id="example-id">`{ Left (Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" 0)) }`</span>
 
 <details>
@@ -622,7 +622,7 @@ with each successful call of an entrypoint.
 
 **Argument:** 
   + **In Haskell:** [`View`](#types-View) [`()`](#types-lparenrparen) [`Nonce`](#types-Nonce)
-  + **In Michelson:** `(pair (unit %viewParam) (contract %viewCallbackTo nat))`
+  + **In Michelson:** `(pair unit (contract nat))`
     + **Example:** <span id="example-id">`Pair Unit "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
 <details>
@@ -649,7 +649,7 @@ The contract is not considered migrated, until it receives confirm_migration cal
 
 **Argument:** 
   + **In Haskell:** ***newAddress*** : [`Address`](#types-Address)
-  + **In Michelson:** `(address :newAddress)`
+  + **In Michelson:** `address`
     + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
 <details>
@@ -682,7 +682,7 @@ Provides the amount of tokens of the given address.
 
 **Argument:** 
   + **In Haskell:** [`MintParam`](#types-MintParam)
-  + **In Michelson:** `(pair (address %to_) (pair (nat %token_id) (nat %amount)))`
+  + **In Michelson:** `(pair address (pair nat nat))`
     + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0)`</span>
 
 <details>
@@ -720,7 +720,7 @@ is decreased by the same value.
 
 **Argument:** 
   + **In Haskell:** [`ProposeParams`](#types-ProposeParams) [`GameDaoProposalMetadata`](#types-GameDaoProposalMetadata)
-  + **In Michelson:** `(pair (nat %frozen_token) (pair %proposal_metadata (or %proposal_type (pair %balance_type (list %item_changes (pair (string %item_name) (list %changelogs string))) (list %hero_changes (pair (string %hero_name) (list %changelogs string)))) (list %new_type (pair (string %content_name) (list %content_description string)))) (pair (string %proposal_description) (address %consumer_addr))))`
+  + **In Michelson:** `(pair nat (pair (or (pair (list (pair string (list string))) (list (pair string (list string)))) (list (pair string (list string)))) (pair string address)))`
     + **Example:** <span id="example-id">`Pair 0 (Pair (Left (Pair { Pair "hello" { "hello" } } { Pair "hello" { "hello" } })) (Pair "hello" "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"))`</span>
 
 <details>
@@ -835,7 +835,7 @@ Unlike the others, this entrypoint can be used after contract is migrated.
 
 **Argument:** 
   + **In Haskell:** [`TransferContractTokensParam`](#types-TransferContractTokensParam)
-  + **In Michelson:** `(pair (address %contract_address) (list %params (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))`
+  + **In Michelson:** `(pair address (list (pair address (list (pair address (pair nat nat))))))`
     + **Example:** <span id="example-id">`Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" { Pair "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB" (Pair 0 0) } }`</span>
 
 <details>
@@ -869,7 +869,7 @@ requested address accepts ownership. If called multiple times, only the last cal
 
 **Argument:** 
   + **In Haskell:** ***newOwner*** : [`Address`](#types-Address)
-  + **In Michelson:** `(address :newOwner)`
+  + **In Michelson:** `address`
     + **Example:** <span id="example-id">`"KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
 <details>
@@ -904,7 +904,7 @@ The sender must have an amount required for all votings.
 
 **Argument:** 
   + **In Haskell:** [`List`](#types-List) ([`PermitProtected`](#types-PermitProtected) ([`VoteParam`](#types-VoteParam) [`GameDaoProposalMetadata`](#types-GameDaoProposalMetadata)))
-  + **In Michelson:** `(list (pair :permit_protected (pair (bytes %proposal_key) (pair (bool %vote_type) (nat %vote_amount))) (option %permit (pair (key %key) (signature %signature)))))`
+  + **In Michelson:** `(list (pair (pair bytes (pair bool nat)) (option (pair key signature))))`
     + **Example:** <span id="example-id">`{ Pair (Pair 0x0a (Pair True 0)) (Some (Pair "edpkuwTWKgQNnhR5v17H2DYHbfcxYepARyrPGbf1tbMoGQAj8Ljr3V" "edsigtrs8bK7vNfiR4Kd9dWasVa1bAWaQSu2ipnmLGZuwQa8ktCEMYVKqbWsbJ7zTS8dgYT9tiSUKorWCPFHosL5zPsiDwBQ6vb")) }`</span>
 
 <details>
@@ -949,7 +949,7 @@ Return the total number of tokens for the given token-id if known or fail if not
 
 **Argument:** 
   + **In Haskell:** [`View`](#types-View) [`TokenId`](#types-TokenId) [`Natural`](#types-Natural)
-  + **In Michelson:** `(pair (nat %viewParam) (contract %viewCallbackTo nat))`
+  + **In Michelson:** `(pair nat (contract nat))`
     + **Example:** <span id="example-id">`Pair 0 "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
 
 <details>
@@ -1774,9 +1774,8 @@ properties are checked unless the opposite is specified. I.e., if for a
 given entrypoint call two different errors may take place, the one which
 appears in the list first will be thrown.
 
-Most of the errors are represented according to the same
-`(error tag, error argument)` pattern. See the list of errors below
-for details.
+The errors are represented either as a string `error tag` or a pair `(error tag, error argument)`.
+See the list of errors below for details.
 
 We distinquish several error classes:
 + **Action exception**: given action cannot be performed with
@@ -1814,7 +1813,9 @@ We distinquish several error classes:
 
 **Fires if:** Value passed to the entrypoint is not valid
 
-**Representation:** `("BAD_ENTRYPOINT_PARAMETER", ())`.
+**Representation:** `(BAD_ENTRYPOINT_PARAMETER, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-FA2_INSUFFICIENT_BALANCE"></a>
 
@@ -1826,9 +1827,9 @@ We distinquish several error classes:
 
 **Fires if:** The source of a transfer did not contain sufficient tokens
 
-**Representation:** `("FA2_INSUFFICIENT_BALANCE", <error argument>)`.
+**Representation:** `(FA2_INSUFFICIENT_BALANCE, <error argument>)`
 
-Provided error argument will be of type (***required*** : [`Natural`](#types-Natural), ***present*** : [`Natural`](#types-Natural)).
+Provided error argument will be of type ([`Text`](#types-Text), (***required*** : [`Natural`](#types-Natural), ***present*** : [`Natural`](#types-Natural))).
 
 <a name="errors-FA2_NOT_OPERATOR"></a>
 
@@ -1840,7 +1841,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** The sender of transfer is not the owner or the authorized operator
 
-**Representation:** `("FA2_NOT_OPERATOR", ())`.
+**Representation:** `(FA2_NOT_OPERATOR, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-FA2_TOKEN_UNDEFINED"></a>
 
@@ -1852,7 +1855,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** Contract received an unsupported token id
 
-**Representation:** `("FA2_TOKEN_UNDEFINED", ())`.
+**Representation:** `(FA2_TOKEN_UNDEFINED, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-FAIL_DECISION_LAMBDA"></a>
 
@@ -1864,7 +1869,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** Trying to execute decision lambda but result in errors.
 
-**Representation:** `("FAIL_DECISION_LAMBDA", ())`.
+**Representation:** `(FAIL_DECISION_LAMBDA, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-FAIL_DROP_PROPOSAL_NOT_ACCEPTED"></a>
 
@@ -1876,7 +1883,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** An error occurred when trying to drop a proposal due to the proposal is not an accepted proposal
 
-**Representation:** `("FAIL_DROP_PROPOSAL_NOT_ACCEPTED", ())`.
+**Representation:** `(FAIL_DROP_PROPOSAL_NOT_ACCEPTED, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-FAIL_DROP_PROPOSAL_NOT_OVER"></a>
 
@@ -1888,7 +1897,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** An error occurred when trying to drop a proposal due to the proposal's voting period is not over
 
-**Representation:** `("FAIL_DROP_PROPOSAL_NOT_OVER", ())`.
+**Representation:** `(FAIL_DROP_PROPOSAL_NOT_OVER, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-FAIL_PROPOSAL_CHECK"></a>
 
@@ -1900,7 +1911,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** Trying to propose a proposal that does not pass `proposalCheck`
 
-**Representation:** `("FAIL_PROPOSAL_CHECK", ())`.
+**Representation:** `(FAIL_PROPOSAL_CHECK, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-FAIL_TRANSFER_CONTRACT_TOKENS"></a>
 
@@ -1912,7 +1925,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** Trying to cross-transfer BaseDAO tokens to another contract that does not exist or is not a valid FA2 contract.
 
-**Representation:** `("FAIL_TRANSFER_CONTRACT_TOKENS", ())`.
+**Representation:** `(FAIL_TRANSFER_CONTRACT_TOKENS, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-FROZEN_TOKEN_NOT_TRANSFERABLE"></a>
 
@@ -1924,7 +1939,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** The sender tries to transfer frozen token
 
-**Representation:** `("FROZEN_TOKEN_NOT_TRANSFERABLE", ())`.
+**Representation:** `(FROZEN_TOKEN_NOT_TRANSFERABLE, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-InternalError"></a>
 
@@ -1934,7 +1951,7 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Class:** Internal
 
-**Fires if:** Some internal error occured.
+**Fires if:** Some internal error occurred.
 
 **Representation:** Textual error message, see [`Text`](#types-Text).
 
@@ -1948,7 +1965,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** Trying to propose a proposal when proposals max amount is already reached
 
-**Representation:** `("MAX_PROPOSALS_REACHED", ())`.
+**Representation:** `(MAX_PROPOSALS_REACHED, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-MAX_VOTES_REACHED"></a>
 
@@ -1960,7 +1979,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** Trying to vote on a proposal when the votes max amount of that proposal is already reached
 
-**Representation:** `("MAX_VOTES_REACHED", ())`.
+**Representation:** `(MAX_VOTES_REACHED, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-MIGRATED"></a>
 
@@ -1972,9 +1993,9 @@ Provided error argument will be of type (***required*** : [`Natural`](#types-Nat
 
 **Fires if:** Recieved a call on a migrated contract
 
-**Representation:** `("MIGRATED", <error argument>)`.
+**Representation:** `(MIGRATED, <error argument>)`
 
-Provided error argument will be of type [`Address`](#types-Address).
+Provided error argument will be of type ([`Text`](#types-Text), [`Address`](#types-Address)).
 
 <a name="errors-MISSIGNED"></a>
 
@@ -1986,9 +2007,9 @@ Provided error argument will be of type [`Address`](#types-Address).
 
 **Fires if:** Invalid signature provided.
 
-**Representation:** `("MISSIGNED", <error argument>)`.
+**Representation:** `(MISSIGNED, <error argument>)`
 
-Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`](#types-DataToSign) [`SomeType`](#types-SomeType)).
+Provided error argument will be of type ([`Text`](#types-Text), [`Packed`](#types-Packed) ([`DataToSign`](#types-DataToSign) [`SomeType`](#types-SomeType))).
 
 <a name="errors-NEGATIVE_TOTAL_SUPPLY"></a>
 
@@ -2000,7 +2021,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** An error occured when trying to burn an amount of token more than its current total supply
 
-**Representation:** `("NEGATIVE_TOTAL_SUPPLY", ())`.
+**Representation:** `(NEGATIVE_TOTAL_SUPPLY, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-NOT_ADMIN"></a>
 
@@ -2012,7 +2035,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Received an operation that require administrative privileges from an address that is not the current administrator
 
-**Representation:** `("NOT_ADMIN", ())`.
+**Representation:** `(NOT_ADMIN, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-NOT_MIGRATING"></a>
 
@@ -2024,7 +2049,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Recieved a confirm_migration call on a contract that is not in migration
 
-**Representation:** `("NOT_MIGRATING", ())`.
+**Representation:** `(NOT_MIGRATING, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-NOT_MIGRATION_TARGET"></a>
 
@@ -2036,7 +2063,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Recieved a confirm_migration call on a contract from an address other than the new version
 
-**Representation:** `("NOT_MIGRATION_TARGET", ())`.
+**Representation:** `(NOT_MIGRATION_TARGET, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-NOT_OWNER"></a>
 
@@ -2048,7 +2077,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** The sender of transaction is not owner
 
-**Representation:** `("NOT_OWNER", ())`.
+**Representation:** `(NOT_OWNER, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-NOT_PENDING_ADMIN"></a>
 
@@ -2060,7 +2091,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Received an `accept_ownership` from an address other than what is in the pending owner field
 
-**Representation:** `("NOT_PENDING_ADMIN", ())`.
+**Representation:** `(NOT_PENDING_ADMIN, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-OUT_OF_BOUND_QUORUM_THRESHOLD"></a>
 
@@ -2072,7 +2105,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Trying to set quorum threshold that is out of bound
 
-**Representation:** `("OUT_OF_BOUND_QUORUM_THRESHOLD", ())`.
+**Representation:** `(OUT_OF_BOUND_QUORUM_THRESHOLD, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-OUT_OF_BOUND_VOTING_PERIOD"></a>
 
@@ -2084,7 +2119,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Trying to set voting period that is out of bound.
 
-**Representation:** `("OUT_OF_BOUND_VOTING_PERIOD", ())`.
+**Representation:** `(OUT_OF_BOUND_VOTING_PERIOD, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-PROPOSAL_INSUFFICIENT_BALANCE"></a>
 
@@ -2096,7 +2133,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Trying to propose a proposal without having enough unfrozen token
 
-**Representation:** `("PROPOSAL_INSUFFICIENT_BALANCE", ())`.
+**Representation:** `(PROPOSAL_INSUFFICIENT_BALANCE, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-PROPOSAL_NOT_EXIST"></a>
 
@@ -2108,7 +2147,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Trying to vote on a proposal that does not exist
 
-**Representation:** `("PROPOSAL_NOT_EXIST", ())`.
+**Representation:** `(PROPOSAL_NOT_EXIST, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-PROPOSAL_NOT_UNIQUE"></a>
 
@@ -2120,7 +2161,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Trying to propose a proposal that is already existed in the Storage.
 
-**Representation:** `("PROPOSAL_NOT_UNIQUE", ())`.
+**Representation:** `(PROPOSAL_NOT_UNIQUE, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-PROPOSER_NOT_EXIST_IN_LEDGER"></a>
 
@@ -2132,7 +2175,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Expect a proposer address to exist in Ledger but it is not found (Impossible Case)
 
-**Representation:** `("PROPOSER_NOT_EXIST_IN_LEDGER", ())`.
+**Representation:** `(PROPOSER_NOT_EXIST_IN_LEDGER, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-VOTING_INSUFFICIENT_BALANCE"></a>
 
@@ -2144,7 +2189,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Trying to vote on a proposal without having enough unfrozen token
 
-**Representation:** `("VOTING_INSUFFICIENT_BALANCE", ())`.
+**Representation:** `(VOTING_INSUFFICIENT_BALANCE, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="errors-VOTING_PERIOD_OVER"></a>
 
@@ -2156,7 +2203,9 @@ Provided error argument will be of type [`Packed`](#types-Packed) ([`DataToSign`
 
 **Fires if:** Trying to vote on a proposal that is already ended
 
-**Representation:** `("VOTING_PERIOD_OVER", ())`.
+**Representation:** `(VOTING_PERIOD_OVER, <error argument>)`
+
+Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lparenrparen)).
 
 <a name="section-Referenced-hash-algorithms"></a>
 
