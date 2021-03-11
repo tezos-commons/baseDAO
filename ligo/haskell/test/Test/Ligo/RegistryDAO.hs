@@ -243,4 +243,4 @@ test_RegistryDAO =
 expectFailProposalCheck
   :: (MonadNettest caps base m)
   => m a -> m ()
-expectFailProposalCheck = expectCustomError_ #fAIL_PROPOSAL_CHECK
+expectFailProposalCheck = expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK

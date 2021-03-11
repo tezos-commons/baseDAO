@@ -80,8 +80,7 @@ let transfer_item (store, ti : storage * transfer_item): storage =
         else if tx.token_id = frozen_token_id then (
           if sender = store.admin then tx.token_id
           else
-            ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
-              ("FROZEN_TOKEN_NOT_TRANSFERABLE", ()) : token_id)
+            (failwith("FROZEN_TOKEN_NOT_TRANSFERABLE") : token_id)
         ) else
             ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
               ("FA2_TOKEN_UNDEFINED", ()) : token_id)
@@ -134,11 +133,9 @@ let validate_operator_token (token_id : token_id): token_id =
   if (token_id = unfrozen_token_id) then
     token_id
   else if (token_id = frozen_token_id) then
-    ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
-      ("OPERATION_PROHIBITED", ()) : token_id)
+    (failwith("OPERATION_PROHIBITED") : token_id)
   else
-    ([%Michelson ({| { FAILWITH } |} : string * unit -> token_id)]
-      ("FA2_TOKEN_UNDEFINED", ()) : token_id)
+    (failwith("FA2_TOKEN_UNDEFINED") : token_id)
 
 let update_one (store, param: storage * update_operator): storage =
   let (operator_update, operator_param) =
@@ -154,8 +151,7 @@ let update_one (store, param: storage * update_operator): storage =
           operators = updated_operators
         }
   else
-    ([%Michelson ({| { FAILWITH } |} : string * unit -> storage)]
-      ("NOT_OWNER", ()) : storage)
+    (failwith("NOT_OWNER") : storage)
 
 let update_operators (params, store : update_operators_param * storage):return =
   let store = List.fold update_one params store in

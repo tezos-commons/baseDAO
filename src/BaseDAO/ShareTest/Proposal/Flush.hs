@@ -94,7 +94,7 @@ flushAcceptedProposals _ originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomError_ #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (frozenTokenId) dao owner1 0
   checkTokenBalance (unfrozenTokenId) dao owner1 100 -- proposer
@@ -153,13 +153,13 @@ flushAcceptedProposalsWithAnAmount _ originateFn = do
   -- Proposals are flushed
   withSender (AddressResolved owner2) $ do
     call dao (Call @"Vote") [vote key1]
-      & expectCustomError_ #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
     call dao (Call @"Vote") [vote key2]
-      & expectCustomError_ #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
 
     -- Proposal is over but not affected
     call dao (Call @"Vote") [vote key3]
-      & expectCustomError_ #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
 
     -- Proposal is not yet over
     call dao (Call @"Vote") [vote key4]
@@ -205,7 +205,7 @@ flushRejectProposalQuorum _ originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomError_ #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (frozenTokenId) dao owner1 0
   checkTokenBalance (unfrozenTokenId) dao owner1 95 -- proposer: cRejectedValue reduce frozen token by half
@@ -257,7 +257,7 @@ flushRejectProposalNegativeVotes _ originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomError_ #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (frozenTokenId) dao owner1 0
   checkTokenBalance (unfrozenTokenId) dao owner1 95 -- proposer: cRejectedValue reduce frozen token by half
@@ -293,7 +293,7 @@ flushWithBadConfig _ originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomError_ #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
   checkTokenBalance (frozenTokenId) dao owner1 0
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- slash all frozen values
@@ -368,9 +368,9 @@ dropProposal _ originateFn = do
   withSender (AddressResolved admin) $ do
     call dao (Call @"Drop_proposal") key1
     call dao (Call @"Drop_proposal") key2
-      & expectCustomError_ #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
+      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
     call dao (Call @"Drop_proposal") key3
-      & expectCustomError_ #fAIL_DROP_PROPOSAL_NOT_OVER
+      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_OVER
 
   -- 30 tokens are frozen in total, but 10 tokens are returned after drop_proposal
   checkTokenBalance (frozenTokenId) dao owner1 20

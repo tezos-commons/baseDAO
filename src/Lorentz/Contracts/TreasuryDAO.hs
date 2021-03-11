@@ -140,7 +140,7 @@ decisionLambda = do
   if Holds then do
     -- drop; nil
     -- TODO: [#87] Improve handling of failed proposals
-    failCustom_ #fAIL_DECISION_LAMBDA
+    failCustomNoArg #fAIL_DECISION_LAMBDA
   else
     nop
 
