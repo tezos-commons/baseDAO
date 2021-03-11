@@ -3,6 +3,9 @@
 
 {-# LANGUAGE NumericUnderscores #-}
 
+-- TODO: Replace 'Empty' with 'Never' from morley
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 module Test.Common
   ( checkTokenBalance
   , originateTrivialDao

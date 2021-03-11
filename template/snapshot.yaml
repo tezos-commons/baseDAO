@@ -3,35 +3,45 @@
 
 name: dao-snapshot
 
-resolver: lts-16.5
+resolver: lts-17.3
 
 packages:
-  - morley-1.12.0
-  - lorentz-0.9.1
-  - indigo-0.5.0
-  - base58-bytestring-0.1.0
-  - hex-text-0.1.0.0
-  - show-type-0.1.1
-  - named-0.3.0.1@sha256:69b9722301201f8ed8abc89c4595e22c746e944bf4cdfafa8b21b14d336b26d1,2233
-  - vinyl-0.12.1@sha256:43456d4b3009646eee63953cbe539f1f4d0caf8bc3c25e841117e712836508f3,3790
-  - cryptonite-0.27
-  - morley-prelude-0.3.0@sha256:9e9473ac14cfa206adf0a3700764c0251de05042f1fe45daf9cb8556079ae663,2085
-  - tasty-hunit-compat-0.2@sha256:71e077ae5c514fadd4586efc19315f10fa5f3c94770820f68f63768441d665f7,1199
-  - uncaught-exception-0.1.0
   - git:
-      https://gitlab.com/morley-framework/morley.git # CI can't use SSH
+      https://gitlab.com/morley-framework/indigo.git
     commit:
-      56d74ababeda9aba8e194783fc5e395fa7a6b69a # morley-1.12.0
+      a7c93b410683ec6d86dfcda157f6d7ab9eeda778 # master
     subdirs:
+      - .
+  - morley-prelude-0.3.0
+  - hex-text-0.1.0.0
+  - named-0.3.0.1
+  - show-type-0.1.1
+  - summoner-2.0.1.1
+  - git: https://github.com/serokell/base-noprelude.git
+    commit: 87df0899801dcdffd08ef7c3efd3c63e67e623c2
+  - git: https://github.com/serokell/galois-field.git
+    commit: 576ba98ec947370835a1f308895037c7aa7f8b71
+  - git: https://github.com/serokell/elliptic-curve.git
+    commit: b8a3d0cf8f7bacfed77dc3b697f5d08bd33396a8
+  - git: https://github.com/serokell/pairing.git
+    commit: cf86cf1f6b03f478a439703b050c520a9d455353
+  - git:
+      https://gitlab.com/morley-framework/morley.git
+    # ^ CI cannot use ssh, so we use http clone here
+    commit:
+      5592a1451b9080da208f8bd10460bd3bb6f5c5d7 # master
+    subdirs:
+      - code/morley
+      - code/lorentz
       - code/cleveland
       - code/morley-client
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: f4e3fffca1d877e404b38c54d8e1b411641c3548 # master
+    commit: c92008db75363a50adf469c44a39e17843c311ec # master
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 34342cf86e51190b541a68f795899a4328a3db01 # master
+    commit: b66b0e6bb96e1f15388594f7ec724d45b68769c5 # master
     subdirs:
       - code/morley-metadata

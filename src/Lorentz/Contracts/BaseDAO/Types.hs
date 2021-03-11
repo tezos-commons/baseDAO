@@ -581,6 +581,7 @@ instance HasAnnotation a => HasAnnotation (PermitProtected a) where
       (ann @TypeTag "permit_protected")
       (noAnn @FieldTag)
       (ann @FieldTag "permit")
+      noAnn noAnn
       (getAnnotation @a NotFollowEntrypoint)
       (getAnnotation @(Maybe (Permit a)) NotFollowEntrypoint)
     -- TODO: propably it is not assumed to look this way,

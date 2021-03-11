@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2021 Tocqueville Group
+#
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
+
+- message:
+  - name: Redundant build-depends entry
+  - depends:
+    - base-noprelude
+    - morley-prelude
