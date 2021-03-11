@@ -52,7 +52,7 @@ permitSender = do toField #pKey; hashKey; implicitAccount; address
 -- On failure, this returns packed signed data for which we compared the
 -- signature.
 checkedPermitSender
-  :: NicePackedValue a
+  :: forall a s. NicePackedValue a
   => Permit a : DataToSign a : s :-> Address : s
 checkedPermitSender = do
   dip pack
@@ -61,7 +61,10 @@ checkedPermitSender = do
   checkSignature
   if Holds
   then do dip (drop @(Packed $ DataToSign _)); permitSender
-  else do drop @(Permit _); checkedCoerce_; failCustom #mISSIGNED
+  else do
+    drop @(Permit _);
+    checkedCoerce_ @(Packed $ DataToSign a);
+    failCustom #mISSIGNED
 
 -- | Check that permit is signed by its author, and return the author
 -- and the parameter to work with.

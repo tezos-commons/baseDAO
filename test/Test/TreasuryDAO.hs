@@ -57,10 +57,10 @@ validProposal = uncapsNettest $ do
 
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Propose") (params $ expectedToken - 1)
-      & expectCustomError_ #fAIL_PROPOSAL_CHECK
+      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
     call dao (Call @"Propose") (params $ expectedToken + 1)
-      & expectCustomError_ #fAIL_PROPOSAL_CHECK
+      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
   -- Expected token is 58 in this case
   _ <- createSampleProposal expectedToken proposal owner1 dao

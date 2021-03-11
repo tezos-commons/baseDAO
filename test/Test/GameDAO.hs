@@ -45,7 +45,7 @@ validProposal = uncapsNettest $ do
       (DAO.ProposeParams
         { ppFrozenToken = 20
         , ppProposalMetadata = sampleMetadataContent $ toAddress consumer
-        }) & expectCustomError_ #fAIL_PROPOSAL_CHECK
+        }) & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
     call dao (Call @"Propose")
       (DAO.ProposeParams

@@ -30,6 +30,7 @@ module Lorentz.Contracts.BaseDAO.Types
   , MintParam (..)
   , TransferContractTokensParam (..)
   , TokenAddressParam
+  , SomeType
 
   , Storage (..)
   , StorageC
@@ -769,28 +770,28 @@ baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnak
 -- Error
 ------------------------------------------------------------------------
 
-type instance ErrorArg "nOT_OWNER" = ()
+type instance ErrorArg "nOT_OWNER" = NoErrorArg
 
 instance CustomErrorHasDoc "nOT_OWNER" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "The sender of transaction is not owner"
 
-type instance ErrorArg "fROZEN_TOKEN_NOT_TRANSFERABLE" = ()
+type instance ErrorArg "fROZEN_TOKEN_NOT_TRANSFERABLE" = NoErrorArg
 
 instance CustomErrorHasDoc "fROZEN_TOKEN_NOT_TRANSFERABLE" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "The sender tries to transfer frozen token"
 
-type instance ErrorArg "nOT_PENDING_ADMIN" = ()
+type instance ErrorArg "nOT_PENDING_ADMIN" = NoErrorArg
 
 instance CustomErrorHasDoc "nOT_PENDING_ADMIN" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Received an `accept_ownership` from an address other than what is in the pending owner field"
 
-type instance ErrorArg "nOT_ADMIN" = ()
+type instance ErrorArg "nOT_ADMIN" = NoErrorArg
 
 instance CustomErrorHasDoc "nOT_ADMIN" where
   customErrClass = ErrClassActionException
@@ -805,52 +806,52 @@ instance CustomErrorHasDoc "mIGRATED" where
   customErrDocMdCause =
     "Recieved a call on a migrated contract"
 
-type instance ErrorArg "nOT_MIGRATING" = ()
+type instance ErrorArg "nOT_MIGRATING" = NoErrorArg
 
 instance CustomErrorHasDoc "nOT_MIGRATING" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Recieved a confirm_migration call on a contract that is not in migration"
 
-type instance ErrorArg "nOT_MIGRATION_TARGET" = ()
+type instance ErrorArg "nOT_MIGRATION_TARGET" = NoErrorArg
 
 instance CustomErrorHasDoc "nOT_MIGRATION_TARGET" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Recieved a confirm_migration call on a contract from an address other than the new version"
 
-type instance ErrorArg "fORBIDDEN_XTZ" = ()
+type instance ErrorArg "fORBIDDEN_XTZ" = NoErrorArg
 
 instance CustomErrorHasDoc "fORBIDDEN_XTZ" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Received some XTZ as part of a contract call, which is forbidden"
 
-type instance ErrorArg "fAIL_PROPOSAL_CHECK" = ()
+type instance ErrorArg "fAIL_PROPOSAL_CHECK" = NoErrorArg
 
 instance CustomErrorHasDoc "fAIL_PROPOSAL_CHECK" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to propose a proposal that does not pass `proposalCheck`"
 
-type instance ErrorArg "pROPOSAL_INSUFFICIENT_BALANCE" = ()
+type instance ErrorArg "pROPOSAL_INSUFFICIENT_BALANCE" = NoErrorArg
 
 instance CustomErrorHasDoc "pROPOSAL_INSUFFICIENT_BALANCE" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to propose a proposal without having enough unfrozen token"
 
-type instance ErrorArg "vOTING_INSUFFICIENT_BALANCE" = ()
+type instance ErrorArg "vOTING_INSUFFICIENT_BALANCE" = NoErrorArg
 
 instance CustomErrorHasDoc "vOTING_INSUFFICIENT_BALANCE" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to vote on a proposal without having enough unfrozen token"
 
-type instance ErrorArg "pROPOSAL_NOT_EXIST" = ()
+type instance ErrorArg "pROPOSAL_NOT_EXIST" = NoErrorArg
 
 instance CustomErrorHasDoc "pROPOSAL_NOT_EXIST" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to vote on a proposal that does not exist"
 
-type instance ErrorArg "vOTING_PERIOD_OVER" = ()
+type instance ErrorArg "vOTING_PERIOD_OVER" = NoErrorArg
 
 instance CustomErrorHasDoc "vOTING_PERIOD_OVER" where
   customErrClass = ErrClassActionException
@@ -860,43 +861,43 @@ instance CustomErrorHasDoc "vOTING_PERIOD_OVER" where
 -- Error causes by bounded value
 ------------------------------------------------
 
-type instance ErrorArg "oUT_OF_BOUND_VOTING_PERIOD" = ()
+type instance ErrorArg "oUT_OF_BOUND_VOTING_PERIOD" = NoErrorArg
 
 instance CustomErrorHasDoc "oUT_OF_BOUND_VOTING_PERIOD" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to set voting period that is out of bound."
 
-type instance ErrorArg "oUT_OF_BOUND_QUORUM_THRESHOLD" = ()
+type instance ErrorArg "oUT_OF_BOUND_QUORUM_THRESHOLD" = NoErrorArg
 
 instance CustomErrorHasDoc "oUT_OF_BOUND_QUORUM_THRESHOLD" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to set quorum threshold that is out of bound"
 
-type instance ErrorArg "mAX_PROPOSALS_REACHED" = ()
+type instance ErrorArg "mAX_PROPOSALS_REACHED" = NoErrorArg
 
 instance CustomErrorHasDoc "mAX_PROPOSALS_REACHED" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to propose a proposal when proposals max amount is already reached"
 
-type instance ErrorArg "mAX_VOTES_REACHED" = ()
+type instance ErrorArg "mAX_VOTES_REACHED" = NoErrorArg
 
 instance CustomErrorHasDoc "mAX_VOTES_REACHED" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to vote on a proposal when the votes max amount of that proposal is already reached"
 
-type instance ErrorArg "pROPOSER_NOT_EXIST_IN_LEDGER" = ()
+type instance ErrorArg "pROPOSER_NOT_EXIST_IN_LEDGER" = NoErrorArg
 
 instance CustomErrorHasDoc "pROPOSER_NOT_EXIST_IN_LEDGER" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Expect a proposer address to exist in Ledger but it is not found (Impossible Case)"
 
-type instance ErrorArg "pROPOSAL_NOT_UNIQUE" = ()
+type instance ErrorArg "pROPOSAL_NOT_UNIQUE" = NoErrorArg
 
 instance CustomErrorHasDoc "pROPOSAL_NOT_UNIQUE" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to propose a proposal that is already existed in the Storage."
 
-type instance ErrorArg "fAIL_TRANSFER_CONTRACT_TOKENS" = ()
+type instance ErrorArg "fAIL_TRANSFER_CONTRACT_TOKENS" = NoErrorArg
 
 instance CustomErrorHasDoc "fAIL_TRANSFER_CONTRACT_TOKENS" where
   customErrClass = ErrClassActionException
@@ -908,20 +909,20 @@ instance CustomErrorHasDoc "mISSIGNED" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Invalid signature provided."
 
-type instance ErrorArg "bAD_ENTRYPOINT_PARAMETER" = ()
+type instance ErrorArg "bAD_ENTRYPOINT_PARAMETER" = NoErrorArg
 
 instance CustomErrorHasDoc "bAD_ENTRYPOINT_PARAMETER" where
   customErrClass = ErrClassBadArgument
   customErrDocMdCause = "Value passed to the entrypoint is not valid"
 
-type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_OVER" = ()
+type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_OVER" = NoErrorArg
 
 instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_OVER" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "An error occurred when trying to drop a proposal due to the proposal's voting period is not over"
 
-type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" = ()
+type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" = NoErrorArg
 
 instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" where
   customErrClass = ErrClassActionException

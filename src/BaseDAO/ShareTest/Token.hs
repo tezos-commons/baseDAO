@@ -30,7 +30,7 @@ burnScenario originateFn = withFrozenCallStack $ do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
-    & expectCustomError_ #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 11)
@@ -63,7 +63,7 @@ mintScenario originateFn = withFrozenCallStack $ do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 10)
-    & expectCustomError_ #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 100)
@@ -111,7 +111,7 @@ transferContractTokensScenario originateFn = do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Transfer_contract_tokens") param
-    & expectCustomError_ #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN
 
   withSender (AddressResolved admin) $
     call dao (Call @"Transfer_contract_tokens") param

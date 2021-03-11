@@ -143,7 +143,7 @@ instance EntrypointKindHasDoc TreasuryDaoCustomEntrypointsKind where
     \mutez to the contract."
 
 
-type instance ErrorArg "fAIL_DECISION_LAMBDA" = ()
+type instance ErrorArg "fAIL_DECISION_LAMBDA" = NoErrorArg
 
 instance CustomErrorHasDoc "fAIL_DECISION_LAMBDA" where
   customErrClass = ErrClassActionException

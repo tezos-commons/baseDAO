@@ -95,8 +95,7 @@ let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     (ops, extras)
   else
     // TODO: [#87] Improve handling of failed proposals
-    ([%Michelson ({| { FAILWITH } |} : string * unit -> operation list * contract_extra)]
-        ("FAIL_DECISION_LAMBDA", ()) : operation list * contract_extra)
+    (failwith("FAIL_DECISION_LAMBDA") : operation list * contract_extra)
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.

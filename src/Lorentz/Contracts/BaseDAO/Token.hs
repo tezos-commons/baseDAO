@@ -68,7 +68,7 @@ transferContractTokens = do
     toField #tcContractAddress
     contractCalling @FA2.Parameter (Call @"Transfer")
     ifSome nop $ do
-      failCustom_ #fAIL_TRANSFER_CONTRACT_TOKENS
+      failCustomNoArg #fAIL_TRANSFER_CONTRACT_TOKENS
     push zeroMutez
   transferTokens
   nil; swap; cons

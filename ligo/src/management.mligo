@@ -24,8 +24,7 @@ let accept_ownership(param, store : unit * storage) : return =
   if store.pending_owner = Tezos.sender
     then (([] : operation list), { store with admin = Tezos.sender })
     else
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-        ("NOT_PENDING_ADMIN", ()) : return)
+      (failwith("NOT_PENDING_ADMIN") : return)
 
 (*
  * Auth check for admin and sets the migration status to 'MigratingTo' using
@@ -43,13 +42,11 @@ let migrate(param, store : migrate_param * storage) : return =
 let confirm_migration(param, store : unit * storage) : return =
   match store.migration_status with
     Not_in_migration ->
-      ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-        ("NOT_MIGRATING", ()) : return)
+        (failwith("NOT_MIGRATING") : return)
   | MigratingTo (new_addr) -> if new_addr = Tezos.sender
       then (([] : operation list), { store with migration_status = MigratedTo (new_addr) })
       else
-        ([%Michelson ({| { FAILWITH } |} : string * unit -> return)]
-          ("NOT_MIGRATION_TARGET", ()) : return)
+          (failwith("NOT_MIGRATION_TARGET") : return)
   | MigratedTo (new_addr)  ->
       ([%Michelson ({| { FAILWITH } |} : string * address -> return)]
         ("MIGRATED", new_addr) : return)
