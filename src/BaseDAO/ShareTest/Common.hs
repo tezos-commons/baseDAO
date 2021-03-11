@@ -3,6 +3,9 @@
 
 {-# LANGUAGE NumericUnderscores #-}
 
+-- TODO: Replace 'Empty' with 'Never' from morley
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 -- | Contain common functions and types that are used
 -- in the shared tests.
 module BaseDAO.ShareTest.Common

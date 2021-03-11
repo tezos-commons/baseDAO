@@ -76,9 +76,14 @@ ghc-options:
   -Wno-missing-local-signatures
   -Wno-monomorphism-restriction
   -Wno-implicit-prelude
+  -Wno-unused-packages
+  -Wno-prepositive-qualified-module
+  -Wno-missing-safe-haskell-mode
+
 
 dependencies:
-  - base >= 4.7 && < 5
+  - name: base-noprelude
+    version: ">= 4.7 && < 5"
 
 executables:
   templateDAO:
@@ -87,6 +92,7 @@ executables:
     dependencies:
     - baseDAO
     - morley
+    - morley-prelude
     - lorentz
     - universum
     generated-other-modules:

@@ -1,6 +1,9 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+-- TODO: Replace 'Empty' with 'Never' from morley
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 module Test.BaseDAO.Proposal
   ( test_BaseDAO_Proposal
   ) where

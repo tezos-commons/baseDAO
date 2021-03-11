@@ -1,6 +1,9 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+-- TODO: Replace 'Empty' with 'Never' from morley
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 module Test.RegistryDAO
   ( test_RegistryDAO
   ) where
