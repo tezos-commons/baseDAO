@@ -219,7 +219,7 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
 
 let default_registry_DAO_full_storage (admin, token_address, frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value
     : (address * address * nat * nat * nat * nat * nat)) : full_storage =
-  let (startup, (store, config)) = default_full_storage (admin, token_address) in
+  let (store, config) = default_full_storage (admin, token_address) in
   let new_storage = { store with
     extra = Map.literal [
           ("registry" , Bytes.pack (Map.empty : registry));
@@ -237,13 +237,13 @@ let default_registry_DAO_full_storage (admin, token_address, frozen_scale_value,
     rejected_proposal_return_value = registry_DAO_rejected_proposal_return_value;
     decision_lambda = registry_DAO_decision_lambda;
     } in
-  (startup, (new_storage, new_config))
+  (new_storage, new_config)
 
 
 // We are not using this right now, but just leaving here in case we might want it
 // soon.
 let successful_proposal_receiver_view (full_storage : full_storage): proposal_receivers =
-  match ((Map.find_opt "proposal_receivers" full_storage.1.0.extra) : bytes option) with
+  match ((Map.find_opt "proposal_receivers" full_storage.0.extra) : bytes option) with
     | Some (packed_b) ->
         begin
           match (Bytes.unpack packed_b : proposal_receivers option) with

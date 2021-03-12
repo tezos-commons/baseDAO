@@ -14,6 +14,7 @@ let default_config : config = {
     min_quorum_threshold = 1n;
     max_voting_period = 2592000n; // 60 * 60 * 24 * 30
     min_voting_period = 1n;
+    custom_entrypoints = (Map.empty : custom_entrypoints);
     }
 
 let default_storage (admin , token_address : (address * address)) : storage = {
@@ -36,10 +37,5 @@ let default_storage (admin , token_address : (address * address)) : storage = {
         ]
 }
 
-let default_startup_storage : startup_storage = {
-    starting_up = true;
-    stored_entrypoints = (Big_map.empty : stored_entrypoints);
-    }
-
-let default_full_storage (admin, token_address : (address * address)) : full_storage =
-  (default_startup_storage, (default_storage (admin, token_address), default_config))
+let default_full_storage (admin, token_address : address * address) : full_storage =
+  (default_storage (admin, token_address), default_config)

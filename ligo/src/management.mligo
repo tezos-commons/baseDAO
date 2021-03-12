@@ -50,3 +50,27 @@ let confirm_migration(param, store : unit * storage) : return =
   | MigratedTo (new_addr)  ->
       ([%Michelson ({| { FAILWITH } |} : string * address -> return)]
         ("MIGRATED", new_addr) : return)
+
+(*
+ * Call a custom entrypoint.
+ *
+ * First it looks up the packed code for the entrypoint using the entrypoint
+ * name in the parameter.
+ * Then it unpacks the code to a lambda of type '(bytes * full_storage) -> return'.
+ * Finally it executes this lambda, with the bytes from the function parameter,
+ * and returns the resulting value.
+ *
+ * NO AUTH CHECKS ARE DONE.
+ *)
+let call_custom(param, store, config : custom_ep_param * storage * config) : return =
+  let ep_name = param.0 in
+  let packed_param = param.1 in
+
+  let packed_ep =
+    match Map.find_opt ep_name config.custom_entrypoints with
+    | Some (ep_code) -> ep_code
+    | None -> ([%Michelson ({| { FAILWITH } |} : string -> bytes)] "ENTRYPOINT_NOT_FOUND" : bytes)
+  in
+  match ((Bytes.unpack packed_ep) : (bytes * full_storage -> return) option) with
+  | Some lambda -> lambda (packed_param, (store, config))
+  | None -> ([%Michelson ({| { FAILWITH } |} : string -> return)] "UNPACKING_FAILED" : return)

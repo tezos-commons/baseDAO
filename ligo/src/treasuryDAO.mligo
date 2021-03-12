@@ -99,9 +99,8 @@ let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.
-let receive_xtz_entrypoint (params, config_store : bytes * configured_storage)
-    : operation list * storage =
-  (([]: operation list), config_store.0)
+let receive_xtz_entrypoint (params, full_store : bytes * full_storage) : return =
+  (([]: operation list), full_store.0)
 
 // -------------------------------------
 // Storage Generator
@@ -109,7 +108,7 @@ let receive_xtz_entrypoint (params, config_store : bytes * configured_storage)
 
 let default_treasury_DAO_full_storage (admin, token_address, contract_extra
     : (address * address * treasury_contract_extra)) : full_storage =
-  let (startup, (store, config)) = default_full_storage (admin, token_address) in
+  let (store, config) = default_full_storage (admin, token_address) in
   let (frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, min_xtz_amount, max_xtz_amount) = contract_extra in
   let new_storage = { store with
     extra = Map.literal [
@@ -126,8 +125,6 @@ let default_treasury_DAO_full_storage (admin, token_address, contract_extra
     proposal_check = treasury_DAO_proposal_check;
     rejected_proposal_return_value = treasury_DAO_rejected_proposal_return_value;
     decision_lambda = treasury_DAO_decision_lambda;
-    } in
-  let new_startup = { startup with
-    stored_entrypoints = Big_map.literal ["receive_xtz", receive_xtz_entrypoint]
-    } in
-  (new_startup, (new_storage, new_config))
+    custom_entrypoints = Map.literal [("receive_xtz", Bytes.pack (receive_xtz_entrypoint))];
+    }
+  in (new_storage, new_config)

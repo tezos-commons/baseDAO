@@ -49,7 +49,7 @@ metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md
 validProposal :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ withFrozenCallStack do
   ((owner1, _), (owner2, _), dao, _) <-
-    withDefaultStartup $ originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
+    originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
       [ ((owner1_, DAO.unfrozenTokenId), 200)
       , ((owner2_, DAO.unfrozenTokenId), 200)
       ]
@@ -76,7 +76,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
 flushTokenTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   ((owner1, _), (owner2, _), dao, admin) <-
-    withDefaultStartup $ originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
+    originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
       [ ((owner1_, DAO.unfrozenTokenId), 200)
       , ((owner2_, DAO.unfrozenTokenId), 100)
       ]
@@ -128,7 +128,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
 flushXtzTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   ((owner1, _), (owner2, _), dao, admin) <-
-    withDefaultStartup $ originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
+    originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
       [ ((owner1_, DAO.unfrozenTokenId), 100)
       , ((owner2_, DAO.unfrozenTokenId), 100)
       ]
@@ -201,9 +201,8 @@ originateTreasuryDaoWithBalance
  :: forall caps base m. (MonadNettest caps base m)
  => (Address -> Address -> [(LedgerKey, LedgerValue)]) -> OriginateFn ParameterL m
 originateTreasuryDaoWithBalance bal =
-  let fs = $(fetchValue @FullStorage "ligo/haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH")
-      configStore = fsConfigured fs
-      testExtra = (sExtra $ csStorage configStore)
+  let fs = fromVal ($(fetchValue @FullStorage "ligo/haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
+      testExtra = (sExtra $ fsStorage fs)
         & setExtra @Natural [mt|frozen_scale_value|] 1
         & setExtra @Natural [mt|frozen_extra_value|] 0
         & setExtra @Natural [mt|slash_scale_value|] 1
@@ -211,9 +210,8 @@ originateTreasuryDaoWithBalance bal =
         & setExtra @Natural [mt|max_proposal_size|] 1000
         & setExtra @Natural [mt|min_xtz_amount|] 2
         & setExtra @Natural [mt|max_xtz_amount|] 5
-      customEps = Map.toList . unBigMap . ssStoredEntrypoints $ fsStartup fs
 
-  in originateLigoDaoWithBalance customEps testExtra (csConfig configStore) bal
+  in originateLigoDaoWithBalance testExtra (fsConfig fs) bal
   where
     setExtra :: forall a n. NicePackedValue a => MText -> a -> DynamicRec n -> DynamicRec n
     setExtra key v extra =

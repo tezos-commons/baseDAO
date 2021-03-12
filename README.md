@@ -94,13 +94,28 @@ stack exec baseDAO -- storage-TrivialDAO \
   > storage
 ```
 
-Later the contract can be originated with `tezos-client`:
+At this point this contract can be originated with a client.
+However, this contract is too large to fit inside the origination limit.
 
+To overcome this limitation we advice to use the [morley-large-originator](https://gitlab.com/morley-framework/morley/-/tree/master/code/morley-large-originator)
+tool or the workaround that it's described there.
+
+Note: as explained in its README the latest version of its binary can just be
+downloaded from its repository's CI, without the need to build it.
+
+The tool will give you the possibility to originate the contract for you, by performing
+multiple operations, or produce the steps and instructions to let you do the
+origination with your tool of choice (e.g. `tezos-client`).
+
+You can use `morley-large-originator --help` to have more info on its usage.
+An example to perform the large origination is:
 ```sh
-tezos-client originate contract baseDAO transferring 0 from alice running BaseDAO.tz --init "$(<storage)" --burn-cap 17.0
+morley-large-originator originate --contract-name baseDAO --initial-balance 0 \
+  --from alice --contract BaseDAO.tz --initial-storage "$(<storage)"
 ```
 
-How to install `tezos-client` executable can be found at official [Tezos installation page](http://tezos.gitlab.io/introduction/howtoget.html) or in [our `tezos-packaging` repository](https://github.com/serokell/tezos-packaging).
+If you'd like to use `tezos-client`, instructions on how to install its
+executable can be found at official [Tezos installation page](http://tezos.gitlab.io/introduction/howtoget.html) or in [our `tezos-packaging` repository](https://github.com/serokell/tezos-packaging).
 
 ### Documentation
 

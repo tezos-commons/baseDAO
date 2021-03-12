@@ -4,7 +4,6 @@
 -- | LIGO version of the contract.
 module Ligo.BaseDAO.Contract
   ( baseDAOContractLigo
-  , baseDAOEntrypointsParameter
   ) where
 
 import Michelson.Typed
@@ -15,7 +14,3 @@ import Ligo.Util
 baseDAOContractLigo :: Contract (ToT ParameterL) (ToT FullStorage)
 baseDAOContractLigo =
   $(fetchContract @(ToT ParameterL) @(ToT FullStorage) "BASEDAO_LIGO_PATH")
-
-baseDAOEntrypointsParameter :: [StartupParameter]
-baseDAOEntrypointsParameter =
-  $(fetchValues @StartupParameter "ligo/haskell/test/entrypoints" "BASEDAO_LIGO_EPS_DIR_PATH")
