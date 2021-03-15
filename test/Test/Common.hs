@@ -86,7 +86,7 @@ originateBaseDaoWithBalance contractExtra config balFunc = do
             }
       , odContract = DAO.baseDaoContract config
       }
-  dao <- originate originateData
+  dao <- originateLarge originateData
 
   pure ((owner1, operator1), (owner2, operator2), dao, admin)
 

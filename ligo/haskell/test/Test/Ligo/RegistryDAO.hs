@@ -9,7 +9,6 @@ module Test.Ligo.RegistryDAO
   ) where
 
 import Universum
-import qualified Universum.Unsafe as Unsafe
 
 import qualified Data.ByteString as BS
 import qualified Data.Map as Map
@@ -29,7 +28,6 @@ import BaseDAO.ShareTest.Common (totalSupplyFromLedger, makeProposalKey)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
-import Test.Ligo.BaseDAO.Common
 
 withOriginated
   :: MonadNettest caps base m
@@ -40,13 +38,12 @@ withOriginated
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
   let storage = storageFn addresses
-  baseDao <- originateUntyped $ UntypedOriginateData
+  baseDao <- originateLargeUntyped $ UntypedOriginateData
     { uodName = "BaseDAO - RegistryDAO Test Contract"
     , uodBalance = zeroMutez
     , uodStorage = untypeValue $ toVal storage
     , uodContract = convertContract baseDAOContractLigo
     }
-  defaultStartupContract (Unsafe.head addresses) baseDao
   tests addresses storage (TAddress baseDao)
 
 -- | We test non-token entrypoints of the BaseDAO contract here
@@ -207,9 +204,8 @@ test_RegistryDAO =
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
     initialStorage :: Address -> [Address] -> FullStorage
     initialStorage admin wallets = let
-      fs = $(fetchValue @FullStorage "ligo/haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH")
-      oldConfigured = fsConfigured fs
-      oldStorage = csStorage oldConfigured
+      fs = fromVal ($(fetchValue @FullStorage "ligo/haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
+      oldStorage = fsStorage fs
 
       ledger = BigMap $ Map.fromList [((w, FA2.theTokenId), defaultTokenBalance) | w <- wallets]
 
@@ -218,8 +214,7 @@ test_RegistryDAO =
         , sLedger = ledger
         , sTotalSupply = totalSupplyFromLedger ledger
         }
-      newConfigured = oldConfigured { csStorage = newStorage }
-      in fs { fsConfigured = newConfigured }
+      in fs { fsStorage = newStorage }
 
     initialStorageWithExplictRegistryDAOConfig :: Address -> [Address] -> FullStorage
     initialStorageWithExplictRegistryDAOConfig admin wallets =
@@ -230,14 +225,11 @@ test_RegistryDAO =
       setExtra @Natural [mt|max_proposal_size|] 100 (initialStorage admin wallets)
 
     setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
-    setExtra key v fs = let
-      oldConfigured = fsConfigured fs
-      oldStorage = csStorage oldConfigured
-      oldExtra = unDynamic $ sExtra oldStorage
-      newExtra = Map.insert key (lPackValueRaw v) oldExtra
-      newStorage = oldStorage { sExtra = DynamicRec newExtra }
-      newConfigured = oldConfigured { csStorage = newStorage }
-      in fs { fsConfigured = newConfigured }
+    setExtra key v (s@FullStorage {..}) = let
+     oldExtra = unDynamic $ sExtra fsStorage
+     newExtra = Map.insert key (lPackValueRaw v) oldExtra
+     newStorage = fsStorage { sExtra = DynamicRec newExtra }
+     in s { fsStorage = newStorage }
 
 
 expectFailProposalCheck

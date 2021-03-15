@@ -43,45 +43,41 @@ default values as well, beside compiling the contract itself.
 For a more interesting example you can use the
 [RegistryDAO Storage generation](#registrydao) instead.
 
-## Originating and starting up the contract
+## Originating the contract
 
-You will need [tezos-client](http://tezos.gitlab.io/introduction/howtoget.html) or similar software to originate and interact with the contract on the Tezos network.
+This contract is too large to fit inside the origination limit.
 
-For example, if you have compiled the contract and obtained a storage (`<storage>`) as described above you can originate it with:
-`tezos-client originate contract myDAO transferring 1 from alice running out/baseDAO.tz --init <storage>`
+To overcome this limitation we advice to use the [morley-large-originator](https://gitlab.com/morley-framework/morley/-/tree/master/code/morley-large-originator)
+tool or the workaround that it's described there.
 
-Origination, however, won't be enough to make full use of the contract.
-Due to the size limitations of Tezos, baseDAO will store its entrypoints as
-lambdas inside its storage.
+Note: as explained in its README the latest version of its binary can just be
+downloaded from its repository's CI, without the need to build it.
 
-Because of this the contract starts in a "startup" mode and a series of operations
-is necessary to load these entrypoint lambdas into the contract, before it can
-be actually used.
+The tool will give you the possibility to originate the contract for you, by performing
+multiple operations, or produce the steps and instructions to let you do the
+origination with your tool of choice (e.g. `tezos-client`).
 
-To load (or override) an entrypoint into the storage, you can use:
-`tezos-client transfer 0 from alice to myDAO --entrypoint 'startup' --arg '(Some (Pair "<ep_name>", (Some <ep_bytes>)))'`
-which can also be used to load custom entrypoints.
+As usual, both these actions can be performed with the help of the `Makefile`:
+For example, these are the usages with all the available arguments:
+```
+make originate storage=out/trivialDAO_storage.tz \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+  contract_name=baseDAO
 
-For example, a simple custom entrypoint might look like:
-`tezos-client transfer 0 from alice to myDAO --entrypoint 'startup' --arg '(Some (Pair "simple_ep" (Some 0x05020000000a03170316053d036d0342)))'`
+# or
 
-All the standard entrypoint lambdas are provided in `ligo/src/startup.mligo`
-(with some more information) and can be complied into parameters to push them to
-the contract with the `ligo compile-parameter` command.
+make originate-steps storage=out/trivialDAO_storage.tz \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af destination=out/steps
+```
 
-This is also included in the `Makefile` and using `make all` will provide each
-parameter in the `out/entrypoints` directory, whose content is ready to be passed
-as `--arg` to the command above.
-
-As long as "startup" mode is going on only the `admin` can call a stored
-entrypoint.
-
-To remove a previously loaded entrypoint you can instead use
-`tezos-client transfer 0 from alice to myDAO --entrypoint 'startup' --arg '(Some (Pair "<ep_name>", None))'`
-
-Once all the entrypoints are loaded, you can exit the "startup" mode using:
-`tezos-client transfer 0 from alice to myDAO --entrypoint 'startup' --arg 'None'`
-IMPORTANT: this is irreversible, be careful when doing so.
+These configurable options are:
+- the contract `storage` to use.
+- the `admin_address` who'll perform the origination.
+  Note: it doesn't have to be the same as the contract's `admin_address`.
+  Note: in case of `originate-steps` this cannot be an alias, as that command
+  makes no network operations and has no way of resolving it.
+- the `contract_name` is the alias that the originated contract will be associated with.
+- the `destination` is the directory where the steps files will be saved.
 
 ## Testing
 
