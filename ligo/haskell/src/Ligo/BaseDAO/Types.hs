@@ -96,7 +96,6 @@ data ForbidXTZParam
   | Get_total_supply (View FA2.TokenId Natural)
   | Migrate MigrateParam
   | Mint MintParam
-  | Propose ProposeParamsL
   | Set_fixed_fee_in_token Natural
   | Set_quorum_threshold QuorumThreshold
   | Set_voting_period VotingPeriod
@@ -104,8 +103,13 @@ data ForbidXTZParam
   | Vote [PermitProtected VoteParamL]
   deriving stock (Show)
 
-data MigratableParam
+data AllowXTZParam
   = CallCustom CallCustomParam
+  | Propose ProposeParamsL
+  deriving stock (Show)
+
+data MigratableParam
+  = XtzAllowed AllowXTZParam
   | XtzForbidden ForbidXTZParam
   deriving stock (Show)
 
@@ -263,6 +267,11 @@ customGeneric "ForbidXTZParam" ligoLayout
 deriving anyclass instance IsoValue ForbidXTZParam
 instance ParameterHasEntrypoints ForbidXTZParam where
   type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
+
+customGeneric "AllowXTZParam" ligoLayout
+deriving anyclass instance IsoValue AllowXTZParam
+instance ParameterHasEntrypoints AllowXTZParam where
+  type ParameterEntrypointsDerivation AllowXTZParam = EpdDelegate
 
 customGeneric "ParameterL" ligoLayout
 deriving anyclass instance IsoValue ParameterL

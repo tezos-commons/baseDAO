@@ -206,7 +206,6 @@ type forbid_xtz_params =
   | Accept_ownership of unit
   | Migrate of migrate_param
   | Confirm_migration of unit
-  | Propose of propose_params
   | Vote of vote_param_permited list
   | Set_fixed_fee_in_token of nat
   | Set_voting_period of voting_period
@@ -218,12 +217,19 @@ type forbid_xtz_params =
   | Get_total_supply of get_total_supply_param
 
 (*
+ * Entrypoints that allow Tz transfers
+ *)
+type allow_xtz_params =
+  | CallCustom of custom_ep_param
+  | Propose of propose_params
+
+(*
  * Entrypoints that should not work after migration.
- * Separated into entrypoints that forbid Tz transfers and
- * 'CallCustom' which may want to accept Tz transfers.
+ * Separated into entrypoints that forbid Tz transfers,
+ * and those that allow Tz transfers
  *)
 type migratable_parameter =
-  (custom_ep_param, "CallCustom", forbid_xtz_params, "") michelson_or
+  (allow_xtz_params, "", forbid_xtz_params, "") michelson_or
 
 (*
  * Full parameter of the contract.

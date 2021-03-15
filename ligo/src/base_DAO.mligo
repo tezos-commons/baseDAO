@@ -26,7 +26,6 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Accept_ownership (p) -> accept_ownership(p, store)
     | Migrate (p) -> migrate(p, store)
     | Confirm_migration (p) -> confirm_migration(p, store)
-    | Propose (p) -> propose(p, config, store)
     | Vote (p) -> vote(p, config, store)
     | Set_fixed_fee_in_token (p) -> set_fixed_fee_in_token(p, store)
     | Set_voting_period (p) -> set_voting_period(p, config, store)
@@ -36,6 +35,15 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Mint (p) -> mint(p, store)
     | GetVotePermitCounter (p) -> get_vote_permit_counter(p, store)
     | Get_total_supply (p) -> get_total_supply(p, store)
+
+
+(*
+ * Entrypoints that allow xtz to be sent.
+ *)
+let allowing_xtz (param, store, config : allow_xtz_params * storage * config) =
+  match param with
+    | CallCustom p -> call_custom(p, store, config)
+    | Propose (p) -> propose(p, config, store)
 
 (*
  * Entrypoints that require the contract to be migrated.
@@ -51,8 +59,8 @@ let requiring_no_migration (param, store, config : migratable_parameter * storag
       ([%Michelson ({| { FAILWITH } |} : string * address -> storage)]
         ("MIGRATED", new_addr) : storage)
   in match param with
-    // custom entrypoint that won't necessarily check for xtz
-    | M_left p -> call_custom(p, store, config)
+    // entrypoints that won't necessarily check for xtz
+    | M_left p -> allowing_xtz(p, store, config)
     // standard entrypoints that won't accept any xtz
     | M_right p -> requiring_no_xtz(p, store, config)
 
