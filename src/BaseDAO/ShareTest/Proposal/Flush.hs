@@ -63,7 +63,7 @@ flushAcceptedProposals _ originateFn = do
   ((owner1, _), (owner2, _), dao, admin) <- originateFn testConfig
 
   -- Use 60s for voting period, since in real network by the time we call
-  -- vote entrypoint 30s is already passed.
+  -- the vote entrypoint 30s have already passed.
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
     call dao (Call @"Set_quorum_threshold") 1
