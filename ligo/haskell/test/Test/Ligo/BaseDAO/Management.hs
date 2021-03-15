@@ -9,7 +9,6 @@ module Test.Ligo.BaseDAO.Management
   ) where
 
 import Universum
-import qualified Universum.Unsafe as Unsafe
 
 import Test.Tasty (TestTree, testGroup)
 import Named (defaults, (!))
@@ -26,7 +25,6 @@ import Util.Named
 import BaseDAO.ShareTest.Management
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
-import Test.Ligo.BaseDAO.Common (defaultStartupContract)
 
 -- | Function that originates the contract and also make a bunch of
 -- address (the `addrCount` arg determines the count) for use within
@@ -40,13 +38,12 @@ withOriginated
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
-  baseDao <- originateUntyped $ UntypedOriginateData
+  baseDao <- originateLargeUntyped $ UntypedOriginateData
     { uodName = "BaseDAO Test Contract"
     , uodBalance = zeroMutez
     , uodStorage = untypeValue $ toVal $ storageFn addresses
     , uodContract = convertContract baseDAOContractLigo
     }
-  defaultStartupContract (Unsafe.head addresses) baseDao
 
   tests addresses (TAddress baseDao)
 
@@ -128,21 +125,21 @@ test_BaseDAO_Management =
   ]
 
   where
-    testCustomEntrypoint :: StorableEntrypoint
+    testCustomEntrypoint :: ('[(ByteString, FullStorage)] :-> '[([Operation], StorageL)])
     testCustomEntrypoint =
       -- Unpack an address from packed bytes and set it as admin
+      L.unpair #
       L.unpackRaw @Address #
       L.ifNone
         (L.unit # L.failWith)
-        ( (L.dip (L.toField #csStorage)) # setField #sAdmin
-        ) #
-      L.nil
+        (L.dip (L.toField #fsStorage) # setField #sAdmin) #
+      L.nil # pair
 
     initialStorage admin = mkFullStorageL
       ! #admin admin
       ! #extra dynRecUnsafe
       ! #metadata mempty
       ! #customEps
-          [ ([mt|testCustomEp|], testCustomEntrypoint)
+          [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)
           ]
       ! defaults

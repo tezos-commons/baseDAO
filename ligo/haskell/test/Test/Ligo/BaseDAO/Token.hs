@@ -21,8 +21,8 @@ import Test.Ligo.BaseDAO.Common
 test_BaseDAO_Token :: TestTree
 test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   [ nettestScenario "can burn tokens from any accounts"
-      $ uncapsNettest $ Share.burnScenario . withDefaultStartup
-        $ originateLigoDaoWithBalance [] dynRecUnsafe defaultConfigL
+      $ uncapsNettest $ Share.burnScenario
+        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfigL
           (\o1 o2 ->
               [ ((o1, DAO.unfrozenTokenId), 10)
               , ((o1, DAO.frozenTokenId), 10)
@@ -31,14 +31,13 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
               ]
           )
   , nettestScenario "can mint tokens to any accounts"
-      $ uncapsNettest $ Share.mintScenario . withDefaultStartup
-        $ originateLigoDaoWithBalance [] dynRecUnsafe defaultConfigL
+      $ uncapsNettest $ Share.mintScenario
+        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfigL
           (\o1 _ ->
               [ ((o1, DAO.unfrozenTokenId), 0)
               , ((o1, DAO.frozenTokenId), 0)
               ]
           )
   , nettestScenario "can call transfer tokens entrypoint"
-      $ uncapsNettest $ Share.transferContractTokensScenario $
-        withDefaultStartup originateLigoDao
+      $ uncapsNettest $ Share.transferContractTokensScenario originateLigoDao
   ]

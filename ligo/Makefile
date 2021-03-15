@@ -7,6 +7,9 @@ LIGO ?= ligo
 # Morley executable used for contract optimization
 MORLEY ?= morley
 
+# Morley tool executable for the origination of large contracts
+LARGE_ORIGINATOR ?= morley-large-originator
+
 # Env variable to determine whether the resulting contract should
 # be optimized via morley
 OPTIMIZE ?= false
@@ -20,6 +23,15 @@ BUILD_STORAGE = $(LIGO) compile-storage --syntax cameligo
 # Compile parameter
 BUILD_PARAMETER = $(LIGO) compile-parameter --syntax cameligo
 
+# Originate large contract (morley-client based)
+ORIGINATE ?= $(LARGE_ORIGINATOR) originate
+
+# Originate steps to build a large contract by other means
+ORIGINATE_STEPS ?= $(LARGE_ORIGINATOR) steps
+
+# Utility function to escape single quotes
+escape_quote = $(subst ','\'',$(1))
+
 # Where to put build files
 OUT ?= out
 
@@ -30,24 +42,6 @@ all: \
 	$(OUT)/trivialDAO_storage.tz \
 	$(OUT)/registryDAO_storage.tz \
 	$(OUT)/treasuryDAO_storage.tz \
-	$(OUT)/entrypoints/accept_ownership.tz \
-	$(OUT)/entrypoints/balance_of.tz \
-	$(OUT)/entrypoints/burn.tz \
-	$(OUT)/entrypoints/confirm_migration.tz \
-	$(OUT)/entrypoints/drop_proposal.tz \
-	$(OUT)/entrypoints/flush.tz \
-	$(OUT)/entrypoints/get_vote_permit_counter.tz \
-	$(OUT)/entrypoints/get_total_supply.tz \
-	$(OUT)/entrypoints/migrate.tz \
-	$(OUT)/entrypoints/mint.tz \
-	$(OUT)/entrypoints/propose.tz \
-	$(OUT)/entrypoints/set_quorum_threshold.tz \
-	$(OUT)/entrypoints/set_voting_period.tz \
-	$(OUT)/entrypoints/transfer.tz \
-	$(OUT)/entrypoints/transfer_contract_tokens.tz \
-	$(OUT)/entrypoints/transfer_ownership.tz \
-	$(OUT)/entrypoints/update_operators.tz \
-	$(OUT)/entrypoints/vote.tz
 
 # Compile LIGO contract into its michelson representation.
 $(OUT)/baseDAO.tz: src/**
@@ -66,14 +60,6 @@ ifeq ($(OPTIMIZE), true)
 	# ============== Optimizing contract ============== #
 	$(MORLEY) optimize --contract $(OUT)/baseDAO.tz --output $(OUT)/baseDAO.tz
 endif
-	#
-
-$(OUT)/entrypoints/%.tz: src/**
-	# ==== Compiling parameter for storable entrypoint ==== #
-	mkdir -p $(OUT)/entrypoints
-	$(BUILD_PARAMETER) --output-file $(OUT)/entrypoints/$*.tz src/startup.mligo startup_contract 'make_ep_param("$*", storable_$*)'
-	# ============== Compilation successful =============== #
-	# See "$(OUT)/entrypoints/$*.tz" for compilation result #
 	#
 
 $(OUT)/trivialDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
@@ -118,10 +104,31 @@ $(OUT)/treasuryDAO_storage.tz: src/**
 	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
 	#
 
+originate : storage = $(OUT)/trivialDAO_storage.tz
+originate : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+originate : contract_name = baseDAO
+originate: $(OUT)/baseDAO.tz
+	# ============== Originating DAO with $(storage) ============== #
+	@$(ORIGINATE) --contract $(OUT)/baseDAO.tz --from "$(admin_address)" \
+								--initial-storage '$(call escape_quote,$(shell cat $(storage)))' \
+								 --contract-name "$(contract_name)"
+	# =================== Origination completed =================== #
+	#
+
+originate-steps : storage = $(OUT)/trivialDAO_storage.tz
+originate-steps : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+originate-steps : destination = $(OUT)/steps
+originate-steps: $(OUT)/baseDAO.tz
+	# ============== Originating DAO steps with $(storage) ============== #
+	@$(ORIGINATE_STEPS) --contract $(OUT)/baseDAO.tz --from "$(admin_address)" \
+								--initial-storage '$(call escape_quote,$(shell cat $(storage)))' \
+								 --destination "$(destination)"
+	# ================== Steps saved in $(destination) ================== #
+	#
+
 test: all
 	$(MAKE) -C .. test PACKAGE=baseDAO-ligo-meta \
     BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
-    BASEDAO_LIGO_EPS_DIR_PATH=../$(OUT)/entrypoints/ \
     REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
     TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
 
