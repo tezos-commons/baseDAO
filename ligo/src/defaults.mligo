@@ -17,13 +17,13 @@ let default_config : config = {
     custom_entrypoints = (Map.empty : custom_entrypoints);
     }
 
-let default_storage (admin , token_address : (address * address)) : storage = {
+let default_storage (admin , token_address , metadata : address * address * metadata_map) : storage = {
     ledger = (Big_map.empty : ledger);
     operators = (Big_map.empty : operators);
     token_address = token_address;
     admin = admin;
     pending_owner = admin;
-    metadata = (Big_map.empty : (string, bytes) big_map);
+    metadata = metadata;
     migration_status = Not_in_migration;
     voting_period = 11n;
     quorum_threshold = 2n;
@@ -37,5 +37,5 @@ let default_storage (admin , token_address : (address * address)) : storage = {
         ]
 }
 
-let default_full_storage (admin, token_address : address * address) : full_storage =
-  (default_storage (admin, token_address), default_config)
+let default_full_storage (admin, token_address, metadata_map : address * address * metadata_map) : full_storage =
+  (default_storage (admin, token_address, metadata_map), default_config)

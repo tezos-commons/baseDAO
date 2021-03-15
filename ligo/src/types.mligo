@@ -109,6 +109,7 @@ type permit =
   ; signature : signature
   }
 
+type metadata_map = (string, bytes) big_map
 type contract_extra = (string, bytes) map
 
 // -- Storage -- //
@@ -119,7 +120,7 @@ type storage =
   ; token_address : address
   ; admin : address
   ; pending_owner : address
-  ; metadata : (string, bytes) big_map
+  ; metadata : metadata_map
   ; migration_status : migration_status
   ; voting_period : voting_period
   ; quorum_threshold : quorum_threshold
