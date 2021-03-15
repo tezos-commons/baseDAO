@@ -36,16 +36,9 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
   if (params.frozen_token = requred_token_lock) && (proposal_size < max_proposal_size) then
     let ts = unpack_transfer_type_list("transfers", params.proposal_metadata) in
     let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
-      if is_valid then
-        match transfer_type with
-            Token_transfer_type tt -> is_valid
-          | Xtz_transfer_type xt ->
-              if (min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount) then
-                is_valid
-              else
-                false
-      else
-        false
+      match transfer_type with
+        | Token_transfer_type tt -> is_valid
+        | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
     in List.fold is_all_transfers_valid ts true
   else
     false
@@ -106,9 +99,9 @@ let receive_xtz_entrypoint (params, full_store : bytes * full_storage) : return 
 // Storage Generator
 // -------------------------------------
 
-let default_treasury_DAO_full_storage (admin, token_address, contract_extra
-    : (address * address * treasury_contract_extra)) : full_storage =
-  let (store, config) = default_full_storage (admin, token_address) in
+let default_treasury_DAO_full_storage (admin, token_address, contract_extra, metadata_map
+    : address * address * treasury_contract_extra * metadata_map) : full_storage =
+  let (store, config) = default_full_storage (admin, token_address, metadata_map) in
   let (frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, min_xtz_amount, max_xtz_amount) = contract_extra in
   let new_storage = { store with
     extra = Map.literal [
