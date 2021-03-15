@@ -28,6 +28,7 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Confirm_migration (p) -> confirm_migration(p, store)
     | Propose (p) -> propose(p, config, store)
     | Vote (p) -> vote(p, config, store)
+    | Set_fixed_fee_in_token (p) -> set_fixed_fee_in_token(p, store)
     | Set_voting_period (p) -> set_voting_period(p, config, store)
     | Set_quorum_threshold (p) -> set_quorum_threshold(p, config, store)
     | Flush (p) -> flush (p, config, store)

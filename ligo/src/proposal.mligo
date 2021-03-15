@@ -47,13 +47,13 @@ let check_is_proposal_valid (config, propose_params, store : config * propose_pa
     else (failwith("FAIL_PROPOSAL_CHECK") : storage)
 
 [@inline]
-let check_proposer_unfrozen_token (propose_params, ledger : propose_params * ledger): ledger =
+let check_proposer_unfrozen_token (amount_to_freeze, ledger : nat * ledger): ledger =
   match Map.find_opt (Tezos.sender, unfrozen_token_id) ledger with
     None ->
       ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)]
-        ("FA2_INSUFFICIENT_BALANCE", (propose_params.frozen_token, 0n)) : ledger)
+        ("FA2_INSUFFICIENT_BALANCE", (amount_to_freeze, 0n)) : ledger)
   | Some current_balance ->
-    if propose_params.frozen_token > current_balance
+    if amount_to_freeze > current_balance
       then (failwith("PROPOSAL_INSUFFICIENT_BALANCE") : ledger)
       else ledger
 
@@ -84,6 +84,7 @@ let add_proposal (propose_params, store : propose_params * storage): storage =
     ; metadata = propose_params.proposal_metadata
     ; proposer = Tezos.sender
     ; proposer_frozen_token = propose_params.frozen_token
+    ; proposer_fixed_fee_in_token = store.fixed_proposal_fee_in_token
     ; voters = ([] : (address * nat) list)
     } in
   { store with
@@ -96,10 +97,11 @@ let add_proposal (propose_params, store : propose_params * storage): storage =
 let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, param, store) in
-  let ledger = check_proposer_unfrozen_token (param, store.ledger) in
+  let amount_to_freeze = param.frozen_token + store.fixed_proposal_fee_in_token in
+  let ledger = check_proposer_unfrozen_token (amount_to_freeze, store.ledger) in
 
-  let (ledger, total_supply) = freeze (param.frozen_token, Tezos.sender, ledger, store.total_supply) in
-  let store = add_proposal (param, {store with ledger = ledger; total_supply = total_supply}) in
+  let (ledger, total_supply) = freeze (amount_to_freeze, Tezos.sender, ledger, store.total_supply) in
+  let store = add_proposal(param, {store with ledger = ledger; total_supply = total_supply}) in
   ( ([] : operation list)
   , store
   )
@@ -167,6 +169,15 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
 // Admin entrypoints
 // -----------------------------------------------------------------
 
+// Update a fixed fee in the native token for submitting
+// a proposal. The new fee affects only those proposals
+// submitted after the call.
+[@inline]
+let set_fixed_fee_in_token(new_fee, store : nat * storage): return =
+  let store = authorize_admin store in
+  let store = { store with fixed_proposal_fee_in_token = new_fee } in
+  (([] : operation list), store)
+
 // Update voting period of all ongoing and new proposals.
 [@inline]
 let set_voting_period(new_period, config, store : voting_period * config * storage): return =
@@ -214,13 +225,16 @@ let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
   let (ledger, total_supply) = debit_from(tokens, addr, frozen_token_id, store.ledger, store.total_supply)
   in {store with ledger = ledger; total_supply = total_supply}
 
-// Burn the "slash_amount" calculated by "config.rejected_proposal_return_value".
-// See the Haskell version for details.
+// Burn up to desired_burn_amount of tokens. The desired burn amount comprises
+// slash amount calculated by "config.rejected_proposal_return_value" and
+// the fixed fee payed for the proposal. The case when the desired burn amount
+// is larger than the available frozen tokens is possible because the contract
+// administrator can transfer the proposer's frozen tokens.
 [@inline]
-let burn_slash_amount (slash_amount, frozen_tokens, addr, store : nat * nat * address * storage): storage =
+let burn_what_possible (desired_burn_amount, frozen_tokens, addr, store : nat * nat * address * storage): storage =
   let to_burn =
-    match Michelson.is_nat(frozen_tokens - slash_amount) with
-      Some value_ -> slash_amount
+    match Michelson.is_nat(frozen_tokens - desired_burn_amount) with
+      Some value_ -> desired_burn_amount
     | None -> frozen_tokens
     in
   burn_frozen_token (to_burn, addr, store)
@@ -231,13 +245,17 @@ let unfreeze_proposer_and_voter_token
   // unfreeze_proposer_token
   let (tokens, store) =
     if is_accepted
-    then (proposal.proposer_frozen_token, store)
+    then (proposal.proposer_frozen_token + proposal.proposer_fixed_fee_in_token, store)
     else
       let slash_amount = rejected_proposal_return (proposal, store.extra) in
-      let frozen_tokens = proposal.proposer_frozen_token in
-      let store = burn_slash_amount(slash_amount, frozen_tokens, proposal.proposer, store) in
+      let fee = proposal.proposer_fixed_fee_in_token in
+      let frozen_tokens = proposal.proposer_frozen_token + fee in
+      let desired_burn_amount = slash_amount + fee in
+      let store =
+        burn_what_possible
+          (desired_burn_amount, frozen_tokens, proposal.proposer, store) in
       let tokens =
-            match Michelson.is_nat(frozen_tokens - slash_amount) with
+            match Michelson.is_nat(frozen_tokens - desired_burn_amount) with
               Some value -> value
             | None -> 0n
             in

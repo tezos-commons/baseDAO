@@ -68,6 +68,7 @@ data ProposalL = ProposalL
 
   , plProposer            :: Address
   , plProposerFrozenToken :: Natural
+  , plProposerFixedFeeInToken :: Natural
 
   , plVoters              :: [(Address, Natural)]
   }
@@ -96,6 +97,7 @@ data ForbidXTZParam
   | Migrate MigrateParam
   | Mint MintParam
   | Propose ProposeParamsL
+  | Set_fixed_fee_in_token Natural
   | Set_quorum_threshold QuorumThreshold
   | Set_voting_period VotingPeriod
   | Transfer_ownership TransferOwnershipParam
@@ -127,6 +129,7 @@ data StorageL = StorageL
   , sTokenAddress :: Address
   , sVotingPeriod :: VotingPeriod
   , sTotalSupply :: TotalSupply
+  , sFixedProposalFeeInToken :: Natural
   }
   deriving stock (Show)
 
@@ -166,6 +169,7 @@ mkStorageL admin votingPeriod quorumThreshold extra metadata =
     , sTokenAddress = genesisAddress
     , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
     , sTotalSupply = M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)]
+    , sFixedProposalFeeInToken = 0
     }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days

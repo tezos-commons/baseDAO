@@ -41,7 +41,7 @@ all: \
 	$(OUT)/baseDAO.tz \
 	$(OUT)/trivialDAO_storage.tz \
 	$(OUT)/registryDAO_storage.tz \
-	$(OUT)/treasuryDAO_storage.tz \
+	$(OUT)/treasuryDAO_storage.tz
 
 # Compile LIGO contract into its michelson representation.
 $(OUT)/baseDAO.tz: src/**
