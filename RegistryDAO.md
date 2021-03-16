@@ -1,6 +1,6 @@
 # Registry DAO
 
-**Code revision:** [96be4ee](https://github.com/tqtezos/baseDAO/tree/96be4ee277fb8307dbe89feb8f715a668e7c0377) *(Mon Mar 15 17:58:18 2021 +0100)*
+**Code revision:** [2213b4a](https://github.com/tqtezos/baseDAO/tree/2213b4a8fbc785cbc99a2b9cd486068824838de6) *(Tue Mar 16 16:47:04 2021 +0100)*
 
 
 
@@ -57,7 +57,6 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [ConfigProposal](#types-ConfigProposal)
   - [Contract](#types-Contract)
   - [DataToSign](#types-DataToSign)
-  - [Empty](#types-Empty)
   - [Hash](#types-Hash)
   - [Integer](#types-Integer)
   - [List](#types-List)
@@ -77,6 +76,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [Proposal](#types-Proposal)
   - [ProposeParams](#types-ProposeParams)
   - [PublicKey](#types-PublicKey)
+  - [RegistryDAOCustomParam](#types-RegistryDAOCustomParam)
   - [RegistryDaoContractExtra](#types-RegistryDaoContractExtra)
   - [RegistryDaoProposalMetadata](#types-RegistryDaoProposalMetadata)
   - [RegistryEntry](#types-RegistryEntry)
@@ -412,9 +412,9 @@ Additional entrypoints specific to the given specific DAO.
 
 
 **Argument:** 
-  + **In Haskell:** [`Empty`](#types-Empty)
-  + **In Michelson:** `unit`
-    + **Example:** <span id="example-id">`Unit`</span>
+  + **In Haskell:** [`RegistryDAOCustomParam`](#types-RegistryDAOCustomParam) [`ByteString`](#types-ByteString) [`ByteString`](#types-ByteString)
+  + **In Michelson:** `(or (pair bytes (contract (pair bytes (option bytes)))) unit)`
+    + **Example:** <span id="example-id">`Left (Pair 0x0a "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB")`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -423,6 +423,55 @@ Additional entrypoints specific to the given specific DAO.
 1. Call contract's `callCustom` entrypoint passing the constructed argument.
 </details>
 <p>
+
+
+
+<a name="section-TreasuryDAO-custom-entrypoints"></a>
+
+#### TreasuryDAO custom entrypoints
+
+Some functionality specific to Treasury DAO. This demonstrates that we can e.g. add a `%default` entrypoint used to send mutez to the contract.
+
+<a name="entrypoints-lookupRegistry"></a>
+
+---
+
+##### `lookupRegistry`
+
+**Argument:** 
+  + **In Haskell:** [`View`](#types-View) [`ByteString`](#types-ByteString) ([`ByteString`](#types-ByteString), [`Maybe`](#types-Maybe) [`ByteString`](#types-ByteString))
+  + **In Michelson:** `(pair bytes (contract (pair bytes (option bytes))))`
+    + **Example:** <span id="example-id">`Pair 0x0a "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `lookupRegistry` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
+
+
+
+<a name="entrypoints-none"></a>
+
+---
+
+##### `none`
+
+**Argument:** none (pass unit)
+
+<details>
+  <summary><b>How to call this entrypoint</b></summary>
+
+0. Construct an argument for the entrypoint.
+1. Call contract's `none` entrypoint passing the constructed argument.
+</details>
+<p>
+
+
 
 
 
@@ -1139,22 +1188,6 @@ to be globally unique in order to avoid replay attacks:
 
 
 
-<a name="types-Empty"></a>
-
----
-
-### `Empty`
-
-Type which should never be constructed.
-
-If appears as part of entrypoint argument, this means that the entrypoint should never be called.
-
-**Structure:** [`()`](#types-lparenrparen)
-
-**Final Michelson representation:** `unit`
-
-
-
 <a name="types-Hash"></a>
 
 ---
@@ -1454,6 +1487,23 @@ Describes the how many proposer's frozen tokens will be frozen and the proposal 
 PublicKey primitive.
 
 **Final Michelson representation:** `key`
+
+
+
+<a name="types-RegistryDAOCustomParam"></a>
+
+---
+
+### `RegistryDAOCustomParam`
+
+Describes the custom entrypoints of RegistryDAO contract.
+
+**Structure (example):** `RegistryDAOCustomParam ByteString ByteString` = *one of* 
++ **LookupRegistry**([`View`](#types-View) [`ByteString`](#types-ByteString) ([`ByteString`](#types-ByteString), [`Maybe`](#types-Maybe) [`ByteString`](#types-ByteString)))
++ **None**()
+
+
+**Final Michelson representation (example):** `RegistryDAOCustomParam ByteString ByteString` = `or (pair bytes (contract (pair bytes (option bytes)))) unit`
 
 
 
