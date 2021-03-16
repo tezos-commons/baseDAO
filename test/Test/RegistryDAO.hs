@@ -17,10 +17,13 @@ import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
 import BaseDAO.ShareTest.Common (sendXtz)
+import Data.Map as Map
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.RegistryDAO
 import Lorentz.Contracts.RegistryDAO.Types
+import Lorentz.Test.Consumer
 import Test.Common
+import Tezos.Core (Timestamp(..))
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -29,6 +32,7 @@ test_RegistryDAO :: TestTree
 test_RegistryDAO = testGroup "RegistryDAO Tests"
   [ testGroup "Proposal creator:"
       [ nettestScenario "can propose a valid proposal" validProposal
+      , nettestScenario "onchain view to get registry value works" getRegistryValue
 
       -- TODO [#47]: Disable running in real network due to time-sensitive operations
       , nettestScenarioOnEmulator "can propose a valid configuration proposal" $
@@ -39,11 +43,28 @@ test_RegistryDAO = testGroup "RegistryDAO Tests"
 configBS :: DAO.Config
   (RegistryDaoContractExtra ByteString ByteString)
   (RegistryDaoProposalMetadata ByteString ByteString)
-  Empty
+  (RegistryDAOCustomParam ByteString ByteString)
 configBS = config
 
 type Parameter =
-  DAO.Parameter (RegistryDaoProposalMetadata ByteString ByteString) Empty
+  DAO.Parameter (RegistryDaoProposalMetadata ByteString ByteString) (RegistryDAOCustomParam ByteString ByteString)
+
+getRegistryValue :: (Monad m) => NettestImpl m -> m ()
+getRegistryValue = uncapsNettest $ do
+  -- To check the view, we put a test value in registry during contract initialization
+  -- so that we don't have to create and execute a proposal to put the value there. Some
+  -- dummy values of proposal key and timestamp is used to create the corresponding registry
+  -- entry.
+  let dummyHash = HashUnsafe ""
+  let dummyKey = encodeUtf8 @Text "dummyKey"
+  let dummyVal = encodeUtf8 @Text "dummyVal"
+  let registryEntry = RegistryEntry (Just dummyVal) dummyHash (Timestamp 0)
+  let initExtra = def { ceRegistry = BigMap $ Map.fromList [(dummyKey, registryEntry)] }
+  (_, _, dao, _) <- originateBaseDaoWithConfig initExtra configBS
+
+  consumer <- originateSimple "consumer" [] (contractConsumer @(ByteString, (Maybe ByteString)))
+  call dao (Call @"CallCustom") (LookupRegistry $ mkView dummyKey consumer)
+  checkStorage (AddressResolved $ unTAddress consumer) (toVal [(dummyKey, Just dummyVal)])
 
 validProposal :: (Monad m) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ do
