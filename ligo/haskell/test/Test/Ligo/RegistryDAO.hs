@@ -188,6 +188,44 @@ test_RegistryDAO =
               -- Now we expect this to work
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
+
+    , nettestScenarioCaps "checks on-chain view correctly returns the registry value" $ do
+        -- The default values assigned from initialStorageWithExplictRegistryDAOConfig function
+        withOriginated 3
+          (\(admin: wallet1: voter1:_) -> setExtra @Natural [mt|max_proposal_size|] 200 $
+              initialStorageWithExplictRegistryDAOConfig admin [wallet1, voter1]) $
+
+          \(admin: wallet1: voter1 : _) _ baseDao -> do
+            let
+              proposalMeta = DynamicRec $ Map.fromList $
+                [ ([mt|updates|], lPackValueRaw [([mt|key|], Just [mt|testVal|])])
+                , ([mt|agoraPostID|], lPackValueRaw @Natural 10)
+                ]
+              proposalSize = metadataSize proposalMeta
+
+            runIO $ putTextLn $ show proposalSize
+            let requiredFrozen = proposalSize -- since frozen_scale_value and frozen_scale_value are 1 and 0.
+
+            -- We propose the addition of a new registry key
+            withSender (AddressResolved wallet1) $
+              call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta)
+
+            -- Then we send 2 upvotes for the proposal (as min quorum is 2)
+            let proposalKey = makeProposalKey @ProposalMetadataL (ProposeParams requiredFrozen proposalMeta) wallet1
+            withSender (AddressResolved voter1) $
+              call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
+
+            advanceTime (day 12) -- voting period is 11 days.
+            withSender (AddressResolved admin) $
+              call baseDao (Call @"Flush") (1 :: Natural)
+
+            consumer <- originateSimple "consumer" [] (contractConsumer @(MText, (Maybe MText)))
+
+            withSender (AddressResolved voter1) $
+              call baseDao (Call @"CallCustom") ([mt|lookup_registry|], lPackValueRaw ([mt|key|], consumer))
+
+            checkStorage (AddressResolved $ unTAddress consumer) (toVal [([mt|key|], Just [mt|testVal|])])
+
     ]
   ]
   where

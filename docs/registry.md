@@ -47,3 +47,9 @@ One can set them to 1 and 1 by default to always unfreeze all tokens.
 
 * The decision lambda simply applies all updates from the accepted proposal one by one.
 They are applied in the same order as specified in the proposal, the head of the list is applied first.
+
+### Lookup registry on-chain view
+
+A custom entrypoint `lookup_registry` is included in the registryDAO contract
+to lookup values in the registry. The parameter of this entrypoint is `(pair k address)`
+where `address` is the address of a callback contract of type `(k, v option)`.

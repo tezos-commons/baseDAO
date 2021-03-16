@@ -5,6 +5,7 @@
 module Lorentz.Contracts.RegistryDAO.Types
   ( RegistryDaoContractExtra (..)
   , RegistryEntry (..)
+  , RegistryDAOCustomParam(..)
   , RegistryUpdate (..)
   , RegistryDaoProposalMetadata (..)
   , NormalProposal (..)
@@ -15,9 +16,9 @@ module Lorentz.Contracts.RegistryDAO.Types
   ) where
 
 import Lorentz
+import qualified Universum as U
 
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
-
 
 data RegistryDaoContractExtra k v = RegistryDaoContractExtra
   { ceRegistry :: BigMap k (RegistryEntry k v)
@@ -205,3 +206,39 @@ instance (TypeHasDoc k, TypeHasDoc v)
     typeDocDependencies p = genericTypeDocDependencies p <> [dTypeDep @ByteString]
     typeDocHaskellRep = concreteTypeDocHaskellRep @(RegistryUpdate ByteString ByteString)
     typeDocMichelsonRep = concreteTypeDocMichelsonRep @(RegistryUpdate ByteString ByteString)
+
+-- | The parameter of the custom entrypoint for RegistryDAO
+data RegistryDAOCustomParam k v
+  = LookupRegistry (Lorentz.View k (k, Maybe v))
+  | None -- Not needed
+  deriving stock (Generic, Show)
+  deriving anyclass (IsoValue, HasAnnotation)
+
+instance
+    ( U.Typeable k
+    , U.Typeable v
+    , TypeHasDoc k
+    , TypeHasDoc v)
+    => TypeHasDoc (RegistryDAOCustomParam k v) where
+  typeDocMdDescription = "Describes the custom entrypoints of RegistryDAO contract."
+  typeDocMdReference = poly2TypeDocMdReference
+  typeDocHaskellRep = concreteTypeDocHaskellRep @(RegistryDAOCustomParam ByteString ByteString)
+  typeDocMichelsonRep = concreteTypeDocMichelsonRep @(RegistryDAOCustomParam ByteString ByteString)
+
+instance
+    (HasAnnotation k, HasAnnotation v, WellTypedIsoValue k, WellTypedIsoValue v
+    ) => ParameterHasEntrypoints (RegistryDAOCustomParam k v) where
+  type ParameterEntrypointsDerivation (RegistryDAOCustomParam k v) = EpdPlain
+
+instance
+    ( U.Typeable k
+    , U.Typeable v
+    , TypeHasDoc k
+    , TypeHasDoc v)
+    => EntrypointKindHasDoc (RegistryDAOCustomParam k v) where
+  entrypointKindPos = 1065
+  entrypointKindSectionName = "TreasuryDAO custom entrypoints"
+  entrypointKindSectionDescription = Just
+    "Some functionality specific to Treasury DAO. \
+    \This demonstrates that we can e.g. add a `%default` entrypoint used to send \
+    \mutez to the contract."

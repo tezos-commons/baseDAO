@@ -20,3 +20,11 @@ type proposal_type =
   | Normal_proposal of registry_diff
   | Update_receivers_proposal of update_receiver_param
   | Configuration_proposal
+
+type lookup_registry_param =
+  [@layout:comb]
+  { key : registry_key
+  ; callback : address
+  }
+
+type lookup_registry_view = (registry_key * (registry_value option)) contract
