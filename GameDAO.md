@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [e7e0b98](https://github.com/tqtezos/baseDAO/tree/e7e0b98ea247c289c4c970fc5ce7882a99d06957) *(Wed Mar 17 14:17:06 2021 +0100)*
+**Code revision:** [5b4c543](https://github.com/tqtezos/baseDAO/tree/5b4c54370d93762569b3ca52a10482b15ef0f27f) *(Wed Mar 17 15:06:10 2021 +0100)*
 
 
 
@@ -168,8 +168,10 @@ Storage type for baseDAO contract
   * ***sPermitsCounter*** :[`Nonce`](#types-Nonce)
   * ***sMetadata*** :[`BigMap`](#types-BigMap) [`Text`](#types-Text) [`ByteString`](#types-ByteString)
   * ***sTotalSupply*** :[`Map`](#types-Map) [`TokenId`](#types-TokenId) [`Natural`](#types-Natural)
+  * ***sUnfrozenTokenId*** :[`TokenId`](#types-TokenId)
+  * ***sFrozenTokenId*** :[`TokenId`](#types-TokenId)
 
-**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair (pair address address) (pair (or unit (or address address)) nat))) (pair (pair nat (pair nat (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair (pair nat bool) address)))))))) (pair (pair (set (pair timestamp bytes)) nat) (pair (big_map string bytes) (map nat nat))))`
+**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (pair (big_map (pair address nat) nat) (big_map (pair address address) unit)) (pair address address)) (pair (pair address (or unit (or address address))) (pair nat nat))) (pair (pair (pair nat (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair (pair nat bool) address))))))) (pair (set (pair timestamp bytes)) nat)) (pair (pair (big_map string bytes) (map nat nat)) (pair nat nat)))`
 
 
 
