@@ -96,6 +96,12 @@ type proposal =
   ; metadata : proposal_metadata
   ; proposer : address
   ; proposer_frozen_token : nat
+
+  // Changing the fixed fee only applies to proposals created after
+  // the change, so we need to track the fee that the proposer
+  // has actually paid
+  ; proposer_fixed_fee_in_token : nat
+
   ; voters : (address * nat) list
   }
 
@@ -129,6 +135,7 @@ type storage =
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
   ; permits_counter : nonce
   ; total_supply : total_supply
+  ; fixed_proposal_fee_in_token : nat
   }
 
 // -- Parameter -- //
@@ -199,8 +206,8 @@ type forbid_xtz_params =
   | Accept_ownership of unit
   | Migrate of migrate_param
   | Confirm_migration of unit
-  | Propose of propose_params
   | Vote of vote_param_permited list
+  | Set_fixed_fee_in_token of nat
   | Set_voting_period of voting_period
   | Set_quorum_threshold of quorum_threshold
   | Flush of nat
@@ -210,12 +217,19 @@ type forbid_xtz_params =
   | Get_total_supply of get_total_supply_param
 
 (*
+ * Entrypoints that allow Tz transfers
+ *)
+type allow_xtz_params =
+  | CallCustom of custom_ep_param
+  | Propose of propose_params
+
+(*
  * Entrypoints that should not work after migration.
- * Separated into entrypoints that forbid Tz transfers and
- * 'CallCustom' which may want to accept Tz transfers.
+ * Separated into entrypoints that forbid Tz transfers,
+ * and those that allow Tz transfers
  *)
 type migratable_parameter =
-  (custom_ep_param, "CallCustom", forbid_xtz_params, "") michelson_or
+  (allow_xtz_params, "", forbid_xtz_params, "") michelson_or
 
 (*
  * Full parameter of the contract.
