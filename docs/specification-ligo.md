@@ -166,7 +166,7 @@ and unfreezing starting from the following one and onwards.
 
 Everyone can make a new proposal, however, you have to freeze some tokens for that.
 The proposer specifies how many frozen tokens they want to stake and this value is checked by
-the contract according to its compile-time configuration. 
+the contract according to its compile-time configuration.
 
 This can only be performed in a proposing stage period, meaning one that's odd-numbered and
 the proposer must have frozen his tokens in one of the preceding periods.
@@ -177,7 +177,7 @@ pair of propose entrypoint params and the proposer address.
 ### Voting
 
 Once a proposal is submitted, everyone can vote on it as long as they have enough frozen tokens to stake.
-One frozen token is required for one vote. 
+One frozen token is required for one vote.
 
 A vote can only be cast in a voting stage period, meaning one that's even-numbered.
 Moreover the proposal vote on must have been submitted in the proposing period immediately preceeding

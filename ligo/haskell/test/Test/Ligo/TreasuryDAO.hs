@@ -68,7 +68,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
     call dao (Call @"Freeze") (#amount .! proposalSize)
 
   -- Advance one voting period.
-  advanceTime (sec 11)
+  advanceTime (sec 1.5)
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
@@ -114,8 +114,8 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 10)
 
-  -- Advance one voting period.
-  advanceTime (sec 11)
+  -- Advance one voting period (which is 1).
+  advanceTime (sec 1.5)
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Propose") proposeParams
@@ -131,8 +131,9 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
         , vProposalKey = key1
         }
 
+  advanceTime (sec 1)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
-  advanceTime (sec 20)
+  advanceTime (sec 1)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 proposalSize
@@ -164,7 +165,7 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 10)
   -- Advance one voting period.
-  advanceTime (sec 11)
+  advanceTime (sec 1.5)
 
   withSender (AddressResolved owner1) $ do
   -- due to smaller than min_xtz_amount
@@ -188,8 +189,9 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         , vProposalKey = key1
         }
 
+  advanceTime (sec 1)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
-  advanceTime (sec 20)
+  advanceTime (sec 1)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
 --   -- TODO: check xtz balance

@@ -23,19 +23,6 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
   | None ->
       (failwith("PROPOSAL_NOT_EXIST") : proposal)
 
-[@inline]
-let ensure_voting_period_is_not_over (proposal, store : proposal * storage): storage =
-  if Tezos.now >= proposal.start_date + int(store.voting_period)
-    then (failwith("VOTING_PERIOD_OVER") : storage)
-    else store
-
-[@inline]
-let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
-  let proposal_key = to_proposal_key(propose_params, Tezos.sender) in
-  if Map.mem proposal_key store.proposals
-    then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
-    else proposal_key
-
 // Gets the current period counting how many `voting_period` s have passed since
 // the 'started_on` timestamp. The periods start from zero index.
 let get_current_period_num(last_period_change, vp_length : last_period_change * nat) : nat =
@@ -43,6 +30,28 @@ let get_current_period_num(last_period_change, vp_length : last_period_change * 
         | Some (elapsed_time) -> last_period_change.period_num + elapsed_time/vp_length
         | None -> ([%Michelson ({| { FAILWITH } |} : string * unit -> nat)]
             ("STARTED_ON_IN_FUTURE", ()))
+
+[@inline]
+let ensure_proposal_voting_period (proposal, store : proposal * storage): storage =
+  let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
+  if current_period = (proposal.period_num + 1n)
+  then store
+  else (failwith("VOTING_PERIOD_OVER") : storage)
+
+// Checks that a given period number is a proposing period
+// Only odd period numbers are proposing periods, in which a proposal can be
+// submitted.
+let ensure_proposing_period(period_num, store : nat * storage): storage =
+  if (period_num mod 2n) = 0n
+  then store
+  else (failwith("NOT_PROPOSING_PERIOD") : storage)
+
+[@inline]
+let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
+  let proposal_key = to_proposal_key(propose_params, Tezos.sender) in
+  if Map.mem proposal_key store.proposals
+    then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
+    else proposal_key
 
 // -----------------------------------------------------------------
 // Freeze history operations
@@ -132,11 +141,14 @@ let unfreeze_on_ledger (tokens, addr, ledger, total_supply, unfrozen_token_id, f
 
 let add_proposal (propose_params, store : propose_params * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
+  let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
+  let store = ensure_proposing_period(current_period, store) in
   let timestamp = Tezos.now in
   let proposal : proposal =
     { upvotes = 0n
     ; downvotes = 0n
     ; start_date = timestamp
+    ; period_num = current_period
     ; metadata = propose_params.proposal_metadata
     ; proposer = Tezos.sender
     ; proposer_frozen_token = propose_params.frozen_token
@@ -196,7 +208,7 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
     let (param, author, store) = verify_permit_protected_vote (pp, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
     let vote_param = check_vote_limit_reached (config, proposal, param) in
-    let store = ensure_voting_period_is_not_over (proposal, store) in
+    let store = ensure_proposal_voting_period (proposal, store) in
     let store = submit_vote (proposal, param, author, store) in
     store
     in
@@ -329,7 +341,8 @@ let unfreeze_proposer_and_voter_token
 
 [@inline]
 let is_voting_period_over (proposal, store : proposal * storage): bool =
-  Tezos.now >= proposal.start_date + int(store.voting_period)
+  let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
+  current_period > proposal.period_num + 1n
 
 [@inline]
 let do_total_vote_meet_quorum_threshold (proposal, store : proposal * storage): bool =

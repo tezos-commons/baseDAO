@@ -24,7 +24,7 @@ type ledger = (ledger_key, ledger_value) big_map
 // Frozen token history for an address.
 // This track the period number in which it was last updated and differentiates between
 // tokens that were frozen during that period and the ones frozen in any other before.
-// It does so because only tokens that were frozen in the past can be staked, which is 
+// It does so because only tokens that were frozen in the past can be staked, which is
 // also why it tracks staked tokens in a single field.
 type address_freeze_history =
   { current_period_num : nat
@@ -116,6 +116,7 @@ type proposal =
   { upvotes : nat
   ; downvotes : nat
   ; start_date : timestamp
+  ; period_num : nat
   ; metadata : proposal_metadata
   ; proposer : address
   ; proposer_frozen_token : nat

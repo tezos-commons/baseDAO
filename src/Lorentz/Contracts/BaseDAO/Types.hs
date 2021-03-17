@@ -818,6 +818,13 @@ instance CustomErrorHasDoc "nOT_ENOUGH_FROZEN_TOKENS" where
   customErrDocMdCause =
     "There were not enough frozen tokens for the operation"
 
+type instance ErrorArg "nOT_PROPOSING_PERIOD" = NoErrorArg
+
+instance CustomErrorHasDoc "nOT_PROPOSING_PERIOD" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "Proposal creation attempted in non-proposal period"
+
 type instance ErrorArg "nOT_ADMIN" = NoErrorArg
 
 instance CustomErrorHasDoc "nOT_ADMIN" where

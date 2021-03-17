@@ -13,7 +13,7 @@ import Universum
 import qualified Data.ByteString as BS
 import qualified Data.Map as Map
 import Test.Tasty (TestTree, testGroup)
-import Time (day, sec)
+import Time (sec)
 
 import Lorentz as L
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
@@ -123,17 +123,18 @@ test_RegistryDAO =
             proposalSize1 = metadataSize proposalMeta1
 
             in do
+              advanceTime (sec 10) -- voting period is 10 secs
               let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
 
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Freeze") (#amount .! requiredFrozen)
 
-              advanceTime (sec 11) -- voting period is 10 secs
+              advanceTime (sec 10) -- voting period is 10 secs
 
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
 
-              advanceTime (sec 11) -- voting period is 10 secs
+              advanceTime (sec 15) -- voting period is 10 secs
               withSender (AddressResolved admin) $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -171,7 +172,7 @@ test_RegistryDAO =
             largeProposalSize = metadataSize largeProposalMeta
 
             in do
-              runIO $ putTextLn $ show largeProposalSize
+              advanceTime (sec 10) -- voting period is 10 secs
               let requiredFrozen = largeProposalSize * frozen_scale_value + frozen_extra_value
 
               withSender (AddressResolved wallet1) $
@@ -201,6 +202,7 @@ test_RegistryDAO =
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1)
 
+              advanceTime (sec 10) -- voting period is 10 secs
               -- Then we send 2 upvotes for the proposal (as min quorum is 2)
               let proposalKey = makeProposalKey @ProposalMetadataL (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
               withSender (AddressResolved voter1) $
@@ -220,7 +222,7 @@ test_RegistryDAO =
           (\(admin: wallet1: voter1:_) -> setExtra @Natural [mt|max_proposal_size|] 200 $
               initialStorageWithExplictRegistryDAOConfig admin [wallet1, voter1]) $
 
-          \(admin: wallet1: voter1 : _) _ baseDao -> do
+          \(admin: wallet1: voter1 : _) _fs baseDao -> do
             let
               proposalMeta = DynamicRec $ Map.fromList $
                 [ ([mt|updates|], lPackValueRaw [([mt|key|], Just [mt|testVal|])])
@@ -233,7 +235,7 @@ test_RegistryDAO =
 
             withSender (AddressResolved voter1) $
               call baseDao (Call @"Freeze") (#amount .! 2)
-            advanceTime (day 12) -- voting period is 10 secs
+            advanceTime (sec 13) -- voting period is 10 secs
 
             let requiredFrozen = proposalSize -- since frozen_scale_value and frozen_scale_value are 1 and 0.
 
@@ -241,12 +243,13 @@ test_RegistryDAO =
             withSender (AddressResolved wallet1) $
               call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta)
 
+            advanceTime (sec 12)
             -- Then we send 2 upvotes for the proposal (as min quorum is 2)
             let proposalKey = makeProposalKey @ProposalMetadataL (ProposeParams requiredFrozen proposalMeta) wallet1
             withSender (AddressResolved voter1) $
               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
 
-            advanceTime (day 12) -- voting period is 11 days.
+            advanceTime (sec 12)
             withSender (AddressResolved admin) $
               call baseDao (Call @"Flush") (1 :: Natural)
 

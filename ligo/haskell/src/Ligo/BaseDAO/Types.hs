@@ -66,6 +66,7 @@ data ProposalL = ProposalL
   { plUpvotes             :: Natural
   , plDownvotes           :: Natural
   , plStartDate           :: Timestamp
+  , plPeriodNum           :: Natural
 
   , plMetadata            :: ProposalMetadataL
 
