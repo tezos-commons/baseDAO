@@ -87,7 +87,7 @@ checkProposerUnfrozenToken
   => '[ProposeParams pm, store] :-> '[ProposeParams pm, store]
 checkProposerUnfrozenToken = do
   duupX @2
-  push unfrozenTokenId
+  stGetField #sUnfrozenTokenId
   sender
   pair
 
@@ -131,15 +131,17 @@ freeze = do
   duupX @3
   stackType @(Natural : Address : store : Natural : Address : s)
 
-  push unfrozenTokenId
+  duupX @3
+  stToField #sUnfrozenTokenId
   pair
   dip swap; swap; dip swap
   stackType @(store : Address : (TokenId, Natural) : Natural : Address : s)
   callCachedFunc debitFrom
 
   stackType @(store : Natural : Address : s)
+  stGetField #sFrozenTokenId
+  swap
   dip $ do
-    push frozenTokenId
     pair
     swap
 
@@ -156,15 +158,17 @@ unfreeze = do
   duupX @3
   stackType @(Natural : Address : store : Natural : Address : s)
 
-  push frozenTokenId
+  duupX @3
+  stToField #sFrozenTokenId
   pair
   dip swap; swap; dip swap
   stackType @(store : Address : (TokenId, Natural) : Natural : Address : s)
   callCachedFunc debitFrom
 
   stackType @(store : Natural : Address : s)
+  stGetField #sUnfrozenTokenId
+  swap
   dip $ do
-    push unfrozenTokenId
     pair
     swap
 
@@ -231,7 +235,7 @@ checkVoterUnfrozenToken
    => VoteParam pm : store : s :-> VoteParam pm : store : s
 checkVoterUnfrozenToken = do
   duupX @2
-  push unfrozenTokenId; dupL #author; pair
+  stGetField #sUnfrozenTokenId; dupL #author; pair
 
   stGet #sLedger; ifSome nop
     ( do
@@ -423,7 +427,8 @@ checkBalanceLessThanFrozenValue = do
   swap; dip swap
   stackType @[Address, store, "unfreeze_value" :! Natural, Proposal pm, ProposalKey pm, [Operation]]
   dupTop2
-  push frozenTokenId; swap; pair
+  dip (stGetField #sFrozenTokenId)
+  pair
 
   stGet #sLedger; ifSome nop $ do
     failCustomNoArg #pROPOSER_NOT_EXIST_IN_LEDGER
@@ -444,7 +449,7 @@ burnFrozenToken
   => (Address : Natural : store : s)
   :-> store : s
 burnFrozenToken = do
-  dip $ do push frozenTokenId; pair
+  dip $ do duupX @2; stToField #sFrozenTokenId; pair
   dig @2
   callCachedFunc debitFrom
 

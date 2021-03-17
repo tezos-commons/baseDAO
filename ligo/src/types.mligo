@@ -143,6 +143,8 @@ type storage =
   ; permits_counter : nonce
   ; total_supply : total_supply
   ; fixed_proposal_fee_in_token : nat
+  ; unfrozen_token_id : token_id
+  ; frozen_token_id : token_id
   }
 
 // -- Parameter -- //

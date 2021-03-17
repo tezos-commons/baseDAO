@@ -47,7 +47,7 @@ let check_is_proposal_valid (config, propose_params, store : config * propose_pa
     else (failwith("FAIL_PROPOSAL_CHECK") : storage)
 
 [@inline]
-let check_proposer_unfrozen_token (amount_to_freeze, ledger : nat * ledger): ledger =
+let check_proposer_unfrozen_token (amount_to_freeze, ledger, unfrozen_token_id : nat * ledger * token_id): ledger =
   match Map.find_opt (Tezos.sender, unfrozen_token_id) ledger with
     None ->
       ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)]
@@ -63,13 +63,13 @@ let check_proposal_limit_reached (config, propose_params, store : config * propo
     then (failwith("MAX_PROPOSALS_REACHED") : storage)
     else store
 
-let freeze (tokens, addr, ledger, total_supply : nat * address * ledger * total_supply): (ledger * total_supply) =
+let freeze (tokens, addr, ledger, total_supply, unfrozen_token_id, frozen_token_id : nat * address * ledger * total_supply * token_id * token_id): (ledger * total_supply) =
   let (ledger, total_supply) = debit_from (tokens, addr, unfrozen_token_id, ledger, total_supply) in
   let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
   (ledger, total_supply)
 
 [@inline]
-let unfreeze (tokens, addr, ledger, total_supply : nat * address * ledger * total_supply): (ledger * total_supply) =
+let unfreeze (tokens, addr, ledger, total_supply, unfrozen_token_id, frozen_token_id : nat * address * ledger * total_supply * token_id * token_id): (ledger * total_supply) =
   let (ledger, total_supply) = debit_from (tokens, addr, frozen_token_id, ledger, total_supply) in
   let (ledger, total_supply) = credit_to (tokens, addr, unfrozen_token_id, ledger, total_supply) in
   (ledger, total_supply)
@@ -98,9 +98,10 @@ let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, param, store) in
   let amount_to_freeze = param.frozen_token + store.fixed_proposal_fee_in_token in
-  let ledger = check_proposer_unfrozen_token (amount_to_freeze, store.ledger) in
+  let ledger = check_proposer_unfrozen_token (amount_to_freeze, store.ledger, store.unfrozen_token_id) in
 
-  let (ledger, total_supply) = freeze (amount_to_freeze, Tezos.sender, ledger, store.total_supply) in
+  let (ledger, total_supply) =
+    freeze (amount_to_freeze, Tezos.sender, ledger, store.total_supply, store.unfrozen_token_id, store.frozen_token_id) in
   let store = add_proposal(param, {store with ledger = ledger; total_supply = total_supply}) in
   ( ([] : operation list)
   , store
@@ -113,7 +114,7 @@ let propose (param, config, store : propose_params * config * storage): return =
 [@inline]
 let check_voter_unfrozen_token (vote_param, author, store : vote_param * address * storage): storage =
   let current_balance =
-    match Map.find_opt (author, unfrozen_token_id) store.ledger with
+    match Map.find_opt (author, store.unfrozen_token_id) store.ledger with
       None ->
         ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> nat)]
           ("FA2_INSUFFICIENT_BALANCE", (vote_param.vote_amount, 0n)) : nat)
@@ -141,7 +142,8 @@ let submit_vote (proposal, vote_param, author, store : proposal * vote_param * a
     { proposal with
       voters = voter :: proposal.voters
     } in
-  let (ledger, total_supply) = freeze (vote_param.vote_amount, author, store.ledger, store.total_supply) in
+  let (ledger, total_supply) =
+    freeze (vote_param.vote_amount, author, store.ledger, store.total_supply, store.unfrozen_token_id, store.frozen_token_id) in
 
   { store with
       ledger = ledger
@@ -216,7 +218,7 @@ let check_balance_less_then_frozen_value
     (unfreeze_value, addr, proposal, proposal_key, store
       : nat * address * proposal * proposal_key * storage): nat =
   let actual_frozen_value =
-    match Map.find_opt (addr, frozen_token_id) store.ledger with
+    match Map.find_opt (addr, store.frozen_token_id) store.ledger with
       None ->
         (failwith("PROPOSER_NOT_EXIST_IN_LEDGER") : nat)
     | Some value -> value
@@ -227,7 +229,7 @@ let check_balance_less_then_frozen_value
 
 [@inline]
 let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
-  let (ledger, total_supply) = debit_from(tokens, addr, frozen_token_id, store.ledger, store.total_supply)
+  let (ledger, total_supply) = debit_from(tokens, addr, store.frozen_token_id, store.ledger, store.total_supply)
   in {store with ledger = ledger; total_supply = total_supply}
 
 // Burn up to desired_burn_amount of tokens. The desired burn amount comprises
@@ -268,13 +270,16 @@ let unfreeze_proposer_and_voter_token
     in
   let tokens = check_balance_less_then_frozen_value
               (tokens, proposal.proposer, proposal, proposal_key, store) in
-  let (ledger, total_supply) = unfreeze(tokens, proposal.proposer, store.ledger, store.total_supply) in
+  let unfrozen_token_id = store.unfrozen_token_id in
+  let frozen_token_id = store.frozen_token_id in
+  let (ledger, total_supply) =
+    unfreeze(tokens, proposal.proposer, store.ledger, store.total_supply, unfrozen_token_id, frozen_token_id) in
 
   // unfreeze_voter_token
   let do_unfreeze = fun
         ( (ledger, total_supply), voter
         : (ledger * total_supply) * voter
-        ) -> unfreeze(voter.vote_amount, voter.voter_address, ledger, total_supply) in
+        ) -> unfreeze(voter.vote_amount, voter.voter_address, ledger, total_supply, unfrozen_token_id, frozen_token_id) in
 
   let (ledger, total_supply) = List.fold do_unfreeze proposal.voters (ledger, total_supply) in
   {store with ledger = ledger; total_supply = total_supply}
