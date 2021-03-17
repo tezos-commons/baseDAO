@@ -34,7 +34,8 @@ let default_storage (admin , token_address , metadata : address * address * meta
     total_supply = Map.literal
         [ (frozen_token_id, 0n)
         ; (unfrozen_token_id, 0n)
-        ]
+        ];
+    fixed_proposal_fee_in_token = 0n;
 }
 
 let default_full_storage (admin, token_address, metadata_map : address * address * metadata_map) : full_storage =

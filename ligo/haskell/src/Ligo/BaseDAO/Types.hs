@@ -68,6 +68,7 @@ data ProposalL = ProposalL
 
   , plProposer            :: Address
   , plProposerFrozenToken :: Natural
+  , plProposerFixedFeeInToken :: Natural
 
   , plVoters              :: [(Address, Natural)]
   }
@@ -95,15 +96,20 @@ data ForbidXTZParam
   | Get_total_supply (View FA2.TokenId Natural)
   | Migrate MigrateParam
   | Mint MintParam
-  | Propose ProposeParamsL
+  | Set_fixed_fee_in_token Natural
   | Set_quorum_threshold QuorumThreshold
   | Set_voting_period VotingPeriod
   | Transfer_ownership TransferOwnershipParam
   | Vote [PermitProtected VoteParamL]
   deriving stock (Show)
 
-data MigratableParam
+data AllowXTZParam
   = CallCustom CallCustomParam
+  | Propose ProposeParamsL
+  deriving stock (Show)
+
+data MigratableParam
+  = XtzAllowed AllowXTZParam
   | XtzForbidden ForbidXTZParam
   deriving stock (Show)
 
@@ -127,6 +133,7 @@ data StorageL = StorageL
   , sTokenAddress :: Address
   , sVotingPeriod :: VotingPeriod
   , sTotalSupply :: TotalSupply
+  , sFixedProposalFeeInToken :: Natural
   }
   deriving stock (Show)
 
@@ -166,6 +173,7 @@ mkStorageL admin votingPeriod quorumThreshold extra metadata =
     , sTokenAddress = genesisAddress
     , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
     , sTotalSupply = M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)]
+    , sFixedProposalFeeInToken = 0
     }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
@@ -259,6 +267,11 @@ customGeneric "ForbidXTZParam" ligoLayout
 deriving anyclass instance IsoValue ForbidXTZParam
 instance ParameterHasEntrypoints ForbidXTZParam where
   type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
+
+customGeneric "AllowXTZParam" ligoLayout
+deriving anyclass instance IsoValue AllowXTZParam
+instance ParameterHasEntrypoints AllowXTZParam where
+  type ParameterEntrypointsDerivation AllowXTZParam = EpdDelegate
 
 customGeneric "ParameterL" ligoLayout
 deriving anyclass instance IsoValue ParameterL

@@ -107,6 +107,9 @@ type proposal =
   ; metadata : proposal_metadata
   ; proposer : address
   ; proposer_frozen_token : nat
+  ; proposer_fixed_fee_in_token : nat
+  // ^ A fee paid for submitting the proposal.
+  // Needed to refund correctly if the proposal is successful.
   ; voters : (address * nat) list
   // ^ List of voter addresses associated with the vote amount
   // Needed for `flush` entrypoint.
@@ -121,6 +124,7 @@ These values are:
 1. `admin : address` is the address that can perform administrative actions.
 2. `voting_period : nat` specifies how long the voting period lasts.
 3. `quorum_threshold : nat` specifies how many total votes are required for a successful proposal.
+4. `fixed_proposal_fee_in_token : nat` specifies the fee for submitting a proposal (in native DAO token).
 
 # Contract logic
 
@@ -230,6 +234,7 @@ Full list:
 * [`transfer_ownership`](#transfer_ownership)
 * [`accept_ownership`](#accept_ownership)
 * [`propose`](#propose)
+* [`set_fixed_fee_in_token`](#set_fixed_fee_in_token)
 * [`set_voting_period`](#set_voting_period)
 * [`set_quorum_threshold`](#set_quorum_threshold)
 * [`vote`](#vote)
@@ -600,14 +605,29 @@ Parameter (in Michelson):
 ```
 
 - The proposal is saved under `BLAKE2b` hash of proposal value and sender.
-- The `Natural` value: `proposalTokenAmount` determines how many sender's tokens will be frozen.
-- Sender MUST have enough unfrozen tokens (i. e. `≥ proposalTokenAmount`).
+- The `Natural` value: `proposalTokenAmount` determines how many sender's tokens will be frozen in addition to the [fee](#set_fixed_fee_in_token).
+- Sender MUST have enough unfrozen tokens (i. e. `≥ proposalTokenAmount + fee`).
 - Fails with `PROPOSAL_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
-  is less than `proposalTokenAmount`.
+  is less than `proposalTokenAmount + fee`.
 - Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposalCheck` from the configuration.
 - Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
 - Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
-- The sender's balance in frozen tokens is increased by `proposalTokenAmount` and in unfrozen tokens is decreased by `proposalTokenAmount`.
+- The sender's balance in frozen tokens is increased by `proposalTokenAmount + fee` and in unfrozen tokens is decreased by `proposalTokenAmount + fee`.
+
+### **set_fixed_fee_in_token**
+
+```ocaml
+Set_fixed_fee_in_token of nat
+```
+
+Parameter (in Michelson):
+```
+(nat %set_fixed_fee_in_token)
+```
+
+- Update the fee that the proposers have to pay to submit a proposal (the fee is returned if the proposal is successful and burnt otherwise)
+- This affects only new proposals; the existing proposals store the fee paid for their submission.
+- Fails with `NOT_ADMIN` if the sender is not the administrator.
 
 ### **set_voting_period**
 
@@ -728,9 +748,10 @@ have the same timestamp due to being in the same block, are processed in the ord
   in form of unfrozen tokens:
   - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
     - The return amount for the proposer is equal to or less than the slashed amount based on `rejectedProposalReturnValue`.
+    - The paid fee is not returned to the proposer.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
   - If proposal got accepted:
-    - The return amount for the proposer is equal to or less than proposer frozen tokens.
+    - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
 - The lost of frozen tokens is due to the fact that the administrator has the right to `burn` or `transfer` frozen tokens of any proposers or voters.
 - If proposal is accepted, decision lambda is called.
