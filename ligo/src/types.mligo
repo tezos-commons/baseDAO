@@ -21,6 +21,20 @@ type ledger_key = address * token_id
 type ledger_value = nat
 type ledger = (ledger_key, ledger_value) big_map
 
+// Frozen token history for an address.
+// This track the period number in which it was last updated and differentiates between
+// tokens that were frozen during that period and the ones frozen in any other before.
+// It does so because only tokens that were frozen in the past can be staked, which is 
+// also why it tracks staked tokens in a single field.
+type address_freeze_history =
+  { current_period_num : nat
+  ; staked : nat
+  ; current_unstaked : nat
+  ; past_unstaked : nat
+  }
+
+type freeze_history = (address, address_freeze_history) big_map
+
 type total_supply = (token_id, nat) map
 
 type transfer_destination =
@@ -125,6 +139,15 @@ type permit =
 type metadata_map = (string, bytes) big_map
 type contract_extra = (string, bytes) map
 
+// Some information to track changes made to the voting period so that we can
+// calculate the current voting period even after many changes to the period length
+// by doing --((NOW - changed_on) / voting_period) + period_num.
+// We will always update this when ever the voting_period is changed.
+type last_period_change =
+  { changed_on : timestamp
+  ; period_num : nat
+  }
+
 // -- Storage -- //
 
 type storage =
@@ -142,12 +165,17 @@ type storage =
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
   ; permits_counter : nonce
   ; total_supply : total_supply
+  ; freeze_history : freeze_history
   ; fixed_proposal_fee_in_token : nat
   ; unfrozen_token_id : token_id
   ; frozen_token_id : token_id
+  ; last_period_change : last_period_change
   }
 
 // -- Parameter -- //
+
+type freeze_param = nat
+type unfreeze_param = nat
 
 type transfer_ownership_param = address
 
@@ -224,6 +252,8 @@ type forbid_xtz_params =
   | Mint of mint_param
   | GetVotePermitCounter of vote_permit_counter_param
   | Get_total_supply of get_total_supply_param
+  | Freeze of freeze_param
+  | Unfreeze of unfreeze_param
 
 (*
  * Entrypoints that allow Tz transfers

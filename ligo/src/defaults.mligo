@@ -17,7 +17,7 @@ let default_config : config = {
     custom_entrypoints = (Map.empty : custom_entrypoints);
     }
 
-let default_storage (admin , token_address , metadata : address * address * metadata_map) : storage = {
+let default_storage (admin , token_address , now_val, metadata : address * address * timestamp * metadata_map) : storage = {
     ledger = (Big_map.empty : ledger);
     operators = (Big_map.empty : operators);
     token_address = token_address;
@@ -31,6 +31,7 @@ let default_storage (admin , token_address , metadata : address * address * meta
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     proposal_key_list_sort_by_date = (Set.empty : (timestamp * proposal_key) set);
     permits_counter = 0n;
+    freeze_history = (Big_map.empty : freeze_history);
     total_supply = Map.literal
         [ (frozen_token_id, 0n)
         ; (unfrozen_token_id, 0n)
@@ -38,7 +39,8 @@ let default_storage (admin , token_address , metadata : address * address * meta
     fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
     unfrozen_token_id = unfrozen_token_id;
+    last_period_change = {changed_on = now_val; period_num = 0n}
 }
 
-let default_full_storage (admin, token_address, metadata_map : address * address * metadata_map) : full_storage =
-  (default_storage (admin, token_address, metadata_map), default_config)
+let default_full_storage (admin, token_address, now_val, metadata_map : address * address * timestamp * metadata_map) : full_storage =
+  (default_storage (admin, token_address, now_val, metadata_map), default_config)

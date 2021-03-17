@@ -36,6 +36,57 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
     then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
     else proposal_key
 
+// Gets the current period counting how many `voting_period` s have passed since
+// the 'started_on` timestamp. The periods start from zero index.
+let get_current_period_num(last_period_change, vp_length : last_period_change * nat) : nat =
+  match is_nat((Tezos.now - last_period_change.changed_on) : int) with
+        | Some (elapsed_time) -> last_period_change.period_num + elapsed_time/vp_length
+        | None -> ([%Michelson ({| { FAILWITH } |} : string * unit -> nat)]
+            ("STARTED_ON_IN_FUTURE", ()))
+
+// -----------------------------------------------------------------
+// Freeze history operations
+// -----------------------------------------------------------------
+
+let add_frozen_fh (amt, fh : nat * address_freeze_history)
+    : address_freeze_history =
+  { fh with current_unstaked = fh.current_unstaked + amt }
+
+let sub_frozen_fh (amt, fh : nat * address_freeze_history)
+    : address_freeze_history =
+  match is_nat(fh.past_unstaked - amt) with
+  | None ->
+      ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
+        ( "NOT_ENOUGH_FROZEN_TOKENS", ()) : address_freeze_history)
+  | Some new_amt ->
+      { fh with past_unstaked = new_amt }
+
+let stake_frozen_fh (amt, fh : nat * address_freeze_history): address_freeze_history =
+  let fh = sub_frozen_fh(amt, fh) in
+  { fh with staked = fh.staked + amt }
+
+let unstake_frozen_fh (amt, fh : nat * address_freeze_history)
+    : address_freeze_history =
+  match is_nat(fh.staked - amt) with
+  | None ->
+      ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
+        ("NOT_ENOUGH_STAKED_TOKENS", ()) : address_freeze_history)
+  | Some new_amt ->
+      // Adding to past_unstaked should be fine since as of now, the staked tokens have to be from
+      // past periods.
+      { fh with staked = new_amt; past_unstaked = fh.past_unstaked + amt }
+
+// Update a possibly outdated freeze_history for the current period
+let update_fh (current_period, freeze_history : nat * address_freeze_history): address_freeze_history =
+  if freeze_history.current_period_num < current_period
+    then
+      { current_period_num = current_period
+      ; staked = freeze_history.staked
+      ; current_unstaked = 0n
+      ; past_unstaked = freeze_history.current_unstaked + freeze_history.past_unstaked
+      }
+    else freeze_history
+
 // -----------------------------------------------------------------
 // Propose
 // -----------------------------------------------------------------
@@ -47,29 +98,34 @@ let check_is_proposal_valid (config, propose_params, store : config * propose_pa
     else (failwith("FAIL_PROPOSAL_CHECK") : storage)
 
 [@inline]
-let check_proposer_unfrozen_token (amount_to_freeze, ledger, unfrozen_token_id : nat * ledger * token_id): ledger =
-  match Map.find_opt (Tezos.sender, unfrozen_token_id) ledger with
-    None ->
-      ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> ledger)]
-        ("FA2_INSUFFICIENT_BALANCE", (amount_to_freeze, 0n)) : ledger)
-  | Some current_balance ->
-    if amount_to_freeze > current_balance
-      then (failwith("PROPOSAL_INSUFFICIENT_BALANCE") : ledger)
-      else ledger
-
-[@inline]
 let check_proposal_limit_reached (config, propose_params, store : config * propose_params * storage): storage =
   if config.max_proposals <= List.length store.proposal_key_list_sort_by_date
     then (failwith("MAX_PROPOSALS_REACHED") : storage)
     else store
 
-let freeze (tokens, addr, ledger, total_supply, unfrozen_token_id, frozen_token_id : nat * address * ledger * total_supply * token_id * token_id): (ledger * total_supply) =
+let freeze_on_ledger (tokens, addr, ledger, total_supply, unfrozen_token_id, frozen_token_id : nat * address * ledger * total_supply * token_id * token_id)
+    : (ledger * total_supply) =
   let (ledger, total_supply) = debit_from (tokens, addr, unfrozen_token_id, ledger, total_supply) in
   let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
   (ledger, total_supply)
 
+
+let stake_tk(token_amount, addr, store : nat * address * storage): storage =
+  let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
+  let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
+    | Some fh ->
+        let fh = update_fh(current_period, fh) in
+        let fh = stake_frozen_fh(token_amount, fh) in
+        Big_map.update addr (Some(fh)) store.freeze_history
+    | None ->
+      if token_amount = 0n
+      then store.freeze_history
+      else ([%Michelson ({| { FAILWITH } |} : (string * unit) -> freeze_history)]
+              ("NOT_ENOUGH_FROZEN_TOKENS", ()) : freeze_history)
+  in { store with freeze_history = new_freeze_history }
+
 [@inline]
-let unfreeze (tokens, addr, ledger, total_supply, unfrozen_token_id, frozen_token_id : nat * address * ledger * total_supply * token_id * token_id): (ledger * total_supply) =
+let unfreeze_on_ledger (tokens, addr, ledger, total_supply, unfrozen_token_id, frozen_token_id : nat * address * ledger * total_supply * token_id * token_id): (ledger * total_supply) =
   let (ledger, total_supply) = debit_from (tokens, addr, frozen_token_id, ledger, total_supply) in
   let (ledger, total_supply) = credit_to (tokens, addr, unfrozen_token_id, ledger, total_supply) in
   (ledger, total_supply)
@@ -98,11 +154,8 @@ let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, param, store) in
   let amount_to_freeze = param.frozen_token + store.fixed_proposal_fee_in_token in
-  let ledger = check_proposer_unfrozen_token (amount_to_freeze, store.ledger, store.unfrozen_token_id) in
-
-  let (ledger, total_supply) =
-    freeze (amount_to_freeze, Tezos.sender, ledger, store.total_supply, store.unfrozen_token_id, store.frozen_token_id) in
-  let store = add_proposal(param, {store with ledger = ledger; total_supply = total_supply}) in
+  let store = stake_tk(amount_to_freeze, Tezos.sender, store) in
+  let store = add_proposal (param, store) in
   ( ([] : operation list)
   , store
   )
@@ -111,20 +164,6 @@ let propose (param, config, store : propose_params * config * storage): return =
 // Vote
 // -----------------------------------------------------------------
 
-[@inline]
-let check_voter_unfrozen_token (vote_param, author, store : vote_param * address * storage): storage =
-  let current_balance =
-    match Map.find_opt (author, store.unfrozen_token_id) store.ledger with
-      None ->
-        ([%Michelson ({| { FAILWITH } |} : string * (nat * nat) -> nat)]
-          ("FA2_INSUFFICIENT_BALANCE", (vote_param.vote_amount, 0n)) : nat)
-    | Some value -> value
-    in
-  if vote_param.vote_amount > current_balance
-    then (failwith("VOTING_INSUFFICIENT_BALANCE") : storage)
-    else store
-
-[@inline]
 let submit_vote (proposal, vote_param, author, store : proposal * vote_param * address * storage): storage =
   let proposal_key = vote_param.proposal_key in
 
@@ -142,14 +181,8 @@ let submit_vote (proposal, vote_param, author, store : proposal * vote_param * a
     { proposal with
       voters = voter :: proposal.voters
     } in
-  let (ledger, total_supply) =
-    freeze (vote_param.vote_amount, author, store.ledger, store.total_supply, store.unfrozen_token_id, store.frozen_token_id) in
-
-  { store with
-      ledger = ledger
-    ; total_supply = total_supply
-    ; proposals = Map.add proposal_key proposal store.proposals
-  }
+  let store = stake_tk(vote_param.vote_amount, author, store) in
+  { store with proposals = Map.add proposal_key proposal store.proposals }
 
 [@inline]
 let check_vote_limit_reached
@@ -164,7 +197,6 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
     let vote_param = check_vote_limit_reached (config, proposal, param) in
     let store = ensure_voting_period_is_not_over (proposal, store) in
-    let store = check_voter_unfrozen_token (param, author, store) in
     let store = submit_vote (proposal, param, author, store) in
     store
     in
@@ -189,13 +221,19 @@ let set_fixed_fee_in_token(new_fee, store : nat * storage): return =
 [@inline]
 let set_voting_period(new_period, config, store : voting_period * config * storage): return =
   let store = authorize_admin store in
+  let current_vp = get_current_period_num(store.last_period_change, store.voting_period) in
+  let vp_log : last_period_change =
+    { changed_on = Tezos.now
+    ; period_num = current_vp
+    } in
+
   let store =
     if   config.max_voting_period < new_period
       || config.min_voting_period > new_period
       then (failwith("OUT_OF_BOUND_VOTING_PERIOD") : storage)
       else store
     in
-  let store = { store with voting_period = new_period } in
+  let store = { store with voting_period = new_period; last_period_change = vp_log } in
   (([] : operation list), store)
 
 // Update quroum_threshold. The new quorum_threshold affects
@@ -246,6 +284,17 @@ let burn_what_possible (desired_burn_amount, frozen_tokens, addr, store : nat * 
     in
   burn_frozen_token (to_burn, addr, store)
 
+let unstake_tk(token_amount, addr, store : nat * address * storage): storage =
+  let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
+  match Big_map.find_opt addr store.freeze_history with
+    | Some(fh) ->
+        let fh = update_fh(current_period, fh) in
+        let fh = unstake_frozen_fh(token_amount, fh) in
+        let new_freze_history = Big_map.update addr (Some(fh)) store.freeze_history in
+        { store with freeze_history = new_freze_history }
+    | None -> ([%Michelson ({| { FAILWITH } |} : (string * unit) -> storage)]
+          ("NOT_ENOUGH_STAKED_TOKENS", ()) : storage)
+
 let unfreeze_proposer_and_voter_token
   (rejected_proposal_return, is_accepted, proposal, proposal_key, store :
     (proposal * contract_extra -> nat) * bool * proposal * proposal_key * storage): storage =
@@ -268,21 +317,15 @@ let unfreeze_proposer_and_voter_token
             in
       (tokens, store)
     in
-  let tokens = check_balance_less_then_frozen_value
-              (tokens, proposal.proposer, proposal, proposal_key, store) in
-  let unfrozen_token_id = store.unfrozen_token_id in
-  let frozen_token_id = store.frozen_token_id in
-  let (ledger, total_supply) =
-    unfreeze(tokens, proposal.proposer, store.ledger, store.total_supply, unfrozen_token_id, frozen_token_id) in
+  let store = unstake_tk(proposal.proposer_frozen_token, proposal.proposer, store) in
 
   // unfreeze_voter_token
   let do_unfreeze = fun
-        ( (ledger, total_supply), voter
-        : (ledger * total_supply) * voter
-        ) -> unfreeze(voter.vote_amount, voter.voter_address, ledger, total_supply, unfrozen_token_id, frozen_token_id) in
+        ( store, voter
+        : storage * voter
+        ) -> unstake_tk(voter.vote_amount, voter.voter_address, store) in
 
-  let (ledger, total_supply) = List.fold do_unfreeze proposal.voters (ledger, total_supply) in
-  {store with ledger = ledger; total_supply = total_supply}
+  List.fold do_unfreeze proposal.voters store
 
 [@inline]
 let is_voting_period_over (proposal, store : proposal * storage): bool =
@@ -370,3 +413,45 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
       (failwith("FAIL_DROP_PROPOSAL_NOT_ACCEPTED") : return)
   else
     (failwith("FAIL_DROP_PROPOSAL_NOT_OVER") : return)
+
+
+let freeze (amt, config, store : freeze_param * config * storage) : return =
+  let addr = Tezos.sender in
+  let (ledger, total_supply) = freeze_on_ledger (amt, addr, store.ledger, store.total_supply, store.unfrozen_token_id, store.frozen_token_id) in
+
+  // Add the `amt` to the current period frozen token count of the freeze-history.
+  let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
+  let new_freeze_history_for_address = match Big_map.find_opt addr store.freeze_history with
+    | Some fh ->
+        let fh = update_fh(current_period, fh) in
+        add_frozen_fh(amt, fh)
+    | None -> { current_period_num = current_period; staked = 0n; current_unstaked = amt; past_unstaked = 0n;}
+  in
+  (([] : operation list), { store with
+      ledger = ledger
+    ; total_supply = total_supply
+    ; freeze_history = Big_map.update addr (Some(new_freeze_history_for_address)) store.freeze_history
+  })
+
+let unfreeze (amt, config, store : unfreeze_param * config * storage) : return =
+  let addr = Tezos.sender in
+  let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
+
+  let new_freeze_history =
+    match Big_map.find_opt addr store.freeze_history with
+    | Some fh ->
+        let fh = update_fh(current_period, fh) in
+        let fh = sub_frozen_fh(amt, fh) in
+        Big_map.update addr (Some(fh)) store.freeze_history
+    | None ->
+        ([%Michelson ({| { FAILWITH } |} : (string * unit) -> freeze_history)]
+          ("NOT_ENOUGH_FROZEN_TOKENS", ()) : freeze_history)
+  in
+
+  let (ledger, total_supply) = unfreeze_on_ledger (amt, Tezos.sender, store.ledger, store.total_supply, store.unfrozen_token_id, store.frozen_token_id) in
+
+    (([] : operation list), { store with
+        ledger = ledger
+      ; total_supply = total_supply
+      ; freeze_history = new_freeze_history
+    })
