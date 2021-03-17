@@ -233,7 +233,10 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `PROPOSAL_NOT_UNIQUE`           | Trying to propose a proposal that is already existed in the Storage.                                        |
 | `MISSIGNED`                     | Parameter signature does not match the expected one - for permits.                                          |
 | `ENTRYPOINT_NOT_FOUND`          | Throw when `CallCustom` is called with a non-existing entrypoint                                            |
-| `UNPACKING_FAILED`              | Throw when unpacking of a stored entrypoint or its parameter fails                                          |
+| `UNPACKING_FAILED`              | Throw when unpacking of a stored entrypoint or its parameter fails.                                         |
+| `NOT_PROPOSING_PERIOD`          | Throw when `propose` call is made on a non-proposing period.                                                |
+| `NOT_ENOUGH_FROZEN_TOKENS`      | Throw when there is not enough frozen tokens for the operation.                                             |
+| `NOT_ENOUGH_STAKED_TOKENS`      | Throw when there is not enough staked tokens for the operation.                                             |
 
 # Entrypoints
 
@@ -624,6 +627,7 @@ Parameter (in Michelson):
 - Sender MUST have enough frozen tokens (i. e. `≥ proposalTokenAmount + fee`) that are not already staked for a proposal or a vote.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the unstaked frozen token balance of the SENDER
   is less than `proposalTokenAmount + fee`.
+- Fails with `NOT_PROPOSING_PERIOD` if the current period is not a proposing stage.
 - Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposalCheck` from the configuration.
 - Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
 - Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
@@ -738,7 +742,7 @@ Parameter (in Michelson):
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author from past periods that is not staked
   is less than specified `voteAmount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
-- Fails with `VOTING_PERIOD_OVER` if the proposal associated with the proposal key is already ended.
+- Fails with `VOTING_PERIOD_OVER` if the voting period of proposal associated with the proposal key has already ended.
 - Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal is already at the max value set by the configuration.
 - Fails with `MISSIGNED` if permit is incorrect with respect to the provided vote parameter and contract state.
 - The author's balance in frozen tokens is increased by `voteAmount` and in unfrozen tokens is decreased by `voteAmount`.
@@ -918,6 +922,11 @@ Parameter (in Michelson):
 type freeze_param = nat
 
 Freeze of freeze_param
+```
+
+Parameter (in Michelson):
+```
+(nat %freeze)
 ```
 
 - Freezes the specified amount of tokens, which can only be used from the next period onward.
