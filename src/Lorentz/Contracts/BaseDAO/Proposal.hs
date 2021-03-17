@@ -283,11 +283,14 @@ submitVote = do
 
   stackType @(Proposal pm : VoteParam pm : store : "author" :! _ : s)
 
-  duupX @2; toField #vVoteAmount
-  dupL #author; pair
-  dip $ getField #pVoters
-  stackType @((Address, Natural) : [(Address, Natural)] : Proposal pm
-              : VoteParam pm : store : "author" :! _ : s)
+  duupX @2
+  constructT @Voter
+    ( fieldCtor $ getField #vVoteAmount
+    , fieldCtor $ getField #vVoteType
+    , fieldCtor $ dupL #author
+    )
+  dip $ do drop; getField #pVoters
+  stackType @(Voter : [Voter] : Proposal pm : VoteParam pm : store : "author" :! _ : s)
   cons
   setField #pVoters
 
@@ -531,8 +534,7 @@ unfreezeVoterToken = do
   dup; dig @2; swap
   toField #pVoters
   iter $ do
-    unpair
-    swap
+    getField #voteAmount; dip (toField #voterAddress)
     unfreeze
   swap
 

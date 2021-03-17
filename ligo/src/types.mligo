@@ -87,6 +87,15 @@ type migration_status =
   | MigratingTo of address
   | MigratedTo of address
 
+// Represents whether a voter has voted against (false) or for (true) a given proposal.
+type vote_type = bool
+
+type voter =
+  { voter_address : address
+  ; vote_amount : nat
+  ; vote_type : vote_type
+  }
+
 type proposal_key = bytes
 type proposal_metadata = (string, bytes) map
 type proposal =
@@ -102,10 +111,8 @@ type proposal =
   // has actually paid
   ; proposer_fixed_fee_in_token : nat
 
-  ; voters : (address * nat) list
+  ; voters : voter list
   }
-
-type vote_type = bool
 
 type voting_period = nat
 type quorum_threshold = nat
