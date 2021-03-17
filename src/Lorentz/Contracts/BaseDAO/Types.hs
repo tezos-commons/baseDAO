@@ -25,6 +25,7 @@ module Lorentz.Contracts.BaseDAO.Types
   , VotingPeriod
   , VoteParam (..)
   , VoteType
+  , Voter (..)
   , QuorumThreshold
   , BurnParam (..)
   , MintParam (..)
@@ -634,10 +635,13 @@ data Proposal proposalMetadata = Proposal
   , pProposer            :: Address
   , pProposerFrozenToken :: Natural
 
-  , pVoters              :: [(Address, Natural)]
+  , pVoters              :: [Voter]
   }
   deriving stock (Generic, Show)
-  deriving anyclass IsoValue
+
+deriving anyclass instance
+  WellTypedIsoValue (proposalMetadata) =>
+  IsoValue (Proposal proposalMetadata)
 
 instance (TypeHasDoc pm, IsoValue pm) => TypeHasDoc (Proposal pm) where
   typeDocMdDescription =
@@ -676,7 +680,22 @@ instance HasAnnotation pm => HasAnnotation (ProposeParams pm) where
 -- Vote
 ------------------------------------------------------------------------
 
+-- | Represents whether a voter has voted against (False) or for (True) a given proposal.
 type VoteType = Bool
+
+data Voter = Voter
+  { voterAddress :: Address
+  , voteAmount :: Natural
+  , voteType :: VoteType
+  }
+  deriving stock (Show)
+
+instance TypeHasDoc Voter where
+  typeDocMdDescription =
+    "Describes a voter on some proposal, including its address, vote type and vote amount"
+
+instance HasAnnotation Voter where
+  annOptions = baseDaoAnnOptions
 
 data VoteParam pm = VoteParam
   { vProposalKey :: ProposalKey pm
@@ -951,6 +970,10 @@ instance ( HasAnnotation pm, NiceParameter pm
 deriving anyclass instance
   (WellTypedIsoValue pm, WellTypedIsoValue op) =>
   IsoValue (Parameter pm op)
+
+deriving anyclass instance IsoValue Voter
+
+customGeneric "Voter" ligoLayout
 
 -- Lenses
 ------------------------------------------------

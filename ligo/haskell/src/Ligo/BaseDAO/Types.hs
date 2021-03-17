@@ -70,7 +70,7 @@ data ProposalL = ProposalL
   , plProposerFrozenToken :: Natural
   , plProposerFixedFeeInToken :: Natural
 
-  , plVoters              :: [(Address, Natural)]
+  , plVoters              :: [Voter]
   }
   deriving stock (Show)
 
