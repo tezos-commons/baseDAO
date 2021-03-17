@@ -1,6 +1,6 @@
 # Game DAO
 
-**Code revision:** [43936fa](https://github.com/tqtezos/baseDAO/tree/43936fae9bee7b6bae01afd37a8bd1b7cff56704) *(Wed Mar 17 01:23:36 2021 +0100)*
+**Code revision:** [e7e0b98](https://github.com/tqtezos/baseDAO/tree/e7e0b98ea247c289c4c970fc5ce7882a99d06957) *(Wed Mar 17 14:17:06 2021 +0100)*
 
 
 
@@ -90,6 +90,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [UpdateOperator](#types-UpdateOperator)
   - [View](#types-View)
   - [VoteParam](#types-VoteParam)
+  - [Voter](#types-Voter)
 - [Errors](#section-Errors)
   - [BAD_ENTRYPOINT_PARAMETER](#errors-BAD_ENTRYPOINT_PARAMETER)
   - [FA2_INSUFFICIENT_BALANCE](#errors-FA2_INSUFFICIENT_BALANCE)
@@ -168,7 +169,7 @@ Storage type for baseDAO contract
   * ***sMetadata*** :[`BigMap`](#types-BigMap) [`Text`](#types-Text) [`ByteString`](#types-ByteString)
   * ***sTotalSupply*** :[`Map`](#types-Map) [`TokenId`](#types-TokenId) [`Natural`](#types-Natural)
 
-**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair (pair address address) (pair (or unit (or address address)) nat))) (pair (pair nat (pair nat (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair address nat)))))))) (pair (pair (set (pair timestamp bytes)) nat) (pair (big_map string bytes) (map nat nat))))`
+**Final Michelson representation (example):** `Storage Natural MText` = `pair (pair (pair (big_map (pair address nat) nat) (pair (big_map (pair address address) unit) address)) (pair (pair address address) (pair (or unit (or address address)) nat))) (pair (pair nat (pair nat (big_map bytes (pair (pair nat (pair nat timestamp)) (pair (pair string address) (pair nat (list (pair (pair nat bool) address)))))))) (pair (pair (set (pair timestamp bytes)) nat) (pair (big_map string bytes) (map nat nat))))`
 
 
 
@@ -1518,9 +1519,9 @@ Contract's storage holding a big_map with all balances and the operators.
   * ***pMetadata*** :[`()`](#types-lparenrparen)
   * ***pProposer*** :[`Address`](#types-Address)
   * ***pProposerFrozenToken*** :[`Natural`](#types-Natural)
-  * ***pVoters*** :[`List`](#types-List) ([`Address`](#types-Address), [`Natural`](#types-Natural))
+  * ***pVoters*** :[`List`](#types-List) [`Voter`](#types-Voter)
 
-**Final Michelson representation (example):** `Proposal ()` = `pair (pair nat (pair nat timestamp)) (pair (pair unit address) (pair nat (list (pair address nat))))`
+**Final Michelson representation (example):** `Proposal ()` = `pair (pair nat (pair nat timestamp)) (pair (pair unit address) (pair nat (list (pair (pair nat bool) address))))`
 
 
 
@@ -1756,6 +1757,23 @@ Describes target proposal id, vote type and vote amount
   * ***vVoteAmount*** :[`Natural`](#types-Natural)
 
 **Final Michelson representation (example):** `VoteParam MText` = `pair bytes (pair bool nat)`
+
+
+
+<a name="types-Voter"></a>
+
+---
+
+### `Voter`
+
+Describes a voter on some proposal, including its address, vote type and vote amount
+
+**Structure:** 
+  * ***amount*** :[`Natural`](#types-Natural)
+  * ***type*** :[`Bool`](#types-Bool)
+  * ***address*** :[`Address`](#types-Address)
+
+**Final Michelson representation:** `pair (pair nat bool) address`
 
 
 
