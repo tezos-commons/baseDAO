@@ -19,7 +19,6 @@ module Lorentz.Contracts.BaseDAO.TZIP16Metadata
 
 import qualified Universum as U
 
-import qualified Data.Map as Map
 import Data.Version (showVersion)
 import Fmt (pretty)
 
@@ -50,6 +49,8 @@ data MetadataSettings store =
     , "sOperators" := Operator ~> ()
     , "sPermitsCounter" := Nonce
     , "sTotalSupply" := FA2.TokenId ~> Natural
+    , "sUnfrozenTokenId" := FA2.TokenId
+    , "sFrozenTokenId" := FA2.TokenId
     ]
   =>
   MetadataSettings
@@ -132,7 +133,7 @@ getBalanceView MetadataSettings{} = View
   }
 
 allTokensView :: forall store. DaoView store
-allTokensView _ = View
+allTokensView MetadataSettings{} = View
   { vName = "all_tokens"
   , vDescription = Just
       "Get all supported tokens according to TZIP-12."
@@ -141,8 +142,9 @@ allTokensView _ = View
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @store @[FA2.TokenId] Nothing [] $
             compileViewCode_ $ WithoutParam $ do
-              drop @store
-              push allTokenIds
+              stGetField #sUnfrozenTokenId
+              dip $ do stToField #sFrozenTokenId; dip nil; cons
+              cons
       ]
   }
 
@@ -157,6 +159,7 @@ isOperatorView MetadataSettings{} = View
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @store @Bool Nothing [] $
             compileViewCode_ $ WithParam @FA2.OperatorParam $ do
+              dip dup
               convertOperatorParam
               pair
               stMem #sOperators
@@ -171,17 +174,20 @@ tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
-          mkMichelsonStorageView
-           @store
-           @(FA2.TokenId, FA2.TokenMetadata)
-           Nothing [] $
+          mkMichelsonStorageView @store @(FA2.TokenId, FA2.TokenMetadata) Nothing [] $
             compileViewCode_ $ WithParam @FA2.TokenId $ do
               dip $ do
-                drop @store
-                push $ Map.fromList
-                  [ (frozenTokenId, mcFrozenTokenMetadata)
-                  , (unfrozenTokenId, mcUnfrozenTokenMetadata)
-                  ]
+                dup
+                dip emptyMap
+                stToField #sFrozenTokenId
+                push (Just mcFrozenTokenMetadata)
+                swap
+                update
+                swap
+                stToField #sUnfrozenTokenId
+                push (Just mcUnfrozenTokenMetadata)
+                swap
+                update
               dup
               dip $ do
                 get
