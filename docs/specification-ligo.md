@@ -153,22 +153,35 @@ Additionally, the contract inherits the **operator** role from FA2.
 This role is "local" to a particular address.
 Each address can have any number of operators and be an operator of any number of addresses.
 
-## Proposals
+## Stages
+
+The contract constantly cycles between two stages, a proposing stage and a voting stage.
+Both have the same same length, `voting_period` and alternate between each other,
+starting from "voting" for period number `0`.
+
+Tokens can be frozen in any period, but they can only be used for voting, proposing
+and unfreezing starting from the following one and onwards.
+
+### Proposals
 
 Everyone can make a new proposal, however, you have to freeze some tokens for that.
-The proposer specifies how many tokens they want to freeze and this value is checked by
-the contract according to its compile-time configuration.
-If this value is accepted and the proposer has enough unfrozen tokens, these unfrozen tokens
-are frozen and voting starts.
+The proposer specifies how many frozen tokens they want to stake and this value is checked by
+the contract according to its compile-time configuration. 
+
+This can only be performed in a proposing stage period, meaning one that's odd-numbered and
+the proposer must have frozen his tokens in one of the preceding periods.
 
 Proposals are identified by a key which is a `bytes` value computed via Blake2B hashing function of a
 pair of propose entrypoint params and the proposer address.
 
-## Voting
+### Voting
 
-Once a proposal is submitted, everyone can vote on it as long as they have enough unfrozen tokens.
-One unfrozen token is required for one vote.
-The tokens are frozen for the duration of voting.
+Once a proposal is submitted, everyone can vote on it as long as they have enough frozen tokens to stake.
+One frozen token is required for one vote. 
+
+A vote can only be cast in a voting stage period, meaning one that's even-numbered.
+Moreover the proposal vote on must have been submitted in the proposing period immediately preceeding
+and the voter must have frozen his tokens in one of the preceding periods.
 Voting period is specified for the whole smart contract and can be updated by the administrator; on update, the existing proposals are also affected.
 It's possible to vote positively or negatively.
 After the voting ends, the contract is "flushed" by calling a dedicated entrypoint.
@@ -244,6 +257,8 @@ Full list:
 * [`confirm_migration`](#confirm_migration)
 * [`GetVotePermitCounter`](#getvotepermitcounter)
 * [`get_total_supply`](#get_total_supply)
+* [`freeze`](#freeze)
+* [`unfreeze`](#unfreeze)
 
 Format:
 ```
@@ -605,14 +620,13 @@ Parameter (in Michelson):
 ```
 
 - The proposal is saved under `BLAKE2b` hash of proposal value and sender.
-- The `Natural` value: `proposalTokenAmount` determines how many sender's tokens will be frozen in addition to the [fee](#set_fixed_fee_in_token).
-- Sender MUST have enough unfrozen tokens (i. e. `≥ proposalTokenAmount + fee`).
-- Fails with `PROPOSAL_INSUFFICIENT_BALANCE` if the unfrozen token balance of the SENDER
+- The `Natural` value: `proposalTokenAmount` determines how many sender's frozen tokens will be staked in addition to the [fee](#set_fixed_fee_in_token).
+- Sender MUST have enough frozen tokens (i. e. `≥ proposalTokenAmount + fee`) that are not already staked for a proposal or a vote.
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the unstaked frozen token balance of the SENDER
   is less than `proposalTokenAmount + fee`.
 - Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposalCheck` from the configuration.
 - Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
 - Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
-- The sender's balance in frozen tokens is increased by `proposalTokenAmount + fee` and in unfrozen tokens is decreased by `proposalTokenAmount + fee`.
 
 ### **set_fixed_fee_in_token**
 
@@ -720,8 +734,8 @@ Parameter (in Michelson):
 
 - This implements permits mechanism similar to the one in TZIP-17 but injected directly to the entrypoint.
 - Vote author is identified by permit information, or if it is absent - `sender` is taken.
-- Author MUST have unfrozen tokens equal to `voteAmount` or more (1 unfrozen token is needed for 1 vote).
-- Fails with `VOTING_INSUFFICIENT_BALANCE` if the unfrozen token balance of the author
+- Author MUST have unfrozen tokens equal to `voteAmount` or more (1 unstaked frozen token is needed for 1 vote) from past periods.
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author from past periods that is not staked
   is less than specified `voteAmount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
 - Fails with `VOTING_PERIOD_OVER` if the proposal associated with the proposal key is already ended.
@@ -897,6 +911,32 @@ Parameter (in Michelson):
 `CallCustom` receives:
 - a `string`: the custom entrypoint name stored inside `custom_entrypoints` to execute
 - a `bytes`: the `packed` representation of the `<ep_param>` to execute it with
+
+### **freeze**
+
+```ocaml
+type freeze_param = nat
+
+Freeze of freeze_param
+```
+
+- Freezes the specified amount of tokens, which can only be used from the next period onward.
+- Author MUST have unfrozen tokens equal to `freeze_param` or more.
+### **unfreeze**
+
+```ocaml
+type unfreeze_param = nat
+
+Unfreeze of unfreeze_param
+```
+
+Parameter (in Michelson):
+```
+(nat %unfreeze)
+```
+
+- unfreezes the specified amount of tokens from the tokens frozen in previous periods.
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the author does not have enough tokens that can be unfrozen
 
 # TZIP-16 metadata
 
