@@ -121,6 +121,7 @@ data ParameterL
 data StorageL = StorageL
   { sAdmin :: Address
   , sExtra :: ContractExtraL
+  , sFrozenTokenId :: FA2.TokenId
   , sLedger :: Ledger
   , sMetadata :: TZIP16.MetadataMap BigMap
   , sMigrationStatus :: MigrationStatus
@@ -133,6 +134,7 @@ data StorageL = StorageL
   , sTokenAddress :: Address
   , sVotingPeriod :: VotingPeriod
   , sTotalSupply :: TotalSupply
+  , sUnfrozenTokenId :: FA2.TokenId
   , sFixedProposalFeeInToken :: Natural
   }
   deriving stock (Show)
@@ -174,6 +176,8 @@ mkStorageL admin votingPeriod quorumThreshold extra metadata =
     , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
     , sTotalSupply = M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)]
     , sFixedProposalFeeInToken = 0
+    , sUnfrozenTokenId = unfrozenTokenId
+    , sFrozenTokenId = frozenTokenId
     }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days

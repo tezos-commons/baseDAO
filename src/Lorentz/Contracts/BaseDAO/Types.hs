@@ -63,13 +63,12 @@ module Lorentz.Contracts.BaseDAO.Types
 
   , unfrozenTokenId
   , frozenTokenId
-  , allTokenIds
 
   , Counter
   , baseDaoAnnOptions
   ) where
 
-import Universum (Each, Num(..))
+import Universum (Each, Identity, Num(..))
 
 import Control.Lens (makeLensesFor)
 import qualified Data.Kind as Kind
@@ -254,6 +253,9 @@ data Storage (contractExtra :: Kind.Type) (proposalMetadata :: Kind.Type) = Stor
 
   , sMetadata :: TZIP16.MetadataMap BigMap
   , sTotalSupply :: TotalSupply
+
+  , sUnfrozenTokenId :: FA2.TokenId
+  , sFrozenTokenId :: FA2.TokenId
   }
   deriving stock (Generic, Show)
 
@@ -304,16 +306,16 @@ type StorageC store ce pm =
     , "sVotingPeriod" := VotingPeriod
     , "sQuorumThreshold" := QuorumThreshold
 
-    -- , "sExtra" := Identity ce
+    , "sExtra" := Identity ce
     , "sProposals" := ProposalKey pm ~> Proposal pm
     , "sProposalKeyListSortByDate" := Set (Timestamp, ProposalKey pm)
 
     , "sPermitsCounter" := Nonce
     , "sTotalSupply" := FA2.TokenId ~> Natural
+
+    , "sUnfrozenTokenId" := FA2.TokenId
+    , "sFrozenTokenId" := FA2.TokenId
     ]
-  , StoreHasField store "sExtra" ce
-    -- TODO: remove ^^^ once we use
-    -- https://gitlab.com/morley-framework/morley/-/merge_requests/665
   , KnownValue pm
   )
 
@@ -405,6 +407,9 @@ mkStorage admin votingPeriod quorumThreshold extra metadata =
 
   , sMetadata = arg #metadata metadata
   , sTotalSupply = M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)]
+
+  , sUnfrozenTokenId = unfrozenTokenId
+  , sFrozenTokenId = frozenTokenId
   }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
@@ -770,10 +775,6 @@ unfrozenTokenId = FA2.TokenId 0
 
 frozenTokenId :: FA2.TokenId
 frozenTokenId = FA2.TokenId 1
-
--- | All token types supported by DAOs.
-allTokenIds :: [FA2.TokenId]
-allTokenIds = [unfrozenTokenId, frozenTokenId]
 
 ------------------------------------------------------------------------
 -- Helper

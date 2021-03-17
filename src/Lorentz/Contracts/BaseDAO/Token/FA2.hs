@@ -72,12 +72,14 @@ transfer = do
       swap
       drop @TransferDestination
       dup
-      push unfrozenTokenId
+      duupX @6
+      stGetField #sUnfrozenTokenId
+      dip swap
       if IsEq
-      then nop
+      then drop
       else do
-        dup
-        push frozenTokenId
+        dip dup
+        stToField #sFrozenTokenId
         if IsEq
         then do
           dig @5
@@ -278,12 +280,14 @@ balanceOf = do
       swap
       dug @2
       dup
-      push unfrozenTokenId
+      duupX @6
+      stGetField #sUnfrozenTokenId
+      dip swap
       if IsEq
-      then nop
+      then drop
       else do
-        dup
-        push frozenTokenId
+        dip dup
+        stToField #sFrozenTokenId
         if IsEq
         then nop
         else failCustom_ #fA2_TOKEN_UNDEFINED
@@ -332,6 +336,7 @@ addOperator
      (IsoValue ce, KnownValue pm)
   => (OperatorParam : Storage ce pm : s) :-> (Storage ce pm : s)
 addOperator = do
+  dip dup
   convertOperatorParam
   dup; fromNamed #owner
   Lorentz.sender
@@ -365,6 +370,7 @@ removeOperator
      (IsoValue ce, KnownValue pm)
   => (OperatorParam : Storage ce pm : s) :-> (Storage ce pm : s)
 removeOperator = do
+  dip dup
   convertOperatorParam
   dup; fromNamed #owner
   Lorentz.sender
@@ -394,25 +400,34 @@ removeOperator = do
     ifKeyDoesntExist = dropN @2
 
 convertOperatorParam
-  :: OperatorParam : s
+  :: ( StoreHasField store "sUnfrozenTokenId" TokenId
+     , StoreHasField store "sFrozenTokenId" TokenId
+     )
+  => OperatorParam : store : s
   :-> ("owner" :! Address) : ("operator" :! Address) : s
 convertOperatorParam = do
   getField #opTokenId
   dip do
     getField #opOperator; toNamed #operator
     dip $ do toField #opOwner; toNamed #owner
+    dig @2
   validateOperatorToken
   swap
 
-validateOperatorToken :: TokenId : f :-> f
+validateOperatorToken
+  :: forall store f.
+     ( StoreHasField store "sUnfrozenTokenId" TokenId
+     , StoreHasField store "sFrozenTokenId" TokenId
+     )
+  => TokenId : store : f :-> f
 validateOperatorToken = do
+  dip (stGetField #sUnfrozenTokenId)
   dup
-  push unfrozenTokenId
+  dip swap
   if IsEq
-  then drop @TokenId
+  then dropN @2 @(TokenId : store : f)
   else do
-    dup
-    push frozenTokenId
+    dip (stToField #sFrozenTokenId)
     if IsEq
     then failUsing [mt|OPERATION_PROHIBITED|]
     else failCustom_ #fA2_TOKEN_UNDEFINED
