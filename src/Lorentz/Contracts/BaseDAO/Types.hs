@@ -811,6 +811,13 @@ instance CustomErrorHasDoc "nOT_PENDING_ADMIN" where
   customErrDocMdCause =
     "Received an `accept_ownership` from an address other than what is in the pending owner field"
 
+type instance ErrorArg "nOT_ENOUGH_FROZEN_TOKENS" = ()
+
+instance CustomErrorHasDoc "nOT_ENOUGH_FROZEN_TOKENS" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "There were not enough frozen tokens for the operation"
+
 type instance ErrorArg "nOT_ADMIN" = NoErrorArg
 
 instance CustomErrorHasDoc "nOT_ADMIN" where

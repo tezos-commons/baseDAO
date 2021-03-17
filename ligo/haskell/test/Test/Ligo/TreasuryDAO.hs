@@ -23,6 +23,7 @@ import Lorentz.Contracts.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
+import Util.Named
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -32,9 +33,9 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
   [ testGroup "Proposal creator:"
       [ nettestScenario "can propose a valid proposal" validProposal
       -- TODO [#47]: Disable running in real network due to time-sensitive operations
-      , nettestScenarioOnEmulator "can flush a 'Token transfer' proposal" $
+      , nettestScenarioOnEmulator "can flush a Token transfer proposal" $
           \_emulated -> flushTokenTransfer
-      , nettestScenarioOnEmulator "can flush a 'Xtz transfer' proposal" $
+      , nettestScenarioOnEmulator "can flush a Xtz transfer proposal" $
           \_emulated -> flushXtzTransfer
 
       -- -- TODO: flush a config proposal
@@ -64,6 +65,12 @@ validProposal = uncapsNettest $ withFrozenCallStack do
     proposalSize = metadataSize proposalMeta
 
   withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! proposalSize)
+
+  -- Advance one voting period.
+  advanceTime (sec 11)
+
+  withSender (AddressResolved owner1) $
     call dao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
@@ -90,7 +97,6 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   withSender (AddressResolved owner2) $
     call dao (Call @"Update_operators") [FA2.AddOperator opParams]
 
-
   let
     proposalMeta = DynamicRec $ Map.fromList $
       [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
@@ -101,6 +107,15 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
       ]
     proposalSize = metadataSize proposalMeta
     proposeParams = ProposeParams proposalSize proposalMeta
+
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! proposalSize)
+
+  withSender (AddressResolved owner2) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period.
+  advanceTime (sec 11)
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Propose") proposeParams
@@ -120,10 +135,8 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceTime (sec 20)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
-  checkTokenBalance (DAO.frozenTokenId) dao owner1 0
-  checkTokenBalance (DAO.unfrozenTokenId) dao owner1 210
-  checkTokenBalance (DAO.frozenTokenId) dao owner2 0
-  checkTokenBalance (DAO.unfrozenTokenId) dao owner2 90
+  checkTokenBalance (DAO.frozenTokenId) dao owner1 proposalSize
+  checkTokenBalance (DAO.frozenTokenId) dao owner2 10
 
 flushXtzTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
@@ -144,6 +157,14 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         )
       ]
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
+
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta 3))
+
+  withSender (AddressResolved owner2) $
+    call dao (Call @"Freeze") (#amount .! 10)
+  -- Advance one voting period.
+  advanceTime (sec 11)
 
   withSender (AddressResolved owner1) $ do
   -- due to smaller than min_xtz_amount

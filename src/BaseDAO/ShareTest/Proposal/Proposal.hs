@@ -68,23 +68,6 @@ rejectProposal _ originateFn = do
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
-insufficientTokenProposal
-  :: forall pm param config caps base m.
-    ( MonadNettest caps base m, ParameterC param pm, ProposalMetadataFromNum pm
-    , AllConfigDescsDefined config
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-insufficientTokenProposal _ originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
-  let params = ProposeParams
-        { ppFrozenToken = 101
-        , ppProposalMetadata = proposalMetadataFromNum 1
-        }
-
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-    & expectCustomErrorNoArg #pROPOSAL_INSUFFICIENT_BALANCE
-
 nonUniqueProposal
   :: forall pm param config caps base m.
     ( MonadNettest caps base m, ParameterC param pm, ProposalMetadataFromNum pm

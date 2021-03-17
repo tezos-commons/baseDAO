@@ -13,7 +13,7 @@ import Universum
 import qualified Data.ByteString as BS
 import qualified Data.Map as Map
 import Test.Tasty (TestTree, testGroup)
-import Time (day)
+import Time (day, sec)
 
 import Lorentz as L
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
@@ -28,6 +28,7 @@ import BaseDAO.ShareTest.Common (totalSupplyFromLedger, makeProposalKey)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
+import Util.Named
 
 withOriginated
   :: MonadNettest caps base m
@@ -53,10 +54,16 @@ test_RegistryDAO =
     [ nettestScenarioCaps "Calling the propose endpoint with an empty proposal works" $
         withOriginated 2
           (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
-          \(_:wallet1:_) _ baseDao -> let
-            proposalMeta = DynamicRec mempty
-            proposalSize = metadataSize proposalMeta
-            in withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose")
+          \(_:wallet1:_) _ baseDao -> do
+            let proposalMeta = DynamicRec mempty
+            let proposalSize = metadataSize proposalMeta
+            withSender (AddressResolved wallet1) $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+
+            -- Advance one voting period, which is currently set as 10 secs.
+            advanceTime (sec $ 11)
+
+            withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose")
               (ProposeParams proposalSize proposalMeta)
 
     , nettestScenarioCaps "proposal exceeding max_proposal_size result in error" $
@@ -87,21 +94,25 @@ test_RegistryDAO =
     , nettestScenarioCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
           (\(admin: wallet1:_) -> setExtra @Natural [mt|frozen_extra_value|] 2 $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
-          \(_:wallet1:_) _ baseDao -> let
-            proposalMeta = DynamicRec mempty
+          \(_:wallet1:_) _ baseDao -> do
+            withSender (AddressResolved wallet1) $
+              call baseDao (Call @"Freeze") (#amount .! 8)
+            advanceTime (sec $ 11)
+            let
+              proposalMeta = DynamicRec mempty
             -- Here the proposal size and the configuration params frozen_scale_value,
             -- frozen_extra_value set to 1 and 2 means that it requires 8 tokens to be
             -- frozen (6 * 1 + 2) because proposal size happen to be 6 here.
-            in withSender (AddressResolved wallet1) $
+            withSender (AddressResolved wallet1) $
                call baseDao (Call @"Propose") (ProposeParams 8 proposalMeta)
 
-    , nettestScenarioCaps "checks it correctly calculates tokens to unfreeze when rejecting" $ do
+    , nettestScenarioCaps "checks it correctly calculates tokens to burn when rejecting" $ do
         let frozen_scale_value = 2
         let frozen_extra_value = 0
         let slash_scale_value = 1
-        let slash_division_value = 2
+        let slash_division_value = 4
         withOriginated 2
-          (\(admin: wallet1:_) -> setExtra @Natural [mt|slash_division_value|] 2 $
+          (\(admin: wallet1:_) ->
             setExtra @Natural [mt|frozen_scale_value|] frozen_scale_value $
             setExtra @Natural [mt|frozen_extra_value|] frozen_extra_value $
             setExtra @Natural [mt|slash_scale_value|] slash_scale_value $
@@ -113,10 +124,16 @@ test_RegistryDAO =
 
             in do
               let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
+
+              withSender (AddressResolved wallet1) $
+                call baseDao (Call @"Freeze") (#amount .! requiredFrozen)
+
+              advanceTime (sec 11) -- voting period is 10 secs
+
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
 
-              advanceTime (day 12) -- voting period is 11 days.
+              advanceTime (sec 11) -- voting period is 10 secs
               withSender (AddressResolved admin) $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -127,13 +144,13 @@ test_RegistryDAO =
 
               -- Check the balance of wallet1 using 'Balance_of' entrypoint.
               consumer <- originateSimple "consumer" [] (contractConsumer @[FA2.BalanceResponseItem])
-              let balanceRequestItem = FA2.BalanceRequestItem { briOwner = wallet1, briTokenId = FA2.theTokenId }
+              let balanceRequestItem = FA2.BalanceRequestItem { briOwner = wallet1, briTokenId = frozenTokenId }
               let balanceRequest = FA2.mkFA2View [balanceRequestItem] consumer
               withSender (AddressResolved wallet1) $ call baseDao (Call @"Balance_of") balanceRequest
 
               let spent = div (requiredFrozen * slash_scale_value) slash_division_value
 
-              checkStorage (AddressResolved $ unTAddress consumer) (toVal [[FA2.BalanceResponseItem balanceRequestItem (defaultTokenBalance - spent)]])
+              checkStorage (AddressResolved $ unTAddress consumer) (toVal [[FA2.BalanceResponseItem balanceRequestItem (requiredFrozen - spent)]])
 
     , nettestScenarioCaps "checks it correctly executes the proposal that has won" $ do
         let frozen_scale_value = 1
@@ -141,7 +158,7 @@ test_RegistryDAO =
         let slash_scale_value = 1
         let slash_division_value = 1
         withOriginated 3
-          (\(admin: wallet1: voter1:_) -> setExtra @Natural [mt|slash_division_value|] 2 $
+          (\(admin: wallet1: voter1:_) ->
             setExtra @Natural [mt|frozen_scale_value|] frozen_scale_value $
             setExtra @Natural [mt|frozen_extra_value|] frozen_extra_value $
             setExtra @Natural [mt|slash_scale_value|] slash_scale_value $
@@ -156,6 +173,14 @@ test_RegistryDAO =
             in do
               runIO $ putTextLn $ show largeProposalSize
               let requiredFrozen = largeProposalSize * frozen_scale_value + frozen_extra_value
+
+              withSender (AddressResolved wallet1) $
+                call baseDao (Call @"Freeze") (#amount .! 400)
+
+              withSender (AddressResolved voter1) $
+                call baseDao (Call @"Freeze") (#amount .! 10)
+
+              advanceTime (sec 11) -- voting period is 10 secs
 
               -- We expect this to fail because max_proposal_size is 200 and proposal size is 317.
               withSender (AddressResolved wallet1) $
@@ -181,7 +206,7 @@ test_RegistryDAO =
               withSender (AddressResolved voter1) $
                 call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
 
-              advanceTime (day 12) -- voting period is 11 days.
+              advanceTime (sec 11)
               withSender (AddressResolved admin) $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -203,7 +228,13 @@ test_RegistryDAO =
                 ]
               proposalSize = metadataSize proposalMeta
 
-            runIO $ putTextLn $ show proposalSize
+            withSender (AddressResolved wallet1) $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+
+            withSender (AddressResolved voter1) $
+              call baseDao (Call @"Freeze") (#amount .! 2)
+            advanceTime (day 12) -- voting period is 10 secs
+
             let requiredFrozen = proposalSize -- since frozen_scale_value and frozen_scale_value are 1 and 0.
 
             -- We propose the addition of a new registry key
