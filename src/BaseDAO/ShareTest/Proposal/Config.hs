@@ -201,7 +201,7 @@ testConfig
   => ConfigDesc config
 testConfig =
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
-  ConfigDesc configConsts{ cmMinVotingPeriod = Just 20, cmMinQuorumThreshold = Just 1 }
+  ConfigDesc configConsts{ cmMinVotingPeriod = Just 10, cmMinQuorumThreshold = Just 1 }
 
 -- | Config with longer voting period and bigger quorum threshold
 -- Needed for vote related tests that do not call `flush`

@@ -232,9 +232,9 @@ let lookup_registry (params, full_store : bytes * full_storage) : operation list
   let operation : operation = Tezos.transaction (param.key, value_at_key) 0mutez view_contract
   in ((operation :: ([]: operation list)), full_store.0)
 
-let default_registry_DAO_full_storage (admin, token_address, frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, metadata_map
-    : (address * address * nat * nat * nat * nat * nat * metadata_map)) : full_storage =
-  let (store, config) = default_full_storage (admin, token_address, metadata_map) in
+let default_registry_DAO_full_storage (admin, token_address, frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, now_val, metadata_map
+    : (address * address * nat * nat * nat * nat * nat * timestamp * metadata_map)) : full_storage =
+  let (store, config) = default_full_storage (admin, token_address, now_val, metadata_map) in
   let new_storage = { store with
     extra = Map.literal [
           ("registry" , Bytes.pack (Map.empty : registry));
