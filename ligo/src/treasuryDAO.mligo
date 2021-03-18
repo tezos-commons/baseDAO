@@ -99,9 +99,9 @@ let receive_xtz_entrypoint (params, full_store : bytes * full_storage) : return 
 // Storage Generator
 // -------------------------------------
 
-let default_treasury_DAO_full_storage (admin, token_address, contract_extra, metadata_map
-    : address * address * treasury_contract_extra * metadata_map) : full_storage =
-  let (store, config) = default_full_storage (admin, token_address, metadata_map) in
+let default_treasury_DAO_full_storage (admin, token_address, contract_extra, now_val, metadata_map
+    : address * address * treasury_contract_extra * timestamp * metadata_map) : full_storage =
+  let (store, config) = default_full_storage (admin, token_address, now_val, metadata_map) in
   let (frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, min_xtz_amount, max_xtz_amount) = contract_extra in
   let new_storage = { store with
     extra = Map.literal [

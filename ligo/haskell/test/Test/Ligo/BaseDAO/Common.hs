@@ -3,7 +3,8 @@
 {-# LANGUAGE NumericUnderscores #-}
 
 module Test.Ligo.BaseDAO.Common
-  ( originateLigoDaoWithBalance
+  ( createSampleProposal
+  , originateLigoDaoWithBalance
   , originateLigoDaoWithConfigDesc
   , originateLigoDao
   ) where
@@ -12,12 +13,14 @@ import Universum
 
 import Named (defaults, (!))
 
-import Lorentz
+import Lorentz hiding (now)
 import Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Nettest
+import Time (sec)
 import Util.Named
 
-import BaseDAO.ShareTest.Common (OriginateFn, totalSupplyFromLedger)
+import BaseDAO.ShareTest.Common
+  (OriginateFn, totalSupplyFromLedger, makeProposalKey, proposalMetadataFromNum)
 import BaseDAO.ShareTest.Proposal.Config ()
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -45,6 +48,8 @@ originateLigoDaoWithBalance extra configL balFunc = do
         , (#owner .! owner2, #operator .! operator2)
         ]
 
+  now <- getNow
+
   let fullStorage = FullStorage
         { fsStorage =
             ( mkStorageL
@@ -53,6 +58,7 @@ originateLigoDaoWithBalance extra configL balFunc = do
               ! #votingPeriod (cMinVotingPeriod configL)
               ! #quorumThreshold (cMinQuorumThreshold configL)
               ! #metadata mempty
+              ! #now now
               ! defaults
             )
             { sLedger = bal
@@ -103,3 +109,22 @@ originateLigoDao
  => OriginateFn ParameterL m
 originateLigoDao =
   originateLigoDaoWithConfig dynRecUnsafe defaultConfigL
+
+createSampleProposal
+  :: ( MonadNettest caps base m
+     , HasCallStack
+     )
+  => Int -> Int -> Address -> TAddress ParameterL -> m (ProposalKey ProposalMetadataL)
+createSampleProposal counter vp owner1 dao = do
+  let params = ProposeParams
+        { ppFrozenToken = 10
+        , ppProposalMetadata = proposalMetadataFromNum counter
+        }
+
+  when (vp > 0) $ do
+    withSender (AddressResolved owner1) $
+      call dao (Call @"Freeze") (#amount .! 10)
+    advanceTime (sec (fromIntegral vp))
+
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  pure $ (makeProposalKey params owner1)

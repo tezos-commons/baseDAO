@@ -117,4 +117,3 @@ transferContractTokensScenario originateFn = do
     call dao (Call @"Transfer_contract_tokens") param
   checkTokenBalance (DAO.unfrozenTokenId) fa2Contract target_owner1 90
   checkTokenBalance (DAO.unfrozenTokenId) fa2Contract target_owner2 110
-
