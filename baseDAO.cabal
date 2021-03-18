@@ -34,6 +34,7 @@ library
       BaseDAO.ShareTest.Proposal.Vote
       BaseDAO.ShareTest.Token
       Lorentz.Contracts.BaseDAO
+      Lorentz.Contracts.BaseDAO.Common.Types
       Lorentz.Contracts.BaseDAO.Doc
       Lorentz.Contracts.BaseDAO.Management
       Lorentz.Contracts.BaseDAO.Permit

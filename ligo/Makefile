@@ -81,12 +81,14 @@ $(OUT)/registryDAO_storage.tz : frozen_extra_value = 0n
 $(OUT)/registryDAO_storage.tz : max_proposal_size = 100n
 $(OUT)/registryDAO_storage.tz : slash_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : slash_division_value = 0n
+$(OUT)/registryDAO_storage.tz : min_xtz_amount = 0mutez
+$(OUT)/registryDAO_storage.tz : max_xtz_amount = 100mutez
 $(OUT)/registryDAO_storage.tz : now_val = Tezos.now
 $(OUT)/registryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
 	mkdir -p $(OUT)
-	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz src/registryDAO.mligo base_DAO_contract 'default_registry_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), ${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(now_val), $(metadata_map))'
+	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz src/registryDAO.mligo base_DAO_contract 'default_registry_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), ${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(min_xtz_amount), $(min_xtz_amount), $(now_val), $(metadata_map))'
 	# ================= Compilation successful ================= #
 	# See "$(OUT)/registryDAO_storage.tz" for compilation result #
 	#

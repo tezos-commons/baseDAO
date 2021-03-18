@@ -13,6 +13,7 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Universum ((*))
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
+import qualified Lorentz.Contracts.BaseDAO.Common.Types as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.BaseDAO.Management (ensureNotMigrated)
 import Lorentz.Contracts.TreasuryDAO.Doc
@@ -113,7 +114,7 @@ decisionLambda = do
   iter $ do
     caseT
       ( #cXtz_transfer_type /-> do
-          stackType @(XtzTransfer : Bool : [Operation] : store : s)
+          stackType @(DAO.XtzTransfer : Bool : [Operation] : store : s)
           getField #xtRecipient;
           contractCallingUnsafe @() DefEpName
           ifSome ( do

@@ -113,6 +113,8 @@ frozen_extra_value = 0n
 max_proposal_size = 100n
 slash_scale_value = 1n
 slash_division_value = 0n
+min_xtz_amount = 0mutez
+max_xtz_amount = 100mutez
 now_val = Tezos.now
 metadata_map = (Big_map.empty : metadata_map)
 ```
@@ -123,8 +125,8 @@ which is converted into Michelson using the `compile-storage` command. The
 arguments to this function are the admin address, the token address and the
 configuration parameters described in the Registry spec, which are
 `frozen_scale_value`, `frozen-extra_value`, `max_proposal_size`,
-`slash_scale_value` and `slash_division_value`. Additionally, a `metadata`
-parameter is accepted, accepting a `big_map` as described in TZIP-16.
+`slash_scale_value`, `slash_division_value`, `min_xtz_amount` and `max_xtz_amount`.
+Additionally, a `metadata` parameter is accepted, accepting a `big_map` as described in TZIP-16.
 
 ### TreasuryDAO
 
