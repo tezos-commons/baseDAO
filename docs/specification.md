@@ -253,7 +253,7 @@ Full list:
 * [`drop_proposal`](#drop_proposal)
 * [`migrate`](#migrate)
 * [`confirm_migration`](#confirm_migration)
-* [`GetVotePermitCounter`](#getvotepermitcounter)
+* [`get_vote_permit_counter`](#get_vote_permit_counter)
 * [`get_total_supply`](#get_total_supply)
 
 Format:
@@ -808,38 +808,40 @@ unit
 
 ## Views
 
-### **GetVotePermitCounter**
+### **get_vote_permit_counter**
 
 ```haskell
 data Parameter proposalMetadata otherParam
-  = GetVotePermitCounter (View () Natural)
+  = Get_vote_permit_counter (Void () Natural)
 ```
 
 Parameter (in Michelson):
 ```
-(pair %getVotePermitCounter
-  (unit %param)
-  (contract %callback nat)
+(pair %get_vote_permit_counter
+  (unit %voidParam)
+  (lambda %voidResProxy nat nat)
 )
 ```
 
+- A `void` entrypoint as defined in [TZIP-4](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
 - For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
 
 ### **get_total_supply**
 
 ```haskell
 data Parameter proposalMetadata otherParam
-  = Get_total_supply (View TokenId Natural)
+  = Get_total_supply (Void TokenId Natural)
 ```
 
 Parameter (in Michelson):
 ```
 (pair %get_total_supply
-  (nat %token_id)
-  (contract %callback nat)
+  (nat %voidParam)
+  (contract %voidResProxy nat)
 )
 ```
 
+- A `void` entrypoint as defined in [TZIP-4](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
 - Return the total number of tokens for the given token id.
 - Fail with `FA2_TOKEN_UNDEFINED` if the given token id is not equal to `0` or `1`.
 

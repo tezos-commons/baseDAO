@@ -74,7 +74,7 @@ baseDaoContract config@Config{..} = toContract $ docGroup (DName cDaoName) $ do
       , #cConfirm_migration /-> confirmMigration
       , #cDrop_proposal /-> dropProposal config
       , #cFlush /-> flush config
-      , #cGetVotePermitCounter /-> view_ $ do
+      , #cGet_vote_permit_counter /-> void_ $ do
           doc $ DDescription getVotePermitCounterDoc
           drop @(); stToField #sPermitsCounter
       , #cMigrate /-> migrate
@@ -85,7 +85,7 @@ baseDaoContract config@Config{..} = toContract $ docGroup (DName cDaoName) $ do
       , #cTransfer_contract_tokens /-> transferContractTokens
       , #cTransfer_ownership /-> transferOwnership
       , #cVote /-> vote config
-      , #cGet_total_supply /-> view_ $ do
+      , #cGet_total_supply /-> void_ $ do
           doc $ DDescription getTotalSupplyDoc
           stGet #sTotalSupply
           ifSome nop (failCustom_ #fA2_TOKEN_UNDEFINED)

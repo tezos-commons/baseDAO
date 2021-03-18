@@ -47,17 +47,13 @@ let verify_permit_protected_vote
   | Some permit -> verify_permit_vote (permit, permited.argument, store)
 
 let get_vote_permit_counter (param, store : vote_permit_counter_param * storage) : return =
-  ( Tezos.transaction store.permits_counter 0mutez param.callback
-    :: ([] : operation list)
-  , store
-  )
+  ([%Michelson ({| { FAILWITH } |} : string * nat -> return)]
+    ("VoidResult", param.postprocess store.permits_counter) : return)
 
 let get_total_supply (param, store : get_total_supply_param * storage) : return =
   let result = match Big_map.find_opt param.token_id store.total_supply with
       None ->
         (failwith("FA2_TOKEN_UNDEFINED") : nat)
     | Some v -> v in
-  ( Tezos.transaction result 0mutez param.callback
-    :: ([] : operation list)
-  , store
-  )
+  ([%Michelson ({| { FAILWITH } |} : string * token_id -> return)]
+    ("VoidResult", param.postprocess result) : return)
