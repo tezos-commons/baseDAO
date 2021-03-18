@@ -1,6 +1,6 @@
 # Registry DAO
 
-**Code revision:** [5b4c543](https://github.com/tqtezos/baseDAO/tree/5b4c54370d93762569b3ca52a10482b15ef0f27f) *(Wed Mar 17 15:06:10 2021 +0100)*
+**Code revision:** [b17c4dd](https://github.com/tqtezos/baseDAO/tree/b17c4dd26a09ce4fa137b69e21d6c1df0f5930cf) *(Thu Mar 18 01:58:03 2021 +0100)*
 
 
 
