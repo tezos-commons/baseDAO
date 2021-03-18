@@ -13,6 +13,8 @@ module Ligo.BaseDAO.Types
   , StorageL (..)
   , ConfigL (..)
   , FullStorage (..)
+  , AddressFreezeHistory (..)
+  , LastPeriodChange (..)
   , DynamicRec (..)
   , dynRecUnsafe
   , mkStorageL
@@ -24,7 +26,7 @@ module Ligo.BaseDAO.Types
   , sOperatorsLens
   ) where
 
-import Lorentz
+import Lorentz hiding (now)
 import Universum (One(..), fromIntegral, maybe, (*))
 
 import Control.Lens (makeLensesFor)
@@ -32,6 +34,7 @@ import qualified Data.Map as M
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
+import Lorentz.Annotation ()
 
 import Michelson.Runtime.GState (genesisAddress)
 import Lorentz.Contracts.BaseDAO.Types hiding
@@ -63,6 +66,7 @@ data ProposalL = ProposalL
   { plUpvotes             :: Natural
   , plDownvotes           :: Natural
   , plStartDate           :: Timestamp
+  , plPeriodNum           :: Natural
 
   , plMetadata            :: ProposalMetadataL
 
@@ -80,6 +84,9 @@ type CallCustomParam = (MText, ByteString)
 -- | Utility type containing an entrypoint name and its packed lambda.
 type CustomEntrypoint = (MText, ByteString)
 
+type FreezeParam = ("amount" :! Natural)
+type UnfreezeParam = ("amount" :! Natural)
+
 -- NOTE: Constructors of the parameter types should remain sorted for the
 --'ligoLayout' custom derivation to work.
 --
@@ -92,6 +99,7 @@ data ForbidXTZParam
   | Confirm_migration ()
   | Drop_proposal ProposalKeyL
   | Flush Natural
+  | Freeze FreezeParam
   | GetVotePermitCounter (View () Nonce)
   | Get_total_supply (View FA2.TokenId Natural)
   | Migrate MigrateParam
@@ -100,6 +108,7 @@ data ForbidXTZParam
   | Set_quorum_threshold QuorumThreshold
   | Set_voting_period VotingPeriod
   | Transfer_ownership TransferOwnershipParam
+  | Unfreeze UnfreezeParam
   | Vote [PermitProtected VoteParamL]
   deriving stock (Show)
 
@@ -118,6 +127,18 @@ data ParameterL
   | Transfer_contract_tokens TransferContractTokensParam
   deriving stock (Show)
 
+data LastPeriodChange = LastPeriodChange
+  { vhPeriodNum :: Natural
+  , vhChangedOn :: Timestamp
+  } deriving stock (Eq, Show)
+
+data AddressFreezeHistory = AddressFreezeHistory
+  { fhCurrentUnstaked :: Natural
+  , fhPastUnstaked :: Natural
+  , fhCurrentPeriodNum :: Natural
+  , fhStaked :: Natural
+  } deriving stock (Eq, Show)
+
 data StorageL = StorageL
   { sAdmin :: Address
   , sExtra :: ContractExtraL
@@ -135,9 +156,29 @@ data StorageL = StorageL
   , sVotingPeriod :: VotingPeriod
   , sTotalSupply :: TotalSupply
   , sUnfrozenTokenId :: FA2.TokenId
+  , sFreezeHistory :: BigMap Address AddressFreezeHistory
+  , sLastPeriodChange :: LastPeriodChange
   , sFixedProposalFeeInToken :: Natural
   }
   deriving stock (Show)
+
+instance HasAnnotation ProposalL where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation StorageL where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation AddressFreezeHistory where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation FullStorage where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation ConfigL where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation LastPeriodChange where
+  annOptions = baseDaoAnnOptions
 
 instance HasFieldOfType StorageL name field =>
          StoreHasField StorageL name field where
@@ -158,8 +199,9 @@ mkStorageL
   -> "quorumThreshold" :? Natural
   -> "extra" :! ContractExtraL
   -> "metadata" :! TZIP16.MetadataMap BigMap
+  -> "now" :! Timestamp
   -> StorageL
-mkStorageL admin votingPeriod quorumThreshold extra metadata =
+mkStorageL admin votingPeriod quorumThreshold extra metadata now =
   StorageL
     { sAdmin = arg #admin admin
     , sExtra = arg #extra extra
@@ -175,6 +217,8 @@ mkStorageL admin votingPeriod quorumThreshold extra metadata =
     , sTokenAddress = genesisAddress
     , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
     , sTotalSupply = M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)]
+    , sFreezeHistory = mempty
+    , sLastPeriodChange = LastPeriodChange 0 (arg #now now)
     , sFixedProposalFeeInToken = 0
     , sUnfrozenTokenId = unfrozenTokenId
     , sFrozenTokenId = frozenTokenId
@@ -249,10 +293,11 @@ mkFullStorageL
   -> "quorumThreshold" :? Natural
   -> "extra" :! ContractExtraL
   -> "metadata" :! TZIP16.MetadataMap BigMap
+  -> "now" :! Timestamp
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
-mkFullStorageL admin vp qt extra md cEps = FullStorage
-  { fsStorage = mkStorageL admin vp qt extra md
+mkFullStorageL admin vp qt extra md now cEps = FullStorage
+  { fsStorage = mkStorageL admin vp qt extra md now
   , fsConfig  = mkConfigL (argDef #customEps [] cEps)
   }
 
@@ -281,6 +326,12 @@ customGeneric "ParameterL" ligoLayout
 deriving anyclass instance IsoValue ParameterL
 instance ParameterHasEntrypoints ParameterL where
   type ParameterEntrypointsDerivation ParameterL = EpdDelegate
+
+customGeneric "AddressFreezeHistory" ligoLayout
+deriving anyclass instance IsoValue AddressFreezeHistory
+
+customGeneric "LastPeriodChange" ligoLayout
+deriving anyclass instance IsoValue LastPeriodChange
 
 customGeneric "StorageL" ligoLayout
 deriving anyclass instance IsoValue StorageL

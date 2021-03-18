@@ -8,7 +8,7 @@ module Test.Ligo.BaseDAO.OffChainViews
 import Universum hiding (view)
 
 import qualified Data.Map as M
-import Lorentz (BigMap(..))
+import Lorentz (BigMap(..), timestampFromSeconds)
 import Named (defaults, (!))
 import Test.Tasty (TestTree)
 
@@ -26,6 +26,7 @@ offChainViewStorage =
   ! #admin addr
   ! #extra DAO.dynRecUnsafe
   ! #metadata mempty
+  ! #now (timestampFromSeconds 0)
   ! defaults
   ) { DAO.sLedger = bal
     , DAO.sTotalSupply = totalSupplyFromLedger bal

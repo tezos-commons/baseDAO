@@ -31,7 +31,7 @@ This can be converted to a Michelson expression with the `ligo compile-storage`
 command, which is included in the Makefile so it can be run using `make`.
 
 ```bash
-make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" metadata_map=(Big_map.empty : metadata_map) out/trivialDAO_storage.tz
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" now_val=Tezos.now  metadata_map=(Big_map.empty : metadata_map) out/trivialDAO_storage.tz
 ```
 
 Note: All arguments are optional and will be equal to the values above if not
@@ -99,7 +99,7 @@ As with the default storage this can be generated with the `ligo
 compile-storage` command, or `make`:
 
 ```bash
-make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" max_proposal_size=12n frozen_scale_value=1n frozen_extra_value=0n slash_scale_value=1n slash_division_value=1n metadata_map=(Big_map.empty : metadata_map) out/registryDAO_storage.tz
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" max_proposal_size=12n frozen_scale_value=1n frozen_extra_value=0n slash_scale_value=1n slash_division_value=1n now_val=Tezos.now metadata_map=(Big_map.empty : metadata_map) out/registryDAO_storage.tz
 ```
 
 All the arguments to the above command are optional, and will be filled with
@@ -113,6 +113,7 @@ frozen_extra_value = 0n
 max_proposal_size = 100n
 slash_scale_value = 1n
 slash_division_value = 0n
+now_val = Tezos.now
 metadata_map = (Big_map.empty : metadata_map)
 ```
 
@@ -133,7 +134,7 @@ Michelson expression during the BaseDAO origination using the `ligo
 compile-storage` command as follows.
 
 ```bash
-make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" max_proposal_size=12n frozen_scale_value=1n frozen_extra_value=0n slash_scale_value=1n slash_division_value=1n min_xtz_amount=0mutez max_xtz_amount=100mutez metadata_map=(Big_map.empty : metadata_map) out/treasuryDAO_storage.tz
+make admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" max_proposal_size=12n frozen_scale_value=1n frozen_extra_value=0n slash_scale_value=1n slash_division_value=1n min_xtz_amount=0mutez max_xtz_amount=100mutez now_val=Tezos.now metadata_map=(Big_map.empty : metadata_map) out/treasuryDAO_storage.tz
 ```
 
 This uses the `default_treasury_DAO_full_storage` which is a LIGO function defined in

@@ -30,7 +30,6 @@ library
       BaseDAO.ShareTest.Proposal
       BaseDAO.ShareTest.Proposal.Bounds
       BaseDAO.ShareTest.Proposal.Config
-      BaseDAO.ShareTest.Proposal.Flush
       BaseDAO.ShareTest.Proposal.Proposal
       BaseDAO.ShareTest.Proposal.Vote
       BaseDAO.ShareTest.Token
