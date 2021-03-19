@@ -16,10 +16,34 @@ type update_receiver_param =
   | Add_receivers of (address list)
   | Remove_receivers of (address list)
 
+// For reference only
+// ```
+// type proposal_metadata_transfers =
+//   { agoraPostID : nat
+//   ; transfers : transfer_type list
+//   }
+//
+// type proposal_metadata_updates =
+//   { agoraPostID : nat
+//   ; updates : registry_diff
+//   }
+//
+// type proposal_metadata_update_receivers =
+//   { update_receivers : update_receiver_param
+//   }
+//
+// type proposal_metadata =
+//   | Normal_metadata of proposal_metadata_updates
+//   | Update_receivers_metadata of update_receiver_param
+//   | Transfers_metadata of proposal_metadata_transfers
+//   | Configuration_metadata
+// ```
+
 type proposal_type =
   | Normal_proposal of registry_diff
   | Update_receivers_proposal of update_receiver_param
   | Configuration_proposal
+  | Transfer_proposal of transfer_type list
 
 type lookup_registry_param =
   [@layout:comb]
