@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2020 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+#include "common/types.mligo"
 #include "defaults.mligo"
 #include "types.mligo"
 #include "proposal.mligo"
@@ -31,24 +32,25 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
   let min_xtz_amount = unpack_tez("min_xtz_amount", extras) in
   let max_xtz_amount = unpack_tez("max_xtz_amount", extras) in
 
-  let requred_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
+  let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
+  let has_correct_token_lock =
+    (params.frozen_token = required_token_lock) && (proposal_size < max_proposal_size) in
 
-  if (params.frozen_token = requred_token_lock) && (proposal_size < max_proposal_size) then
+  if has_correct_token_lock then
     let ts = unpack_transfer_type_list("transfers", params.proposal_metadata) in
     let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
       match transfer_type with
-        | Token_transfer_type tt -> is_valid
-        | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
-    in List.fold is_all_transfers_valid ts true
+      | Token_transfer_type tt -> is_valid
+      | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
+    in
+      List.fold is_all_transfers_valid ts true
   else
     false
-
 
 let treasury_DAO_rejected_proposal_return_value (params, extras : proposal * contract_extra) : nat =
   let slash_scale_value = unpack_nat("slash_scale_value", extras) in
   let slash_division_value =  unpack_nat("slash_division_value", extras)
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
-
 
 let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     : operation list * contract_extra =

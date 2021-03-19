@@ -5,19 +5,16 @@
 -- | TreasuryDAO Types
 module Lorentz.Contracts.TreasuryDAO.Types
   ( AgoraPostId (..)
-  , TokenTransfer (..)
-  , TransferType (..)
   , TreasuryDaoContractExtra (..)
   , TreasuryDaoCustomEntrypointsKind
   , TreasuryDaoExtraInterface (..)
   , TreasuryDaoProposalMetadata (..)
-  , XtzTransfer (..)
   ) where
 
 import Lorentz
 
+import qualified Lorentz.Contracts.BaseDAO.Common.Types as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 -- | TreasuryDAO has mainly configuration fields.
 data TreasuryDaoContractExtra = TreasuryDaoContractExtra
@@ -54,7 +51,7 @@ instance Default TreasuryDaoContractExtra where
 -- Token transfer and Xtz transfer
 data TreasuryDaoProposalMetadata = TreasuryDaoProposalMetadata
   { npAgoraPostId :: AgoraPostId
-  , npTransfers :: [TransferType]
+  , npTransfers :: [DAO.TransferType]
   }
   deriving stock (Generic)
   deriving anyclass (IsoValue)
@@ -75,49 +72,6 @@ instance HasAnnotation AgoraPostId where
 
 instance TypeHasDoc AgoraPostId where
   typeDocMdDescription = "Describe an Agora post ID."
-
-data TransferType
-  = Xtz_transfer_type XtzTransfer
-  | Token_transfer_type TokenTransfer
-  deriving stock Generic
-  deriving anyclass IsoValue
-
-instance HasAnnotation TransferType where
-  annOptions = DAO.baseDaoAnnOptions
-
-instance TypeHasDoc TransferType where
-  typeDocMdDescription = "Describe the transfer type of the Treasury proposal which are: \
-  \token transfer type and xtz transfer type."
-
-
-data XtzTransfer = XtzTransfer
-  { xtAmount :: Mutez
-  , xtRecipient :: Address
-  }
-  deriving stock (Generic)
-  deriving anyclass (IsoValue)
-
-instance HasAnnotation XtzTransfer where
-  annOptions = DAO.baseDaoAnnOptions
-
-instance TypeHasDoc XtzTransfer where
-  typeDocMdDescription = "Describe a proposal which wants to \
-    \transfer some amount of XTZ to a certain address."
-
-
-data TokenTransfer = TokenTransfer
-  { ttContractAddress :: Address
-  , ttTransferList :: [FA2.TransferItem]
-  }
-  deriving stock (Generic)
-  deriving anyclass (IsoValue)
-
-instance HasAnnotation TokenTransfer where
-  annOptions = DAO.baseDaoAnnOptions
-
-instance TypeHasDoc TokenTransfer where
-  typeDocMdDescription = "Describe a proposal which wants to transfer any FA2 tokens \
-  \ to a certain address."
 
 
 data TreasuryDaoExtraInterface

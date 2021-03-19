@@ -17,9 +17,9 @@ import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
 import BaseDAO.ShareTest.Common (OriginateFn, checkTokenBalance, makeProposalKey, sendXtz)
+import qualified Lorentz.Contracts.BaseDAO.Common.Types as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Lorentz.Contracts.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
@@ -57,7 +57,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
   let
     proposalMeta = DynamicRec $ Map.fromList $
       [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
-      , ([mt|transfers|], lPackValueRaw @([TransferType])
+      , ([mt|transfers|], lPackValueRaw @([DAO.TransferType])
           [ tokenTransferType (toAddress dao) owner1 owner2
           ]
         )
@@ -100,7 +100,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   let
     proposalMeta = DynamicRec $ Map.fromList $
       [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
-      , ([mt|transfers|], lPackValueRaw @([TransferType])
+      , ([mt|transfers|], lPackValueRaw @([DAO.TransferType])
           [ tokenTransferType (toAddress dao) owner2 owner1
           ]
         )
@@ -152,7 +152,7 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   let
     proposalMeta amt = DynamicRec $ Map.fromList $
       [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
-      , ([mt|transfers|], lPackValueRaw @([TransferType])
+      , ([mt|transfers|], lPackValueRaw @([DAO.TransferType])
           [ xtzTransferType amt owner2 -- transfer from dao to owner2
           ]
         )
@@ -200,14 +200,14 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
 -- Helper
 --------------------------------------------------------------------------
 
-xtzTransferType :: Word32 -> Address -> TransferType
-xtzTransferType amt toAddr = Xtz_transfer_type $ XtzTransfer
+xtzTransferType :: Word32 -> Address -> DAO.TransferType
+xtzTransferType amt toAddr = DAO.Xtz_transfer_type DAO.XtzTransfer
   { xtAmount = toMutez amt
   , xtRecipient = toAddr
   }
 
-tokenTransferType :: Address -> Address -> Address -> TransferType
-tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type $ TokenTransfer
+tokenTransferType :: Address -> Address -> Address -> DAO.TransferType
+tokenTransferType contractAddr fromAddr toAddr = DAO.Token_transfer_type DAO.TokenTransfer
   { ttContractAddress = contractAddr
   , ttTransferList =
       [ FA2.TransferItem

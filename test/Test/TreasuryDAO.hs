@@ -14,6 +14,7 @@ import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
 import BaseDAO.ShareTest.Common (sendXtz)
+import qualified Lorentz.Contracts.BaseDAO.Common.Types as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.TreasuryDAO
@@ -148,7 +149,7 @@ tokenTransferProposalMetadata :: Address -> Address -> Address -> TreasuryDaoPro
 tokenTransferProposalMetadata contractAddr fromAddr toAddr = TreasuryDaoProposalMetadata
   { npAgoraPostId = AgoraPostId 1
   , npTransfers =
-      [ Token_transfer_type $ TokenTransfer
+      [ DAO.Token_transfer_type $ DAO.TokenTransfer
           { ttContractAddress = contractAddr
           , ttTransferList =
               [ FA2.TransferItem
@@ -167,7 +168,7 @@ xtzTransferProposalMetadata :: Address -> TreasuryDaoProposalMetadata
 xtzTransferProposalMetadata toAddr = TreasuryDaoProposalMetadata
   { npAgoraPostId = AgoraPostId 1
   , npTransfers =
-      [ Xtz_transfer_type $ XtzTransfer
+      [ DAO.Xtz_transfer_type $ DAO.XtzTransfer
           { xtAmount = toMutez 2
           , xtRecipient = toAddr
           }

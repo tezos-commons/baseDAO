@@ -21,13 +21,15 @@ import Lorentz.Test.Consumer
 import Michelson.Text (mkMTextUnsafe)
 import Michelson.Typed (convertContract)
 import Michelson.Typed.Convert (untypeValue)
+import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
 
-import BaseDAO.ShareTest.Common (totalSupplyFromLedger, makeProposalKey)
+import BaseDAO.ShareTest.Common (checkTokenBalance, totalSupplyFromLedger, makeProposalKey, sendXtz)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
+import qualified Lorentz.Contracts.BaseDAO.Common.Types as DAO
 import Util.Named
 
 withOriginated
@@ -260,6 +262,152 @@ test_RegistryDAO =
 
             checkStorage (AddressResolved $ unTAddress consumer) (toVal [([mt|key|], Just [mt|testVal|])])
 
+    , nettestScenarioCaps "checks it can flush a transfer type proposal (#66)" $
+        withOriginated 3
+          (\(admin : wallets) ->
+            setExtra @Natural [mt|max_proposal_size|] 200 $
+            initialStorageWithExplictRegistryDAOConfig admin wallets) $
+          \[admin, wallet1, wallet2] _ baseDao -> do
+            let opParams = FA2.OperatorParam
+                  { opOwner = wallet2
+                  , opOperator = toAddress baseDao
+                  , opTokenId = unfrozenTokenId
+                  }
+            withSender (AddressResolved wallet2) $
+              call baseDao (Call @"Update_operators") [FA2.AddOperator opParams]
+
+            let
+              proposalMeta = DynamicRec $ Map.fromList $
+                [ ([mt|agoraPostID|], lPackValueRaw @Natural 1)
+                , ([mt|transfers|], lPackValueRaw @([DAO.TransferType])
+                    [ tokenTransferType (toAddress baseDao) wallet2 wallet1
+                    ]
+                  )
+                ]
+              proposalSize = metadataSize proposalMeta
+              proposeParams = ProposeParams proposalSize proposalMeta
+
+            withSender (AddressResolved wallet1) $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+            withSender (AddressResolved wallet2) $
+              call baseDao (Call @"Freeze") (#amount .! 10)
+
+            advanceTime (sec 13)
+
+            withSender (AddressResolved wallet1) $
+              call baseDao (Call @"Propose") proposeParams
+
+            checkTokenBalance frozenTokenId baseDao wallet1 164
+            checkTokenBalance unfrozenTokenId baseDao wallet1 836
+
+            let
+              key1 = makeProposalKey proposeParams wallet1
+              upvote = NoPermit VoteParam
+                  { vVoteType = True
+                  , vVoteAmount = 2
+                  , vProposalKey = key1
+                  }
+
+            advanceTime (sec 12)
+            withSender (AddressResolved wallet2) $ call baseDao (Call @"Vote") [upvote]
+            advanceTime (sec 11)
+            withSender (AddressResolved admin) $ call baseDao (Call @"Flush") (1 :: Natural)
+
+            checkTokenBalance frozenTokenId baseDao wallet1 proposalSize
+            checkTokenBalance unfrozenTokenId baseDao wallet1 (defaultTokenBalance - proposalSize + 10)
+            checkTokenBalance frozenTokenId baseDao wallet2 10
+            checkTokenBalance unfrozenTokenId baseDao wallet2 (defaultTokenBalance - 10 - 10)
+
+    , nettestScenarioCaps "checks it can propose a valid xtz type proposal (#66)" $
+        withOriginated 2
+          (\(admin : wallets) ->
+            setExtra @Natural [mt|max_proposal_size|] 200 $
+            initialStorageWithExplictRegistryDAOConfig admin wallets) $
+          \[_, wallet] _ baseDao -> do
+            let
+              proposalMeta = DynamicRec $ Map.fromList $
+                [ ([mt|agoraPostID|], lPackValueRaw @Natural 1)
+                , ([mt|transfers|], lPackValueRaw @([DAO.TransferType])
+                    [ xtzTransferType 10 wallet
+                    ]
+                  )
+                ]
+              proposalMeta2 = DynamicRec $ Map.fromList $
+                [ ([mt|agoraPostID|], lPackValueRaw @Natural 2)
+                , ([mt|transfers|], lPackValueRaw @([DAO.TransferType])
+                    [ xtzTransferType 3 wallet
+                    ]
+                  )
+                ]
+              proposalSize = metadataSize proposalMeta
+              proposalSize2 = metadataSize proposalMeta2
+
+            withSender (AddressResolved wallet) $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+
+            advanceTime (sec 10)
+
+            -- Fails because 10 >= max_xtz_amount
+            withSender (AddressResolved wallet) $
+              call baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
+              & expectFailProposalCheck
+
+            withSender (AddressResolved wallet) $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize2)
+
+            advanceTime (sec 10)
+
+            withSender (AddressResolved wallet) $
+              call baseDao (Call @"Propose") (ProposeParams proposalSize2 proposalMeta2)
+
+            checkTokenBalance frozenTokenId baseDao wallet 184
+            checkTokenBalance unfrozenTokenId baseDao wallet 816
+
+    , nettestScenarioCaps "checks it can transfer with receive_xtz_entrypoint (#66)" $
+        withOriginated 3
+          (\(admin : wallets) ->
+            setExtra @Natural [mt|max_proposal_size|] 200 $
+            initialStorageWithExplictRegistryDAOConfig admin wallets) $
+          \[admin, wallet1, wallet2] _ baseDao -> do
+            sendXtz (toAddress baseDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+
+            let
+              proposalMeta = DynamicRec $ Map.fromList $
+                [ ([mt|agoraPostID|], lPackValueRaw @Natural 1)
+                , ([mt|transfers|], lPackValueRaw @([DAO.TransferType])
+                    -- transfer from baseDAO to wallet2
+                    [ xtzTransferType 3 wallet2
+                    ]
+                  )
+                ]
+              proposalSize = metadataSize proposalMeta
+              proposeParams = ProposeParams proposalSize proposalMeta
+
+            withSender (AddressResolved wallet1) $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+            withSender (AddressResolved wallet2) $
+              call baseDao (Call @"Freeze") (#amount .! 10)
+
+            advanceTime (sec 11)
+
+            withSender (AddressResolved wallet1) $
+              call baseDao (Call @"Propose") proposeParams
+            let key1 = makeProposalKey proposeParams wallet1
+
+            checkTokenBalance frozenTokenId baseDao wallet1 92
+            checkTokenBalance unfrozenTokenId baseDao wallet1 908
+
+            let
+              upvote = NoPermit VoteParam
+                { vVoteType = True
+                , vVoteAmount = 2
+                , vProposalKey = key1
+                }
+
+            advanceTime (sec 11)
+            withSender (AddressResolved wallet2) $ call baseDao (Call @"Vote") [upvote]
+            advanceTime (sec 10)
+            withSender (AddressResolved admin) $ call baseDao (Call @"Flush") (1 :: Natural)
     ]
   ]
   where
@@ -294,6 +442,8 @@ test_RegistryDAO =
       setExtra @Natural [mt|frozen_extra_value|] 0 $
       setExtra @Natural [mt|slash_scale_value|] 1 $
       setExtra @Natural [mt|slash_division_value|] 1 $
+      setExtra @Natural [mt|min_xtz_amount|] 2 $
+      setExtra @Natural [mt|max_xtz_amount|] 5 $
       setExtra @Natural [mt|max_proposal_size|] 100 (initialStorage admin wallets)
 
     setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
@@ -308,3 +458,30 @@ expectFailProposalCheck
   :: (MonadNettest caps base m)
   => m a -> m ()
 expectFailProposalCheck = expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
+
+--------------------------------------------------------------------------
+-- Helper
+--------------------------------------------------------------------------
+
+xtzTransferType :: Word32 -> Address -> DAO.TransferType
+xtzTransferType amt toAddr = DAO.Xtz_transfer_type DAO.XtzTransfer
+  { xtAmount = toMutez amt
+  , xtRecipient = toAddr
+  }
+
+tokenTransferType :: Address -> Address -> Address -> DAO.TransferType
+tokenTransferType contractAddr fromAddr toAddr = DAO.Token_transfer_type DAO.TokenTransfer
+  { ttContractAddress = contractAddr
+  , ttTransferList =
+    [ FA2.TransferItem
+      { tiFrom = fromAddr
+      , tiTxs =
+        [ FA2.TransferDestination
+          { tdTo = toAddr
+          , tdTokenId = unfrozenTokenId
+          , tdAmount = 10
+          }
+        ]
+      }
+    ]
+  }

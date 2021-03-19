@@ -27,6 +27,7 @@ Every proposal includes (`proposalMetadata`):
 
 Another type of proposal is used to update parameters specified below,
 it takes 5 `option nat` values (called `max_proposal_size`, `frozen_scale_value`, `frozen_extra_value`, `slash_scale_value` and `slash_division_value` below).
+It also takes 2 `option tez` values (called `min_xtz_amount` and `max_xtz_amount` below).
 
 Yet a third type of proposal is used to update the set of successful-proposal receiver contract
 addresses. This proposal accept a parameter that has two constructors. The proposal can add to,
@@ -38,7 +39,9 @@ Configuration lambdas are implemented as follows:
 I. e. `s` is total size of the diff and post ID.
 It should naturally prohibit spam proposals and too big proposals (unless `frozen_scale_value` is 0).
 Additionally, we require `s < max_proposal_size` as a safety measure because too large proposals can be too costly to deal with in terms of gas.
-`max_proposal_size`, `frozen_scale_value` and `frozen_extra_value` are parameters of the contract specified by the DAO creator.
+For transfer proposals, it's required that `min_xtz_amount` <= `amount` <= `max_xtz_amount`.
+`max_proposal_size`, `frozen_scale_value`, `frozen_extra_value`, `min_xtz_amount` and `max_xtz_amount`
+are parameters of the contract specified by the DAO creator.
 Note that by setting `frozen_scale_value` to 0 it's possible to require a constant of tokens to be locked.
 
 * When a proposal is rejected, the returned amount is computed as `slash_scale_value * frozen / slash_division_value`.
