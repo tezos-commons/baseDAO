@@ -258,7 +258,7 @@ Full list:
 * [`drop_proposal`](#drop_proposal)
 * [`migrate`](#migrate)
 * [`confirm_migration`](#confirm_migration)
-* [`GetVotePermitCounter`](#getvotepermitcounter)
+* [`get_vote_permit_counter`](#get_vote_permit_counter)
 * [`get_total_supply`](#get_total_supply)
 * [`freeze`](#freeze)
 * [`unfreeze`](#unfreeze)
@@ -839,26 +839,27 @@ Parameter (in Michelson):
 
 ## Views
 
-### **GetVotePermitCounter**
+### **Get_vote_permit_counter**
 
 ```ocaml
 type vote_permit_counter_param =
   [@layout:comb]
   { param : unit
-  ; callback : nat contract
+  ; postprocess : nat -> nat
   }
 
-GetVotePermitCounter of vote_permit_counter_param
+Get_vote_permit_counter of vote_permit_counter_param
 ```
 
 Parameter (in Michelson):
 ```
-(pair %getVotePermitCounter
+(pair %get_vote_permit_counter
   (unit %param)
-  (contract %callback nat)
+  (lambda %postprocess nat nat)
 )
 ```
 
+- A `void` entrypoint as defined in [TZIP-4](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
 - For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
 
 ### **get_total_supply**
@@ -867,7 +868,7 @@ Parameter (in Michelson):
 type get_total_supply_param =
   [@layout:comb]
   { token_id : token_id
-  ; callback : nat contract
+  ; postprocess : nat -> nat
   }
 
 Get_total_supply of get_total_supply_param
@@ -877,10 +878,11 @@ Parameter (in Michelson):
 ```
 (pair %get_total_supply
   (nat %token_id)
-  (contract %callback nat)
+  (lambda %postprocess nat nat)
 )
 ```
 
+- A `void` entrypoint as defined in [TZIP-4](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
 - Return the total number of tokens for the given token id.
 - Fail with `FA2_TOKEN_UNDEFINED` if the given token id is not equal to `0` or `1`.
 

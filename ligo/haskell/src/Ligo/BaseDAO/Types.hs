@@ -100,8 +100,8 @@ data ForbidXTZParam
   | Drop_proposal ProposalKeyL
   | Flush Natural
   | Freeze FreezeParam
-  | GetVotePermitCounter (View () Nonce)
-  | Get_total_supply (View FA2.TokenId Natural)
+  | Get_vote_permit_counter (Void_ () Nonce)
+  | Get_total_supply (Void_ FA2.TokenId Natural)
   | Migrate MigrateParam
   | Mint MintParam
   | Set_fixed_fee_in_token Natural

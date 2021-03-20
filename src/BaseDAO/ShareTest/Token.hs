@@ -10,7 +10,6 @@ module BaseDAO.ShareTest.Token
 import Universum
 
 import Lorentz hiding ((>>))
-import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Util.Named
 
@@ -46,13 +45,13 @@ burnScenario originateFn = withFrozenCallStack $ do
   checkTokenBalance (DAO.frozenTokenId) dao owner1 5
 
   -- Check total supply
-  consumer <- originateSimple "consumer" [] contractConsumer
-  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView DAO.unfrozenTokenId consumer)
-  checkStorage (AddressResolved $ toAddress consumer) (toVal [10 :: Natural]) -- initial = 20
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Get_total_supply") (mkVoid DAO.unfrozenTokenId)
+      & expectError (VoidResult (10 :: Natural)) -- initial = 20
 
-  consumer2 <- originateSimple "consumer" [] contractConsumer
-  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView DAO.frozenTokenId consumer2)
-  checkStorage (AddressResolved $ toAddress consumer2) (toVal [15 :: Natural]) -- initial = 20
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Get_total_supply") (mkVoid DAO.frozenTokenId)
+      & expectError (VoidResult (15 :: Natural)) -- initial = 20
 
 mintScenario
   :: forall caps base m param pm
@@ -73,13 +72,13 @@ mintScenario originateFn = withFrozenCallStack $ do
   checkTokenBalance (DAO.frozenTokenId) dao owner1 50
 
   -- Check total supply
-  consumer <- originateSimple "consumer" [] contractConsumer
-  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView DAO.unfrozenTokenId consumer)
-  checkStorage (AddressResolved $ toAddress consumer) (toVal [100 :: Natural]) -- initial = 0
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Get_total_supply") (mkVoid DAO.unfrozenTokenId)
+      & expectError (VoidResult (100 :: Natural)) -- initial = 0
 
-  consumer2 <- originateSimple "consumer" [] contractConsumer
-  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView DAO.frozenTokenId consumer2)
-  checkStorage (AddressResolved $ toAddress consumer2) (toVal [50 :: Natural]) -- initial = 0
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Get_total_supply") (mkVoid DAO.frozenTokenId)
+      & expectError (VoidResult (50 :: Natural)) -- initial = 0
 
 transferContractTokensScenario
   :: forall caps base m param pm

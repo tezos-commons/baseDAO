@@ -328,7 +328,7 @@ data Parameter proposalMetadata otherParam
   | Confirm_migration ()
   | Drop_proposal (ProposalKey proposalMetadata)
   | Flush Natural
-  | GetVotePermitCounter (View () Nonce)
+  | Get_vote_permit_counter (Void_ () Nonce)
   | Migrate MigrateParam
   | Mint MintParam
   | Propose (ProposeParams proposalMetadata)
@@ -337,7 +337,7 @@ data Parameter proposalMetadata otherParam
   | Transfer_contract_tokens TransferContractTokensParam
   | Transfer_ownership TransferOwnershipParam
   | Vote [PermitProtected $ VoteParam proposalMetadata]
-  | Get_total_supply (View (FA2.TokenId) Natural)
+  | Get_total_supply (Void_ FA2.TokenId Natural)
   deriving stock (Generic, Show)
 
 -- Note: using this for calling entrypoints with polymorphic arguments may
@@ -350,7 +350,7 @@ type ParameterC param proposalMetadata =
     , "Confirm_migration" :> ()
     , DropProposalEp proposalMetadata
     , FlushEp
-    , "GetVotePermitCounter" :> (View () Nonce)
+    , "Get_vote_permit_counter" :> Void_ () Nonce
     , "Migrate" :> MigrateParam
     , "Mint" :> MintParam
     , ProposeEp proposalMetadata
@@ -359,7 +359,7 @@ type ParameterC param proposalMetadata =
     , "Transfer_contract_tokens" :> TransferContractTokensParam
     , "Transfer_ownership" :> TransferOwnershipParam
     , VoteEp proposalMetadata
-    , "Get_total_supply" :> (View FA2.TokenId Natural)
+    , "Get_total_supply" :> Void_ FA2.TokenId Natural
     ]
   , FA2.ParameterC param
   )

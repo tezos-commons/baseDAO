@@ -103,12 +103,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
       size: 9641
-      sha256: 6de4ad45bb0c007d707c9132cd6c9cdcd0c5d18c79cb921b90790d0d80ae86fa
-    commit: 13bd68194cfabd0f3350eae4166f3277c4621149
+      sha256: d65540c475280e0b74b586f4146b291dde17b389e7bad7c1deef376ec36428d4
+    commit: 28e7b38f9628cfdc0b770571bcd9c2b65e73448a
   original:
     subdir: code/morley
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 13bd68194cfabd0f3350eae4166f3277c4621149
+    commit: 28e7b38f9628cfdc0b770571bcd9c2b65e73448a
 - completed:
     subdir: code/lorentz
     name: lorentz
@@ -116,25 +116,25 @@ packages:
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
       size: 3741
-      sha256: dc462de5ed06b118955daf9784d1a018bcd51141b16cc4d30e7d6ad2045ff311
-    commit: 13bd68194cfabd0f3350eae4166f3277c4621149
+      sha256: fce541c1b843a238687baac6bef5db7c729a346dae1d2ee33195e56c8320a7d0
+    commit: 28e7b38f9628cfdc0b770571bcd9c2b65e73448a
   original:
     subdir: code/lorentz
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 13bd68194cfabd0f3350eae4166f3277c4621149
+    commit: 28e7b38f9628cfdc0b770571bcd9c2b65e73448a
 - completed:
     subdir: code/cleveland
     name: cleveland
     version: 0.1.0
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 12513
-      sha256: aa009f6e0bcf0b8c4b6f43247fe361b11ac113bdbf466b78bf69f82879f26115
-    commit: 13bd68194cfabd0f3350eae4166f3277c4621149
+      size: 12580
+      sha256: 0b3c3fe5a806781f4e8538862fcbbacd08d45b2d87c56fc7bd05877eacc54a54
+    commit: 28e7b38f9628cfdc0b770571bcd9c2b65e73448a
   original:
     subdir: code/cleveland
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 13bd68194cfabd0f3350eae4166f3277c4621149
+    commit: 28e7b38f9628cfdc0b770571bcd9c2b65e73448a
 - completed:
     subdir: code/morley-client
     name: morley-client
@@ -143,11 +143,11 @@ packages:
     pantry-tree:
       size: 3175
       sha256: 00f60cb7810aeb4eb22011cac7da5b3c015ce4a106a6cdd9273593e65fe51d28
-    commit: 13bd68194cfabd0f3350eae4166f3277c4621149
+    commit: 28e7b38f9628cfdc0b770571bcd9c2b65e73448a
   original:
     subdir: code/morley-client
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 13bd68194cfabd0f3350eae4166f3277c4621149
+    commit: 28e7b38f9628cfdc0b770571bcd9c2b65e73448a
 - completed:
     name: caps
     version: '0'
