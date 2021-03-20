@@ -160,14 +160,13 @@ test_BaseDAO_Proposal =
           checkTokenBalance unfrozenTokenId dao proposer 48
 
           -- Check total supply
-          let getTotalSupply tokenId consumer = call dao (Call @"Get_total_supply") (mkView tokenId consumer)
-          consumer <- originateSimple "consumer" [] contractConsumer
-          withSender (AddressResolved proposer) $ getTotalSupply unfrozenTokenId consumer
-          checkStorage (AddressResolved $ toAddress consumer) (toVal [148 :: Natural]) -- initial = 200
+          withSender (AddressResolved proposer) $
+            call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
+              & expectError (VoidResult (148 :: Natural)) -- initial = 200
 
-          consumer2 <- originateSimple "consumer" [] contractConsumer
-          withSender (AddressResolved proposer) $ getTotalSupply frozenTokenId consumer2
-          checkStorage (AddressResolved $ toAddress consumer2) (toVal [52 :: Natural]) -- initial = 0
+          withSender (AddressResolved proposer) $
+            call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
+              & expectError (VoidResult (52 :: Natural)) -- initial = 0
 
     , nettestScenario "cannot propose with insufficient tokens to pay the fee" $
         uncapsNettest $ do
@@ -529,10 +528,9 @@ voteWithPermitNonce _ originateFn = do
     call dao (Call @"Vote") [params2]
 
   -- Check counter
-  consumer <- originateSimple "consumer" [] contractConsumer
   withSender (AddressResolved owner1) $
-    call dao (Call @"GetVotePermitCounter") (mkView () consumer)
-  checkStorage (AddressResolved $ toAddress consumer) (toVal [2 :: Natural])
+    call dao (Call @"Get_vote_permit_counter") (mkVoid ())
+      & expectError (VoidResult (2 :: Natural))
 
 flushNotAffectOngoingProposals
   :: forall caps base m.
@@ -620,13 +618,13 @@ flushAcceptedProposals _ originateFn = do
   checkTokenBalance (unfrozenTokenId) dao owner2 97 -- voter
 
   -- Check total supply (After flush, no changes are made.)
-  consumer <- originateSimple "consumer" [] contractConsumer
-  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView unfrozenTokenId consumer)
-  checkStorage (AddressResolved $ toAddress consumer) (toVal [187 :: Natural]) -- initial = 200
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
+      & expectError (VoidResult (187 :: Natural)) -- initial = 200
 
-  consumer2 <- originateSimple "consumer" [] contractConsumer
-  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView frozenTokenId consumer2)
-  checkStorage (AddressResolved $ toAddress consumer2) (toVal [13 :: Natural]) -- initial = 0
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
+      & expectError (VoidResult (13 :: Natural)) -- initial = 0
 
 
 flushAcceptedProposalsWithAnAmount
@@ -1112,13 +1110,13 @@ validProposal  _ originateFn = do
   checkTokenBalance unfrozenTokenId dao owner1 90
 
   -- Check total supply
-  consumer <- originateSimple "consumer" [] contractConsumer
-  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView unfrozenTokenId consumer)
-  checkStorage (AddressResolved $ toAddress consumer) (toVal [190 :: Natural]) -- initial = 200
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
+      & expectError (VoidResult (190 :: Natural)) -- initial = 200
 
-  consumer2 <- originateSimple "consumer" [] contractConsumer
-  withSender (AddressResolved owner1) $ call dao (Call @"Get_total_supply") (mkView frozenTokenId consumer2)
-  checkStorage (AddressResolved $ toAddress consumer2) (toVal [10 :: Natural]) -- initial = 0
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
+      & expectError (VoidResult (10 :: Natural)) -- initial = 0
 
 rejectProposal
   :: forall caps base m.

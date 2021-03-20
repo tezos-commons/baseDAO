@@ -225,13 +225,13 @@ type transfer_contract_tokens_param =
 type vote_permit_counter_param =
   [@layout:comb]
   { param : unit
-  ; callback : nat contract
+  ; postprocess : nat -> nat
   }
 
 type get_total_supply_param =
   [@layout:comb]
   { token_id : token_id
-  ; callback : nat contract
+  ; postprocess : nat -> nat
   }
 
 (*
@@ -251,7 +251,7 @@ type forbid_xtz_params =
   | Flush of nat
   | Burn of burn_param
   | Mint of mint_param
-  | GetVotePermitCounter of vote_permit_counter_param
+  | Get_vote_permit_counter of vote_permit_counter_param
   | Get_total_supply of get_total_supply_param
   | Freeze of freeze_param
   | Unfreeze of unfreeze_param
