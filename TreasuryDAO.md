@@ -1,6 +1,6 @@
 # Treasury DAO
 
-**Code revision:** [10fcd05](https://github.com/tqtezos/baseDAO/tree/10fcd058d8da2a95d92eddb5968d6e79305b9013) *(Fri Mar 19 12:21:54 2021 -0300)*
+**Code revision:** [23cc791](https://github.com/tqtezos/baseDAO/tree/23cc7918abbec39f69ad41bbe0732c3c03cad513) *(Sun Mar 21 00:48:40 2021 +0300)*
 
 
 
@@ -27,7 +27,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [confirm_migration](#entrypoints-confirm_migration)
   - [drop_proposal](#entrypoints-drop_proposal)
   - [flush](#entrypoints-flush)
-  - [getVotePermitCounter](#entrypoints-getVotePermitCounter)
+  - [get_vote_permit_counter](#entrypoints-get_vote_permit_counter)
   - [migrate](#entrypoints-migrate)
   - [mint](#entrypoints-mint)
   - [propose](#entrypoints-propose)
@@ -52,6 +52,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [BurnParam](#types-BurnParam)
   - [ByteString](#types-ByteString)
   - [ChainId](#types-ChainId)
+  - [Code (extended lambda)](#types-Code-lparenextended-lambdarparen)
   - [Contract](#types-Contract)
   - [DataToSign](#types-DataToSign)
   - [Hash](#types-Hash)
@@ -90,6 +91,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [TreasuryDaoProposalMetadata](#types-TreasuryDaoProposalMetadata)
   - [UpdateOperator](#types-UpdateOperator)
   - [View](#types-View)
+  - [Void](#types-Void)
   - [VoteParam](#types-VoteParam)
   - [Voter](#types-Voter)
   - [XtzTransfer](#types-XtzTransfer)
@@ -123,6 +125,7 @@ migration entrypoints. It supports two types of token_id - frozen (token_id = 1)
   - [PROPOSER_NOT_EXIST_IN_LEDGER](#errors-PROPOSER_NOT_EXIST_IN_LEDGER)
   - [VOTING_INSUFFICIENT_BALANCE](#errors-VOTING_INSUFFICIENT_BALANCE)
   - [VOTING_PERIOD_OVER](#errors-VOTING_PERIOD_OVER)
+  - [VoidResult](#errors-VoidResult)
 - [Referenced hash algorithms](#section-Referenced-hash-algorithms)
 
 
@@ -614,11 +617,11 @@ If the proposal is accepted, the decision lambda is called.
 
 
 
-<a name="entrypoints-getVotePermitCounter"></a>
+<a name="entrypoints-get_vote_permit_counter"></a>
 
 ---
 
-### `getVotePermitCounter`
+### `get_vote_permit_counter`
 
 Returns the next nonce value with which a permit should be created.
 
@@ -627,19 +630,22 @@ with each successful call of an entrypoint.
 
 
 **Argument:** 
-  + **In Haskell:** [`View`](#types-View) [`()`](#types-lparenrparen) [`Nonce`](#types-Nonce)
-  + **In Michelson:** `(pair unit (contract nat))`
-    + **Example:** <span id="example-id">`Pair Unit "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+  + **In Haskell:** [`Void`](#types-Void) [`()`](#types-lparenrparen) [`Nonce`](#types-Nonce) [`Text`](#types-Text) [`Integer`](#types-Integer)
+  + **In Michelson:** `(pair unit (lambda nat nat))`
+    + **Example:** <span id="example-id">`Pair Unit { DROP;PUSH nat 0 }`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
 
 0. Construct an argument for the entrypoint.
-1. Call contract's `getVotePermitCounter` entrypoint passing the constructed argument.
+1. Call contract's `get_vote_permit_counter` entrypoint passing the constructed argument.
 </details>
 <p>
 
 
+
+**Possible errors:**
+* [`VoidResult`](#errors-VoidResult) — Call to entrypoint has succeeded, reporting returned value as error.
 
 
 
@@ -954,9 +960,9 @@ Return the total number of tokens for the given token-id if known or fail if not
 
 
 **Argument:** 
-  + **In Haskell:** [`View`](#types-View) [`TokenId`](#types-TokenId) [`Natural`](#types-Natural)
-  + **In Michelson:** `(pair nat (contract nat))`
-    + **Example:** <span id="example-id">`Pair 0 "KT1AEseqMV6fk2vtvQCVyA7ZCaxv7cpxtXdB"`</span>
+  + **In Haskell:** [`Void`](#types-Void) [`TokenId`](#types-TokenId) [`Natural`](#types-Natural) [`Text`](#types-Text) [`Integer`](#types-Integer)
+  + **In Michelson:** `(pair nat (lambda nat nat))`
+    + **Example:** <span id="example-id">`Pair 0 { DROP;PUSH nat 0 }`</span>
 
 <details>
   <summary><b>How to call this entrypoint</b></summary>
@@ -969,6 +975,8 @@ Return the total number of tokens for the given token-id if known or fail if not
 
 
 **Possible errors:**
+* [`VoidResult`](#errors-VoidResult) — Call to entrypoint has succeeded, reporting returned value as error.
+
 * [`FA2_TOKEN_UNDEFINED`](#errors-FA2_TOKEN_UNDEFINED) — Contract received an unsupported token id
 
 
@@ -1134,6 +1142,20 @@ Bytes primitive.
 Identifier of the current chain.
 
 **Final Michelson representation:** `chain_id`
+
+
+
+<a name="types-Code-lparenextended-lambdarparen"></a>
+
+---
+
+### `Code (extended lambda)`
+
+`Code i o` stands for a sequence of instructions which accepts stack of type `i` and returns stack of type `o`.
+
+When both `i` and `o` are of length 1, this primitive corresponds to the Michelson lambda. In more complex cases code is surrounded with `pair`and `unpair` instructions until fits into mentioned restriction.
+
+**Final Michelson representation (example):** `Code [Integer, Natural, MText, ()] [ByteString]` = `lambda (pair int (pair nat (pair string unit))) bytes`
 
 
 
@@ -1732,6 +1754,23 @@ Read more in [A1 conventions document](https://gitlab.com/tzip/tzip/-/blob/c42e3
 
 
 
+<a name="types-Void"></a>
+
+---
+
+### `Void`
+
+`Void a r` accepts an argument of type `a` and returns a value of type `r` as contract error. To comply with general mechanism of contracts custom errors, void entrypoints execute `FAILWITH` instruction on `("VoidResult", r)` value, where `r` is the actual return value of the entrypoint.
+Read more in [A1 conventions document](https://gitlab.com/tzip/tzip/-/blob/c42e3f0f5e73669e84e615d69bee73281572eb0a/proposals/tzip-4/tzip-4.md#void-entrypoints).
+
+**Structure (example):** `Void MText Integer` = 
+  * [`Text`](#types-Text)
+  * [`Code`](#types-Code-lparenextended-lambdarparen) **[**[`Integer`](#types-Integer)**]** **[**[`Integer`](#types-Integer)**]**
+
+**Final Michelson representation (example):** `Void MText Integer` = `pair string (lambda int int)`
+
+
+
 <a name="types-VoteParam"></a>
 
 ---
@@ -2185,6 +2224,19 @@ Provided error argument will be of type ([`Text`](#types-Text), [`()`](#types-lp
 **Fires if:** Trying to vote on a proposal that is already ended
 
 **Representation:** `VOTING_PERIOD_OVER`
+
+<a name="errors-VoidResult"></a>
+
+---
+
+### `VoidResult`
+
+**Class:** -
+
+**Fires if:** Call to entrypoint has succeeded, reporting returned value as error.
+As Tezos contracts normally do not produce any output (not counting storage update), this is the simplest way to return something to the caller in read-only entrypoints.
+
+**Representation:** `("VoidResult", <return value>)`
 
 <a name="section-Referenced-hash-algorithms"></a>
 
