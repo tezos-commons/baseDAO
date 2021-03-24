@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 {-# LANGUAGE NumericUnderscores #-}
@@ -6,23 +6,16 @@
 -- TODO: Replace 'Empty' with 'Never' from morley
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
--- | Contain common functions and types that are used
--- in the shared tests.
-module BaseDAO.ShareTest.Common
+-- | Contain common functions and types that are used in BaseDAO tests.
+module Test.BaseDAO.Common
   ( OriginateFn
-  , IsLorentz
-  , expectFailed
   , totalSupplyFromLedger
 
   , mkFA2View
   , checkTokenBalance
   , originateTrivialDao
   , originateBaseDaoWithConfig
-  , originateBaseDaoWithBalance
   , originateTrivialDaoWithBalance
-  , makeProposalKey
-  , addDataToSign
-  , permitProtect
   , sendXtz
   , ProposalMetadataFromNum (..)
   , createSampleProposal
@@ -39,23 +32,12 @@ import Morley.Nettest
 import Named (defaults, (!))
 import Util.Named ((.!))
 
-import qualified BaseDAO.ShareTest.Proposal.Config as DAO (ConfigDesc(..), fillConfig)
+import qualified Test.BaseDAO.Proposal.Config as DAO (ConfigDesc(..), fillConfig)
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 
 type OriginateFn param m = m ((Address, Address), (Address, Address), TAddress param, Address)
-
--- TODO: Since Ligo contract has different error messages (string type)
--- we need this to be able to catch error message properly.
-type IsLorentz = Bool
-
--- | Used for check error from ligo contract
-expectFailed
- :: forall caps base m
-  . (MonadNettest caps base m)
-  => Address -> MText -> m () -> m ()
-expectFailed addr val = flip expectFailure (NettestFailedWith addr val)
 
 totalSupplyFromLedger :: Ledger -> TotalSupply
 totalSupplyFromLedger (BigMap ledger) =
@@ -174,29 +156,6 @@ checkTokenBalance tokenId dao addr expectedValue = withFrozenCallStack $ do
 
 makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ProposalKey pm
 makeProposalKey params owner = toHashHs $ lPackValue (params, owner)
-
-addDataToSign
-  :: (MonadNettest caps base m)
-  => TAddress param
-  -> Nonce
-  -> d
-  -> m (DataToSign d, d)
-addDataToSign (toAddress -> dsContract) dsNonce dsData = do
-  dsChainId <- getChainId
-  return (DataToSign{..}, dsData)
-
--- | Add a permit from given user.
-permitProtect
-  :: (MonadNettest caps base m, NicePackedValue a)
-  => AddressOrAlias -> (DataToSign a, a) -> m (PermitProtected a)
-permitProtect author (toSign, a) = do
-  authorAlias <- getAlias author
-  pKey <- getPublicKey author
-  pSignature <- signBinary (lPackValue toSign) authorAlias
-  return PermitProtected
-    { ppArgument = a
-    , ppPermit = Just Permit{..}
-    }
 
 sendXtz
   :: (MonadNettest caps base m, HasCallStack, NiceParameter pm)

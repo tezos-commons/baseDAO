@@ -7,7 +7,7 @@ license:             MIT
 license-file:        LICENSE
 author:              Serokell, Tocqueville Group
 git:                 git@github.com:tqtezos/baseDAO.git
-copyright:           2020 TQ Tezos
+copyright:           2021 TQ Tezos
 
 extra-source-files:
 - README.md
@@ -95,7 +95,6 @@ library:
     - aeson-pretty
     - containers
     - fmt
-    - HUnit
     - named
     - morley
     - morley-ledgers
@@ -104,10 +103,7 @@ library:
     - lens
     - lorentz
     - optparse-applicative
-    - tasty
-    - tasty-hunit-compat
     - universum
-    - cleveland
 
 executables:
   baseDAO:
@@ -137,10 +133,12 @@ tests:
     - containers
     - fmt
     - HUnit
+    - lens
     - lorentz
     - named
     - morley
     - morley-ledgers
+    - morley-metadata
     - morley-prelude
     - o-clock
     - tasty

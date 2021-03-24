@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Test.TreasuryDAO
@@ -13,7 +13,7 @@ import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
-import BaseDAO.ShareTest.Common (sendXtz)
+import Test.BaseDAO.Common (sendXtz)
 import qualified Lorentz.Contracts.BaseDAO.Common.Types as DAO
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2

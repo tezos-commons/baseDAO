@@ -1,10 +1,9 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
--- | Contains tests on @propose@ entrypoin logic for testing Lorentz
--- and Ligo contracts.
-module BaseDAO.ShareTest.Proposal.Proposal
-  ( module BaseDAO.ShareTest.Proposal.Proposal
+-- | Contains tests on @propose@ entrypoin logic for testing the Lorentz contract.
+module Test.BaseDAO.Proposal.Proposal
+  ( module Test.BaseDAO.Proposal.Proposal
   ) where
 
 import Universum
@@ -12,8 +11,8 @@ import Universum
 import Lorentz hiding ((>>))
 import Morley.Nettest
 
-import BaseDAO.ShareTest.Common
-import BaseDAO.ShareTest.Proposal.Config
+import Test.BaseDAO.Common
+import Test.BaseDAO.Proposal.Config
 import Lorentz.Contracts.BaseDAO.Types
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
@@ -24,8 +23,8 @@ validProposal
     , AllConfigDescsDefined config
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-validProposal  _ originateFn = do
+  => (ConfigDesc config -> OriginateFn param m) -> m ()
+validProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 10
@@ -56,8 +55,8 @@ rejectProposal
     , AllConfigDescsDefined config
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-rejectProposal _ originateFn = do
+  => (ConfigDesc config -> OriginateFn param m) -> m ()
+rejectProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 9
@@ -73,8 +72,8 @@ nonUniqueProposal
     , AllConfigDescsDefined config
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-nonUniqueProposal _ originateFn = do
+  => (ConfigDesc config -> OriginateFn param m) -> m ()
+nonUniqueProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   _ <- createSampleProposal 1 owner1 dao
   createSampleProposal 1 owner1 dao
@@ -86,8 +85,8 @@ voteValidProposal
     , AllConfigDescsDefined config
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-voteValidProposal _ originateFn = do
+  => (ConfigDesc config -> OriginateFn param m) -> m ()
+voteValidProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
 
   -- Create sample proposal (first proposal has id = 0)

@@ -10,4 +10,4 @@ make test
 
 ## Tests implementation
 
-BaseDAO LIGO tests are share with BaseDAO Lorentz tests. The shared tests are in [`src/BaseDAO/ShareTest`](/src/BaseDAO/ShareTest/).
+TODO #169
