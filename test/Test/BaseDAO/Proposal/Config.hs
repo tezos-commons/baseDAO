@@ -1,26 +1,18 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 {-# LANGUAGE RebindableSyntax #-}
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
-module BaseDAO.ShareTest.Proposal.Config
+module Test.BaseDAO.Proposal.Config
   ( IsConfigDescExt (..)
-  , IsConfigDesc
   , ConfigDesc (..)
-  , (>>-)
 
   , ConfigConstants (..)
-  , configConsts
   , ProposalFrozenTokensCheck (..)
-  , RejectedProposalReturnValue (..)
-  , DecisionLambdaAction (..)
   , AllConfigDescsDefined
 
   , testConfig
-  , configWithRejectedProposal
-  , badRejectedValueConfig
-  , decisionLambdaConfig
   , voteConfig
   ) where
 
@@ -76,10 +68,6 @@ instance (IsConfigDescExt c a, IsConfigDescExt c b) =>
 infixr 5 >>-
 (>>-) :: ConfigDesc c -> ConfigDesc c -> ConfigDesc c
 ConfigDesc a >>- ConfigDesc b = ConfigDesc (ConfigDescChain a b)
-
--- | 'IsConfigDescExt' specialized to Lorentz version.
-type IsConfigDesc ce pm op configDesc =
-  IsConfigDescExt (DAO.Config ce pm op) configDesc
 
 -- Config descriptors
 ------------------------------------------------------------------------
@@ -144,21 +132,6 @@ instance IsConfigDescExt (DAO.Config ce pm op) RejectedProposalReturnValue where
     , ..
     }
 
-divideOnRejectionBy :: Natural -> RejectedProposalReturnValue
-divideOnRejectionBy divisor = RejectedProposalReturnValue $ do
-  fromNamed #proposerFrozenToken
-  push divisor
-  swap
-  ediv
-  ifSome car $
-    push (0 :: Natural)
-  toNamed #slash_amount
-
-doNonsenseOnRejection :: RejectedProposalReturnValue
-doNonsenseOnRejection = RejectedProposalReturnValue $ do
-  drop; push (9999 :: Natural)
-  toNamed #slash_amount
-
 data DecisionLambdaAction =
   DecisionLambdaAction
   (["frozen_tokens" :! Natural, "proposer" :! Address] :-> '[[Operation]])
@@ -172,18 +145,6 @@ instance IsConfigDescExt (DAO.Config ce pm op) DecisionLambdaAction where
         framed lam
     , ..
     }
-
--- | Pass frozen tokens amount as argument to the given contract.
-passProposerOnDecision
-  :: TAddress ("proposer" :! Address) -> DecisionLambdaAction
-passProposerOnDecision target = DecisionLambdaAction $ do
-  drop @("frozen_tokens" :! _)
-  dip @("proposer" :! _) $ do
-    push target
-    contract; assertSome [mt|Cannot find contract for decision lambda|]
-    push zeroMutez
-  transferTokens
-  dip nil; cons
 
 type AllConfigDescsDefined config =
   AreConfigDescsExt config
@@ -211,19 +172,3 @@ voteConfig
 voteConfig = ConfigDesc $
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
   ConfigDesc configConsts{ cmMinVotingPeriod = Just 120, cmMinQuorumThreshold = Just 4 }
-
-configWithRejectedProposal
-  :: AreConfigDescsExt config '[RejectedProposalReturnValue]
-  => ConfigDesc config
-configWithRejectedProposal =
-  ConfigDesc (divideOnRejectionBy 2)
-
-badRejectedValueConfig
-  :: AreConfigDescsExt config '[RejectedProposalReturnValue]
-  => ConfigDesc config
-badRejectedValueConfig = ConfigDesc doNonsenseOnRejection
-
-decisionLambdaConfig
-  :: AreConfigDescsExt config '[DecisionLambdaAction]
-  => TAddress ("proposer" :! Address) -> ConfigDesc config
-decisionLambdaConfig target = ConfigDesc $ passProposerOnDecision target

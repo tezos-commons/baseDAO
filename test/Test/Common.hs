@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 {-# LANGUAGE NumericUnderscores #-}
@@ -26,7 +26,7 @@ import Morley.Nettest
 import Named (defaults, (!))
 import Util.Named ((.!))
 
-import BaseDAO.ShareTest.Common (totalSupplyFromLedger)
+import Test.BaseDAO.Common (totalSupplyFromLedger)
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO

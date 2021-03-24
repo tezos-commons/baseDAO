@@ -1,9 +1,9 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
--- | Contains test on @vote@ entrypoint, shared for Lorentz and LIGO contracts.
-module BaseDAO.ShareTest.Proposal.Vote
-  ( module BaseDAO.ShareTest.Proposal.Vote
+-- | Contains test on @vote@ entrypoint of the Lorentz contract.
+module Test.BaseDAO.Proposal.Vote
+  ( module Test.BaseDAO.Proposal.Vote
   ) where
 
 import Universum
@@ -12,8 +12,8 @@ import Lorentz hiding ((>>))
 import Lorentz.Test hiding (withSender)
 import Morley.Nettest
 
-import BaseDAO.ShareTest.Common
-import BaseDAO.ShareTest.Proposal.Config
+import Test.BaseDAO.Common
+import Test.BaseDAO.Proposal.Config
 import Lorentz.Contracts.BaseDAO.Types
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
@@ -25,8 +25,8 @@ voteNonExistingProposal
     , AllConfigDescsDefined config
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-voteNonExistingProposal _ originateFn = do
+  => (ConfigDesc config -> OriginateFn param m) -> m ()
+voteNonExistingProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn testConfig
 
   -- Create sample proposal
@@ -46,8 +46,8 @@ voteMultiProposals
     , AllConfigDescsDefined config
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-voteMultiProposals _ originateFn = do
+  => (ConfigDesc config -> OriginateFn param m) -> m ()
+voteMultiProposals originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
 
   -- Create sample proposal
@@ -77,8 +77,8 @@ voteOutdatedProposal
     , AllConfigDescsDefined config
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-voteOutdatedProposal _ originateFn = do
+  => (ConfigDesc config -> OriginateFn param m) -> m ()
+voteOutdatedProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn testConfig
 
   -- Create sample proposal

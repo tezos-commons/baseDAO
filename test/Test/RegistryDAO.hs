@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 -- TODO: Replace 'Empty' with 'Never' from morley
@@ -16,7 +16,7 @@ import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
-import BaseDAO.ShareTest.Common (sendXtz)
+import Test.BaseDAO.Common (sendXtz)
 import Data.Map as Map
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import Lorentz.Contracts.RegistryDAO

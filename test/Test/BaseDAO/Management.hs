@@ -1,24 +1,27 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 -- TODO: Replace 'Empty' with 'Never' from morley
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 module Test.BaseDAO.Management
   ( test_BaseDAO_Management
+
+  , expectMigrated
   ) where
 
 import Universum
 
 import Test.Tasty (TestTree, testGroup)
-import Lorentz
+import Lorentz hiding ((>>))
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
 import Named (defaults, (!))
+import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
-import BaseDAO.ShareTest.Management
 
 -- | Function that originates the contract and also makes a bunch of
 -- address (the `addrCount` arg determines the count) for use within
@@ -27,15 +30,15 @@ import BaseDAO.ShareTest.Management
 withOriginated
   :: MonadNettest caps base m
   => Integer
-  -> ([Address] -> (Storage () ()))
   -> ([Address] -> TAddress (Parameter () Empty) -> m a)
   -> m a
-withOriginated addrCount storageFn tests = do
+withOriginated addrCount tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
+  let (owner:_) = addresses
   baseDao <- originateLarge $ OriginateData
     { odName = "BaseDAO Test Contract"
     , odBalance = zeroMutez
-    , odStorage = storageFn addresses
+    , odStorage = initialStorage owner
     , odContract = DAO.baseDaoContract DAO.defaultConfig
     }
   tests addresses baseDao
@@ -49,7 +52,7 @@ test_BaseDAO_Management :: [TestTree]
 test_BaseDAO_Management =
   -- TODO: [#91] Disabled for now due to unable to send XTZ
   -- [ nettestScenarioCaps "Contract forbids XTZ transfer" $
-  --     withOriginated 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
+  --     withOriginated 2 $ \[_, wallet1] baseDao ->
   --       transfer TransferData
   --         { tdFrom = AddressResolved wallet1
   --         , tdTo = AddressResolved $ unTAddress baseDao
@@ -57,67 +60,287 @@ test_BaseDAO_Management =
   --         , tdEntrypoint = unsafeBuildEpName "transfer_ownership"
   --         , tdParameter = (#newOwner .! wallet1)
   --         }
-  --       & expectForbiddenXTZ
+  --       & expectCustomErrorNoArg #fORBIDDEN_XTZ
 
   [ testGroup "Ownership transfer"
     [ nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $
-        transferOwnership withOriginated initialStorage
+        transferOwnership
 
     , nettestScenarioCaps "sets pending owner" $
-        transferOwnership withOriginated initialStorage
+        transferOwnership
 
     , nettestScenarioCaps "does not set administrator" $
-        notSetAdmin withOriginated initialStorage
+        notSetAdmin
 
     , nettestScenarioCaps "rewrite existing pending owner" $
-        rewritePendingOwner withOriginated initialStorage
+        rewritePendingOwner
 
     , nettestScenarioCaps "invalidates pending owner if new owner is current admin" $
-        invalidatePendingOwner withOriginated initialStorage
+        invalidatePendingOwner
 
     , nettestScenarioCaps "Respects migration state" $
-        respectMigratedState withOriginated initialStorage
+        respectMigratedState
     ]
   , testGroup "Accept Ownership"
       [ nettestScenarioCaps "authenticates the sender" $
-          authenticateSender withOriginated initialStorage
+          authenticateSender
 
        , nettestScenarioCaps "changes the administrator to pending owner" $
-          changeToPendingAdmin withOriginated initialStorage
+          changeToPendingAdmin
 
        , nettestScenarioCaps "throws error when there is no pending owner" $
-          noPendingAdmin withOriginated initialStorage
+          noPendingAdmin
 
        , nettestScenarioCaps "throws error when called by current admin, when pending owner is not the same" $
-          pendingOwnerNotTheSame withOriginated initialStorage
+          pendingOwnerNotTheSame
 
       , nettestScenarioCaps "Respects migration state" $
-          acceptOwnerRespectMigration withOriginated initialStorage
+          acceptOwnerRespectMigration
       ]
 
   , testGroup "Migration"
       [ nettestScenarioCaps "authenticates the sender" $
-          migrationAuthenticateSender withOriginated initialStorage
+          migrationAuthenticateSender
 
       , nettestScenarioCaps "successfully sets the pending migration address " $
-          migrationSetPendingOwner withOriginated initialStorage
+          migrationSetPendingOwner
 
       , nettestScenarioCaps "overwrites previous migration target" $
-          migrationOverwritePrevious withOriginated initialStorage
+          migrationOverwritePrevious
 
       , nettestScenarioCaps "allows calls until confirm migration is called" $
-          migrationAllowCallUntilConfirm withOriginated initialStorage
+          migrationAllowCallUntilConfirm
       ]
 
   , testGroup "Confirm Migration"
       [ nettestScenarioCaps "authenticates the sender" $
-          confirmMigAuthenticateSender withOriginated initialStorage
+          confirmMigAuthenticateSender
 
       , nettestScenarioCaps "authenticates migration state" $
-          confirmMigAuthenticateState withOriginated initialStorage
+          confirmMigAuthenticateState
 
       , nettestScenarioCaps "finalizes migration" $
-          confirmMigFinalize withOriginated initialStorage
+          confirmMigFinalize
 
      ]
   ]
+
+
+transferOwnership
+  :: MonadNettest caps base m
+  => m ()
+transferOwnership = withOriginated 2 $ \[_, wallet1] baseDao ->
+    withSender (AddressResolved wallet1) $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
+      & expectNotAdmin
+
+notSetAdmin
+  :: MonadNettest caps base m
+  => m ()
+notSetAdmin = withOriginated 2 $
+    \[owner, wallet1] baseDao -> do
+      withSender (AddressResolved owner) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
+        -- Make the call once again to make sure the admin still retains admin
+        -- privileges
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
+
+rewritePendingOwner
+  :: MonadNettest caps base m
+  => m ()
+rewritePendingOwner = withOriginated 3 $
+    \[owner, wallet1, wallet2] baseDao -> do
+      withSender (AddressResolved owner) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet2)
+      -- Make the accept ownership call from wallet1 and see that it fails
+      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
+        & expectNotPendingOwner
+      -- Make the accept ownership call from wallet1 and see that it works
+      withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
+
+invalidatePendingOwner
+  :: MonadNettest caps base m
+  => m ()
+invalidatePendingOwner = withOriginated 2 $
+    \[owner, wallet1] baseDao -> do
+      withSender (AddressResolved owner) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! owner)
+      -- Make the accept ownership call from wallet1 and see that it fails
+      -- with 'not pending owner' error
+      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
+        & expectNotPendingOwner
+
+respectMigratedState
+  :: MonadNettest caps base m
+  => m ()
+respectMigratedState = withOriginated 3 $
+    \[owner, newAddress1, newOwner] baseDao -> do
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      -- We test this by calling `confirmMigration` and seeing that it does not fail
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Transfer_ownership")
+        (#newOwner .! newOwner)
+        & expectMigrated newAddress1
+
+authenticateSender
+  :: MonadNettest caps base m
+  => m ()
+authenticateSender = withOriginated 3 $
+    \[owner, wallet1, wallet2] baseDao -> do
+      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
+        (#newOwner .! wallet1)
+      withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
+        & expectNotPendingOwner
+
+changeToPendingAdmin
+  :: MonadNettest caps base m
+  => m ()
+changeToPendingAdmin = withOriginated 2 $
+    \[owner, wallet1] baseDao -> do
+      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
+        (#newOwner .! wallet1)
+      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
+
+noPendingAdmin
+  :: MonadNettest caps base m
+  => m ()
+noPendingAdmin = withOriginated 2 $
+    \[_, wallet1] baseDao -> do
+      withSender (AddressResolved wallet1) $
+        call baseDao (Call @"Accept_ownership") ()
+        & expectNotPendingOwner
+
+pendingOwnerNotTheSame
+  :: MonadNettest caps base m
+  => m ()
+pendingOwnerNotTheSame = withOriginated 2 $
+    \[owner, wallet1] baseDao -> withSender (AddressResolved owner) $ do
+      call baseDao (Call @"Transfer_ownership")
+        (#newOwner .! wallet1)
+      call baseDao (Call @"Accept_ownership") ()
+      & expectNotPendingOwner
+
+acceptOwnerRespectMigration
+  :: MonadNettest caps base m
+  => m ()
+acceptOwnerRespectMigration = withOriginated 2 $
+    \[owner, newAddress1] baseDao -> do
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      -- We test this by calling `confirmMigration` and seeing that it does not fail
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved owner) $ call
+        baseDao (Call @"Accept_ownership") ()
+        & expectMigrated newAddress1
+
+
+migrationAuthenticateSender
+  :: MonadNettest caps base m
+  => m ()
+migrationAuthenticateSender = withOriginated 3 $
+    \[_, newAddress1, randomAddress] baseDao -> do
+      withSender (AddressResolved randomAddress) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+        & expectNotAdmin
+
+migrationSetPendingOwner
+  :: MonadNettest caps base m
+  => m ()
+migrationSetPendingOwner = withOriginated 2 $
+    \[owner, newAddress1] baseDao -> do
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      -- We test this by calling `confirmMigration` and seeing that it does not fail
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
+
+migrationOverwritePrevious
+  :: MonadNettest caps base m
+  => m ()
+migrationOverwritePrevious = withOriginated 3 $
+    \[owner, newAddress1, newAddress2] baseDao -> do
+      withSender(AddressResolved owner) $ do
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress2)
+      -- We test this by calling `confirmMigration` and seeing that it does not fail
+      withSender (AddressResolved newAddress2) $
+        call baseDao (Call @"Confirm_migration") ()
+
+migrationAllowCallUntilConfirm
+  :: MonadNettest caps base m
+  => m ()
+migrationAllowCallUntilConfirm = withOriginated 3 $
+    \[owner, newAddress1, newAddress2] baseDao -> withSender (AddressResolved owner) $ do
+      call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      call baseDao (Call @"Migrate") (#newAddress .! newAddress2)
+
+confirmMigAuthenticateSender
+  :: MonadNettest caps base m
+  => m ()
+confirmMigAuthenticateSender = withOriginated 3 $
+    \[owner, newAddress1, randomAddress] baseDao -> do
+      withSender (AddressResolved owner) $ call
+        baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      -- We test this by calling `confirmMigration` and seeing that it does not fail
+      withSender (AddressResolved randomAddress) $
+        call baseDao (Call @"Confirm_migration") ()
+        & expectNotMigrationTarget
+
+confirmMigAuthenticateState
+  :: MonadNettest caps base m
+  => m ()
+confirmMigAuthenticateState = withOriginated 2 $
+    \[_, newAddress1] baseDao -> do
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
+        & expectNotMigrating
+
+confirmMigFinalize
+  :: MonadNettest caps base m
+  => m ()
+confirmMigFinalize = withOriginated 2 $
+    \[owner, newAddress1] baseDao -> do
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      -- We test this by calling `confirmMigration` and seeing that it does not fail
+      withSender (AddressResolved newAddress1) $
+        call baseDao (Call @"Confirm_migration") ()
+      withSender (AddressResolved owner) $
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+        & expectMigrated newAddress1
+
+expectNotAdmin
+  :: (MonadNettest caps base m)
+  => m a -> m ()
+expectNotAdmin = expectCustomErrorNoArg #nOT_ADMIN
+
+expectNotPendingOwner
+  :: (MonadNettest caps base m)
+  => m a -> m ()
+expectNotPendingOwner = expectCustomErrorNoArg #nOT_PENDING_ADMIN
+
+expectNotMigrating
+  :: (MonadNettest caps base m)
+  => m a -> m ()
+expectNotMigrating = expectCustomErrorNoArg #nOT_MIGRATING
+
+expectNotMigrationTarget
+  :: (MonadNettest caps base m)
+  => m a -> m ()
+expectNotMigrationTarget = expectCustomErrorNoArg #nOT_MIGRATION_TARGET
+
+expectMigrated
+  :: (MonadNettest caps base m)
+  => Address -> m a -> m ()
+expectMigrated addr = expectCustomError #mIGRATED addr
