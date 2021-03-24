@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Test.Ligo.BaseDAO.OffChainViews
@@ -14,11 +14,10 @@ import Test.Tasty (TestTree)
 
 import Tezos.Address
 
-import BaseDAO.ShareTest.Common (totalSupplyFromLedger)
-import BaseDAO.ShareTest.OffChainViews
+import Ligo.BaseDAO.ShareTest.Common (totalSupplyFromLedger)
+import Ligo.BaseDAO.ShareTest.OffChainViews
 import qualified Ligo.BaseDAO.Types as DAO
 import qualified Ligo.BaseDAO.TZIP16Metadata as DAO
-import qualified Lorentz.Contracts.BaseDAO.TZIP16Metadata as DAO
 
 offChainViewStorage :: DAO.StorageL
 offChainViewStorage =

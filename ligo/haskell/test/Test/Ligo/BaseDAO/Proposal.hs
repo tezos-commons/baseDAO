@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Test.Ligo.BaseDAO.Proposal
@@ -14,12 +14,12 @@ import Time (sec)
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenario, nettestScenarioOnEmulator)
+import Util.Named
 
 import Ligo.BaseDAO.Types
-import Test.Ligo.BaseDAO.Common
-import BaseDAO.ShareTest.Common hiding (createSampleProposal)
+import Ligo.BaseDAO.ShareTest.Common hiding (createSampleProposal)
 import Ligo.BaseDAO.ConfigDesc
-import Util.Named
+import Test.Ligo.BaseDAO.Common
 
 vote :: Bool -> ProposalKey pm -> PermitProtected (VoteParam pm)
 vote how key =

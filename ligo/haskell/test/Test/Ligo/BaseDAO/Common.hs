@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 {-# LANGUAGE NumericUnderscores #-}
 
@@ -19,9 +19,9 @@ import Morley.Nettest
 import Time (sec)
 import Util.Named
 
-import BaseDAO.ShareTest.Common
+import Ligo.BaseDAO.ShareTest.Common
   (OriginateFn, totalSupplyFromLedger, makeProposalKey, proposalMetadataFromNum)
-import BaseDAO.ShareTest.Proposal.Config ()
+import Ligo.BaseDAO.ShareTest.Proposal.Config ()
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Ligo.BaseDAO.ConfigDesc

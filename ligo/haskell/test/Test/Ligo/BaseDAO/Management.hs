@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 --
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
@@ -22,8 +22,8 @@ import Morley.Nettest.Tasty (nettestScenarioCaps)
 import Tezos.Core (unsafeMkMutez)
 import Util.Named
 
-import BaseDAO.ShareTest.Management
 import Ligo.BaseDAO.Contract
+import Ligo.BaseDAO.ShareTest.Management
 import Ligo.BaseDAO.Types
 
 -- | Function that originates the contract and also make a bunch of

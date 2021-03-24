@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Test.Ligo.BaseDAO.Token.FA2
@@ -11,9 +11,7 @@ import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenario)
 import Test.Tasty (TestTree, testGroup)
 
-import Lorentz.Contracts.BaseDAO.Types
-
-import qualified BaseDAO.ShareTest.FA2 as Share
+import qualified Ligo.BaseDAO.ShareTest.FA2 as Share
 import qualified Ligo.BaseDAO.Types as Ligo
 
 import Test.Ligo.BaseDAO.Common
@@ -61,8 +59,8 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
         $ uncapsNettest $ Share.adminTransferFrozenScenario
         $ originateLigoDaoWithBalance Ligo.dynRecUnsafe Ligo.defaultConfigL
             (\owner1 owner2 ->
-                [ ((owner1, frozenTokenId), 100)
-                , ((owner2, frozenTokenId), 100)
+                [ ((owner1, Ligo.frozenTokenId), 100)
+                , ((owner2, Ligo.frozenTokenId), 100)
                 ]
             )
     ]

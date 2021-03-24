@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 --
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
@@ -24,13 +24,13 @@ import Michelson.Typed.Convert (untypeValue)
 import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
+import Util.Named
 
-import BaseDAO.ShareTest.Common (checkTokenBalance, totalSupplyFromLedger, makeProposalKey, sendXtz)
+import Ligo.BaseDAO.ShareTest.Common (checkTokenBalance, totalSupplyFromLedger, makeProposalKey, sendXtz)
+import qualified Ligo.BaseDAO.Common.Types as DAO
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
-import qualified Lorentz.Contracts.BaseDAO.Common.Types as DAO
-import Util.Named
 
 withOriginated
   :: MonadNettest caps base m

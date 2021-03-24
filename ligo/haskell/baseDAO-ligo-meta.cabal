@@ -6,10 +6,10 @@ cabal-version: 2.2
 
 name:           baseDAO-ligo-meta
 version:        0.1.0.0
-description:    Tools and tests for LIGO version of the contract.
+description:    Tools and tests for the LIGO baseDAO contract.
 author:         Serokell, Tocqueville Group
 maintainer:     Serokell, Tocqueville Group
-copyright:      2020 TQ Tezos
+copyright:      2021 TQ Tezos
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
@@ -22,7 +22,18 @@ source-repository head
 
 library
   exposed-modules:
+      Ligo.BaseDAO.Common.Types
       Ligo.BaseDAO.ConfigDesc
+      Ligo.BaseDAO.ShareTest.Common
+      Ligo.BaseDAO.ShareTest.FA2
+      Ligo.BaseDAO.ShareTest.Management
+      Ligo.BaseDAO.ShareTest.OffChainViews
+      Ligo.BaseDAO.ShareTest.Proposal
+      Ligo.BaseDAO.ShareTest.Proposal.Bounds
+      Ligo.BaseDAO.ShareTest.Proposal.Config
+      Ligo.BaseDAO.ShareTest.Proposal.Proposal
+      Ligo.BaseDAO.ShareTest.Proposal.Vote
+      Ligo.BaseDAO.ShareTest.Token
       Ligo.BaseDAO.Types
       Ligo.BaseDAO.TZIP16Metadata
       Ligo.Typescript
@@ -36,8 +47,8 @@ library
   default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DefaultSignatures DeriveAnyClass DeriveDataTypeable DeriveFoldable DeriveFunctor DeriveGeneric DeriveTraversable DerivingStrategies DerivingVia EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances GADTs GeneralizedNewtypeDeriving LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NegativeLiterals NoImplicitPrelude NumDecimals OverloadedLabels OverloadedStrings PatternSynonyms PolyKinds QuasiQuotes RankNTypes RecordWildCards RecursiveDo ScopedTypeVariables StandaloneDeriving StrictData TemplateHaskell TupleSections TypeApplications TypeFamilies TypeOperators UndecidableInstances UndecidableSuperClasses ViewPatterns RebindableSyntax
   ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-unused-packages -Wno-prepositive-qualified-module -Wno-missing-safe-haskell-mode -Wno-unused-do-bind
   build-depends:
-      base-noprelude >=4.7 && <5
-    , baseDAO
+      HUnit
+    , base-noprelude >=4.7 && <5
     , cleveland
     , containers
     , directory
@@ -50,6 +61,8 @@ library
     , morley-metadata
     , morley-prelude
     , named
+    , tasty
+    , tasty-hunit-compat
     , template-haskell
     , text
     , universum
@@ -66,9 +79,10 @@ executable baseDAO-ligo-meta
   build-depends:
       aeson-pretty
     , base-noprelude >=4.7 && <5
-    , baseDAO
     , baseDAO-ligo-meta
+    , fmt
     , morley
+    , morley-ledgers
     , morley-prelude
     , optparse-applicative
     , universum
@@ -101,7 +115,6 @@ test-suite baseDAO-test
   build-depends:
       HUnit
     , base-noprelude >=4.7 && <5
-    , baseDAO
     , baseDAO-ligo-meta
     , bytestring
     , cleveland
