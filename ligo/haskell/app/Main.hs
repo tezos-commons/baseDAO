@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 {-# LANGUAGE ApplicativeDo #-}
@@ -9,19 +9,33 @@ module Main
 import Universum
 
 import Data.Aeson.Encode.Pretty (encodePretty)
+import Fmt (pretty)
 import Data.Version (showVersion)
 import qualified Options.Applicative as Opt
 import Paths_baseDAO_ligo_meta (version)
 
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Util.Main
 
-import BaseDAO.CLI
 import Ligo.BaseDAO.Types (ParameterL)
-import Ligo.BaseDAO.TZIP16Metadata
 import Ligo.Typescript
-import Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import Util.CLI
 import Util.Named
+import Ligo.BaseDAO.TZIP16Metadata
+
+main :: IO ()
+main = wrapMain $ do
+  cmdLnArgs <- Opt.execParser programInfo
+  case cmdLnArgs of
+    GenerateTypescript fp ->
+      void $ generateTs @ParameterL fp
+    PrintMetadata mc ->
+      putTextLn . decodeUtf8 . encodePretty $
+        knownBaseDAOMetadata (mkMetadataSettingsL mc)
+
+--------------------------------------------------------------------------------
+-- Arguments parsing
+--------------------------------------------------------------------------------
 
 data CmdArgs
   = PrintMetadata MetadataConfig
@@ -49,12 +63,38 @@ programInfo = Opt.info (Opt.helper <*> versionOption <*> cmdArgsParser) $
     versionOption = Opt.infoOption ("baseDAO-ligo-meta-" <> showVersion version)
       (Opt.long "version" <> Opt.help "Show version.")
 
-main :: IO ()
-main = wrapMain $ do
-  cmdLnArgs <- Opt.execParser programInfo
-  case cmdLnArgs of
-    GenerateTypescript fp ->
-      void $ generateTs @ParameterL fp
-    PrintMetadata mc ->
-      putTextLn . decodeUtf8 . encodePretty $
-        knownBaseDAOMetadata (mkMetadataSettingsL mc)
+-- TODO morley/569: remove this.
+mkCommandParser
+  :: String
+  -> Opt.Parser a
+  -> String
+  -> Opt.Mod Opt.CommandFields a
+mkCommandParser commandName parser desc =
+  Opt.command commandName $ Opt.info parser $ Opt.progDesc desc
+
+-- | Parse metadata for token with given name and given default values.
+tokenMetadataParser
+  :: String
+  -> Text
+  -> Text
+  -> Word16
+  -> Opt.Parser FA2.TokenMetadata
+tokenMetadataParser prefix defSymbol defName defDecimals = do
+  symbol <-
+    mkCLOptionParser (Just defSymbol) (#name .! (prefix <> "-token-symbol"))
+    (#help .! "Symbol of the token (according to TZIP-12)")
+  name <-
+    mkCLOptionParser (Just defName) (#name .! (prefix <> "-token-name"))
+    (#help .! "Name of the token (according to TZIP-12)")
+  decimals <-
+    mkCLOptionParser (Just defDecimals) (#name .! (prefix <> "-token-decimals"))
+    (#help .! "Decimals field of the token (according to TZIP-12)")
+  return $ FA2.mkTokenMetadata name symbol (pretty decimals)
+
+metadataConfigParser :: Opt.Parser MetadataConfig
+metadataConfigParser = do
+  mcFrozenTokenMetadata <-
+    tokenMetadataParser "frozen" "frozen_token" "Frozen Token" 8
+  mcUnfrozenTokenMetadata <-
+    tokenMetadataParser "unfrozen" "unfrozen_token" "Unfrozen Token" 8
+  return MetadataConfig{..}

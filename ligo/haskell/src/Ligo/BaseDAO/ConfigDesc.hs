@@ -1,22 +1,20 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 {-# LANGUAGE RebindableSyntax #-}
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Specification of config descriptors on LIGO contract.
 module Ligo.BaseDAO.ConfigDesc
-  ( module BaseDAO.ShareTest.Proposal.Config
+  ( module Ligo.BaseDAO.ShareTest.Proposal.Config
   ) where
 
 import Lorentz
 import Universum ((?:))
 
+import Ligo.BaseDAO.ShareTest.Proposal.Config
 import Ligo.BaseDAO.Types
-
-import BaseDAO.ShareTest.Proposal.Config
 
 instance IsConfigDescExt ConfigL ConfigConstants where
   fillConfig ConfigConstants{..} ConfigL{..} = ConfigL

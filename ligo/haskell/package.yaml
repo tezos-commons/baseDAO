@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 name:                baseDAO-ligo-meta
@@ -7,12 +7,12 @@ license:             MIT
 license-file:        LICENSE
 author:              Serokell, Tocqueville Group
 git:                 git@github.com:tqtezos/baseDAO.git
-copyright:           2020 TQ Tezos
+copyright:           2021 TQ Tezos
 
 extra-source-files:
 - README.md
 
-description:         Tools and tests for LIGO version of the contract.
+description:         Tools and tests for the LIGO baseDAO contract.
 
 verbatim:
   cabal-version: 2.2
@@ -92,7 +92,7 @@ library:
   generated-other-modules:
     - Paths_baseDAO_ligo_meta
   dependencies:
-    - baseDAO
+    - HUnit
     - cleveland
     - containers
     - directory
@@ -106,6 +106,8 @@ library:
     - morley-metadata
     - morley-prelude
     - named
+    - tasty
+    - tasty-hunit-compat
     - template-haskell
     - universum
 
@@ -115,9 +117,10 @@ executables:
     source-dirs:         app
     dependencies:
     - aeson-pretty
-    - baseDAO
     - baseDAO-ligo-meta
+    - fmt
     - morley
+    - morley-ledgers
     - morley-prelude
     - optparse-applicative
     - universum
@@ -135,7 +138,6 @@ tests:
 
     dependencies:
     - HUnit
-    - baseDAO
     - baseDAO-ligo-meta
     - bytestring
     - cleveland
