@@ -8,18 +8,19 @@ module Test.Ligo.BaseDAO.Proposal
 import Universum
 import Lorentz hiding (assert, (>>))
 
-import Test.Tasty (TestTree, testGroup)
 import Time (sec)
 
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenario, nettestScenarioOnEmulator)
+import Test.Tasty (TestTree, testGroup)
 import Util.Named
 
 import Ligo.BaseDAO.Types
-import Ligo.BaseDAO.ShareTest.Common hiding (createSampleProposal)
-import Ligo.BaseDAO.ConfigDesc
+import Test.Ligo.BaseDAO.ConfigDesc
 import Test.Ligo.BaseDAO.Common
+import Test.Ligo.BaseDAO.Proposal.Proposal
+import Test.Ligo.BaseDAO.Proposal.Vote
 
 vote :: Bool -> ProposalKey pm -> PermitProtected (VoteParam pm)
 vote how key =
@@ -1081,189 +1082,6 @@ votingPeriodChange _ originateFn = do
         , vProposalKey = key1
         }
 
-  withSender (AddressResolved owner2) $ do
-    call dao (Call @"Vote") [params]
-    advanceTime (sec 25)
-    call dao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
-
-validProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-validProposal  _ originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
-  let params = ProposeParams
-        { ppFrozenToken = 10
-        , ppProposalMetadata = proposalMetadataFromNum 1
-        }
-
-  advanceTime (sec 10)
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 10)
-  advanceTime (sec 10)
-
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-  checkTokenBalance frozenTokenId dao owner1 10
-  checkTokenBalance unfrozenTokenId dao owner1 90
-
-  -- Check total supply
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-      & expectError (VoidResult (190 :: Natural)) -- initial = 200
-
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError (VoidResult (10 :: Natural)) -- initial = 0
-
-rejectProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-rejectProposal _ originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
-  advanceTime (sec 10)
-  let params = ProposeParams
-        { ppFrozenToken = 9
-        , ppProposalMetadata = proposalMetadataFromNum 1
-        }
-
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 10)
-  advanceTime (sec 10)
-
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
-
-nonUniqueProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-nonUniqueProposal _ originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
-  advanceTime (sec 10)
-  _ <- createSampleProposal 1 10 owner1 dao
-  createSampleProposal 1 10 owner1 dao
-    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
-
-voteValidProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteValidProposal _ originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
-  advanceTime (sec 120)
-
-  withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 2)
-
-  -- Create sample proposal (first proposal has id = 0)
-  key1 <- createSampleProposal 1 120 owner1 dao
-  let params = NoPermit VoteParam
-        { vVoteType = True
-        , vVoteAmount = 2
-        , vProposalKey = key1
-        }
-
-  advanceTime (sec 120)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
-  checkTokenBalance (unfrozenTokenId) dao owner2 98
-  checkTokenBalance (frozenTokenId) dao owner2 2
-  -- TODO [#31]: check if the vote is updated properly
-
-voteNonExistingProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteNonExistingProposal _ originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn testConfig
-  advanceTime (sec 10)
-
-  withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 2)
-
-  -- Create sample proposal
-  _ <- createSampleProposal 1 15 owner1 dao
-  let params = NoPermit VoteParam
-        { vVoteType = True
-        , vVoteAmount = 2
-        , vProposalKey = HashUnsafe "\11\12\13"
-        }
-
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
-
-voteMultiProposals
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteMultiProposals _ originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
-
-  advanceTime (sec 120)
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 20)
-
-  withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 5)
-  advanceTime (sec 120)
-
-  -- Create sample proposal
-  key1 <- createSampleProposal 1 0 owner1 dao
-  key2 <- createSampleProposal 2 0 owner1 dao
-  let params = fmap NoPermit
-        [ VoteParam
-            { vVoteType = True
-            , vVoteAmount = 2
-            , vProposalKey = key1
-            }
-        , VoteParam
-            { vVoteType = False
-            , vVoteAmount = 3
-            , vProposalKey = key2
-            }
-        ]
-
-  advanceTime (sec 120)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
-  checkTokenBalance (unfrozenTokenId) dao owner2 95
-  checkTokenBalance (frozenTokenId) dao owner2 5
-  -- TODO [#31]: check storage if the vote update the proposal properly
-
-voteOutdatedProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteOutdatedProposal _ originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn testConfig
-  advanceTime (sec 10)
-
-  withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 2)
-  -- Create sample proposal
-  key1 <- createSampleProposal 1 10 owner1 dao
-
-  let params = NoPermit VoteParam
-        { vVoteType = True
-        , vVoteAmount = 2
-        , vProposalKey = key1
-        }
-
-  advanceTime (sec 10)
   withSender (AddressResolved owner2) $ do
     call dao (Call @"Vote") [params]
     advanceTime (sec 25)

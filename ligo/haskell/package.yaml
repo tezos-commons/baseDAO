@@ -106,8 +106,6 @@ library:
     - morley-metadata
     - morley-prelude
     - named
-    - tasty
-    - tasty-hunit-compat
     - template-haskell
     - universum
 
@@ -143,9 +141,11 @@ tests:
     - cleveland
     - containers
     - fmt
+    - lens
     - lorentz
     - morley
     - morley-ledgers
+    - morley-metadata
     - morley-prelude
     - named
     - o-clock

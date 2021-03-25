@@ -6,14 +6,14 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Specification of config descriptors on LIGO contract.
-module Ligo.BaseDAO.ConfigDesc
-  ( module Ligo.BaseDAO.ShareTest.Proposal.Config
+module Test.Ligo.BaseDAO.ConfigDesc
+  ( module Test.Ligo.BaseDAO.Proposal.Config
   ) where
 
 import Lorentz
 import Universum ((?:))
 
-import Ligo.BaseDAO.ShareTest.Proposal.Config
+import Test.Ligo.BaseDAO.Proposal.Config
 import Ligo.BaseDAO.Types
 
 instance IsConfigDescExt ConfigL ConfigConstants where

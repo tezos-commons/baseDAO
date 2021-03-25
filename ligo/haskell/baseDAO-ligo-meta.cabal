@@ -23,17 +23,6 @@ source-repository head
 library
   exposed-modules:
       Ligo.BaseDAO.Common.Types
-      Ligo.BaseDAO.ConfigDesc
-      Ligo.BaseDAO.ShareTest.Common
-      Ligo.BaseDAO.ShareTest.FA2
-      Ligo.BaseDAO.ShareTest.Management
-      Ligo.BaseDAO.ShareTest.OffChainViews
-      Ligo.BaseDAO.ShareTest.Proposal
-      Ligo.BaseDAO.ShareTest.Proposal.Bounds
-      Ligo.BaseDAO.ShareTest.Proposal.Config
-      Ligo.BaseDAO.ShareTest.Proposal.Proposal
-      Ligo.BaseDAO.ShareTest.Proposal.Vote
-      Ligo.BaseDAO.ShareTest.Token
       Ligo.BaseDAO.Types
       Ligo.BaseDAO.TZIP16Metadata
       Ligo.Typescript
@@ -61,8 +50,6 @@ library
     , morley-metadata
     , morley-prelude
     , named
-    , tasty
-    , tasty-hunit-compat
     , template-haskell
     , text
     , universum
@@ -94,12 +81,18 @@ test-suite baseDAO-test
   other-modules:
       Ligo.BaseDAO.Contract
       Test.Ligo.BaseDAO.Common
+      Test.Ligo.BaseDAO.ConfigDesc
+      Test.Ligo.BaseDAO.FA2
       Test.Ligo.BaseDAO.Integrational.Common
       Test.Ligo.BaseDAO.Integrational.Management
       Test.Ligo.BaseDAO.Integrational.Proposal
       Test.Ligo.BaseDAO.Management
       Test.Ligo.BaseDAO.OffChainViews
       Test.Ligo.BaseDAO.Proposal
+      Test.Ligo.BaseDAO.Proposal.Bounds
+      Test.Ligo.BaseDAO.Proposal.Config
+      Test.Ligo.BaseDAO.Proposal.Proposal
+      Test.Ligo.BaseDAO.Proposal.Vote
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Token.FA2
       Test.Ligo.BaseDAO.Types
@@ -120,9 +113,11 @@ test-suite baseDAO-test
     , cleveland
     , containers
     , fmt
+    , lens
     , lorentz
     , morley
     , morley-ledgers
+    , morley-metadata
     , morley-prelude
     , named
     , o-clock
