@@ -4,7 +4,7 @@
 {-# LANGUAGE RebindableSyntax #-}
 {-# OPTIONS_GHC -Wno-unused-do-bind #-}
 
-module Ligo.BaseDAO.ShareTest.Proposal.Config
+module Test.Ligo.BaseDAO.Proposal.Config
   ( IsConfigDescExt (..)
   , ConfigDesc (..)
   , (>>-)

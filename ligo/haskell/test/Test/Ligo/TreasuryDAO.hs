@@ -19,10 +19,10 @@ import Time (sec)
 import Util.Named
 
 import Ligo.BaseDAO.Common.Types
-import Ligo.BaseDAO.ShareTest.Common (OriginateFn, checkTokenBalance, makeProposalKey, sendXtz)
+import Test.Ligo.BaseDAO.Common
+  (OriginateFn, checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
 import Ligo.BaseDAO.Types
 import Ligo.Util
-import Test.Ligo.BaseDAO.Common
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 

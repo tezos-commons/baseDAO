@@ -1,10 +1,10 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
--- | Contains tests on proposal/vote limits logic for testing Lorentz
--- and Ligo contracts.
-module Ligo.BaseDAO.ShareTest.Proposal.Bounds
-  ( module Ligo.BaseDAO.ShareTest.Proposal.Bounds
+-- | Contains tests on proposal/vote limits logic for testing the Ligo contract.
+module Test.Ligo.BaseDAO.Proposal.Bounds
+  ( setVotingPeriod
+  , setQuorumThreshold
   ) where
 
 import Universum
@@ -12,8 +12,8 @@ import Universum
 import Lorentz hiding ((>>))
 import Morley.Nettest
 
-import Ligo.BaseDAO.ShareTest.Common
-import Ligo.BaseDAO.ShareTest.Proposal.Config
+import Test.Ligo.BaseDAO.Common
+import Test.Ligo.BaseDAO.Proposal.Config
 import Ligo.BaseDAO.Types
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}

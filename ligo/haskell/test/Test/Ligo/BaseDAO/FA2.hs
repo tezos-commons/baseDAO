@@ -1,9 +1,8 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
--- | Contains shared FA2 tests for testing Lorentz
--- and Ligo contracts.
-module Ligo.BaseDAO.ShareTest.FA2
+-- | Contains FA2 tests for testing the Ligo contract.
+module Test.Ligo.BaseDAO.FA2
   ( zeroTransferScenario
   , validTransferScenario
   , validateTokenScenario
@@ -32,8 +31,8 @@ import Lorentz.Test hiding (withSender)
 import Morley.Nettest
 import Util.Named
 
-import Ligo.BaseDAO.ShareTest.Common
-import Ligo.BaseDAO.ShareTest.Management (expectMigrated)
+import Test.Ligo.BaseDAO.Common
+import Test.Ligo.BaseDAO.Management (expectMigrated)
 import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 

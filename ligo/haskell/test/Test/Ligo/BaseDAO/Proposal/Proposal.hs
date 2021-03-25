@@ -1,36 +1,45 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
--- | Contains tests on @propose@ entrypoin logic for testing Lorentz
--- and Ligo contracts.
-module Ligo.BaseDAO.ShareTest.Proposal.Proposal
-  ( module Ligo.BaseDAO.ShareTest.Proposal.Proposal
+-- | Contains tests on @propose@ entrypoin logic for testing the Ligo contract.
+module Test.Ligo.BaseDAO.Proposal.Proposal
+  ( validProposal
+  , rejectProposal
+  , nonUniqueProposal
+  , voteValidProposal
   ) where
 
 import Universum
 
+import Time (sec)
+
 import Lorentz hiding ((>>))
 import Morley.Nettest
+import Util.Named
 
-import Ligo.BaseDAO.ShareTest.Common
-import Ligo.BaseDAO.ShareTest.Proposal.Config
+import Test.Ligo.BaseDAO.Common
+import Test.Ligo.BaseDAO.Proposal.Config
 import Ligo.BaseDAO.Types
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 validProposal
-  :: forall pm param config caps base m.
-    ( MonadNettest caps base m, ParameterC param pm, ProposalMetadataFromNum pm
-    , AllConfigDescsDefined config
+  :: forall caps base m.
+    ( MonadNettest caps base m
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
+  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
 validProposal  _ originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
+
+  advanceTime (sec 10)
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+  advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   checkTokenBalance frozenTokenId dao owner1 10
@@ -45,59 +54,62 @@ validProposal  _ originateFn = do
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
       & expectError (VoidResult (10 :: Natural)) -- initial = 0
 
-  -- TODO [#31]: Currently proposalId is expected to be knowned (checkInStorage)
-
-  -- TODO [#31]
-  -- checkIfAProposalExist (makeProposalKey params owner1) dao
-
 rejectProposal
-  :: forall pm param config caps base m.
-    ( MonadNettest caps base m, ParameterC param pm, ProposalMetadataFromNum pm
-    , AllConfigDescsDefined config
+  :: forall caps base m.
+    ( MonadNettest caps base m
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
+  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
 rejectProposal _ originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
+  advanceTime (sec 10)
   let params = ProposeParams
         { ppFrozenToken = 9
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
 
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+  advanceTime (sec 10)
+
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
 nonUniqueProposal
-  :: forall pm param config caps base m.
-    ( MonadNettest caps base m, ParameterC param pm, ProposalMetadataFromNum pm
-    , AllConfigDescsDefined config
+  :: forall caps base m.
+    ( MonadNettest caps base m
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
+  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
 nonUniqueProposal _ originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
-  _ <- createSampleProposal 1 owner1 dao
-  createSampleProposal 1 owner1 dao
+  advanceTime (sec 10)
+  _ <- createSampleProposal 1 10 owner1 dao
+  createSampleProposal 1 10 owner1 dao
     & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
 
 voteValidProposal
-  :: forall pm param config caps base m.
-    ( MonadNettest caps base m, ParameterC param pm, ProposalMetadataFromNum pm
-    , AllConfigDescsDefined config
+  :: forall caps base m.
+    ( MonadNettest caps base m
     , HasCallStack
     )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
+  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
 voteValidProposal _ originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
+  advanceTime (sec 120)
+
+  withSender (AddressResolved owner2) $
+    call dao (Call @"Freeze") (#amount .! 2)
 
   -- Create sample proposal (first proposal has id = 0)
-  key1 <- createSampleProposal 1 owner1 dao
+  key1 <- createSampleProposal 1 120 owner1 dao
   let params = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
         }
 
+  advanceTime (sec 120)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
   checkTokenBalance (unfrozenTokenId) dao owner2 98
   checkTokenBalance (frozenTokenId) dao owner2 2

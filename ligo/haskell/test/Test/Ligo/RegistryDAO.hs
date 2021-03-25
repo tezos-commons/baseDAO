@@ -26,7 +26,7 @@ import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
 import Util.Named
 
-import Ligo.BaseDAO.ShareTest.Common (checkTokenBalance, totalSupplyFromLedger, makeProposalKey, sendXtz)
+import Test.Ligo.BaseDAO.Common (checkTokenBalance, totalSupplyFromLedger, makeProposalKey, sendXtz)
 import qualified Ligo.BaseDAO.Common.Types as DAO
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types

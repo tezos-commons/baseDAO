@@ -11,7 +11,7 @@ import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenario)
 import Test.Tasty (TestTree, testGroup)
 
-import qualified Ligo.BaseDAO.ShareTest.FA2 as Share
+import qualified Test.Ligo.BaseDAO.FA2 as Share
 import qualified Ligo.BaseDAO.Types as Ligo
 
 import Test.Ligo.BaseDAO.Common
