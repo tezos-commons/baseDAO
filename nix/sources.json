@@ -48,6 +48,18 @@
         "url_template": "https://gitlab.com/morley-framework/morley/-/archive/morley-<version>/morley-morley-<version>.tar.gz",
         "version": "1.13.0"
     },
+    "nix-npm-buildpackage": {
+        "branch": "master",
+        "description": "Build nix packages that use npm/yarn",
+        "homepage": "",
+        "owner": "serokell",
+        "repo": "nix-npm-buildpackage",
+        "rev": "d24a0ab6a289a1ea1ab6771a914973cf9c3c1719",
+        "sha256": "1fki2qiyhzrvi630wnqndm2w1dvjjqnvlsxb1a6478wabywk3l7g",
+        "type": "tarball",
+        "url": "https://github.com/serokell/nix-npm-buildpackage/archive/d24a0ab6a289a1ea1ab6771a914973cf9c3c1719.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "nixpkgs": {
         "branch": "master",
         "description": "Pinned Nixpkgs tree (master follows nixos-unstable-small, only tags have stable history)",

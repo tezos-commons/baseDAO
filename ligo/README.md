@@ -79,6 +79,11 @@ These configurable options are:
 - the `contract_name` is the alias that the originated contract will be associated with.
 - the `destination` is the directory where the steps files will be saved.
 
+## Generating Typescript interface types
+
+Typescript types representing the BaseDAO contract parameter can be generated automatically by using
+the `make typescript` command. The files are saved to `../typescript/src/generated` directory.
+
 ## Testing
 
 The tests for this contract are written in Haskell and you will need the `stack` tool to run them.
