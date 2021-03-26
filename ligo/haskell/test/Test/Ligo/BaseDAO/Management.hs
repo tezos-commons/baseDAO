@@ -35,7 +35,7 @@ withOriginated
   :: MonadNettest caps base m
   => Integer
   -> ([Address] -> FullStorage)
-  -> ([Address] -> TAddress ParameterL -> m a)
+  -> ([Address] -> TAddress Parameter -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
@@ -145,7 +145,7 @@ test_BaseDAO_Management =
   ]
 
   where
-    testCustomEntrypoint :: ('[(ByteString, FullStorage)] :-> '[([Operation], StorageL)])
+    testCustomEntrypoint :: ('[(ByteString, FullStorage)] :-> '[([Operation], Storage)])
     testCustomEntrypoint =
       -- Unpack an address from packed bytes and set it as admin
       L.unpair #
@@ -155,7 +155,7 @@ test_BaseDAO_Management =
         (L.dip (L.toField #fsStorage) # setField #sAdmin) #
       L.nil # pair
 
-    initialStorage now admin = mkFullStorageL
+    initialStorage now admin = mkFullStorage
       ! #admin admin
       ! #extra dynRecUnsafe
       ! #metadata mempty
@@ -165,26 +165,24 @@ test_BaseDAO_Management =
           ]
       ! defaults
 
-type WithOriginateFn m param st = Integer
-  -> ([Address] -> st)
-  -> ([Address] -> TAddress param  -> m ())
+type WithOriginateFn m = Integer
+  -> ([Address] -> FullStorage)
+  -> ([Address] -> TAddress Parameter  -> m ())
   -> m ()
 
-type WithStorage st = Address -> st
+type WithStorage = Address -> FullStorage
 
 transferOwnership
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
     withSender (AddressResolved wallet1) $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
       & expectNotAdmin
 
 notSetAdmin
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 notSetAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
@@ -197,9 +195,8 @@ notSetAdmin withOriginatedFn initialStorage =
           (#newOwner .! wallet1)
 
 rewritePendingOwner
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 rewritePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
@@ -215,9 +212,8 @@ rewritePendingOwner withOriginatedFn initialStorage =
       withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
 
 invalidatePendingOwner
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 invalidatePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
@@ -232,9 +228,8 @@ invalidatePendingOwner withOriginatedFn initialStorage =
         & expectNotPendingOwner
 
 respectMigratedState
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 respectMigratedState withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1, newOwner] baseDao -> do
@@ -249,9 +244,8 @@ respectMigratedState withOriginatedFn initialStorage =
         & expectMigrated newAddress1
 
 authenticateSender
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 authenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
@@ -261,9 +255,8 @@ authenticateSender withOriginatedFn initialStorage =
         & expectNotPendingOwner
 
 changeToPendingAdmin
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 changeToPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
@@ -272,9 +265,8 @@ changeToPendingAdmin withOriginatedFn initialStorage =
       withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
 
 noPendingAdmin
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 noPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[_, wallet1] baseDao -> do
@@ -283,9 +275,8 @@ noPendingAdmin withOriginatedFn initialStorage =
         & expectNotPendingOwner
 
 pendingOwnerNotTheSame
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 pendingOwnerNotTheSame withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> withSender (AddressResolved owner) $ do
@@ -295,9 +286,8 @@ pendingOwnerNotTheSame withOriginatedFn initialStorage =
       & expectNotPendingOwner
 
 acceptOwnerRespectMigration
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 acceptOwnerRespectMigration withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1] baseDao -> do
@@ -312,9 +302,8 @@ acceptOwnerRespectMigration withOriginatedFn initialStorage =
 
 
 migrationAuthenticateSender
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 migrationAuthenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[_, newAddress1, randomAddress] baseDao -> do
@@ -323,9 +312,8 @@ migrationAuthenticateSender withOriginatedFn initialStorage =
         & expectNotAdmin
 
 migrationSetPendingOwner
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 migrationSetPendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1] baseDao -> do
@@ -336,9 +324,8 @@ migrationSetPendingOwner withOriginatedFn initialStorage =
         call baseDao (Call @"Confirm_migration") ()
 
 migrationOverwritePrevious
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 migrationOverwritePrevious withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1, newAddress2] baseDao -> do
@@ -350,9 +337,8 @@ migrationOverwritePrevious withOriginatedFn initialStorage =
         call baseDao (Call @"Confirm_migration") ()
 
 migrationAllowCallUntilConfirm
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 migrationAllowCallUntilConfirm withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1, newAddress2] baseDao -> withSender (AddressResolved owner) $ do
@@ -360,9 +346,8 @@ migrationAllowCallUntilConfirm withOriginatedFn initialStorage =
       call baseDao (Call @"Migrate") (#newAddress .! newAddress2)
 
 confirmMigAuthenticateSender
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 confirmMigAuthenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1, randomAddress] baseDao -> do
@@ -374,9 +359,8 @@ confirmMigAuthenticateSender withOriginatedFn initialStorage =
         & expectNotMigrationTarget
 
 confirmMigAuthenticateState
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 confirmMigAuthenticateState withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[_, newAddress1] baseDao -> do
@@ -385,9 +369,8 @@ confirmMigAuthenticateState withOriginatedFn initialStorage =
         & expectNotMigrating
 
 confirmMigFinalize
-  :: forall caps base m param pm st
-  . (MonadNettest caps base m, ParameterC param pm)
-  => WithOriginateFn m param st -> WithStorage st -> m ()
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
 confirmMigFinalize withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1] baseDao -> do

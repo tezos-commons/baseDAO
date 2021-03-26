@@ -7,8 +7,6 @@
 
 module Test.Ligo.BaseDAO.Common
   ( OriginateFn
-  , IsLorentz
-  , expectFailed
   , totalSupplyFromLedger
 
   , mkFA2View
@@ -36,25 +34,13 @@ import Named (defaults, (!))
 import Time (sec)
 import Util.Named
 
-import Test.Ligo.BaseDAO.Proposal.Config ()
+import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Test.Ligo.BaseDAO.ConfigDesc
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 
-type OriginateFn param m = m ((Address, Address), (Address, Address), TAddress param, Address)
-
--- TODO: Since Ligo contract has different error messages (string type)
--- we need this to be able to catch error message properly.
-type IsLorentz = Bool
-
--- | Used for check error from ligo contract
-expectFailed
- :: forall caps base m
-  . (MonadNettest caps base m)
-  => Address -> MText -> m () -> m ()
-expectFailed addr val = flip expectFailure (NettestFailedWith addr val)
+type OriginateFn m = m ((Address, Address), (Address, Address), TAddress Parameter, Address)
 
 totalSupplyFromLedger :: Ledger -> TotalSupply
 totalSupplyFromLedger (BigMap ledger) =
@@ -74,8 +60,8 @@ mkFA2View a c = FA2.FA2View (mkView a c)
 
 -- | Helper function to check a user balance of a particular token
 checkTokenBalance
-  :: (MonadNettest caps base m, FA2.ParameterC param, HasCallStack)
-  => FA2.TokenId -> TAddress param
+  :: (MonadNettest caps base m, HasCallStack)
+  => FA2.TokenId -> TAddress Parameter
   -> Address -> Natural
   -> m ()
 checkTokenBalance tokenId dao addr expectedValue = withFrozenCallStack $ do
@@ -90,7 +76,7 @@ checkTokenBalance tokenId dao addr expectedValue = withFrozenCallStack $ do
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((addr, tokenId), expectedValue)]] )
 
-makeProposalKey :: NicePackedValue pm => ProposeParams pm -> Address -> ProposalKey pm
+makeProposalKey :: ProposeParams -> Address -> ProposalKey
 makeProposalKey params owner = toHashHs $ lPackValue (params, owner)
 
 addDataToSign
@@ -139,7 +125,7 @@ class (KnownValue n, NicePackedValue n) => ProposalMetadataFromNum n where
 instance ProposalMetadataFromNum Integer where
   proposalMetadataFromNum = fromIntegral
 
-instance ProposalMetadataFromNum ProposalMetadataL where
+instance ProposalMetadataFromNum ProposalMetadata where
   proposalMetadataFromNum n =
     one ([mt|int|], lPackValueRaw @Integer $ fromIntegral n)
 
@@ -159,12 +145,12 @@ instance ProposalMetadataFromNum ProposalMetadataL where
 -- checkPropertyOfProposal = error "undefined"
 
 originateLigoDaoWithBalance
- :: forall caps base m. (MonadNettest caps base m)
- => ContractExtraL
- -> ConfigL
+ :: MonadNettest caps base m
+ => ContractExtra
+ -> Config
  -> (Address -> Address -> [(LedgerKey, LedgerValue)])
- -> OriginateFn ParameterL m
-originateLigoDaoWithBalance extra configL balFunc = do
+ -> OriginateFn m
+originateLigoDaoWithBalance extra config balFunc = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
   owner2 :: Address <- newAddress "owner2"
@@ -182,11 +168,11 @@ originateLigoDaoWithBalance extra configL balFunc = do
 
   let fullStorage = FullStorage
         { fsStorage =
-            ( mkStorageL
+            ( mkStorage
               ! #extra extra
               ! #admin admin
-              ! #votingPeriod (cMinVotingPeriod configL)
-              ! #quorumThreshold (cMinQuorumThreshold configL)
+              ! #votingPeriod (cMinVotingPeriod config)
+              ! #quorumThreshold (cMinQuorumThreshold config)
               ! #metadata mempty
               ! #now now
               ! defaults
@@ -195,7 +181,7 @@ originateLigoDaoWithBalance extra configL balFunc = do
             , sOperators = operators
             , sTotalSupply = totalSupplyFromLedger bal
             }
-        , fsConfig = configL
+        , fsConfig = config
         }
 
   let
@@ -206,45 +192,41 @@ originateLigoDaoWithBalance extra configL balFunc = do
       , uodContract = convertContract baseDAOContractLigo
       }
   daoUntyped <- originateLargeUntyped originateData
-  let dao = TAddress @ParameterL daoUntyped
+  let dao = TAddress @Parameter daoUntyped
 
   pure ((owner1, operator1), (owner2, operator2), dao, admin)
 
 originateLigoDaoWithConfig
- :: forall caps base m. (MonadNettest caps base m)
- => ContractExtraL
- -> ConfigL
- -> OriginateFn ParameterL m
-originateLigoDaoWithConfig extra configL =
-  originateLigoDaoWithBalance extra configL
+ :: MonadNettest caps base m
+ => ContractExtra
+ -> Config
+ -> OriginateFn m
+originateLigoDaoWithConfig extra config =
+  originateLigoDaoWithBalance extra config
     (\owner1_ owner2_ ->
     [ ((owner1_, unfrozenTokenId), 100)
     , ((owner2_, unfrozenTokenId), 100)
     ])
 
 originateLigoDaoWithConfigDesc
- :: forall caps base m. (MonadNettest caps base m)
- => ContractExtraL
- -> ConfigDesc ConfigL
- -> OriginateFn ParameterL m
+ :: MonadNettest caps base m
+ => ContractExtra
+ -> ConfigDesc Config
+ -> OriginateFn m
 originateLigoDaoWithConfigDesc extra config =
-  originateLigoDaoWithBalance extra (fillConfig config defaultConfigL)
+  originateLigoDaoWithBalance extra (fillConfig config defaultConfig)
     (\owner1_ owner2_ ->
     [ ((owner1_, unfrozenTokenId), 100)
     , ((owner2_, unfrozenTokenId), 100)
     ])
 
-originateLigoDao
- :: forall caps base m. (MonadNettest caps base m)
- => OriginateFn ParameterL m
+originateLigoDao :: MonadNettest caps base m => OriginateFn m
 originateLigoDao =
-  originateLigoDaoWithConfig dynRecUnsafe defaultConfigL
+  originateLigoDaoWithConfig dynRecUnsafe defaultConfig
 
 createSampleProposal
-  :: ( MonadNettest caps base m
-     , HasCallStack
-     )
-  => Int -> Int -> Address -> TAddress ParameterL -> m (ProposalKey ProposalMetadataL)
+  :: (MonadNettest caps base m, HasCallStack)
+  => Int -> Int -> Address -> TAddress Parameter -> m ProposalKey
 createSampleProposal counter vp owner1 dao = do
   let params = ProposeParams
         { ppFrozenToken = 10

@@ -22,12 +22,9 @@ import Ligo.BaseDAO.Types
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 voteNonExistingProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteNonExistingProposal _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteNonExistingProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn testConfig
   advanceTime (sec 10)
 
@@ -46,12 +43,9 @@ voteNonExistingProposal _ originateFn = do
     & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
 voteMultiProposals
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteMultiProposals _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteMultiProposals originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
 
   advanceTime (sec 120)
@@ -85,12 +79,9 @@ voteMultiProposals _ originateFn = do
   -- TODO [#31]: check storage if the vote update the proposal properly
 
 voteOutdatedProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteOutdatedProposal _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteOutdatedProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn testConfig
   advanceTime (sec 10)
 

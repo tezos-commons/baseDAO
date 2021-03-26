@@ -24,12 +24,9 @@ import Ligo.BaseDAO.Types
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 validProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-validProposal  _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+validProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 10
@@ -55,12 +52,9 @@ validProposal  _ originateFn = do
       & expectError (VoidResult (10 :: Natural)) -- initial = 0
 
 rejectProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-rejectProposal _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+rejectProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   advanceTime (sec 10)
   let params = ProposeParams
@@ -76,12 +70,9 @@ rejectProposal _ originateFn = do
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
 nonUniqueProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-nonUniqueProposal _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+nonUniqueProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   advanceTime (sec 10)
   _ <- createSampleProposal 1 10 owner1 dao
@@ -89,12 +80,9 @@ nonUniqueProposal _ originateFn = do
     & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
 
 voteValidProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteValidProposal _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteValidProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
   advanceTime (sec 120)
 

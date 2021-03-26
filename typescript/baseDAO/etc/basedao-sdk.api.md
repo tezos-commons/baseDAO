@@ -257,19 +257,13 @@ export type Vote = Array<VoteItem>;
 // @public (undocumented)
 export interface VoteItem {
     // (undocumented)
-    argument: VoteItemArgument;
-    // (undocumented)
-    permit?: VoteItemPermit;
-}
-
-// @public (undocumented)
-export interface VoteItemArgument {
-    // (undocumented)
     proposal_key: string;
     // (undocumented)
     vote_amount: number;
     // (undocumented)
     vote_type: boolean;
+    // (undocumented)
+    permit?: VoteItemPermit;
 }
 
 // @public (undocumented)

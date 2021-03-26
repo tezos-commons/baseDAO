@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 {-# OPTIONS_GHC -Wno-deprecations #-}
@@ -38,7 +38,7 @@ checkVotingPeriodTracking  = do
   now <- use isNow
 
   withOriginated 2 (\(admin:_) ->
-    mkFullStorageL
+    mkFullStorage
       ! #admin admin
       ! #votingPeriod 10
       ! #quorumThreshold 10

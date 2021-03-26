@@ -38,10 +38,7 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
-zeroTransferScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+zeroTransferScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 zeroTransferScenario originateFn = do
   nonexistent :: Address <- newAddress "nonexistent"
   ((owner1, _), _, dao, _) <- originateFn
@@ -57,10 +54,7 @@ zeroTransferScenario originateFn = do
   withSender (AddressResolved nonexistent) $
     call dao (Call @"Transfer") params
 
-validTransferScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+validTransferScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 validTransferScenario originateFn = do
   ((owner1, op1), (owner2, _), dao, _) <- originateFn
   let params = [ FA2.TransferItem
@@ -86,10 +80,7 @@ validTransferScenario originateFn = do
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((owner2, 0 :: Natural), 110 :: Natural)]] )
 
-validTransferOwnerScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+validTransferOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 validTransferOwnerScenario originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn
   let params = [ FA2.TransferItem
@@ -115,9 +106,7 @@ validTransferOwnerScenario originateFn = do
     (toVal [[((owner2, 0 :: Natural), 110 :: Natural)]] )
 
 updatingOperatorAfterMigrationScenario
-  :: forall caps base m param pm
-  . (MonadNettest caps base m, ParameterC param pm)
-  => OriginateFn param m -> m ()
+  :: MonadNettest caps base m => OriginateFn m -> m ()
 updatingOperatorAfterMigrationScenario originateFn = do
   ((owner1, _), (owner2, newAddress1), dao, admin) <- originateFn
   let params = FA2.OperatorParam
@@ -134,10 +123,7 @@ updatingOperatorAfterMigrationScenario originateFn = do
     call dao (Call @"Update_operators") [FA2.AddOperator params]
     & expectCustomError #mIGRATED newAddress1
 
-updatingOperatorScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+updatingOperatorScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 updatingOperatorScenario originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn
   let params = FA2.OperatorParam
@@ -176,10 +162,7 @@ updatingOperatorScenario originateFn = do
     call dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
       & expectCustomErrorNoArg #nOT_OWNER
 
-lowBalanceScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+lowBalanceScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 lowBalanceScenario originateFn = do
   ((owner1, op1), (owner2, _), dao, _) <- originateFn
 
@@ -194,10 +177,7 @@ lowBalanceScenario originateFn = do
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
 
-lowBalanceOwnerScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+lowBalanceOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 lowBalanceOwnerScenario originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn
 
@@ -212,10 +192,7 @@ lowBalanceOwnerScenario originateFn = do
   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
 
-noSourceAccountScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+noSourceAccountScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 noSourceAccountScenario originateFn = do
   nonexistent :: Address <- newAddress "nonexistent"
   ((owner1, _), _, dao, _) <- originateFn
@@ -234,10 +211,7 @@ noSourceAccountScenario originateFn = do
   withSender (AddressResolved nonexistent) $ call dao (Call @"Transfer") params
     & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 1, #present .! 0)
 
-badOperatorScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+badOperatorScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 badOperatorScenario originateFn = do
   op3  :: Address <- newAddress "operator3"
   ((owner1, _), (owner2, _), dao, _) <- originateFn
@@ -253,10 +227,7 @@ badOperatorScenario originateFn = do
   withSender (AddressResolved op3) $ call dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
-emptyTransferListScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+emptyTransferListScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 emptyTransferListScenario originateFn = do
   ((_, op1), _, dao, _) <- originateFn
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") []
@@ -264,10 +235,7 @@ emptyTransferListScenario originateFn = do
 unknownTokenId :: FA2.TokenId
 unknownTokenId = FA2.TokenId 2
 
-validateTokenScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+validateTokenScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 validateTokenScenario originateFn = do
   ((owner1, op1), (owner2, _), dao, _) <- originateFn
 
@@ -289,10 +257,7 @@ validateTokenScenario originateFn = do
   callWith (params unknownTokenId)
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 
-validateTokenOwnerScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+validateTokenOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 validateTokenOwnerScenario originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn
 
@@ -315,10 +280,7 @@ validateTokenOwnerScenario originateFn = do
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 
 
-noForeignMoneyScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+noForeignMoneyScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 noForeignMoneyScenario originateFn = do
   ((owner1, op1), (owner2, _), dao, _) <- originateFn
 
@@ -333,10 +295,7 @@ noForeignMoneyScenario originateFn = do
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
-noForeignMoneyOwnerScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+noForeignMoneyOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 noForeignMoneyOwnerScenario originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn
 
@@ -351,10 +310,7 @@ noForeignMoneyOwnerScenario originateFn = do
   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR
 
-balanceOfOwnerScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+balanceOfOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 balanceOfOwnerScenario originateFn = do
   ((owner1, _), _, dao, _) <- originateFn
   consumer <- originateSimple "consumer" [] contractConsumer
@@ -369,10 +325,7 @@ balanceOfOwnerScenario originateFn = do
   callWith (params [ FA2.BalanceRequestItem owner1 unknownTokenId ])
     & expectCustomError_ #fA2_TOKEN_UNDEFINED
 
-adminTransferScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+adminTransferScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 adminTransferScenario originateFn = do
   ((owner1, _), (owner2, _), dao, admin) <- originateFn
 
@@ -387,10 +340,7 @@ adminTransferScenario originateFn = do
   withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
 
 
-adminTransferFrozenScenario
-  :: forall caps base m param
-  . (MonadNettest caps base m, FA2.ParameterC param)
-  => OriginateFn param m -> m ()
+adminTransferFrozenScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 adminTransferFrozenScenario originateFn = do
   ((owner1, _), (owner2, _), dao, admin)
     <- originateFn
@@ -405,10 +355,7 @@ adminTransferFrozenScenario originateFn = do
         } ]
   withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
 
-transferAfterMigrationScenario
-  :: forall caps base m param pm
-  . (MonadNettest caps base m, ParameterC param pm)
-  => OriginateFn param m -> m ()
+transferAfterMigrationScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 transferAfterMigrationScenario originateFn = do
   ((owner1, op1), (owner2, newAddress1), dao, admin) <- originateFn
 
@@ -428,10 +375,7 @@ transferAfterMigrationScenario originateFn = do
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
     & expectMigrated newAddress1
 
-balanceOfRequestAfterMigrationScenario
-  :: forall caps base m param pm
-  . (MonadNettest caps base m, ParameterC param pm)
-  => OriginateFn param m -> m ()
+balanceOfRequestAfterMigrationScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 balanceOfRequestAfterMigrationScenario originateFn = do
   ((owner1, newAddress1), _, dao, admin) <- originateFn
   consumer <- originateSimple "consumer" [] contractConsumer

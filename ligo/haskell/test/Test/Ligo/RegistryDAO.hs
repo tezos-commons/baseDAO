@@ -36,7 +36,7 @@ withOriginated
   :: MonadNettest caps base m
   => Integer
   -> ([Address] -> FullStorage)
-  -> ([Address] -> FullStorage -> TAddress ParameterL -> m a)
+  -> ([Address] -> FullStorage -> TAddress Parameter -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
@@ -206,7 +206,7 @@ test_RegistryDAO =
 
               advanceTime (sec 10) -- voting period is 10 secs
               -- Then we send 2 upvotes for the proposal (as min quorum is 2)
-              let proposalKey = makeProposalKey @ProposalMetadataL (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
+              let proposalKey = makeProposalKey (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
               withSender (AddressResolved voter1) $
                 call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
 
@@ -247,7 +247,7 @@ test_RegistryDAO =
 
             advanceTime (sec 12)
             -- Then we send 2 upvotes for the proposal (as min quorum is 2)
-            let proposalKey = makeProposalKey @ProposalMetadataL (ProposeParams requiredFrozen proposalMeta) wallet1
+            let proposalKey = makeProposalKey (ProposeParams requiredFrozen proposalMeta) wallet1
             withSender (AddressResolved voter1) $
               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
 

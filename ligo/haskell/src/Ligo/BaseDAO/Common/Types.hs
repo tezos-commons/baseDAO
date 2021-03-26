@@ -1,6 +1,7 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+-- | Common types between different DAO implementations.
 module Ligo.BaseDAO.Common.Types
   ( TokenTransfer (..)
   , TransferType (..)

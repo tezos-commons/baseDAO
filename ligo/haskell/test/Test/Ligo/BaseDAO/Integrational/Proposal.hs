@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 {-# OPTIONS_GHC -Wno-deprecations #-}
@@ -42,7 +42,7 @@ checkFreezeHistoryTracking  = do
   now <- use isNow
 
   withOriginated 2 (\(admin:_) ->
-    mkFullStorageL
+    mkFullStorage
       ! #admin admin
       ! #votingPeriod 10
       ! #quorumThreshold 10
@@ -90,5 +90,5 @@ checkFreezeHistoryTracking  = do
             when (fh /= (Just expected)) $
               Left $ CustomTestError "BaseDAO contract did not unstake tokens after voting period"
     where
-      metadataSize :: DynamicRec "pm" -> Natural
+      metadataSize :: ProposalMetadata -> Natural
       metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md

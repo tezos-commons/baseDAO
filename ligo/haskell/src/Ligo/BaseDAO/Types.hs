@@ -46,25 +46,23 @@ module Ligo.BaseDAO.Types
   , TransferOwnershipParam
   , MigrateParam
   , MigrationStatus (..)
-  , ProposalMetadataL
-  , ContractExtraL
-  , ProposeParamsL
-  , CustomEntrypointsL
-  , ProposalL (..)
-  , ParameterC
-  , ParameterL
-  , StorageL (..)
-  , ConfigL (..)
+  , ProposalMetadata
+  , ContractExtra
+  , CustomEntrypoints
+  , Proposal (..)
+  , Parameter
+  , Storage (..)
+  , Config (..)
   , FullStorage (..)
   , AddressFreezeHistory (..)
   , LastPeriodChange (..)
   , DynamicRec (..)
   , dynRecUnsafe
-  , mkStorageL
+  , mkStorage
   , mkMetadataMap
-  , mkConfigL
-  , defaultConfigL
-  , mkFullStorageL
+  , mkConfig
+  , defaultConfig
+  , mkFullStorage
 
   , sOperatorsLens
   ) where
@@ -141,26 +139,26 @@ type TotalSupply = Map FA2.TokenId Natural
 -- Proposals
 ------------------------------------------------------------------------
 
-data ProposeParams proposalMetadata = ProposeParams
+data ProposeParams = ProposeParams
   { ppFrozenToken      :: Natural
   --  ^ Determines how many sender's tokens will be frozen to get
   -- the proposal accepted
-  , ppProposalMetadata :: proposalMetadata
+  , ppProposalMetadata :: ProposalMetadata
   }
   deriving stock (Generic, Show)
   deriving anyclass IsoValue
 
-instance (TypeHasDoc pm, IsoValue pm) => TypeHasDoc (ProposeParams pm) where
+instance TypeHasDoc ProposalMetadata => TypeHasDoc ProposeParams where
   typeDocMdDescription =
      "Describes the how many proposer's frozen tokens will be frozen and the proposal metadata"
-  typeDocMdReference = poly1TypeDocMdReference
-  typeDocHaskellRep = concreteTypeDocHaskellRep @(ProposeParams ())
-  typeDocMichelsonRep = concreteTypeDocMichelsonRep @(ProposeParams ())
+  typeDocMdReference = homomorphicTypeDocMdReference
+  typeDocHaskellRep = concreteTypeDocHaskellRep @ProposeParams
+  typeDocMichelsonRep = concreteTypeDocMichelsonRep @ProposeParams
 
-instance HasAnnotation pm => HasAnnotation (ProposeParams pm) where
+instance HasAnnotation ProposeParams where
   annOptions = baseDaoAnnOptions
 
-type ProposalKey pm = Hash Blake2b $ Packed (ProposeParams pm, Address)
+type ProposalKey = Hash Blake2b $ Packed (ProposeParams, Address)
 
 ------------------------------------------------------------------------
 -- Voting
@@ -193,21 +191,21 @@ instance TypeHasDoc Voter where
 instance HasAnnotation Voter where
   annOptions = baseDaoAnnOptions
 
-data VoteParam pm = VoteParam
-  { vProposalKey :: ProposalKey pm
+data VoteParam = VoteParam
+  { vProposalKey :: ProposalKey
   , vVoteType    :: VoteType
   , vVoteAmount  :: Natural
   }
   deriving stock (Generic, Show)
   deriving anyclass IsoValue
 
-instance (TypeHasDoc pm, IsoValue pm) => TypeHasDoc (VoteParam pm) where
+instance TypeHasDoc ProposalMetadata => TypeHasDoc VoteParam where
   typeDocMdDescription = "Describes target proposal id, vote type and vote amount"
-  typeDocMdReference = poly1TypeDocMdReference
-  typeDocHaskellRep = concreteTypeDocHaskellRep @(VoteParam MText)
-  typeDocMichelsonRep = concreteTypeDocMichelsonRep @(VoteParam MText)
+  typeDocMdReference = homomorphicTypeDocMdReference
+  typeDocHaskellRep = concreteTypeDocHaskellRep @VoteParam
+  typeDocMichelsonRep = concreteTypeDocMichelsonRep @VoteParam
 
-instance HasAnnotation (VoteParam pm) where
+instance HasAnnotation VoteParam where
   annOptions = baseDaoAnnOptions
 
 ------------------------------------------------------------------------
@@ -250,7 +248,8 @@ data TransferContractTokensParam = TransferContractTokensParam
   deriving anyclass IsoValue
 
 instance TypeHasDoc TransferContractTokensParam where
-  typeDocMdDescription = "TODO"
+  typeDocMdDescription =
+    "Describes an FA2 contract address and the parameter to call its 'transfer' entrypoint"
 
 instance HasAnnotation TransferContractTokensParam where
   annOptions = baseDaoAnnOptions
@@ -381,8 +380,7 @@ data MigrationStatus
   deriving anyclass (IsoValue, HasAnnotation)
 
 instance TypeHasDoc MigrationStatus where
-  typeDocMdDescription =
-    "Migration status of the contract"
+  typeDocMdDescription = "Migration status of the contract"
 
 
 -- | Represents a product type with arbitrary fields.
@@ -397,27 +395,24 @@ dynRecUnsafe :: DynamicRec n
 dynRecUnsafe = DynamicRec mempty
 
 -- TODO consider making these all 'BigMap's instead
-type ProposalMetadataL = DynamicRec "pm"
-type ContractExtraL = DynamicRec "ce"
-type CustomEntrypointsL = DynamicRec "ep"
+type ProposalMetadata = DynamicRec "pm"
+type ContractExtra = DynamicRec "ce"
+type CustomEntrypoints = DynamicRec "ep"
 
-type ProposeParamsL = ProposeParams ProposalMetadataL
-type ProposalKeyL = ProposalKey ProposalMetadataL
-type VoteParamL = VoteParam ProposalMetadataL
 
-data ProposalL = ProposalL
-  { plUpvotes             :: Natural
-  , plDownvotes           :: Natural
-  , plStartDate           :: Timestamp
-  , plPeriodNum           :: Natural
+data Proposal = Proposal
+  { plUpvotes                 :: Natural
+  , plDownvotes               :: Natural
+  , plStartDate               :: Timestamp
+  , plPeriodNum               :: Natural
 
-  , plMetadata            :: ProposalMetadataL
+  , plMetadata                :: ProposalMetadata
 
-  , plProposer            :: Address
-  , plProposerFrozenToken :: Natural
+  , plProposer                :: Address
+  , plProposerFrozenToken     :: Natural
   , plProposerFixedFeeInToken :: Natural
 
-  , plVoters              :: [Voter]
+  , plVoters                  :: [Voter]
   }
   deriving stock (Show)
 
@@ -440,7 +435,7 @@ data ForbidXTZParam
   | Burn BurnParam
   | Call_FA2 FA2.Parameter
   | Confirm_migration ()
-  | Drop_proposal ProposalKeyL
+  | Drop_proposal ProposalKey
   | Flush Natural
   | Freeze FreezeParam
   | Get_vote_permit_counter (Void_ () Nonce)
@@ -452,12 +447,12 @@ data ForbidXTZParam
   | Set_voting_period VotingPeriod
   | Transfer_ownership TransferOwnershipParam
   | Unfreeze UnfreezeParam
-  | Vote [PermitProtected VoteParamL]
+  | Vote [PermitProtected VoteParam]
   deriving stock (Show)
 
 data AllowXTZParam
   = CallCustom CallCustomParam
-  | Propose ProposeParamsL
+  | Propose ProposeParams
   deriving stock (Show)
 
 data MigratableParam
@@ -465,31 +460,7 @@ data MigratableParam
   | XtzForbidden ForbidXTZParam
   deriving stock (Show)
 
--- Note: using this for calling entrypoints with polymorphic arguments may
--- severely increase compilation time.
--- If this is your case, consider requiring reduced set of entrypoints.
-type ParameterC param proposalMetadata =
-  ( ParameterContainsEntrypoints param
-    [ "Accept_ownership" :> ()
-    , "Burn" :> BurnParam
-    , "Confirm_migration" :> ()
-    , "Drop_proposal" :> ProposalKey proposalMetadata
-    , "Flush" :> Natural
-    , "Get_vote_permit_counter" :> Void_ () Nonce
-    , "Migrate" :> MigrateParam
-    , "Mint" :> MintParam
-    , "Propose" :> ProposeParams proposalMetadata
-    , "Set_quorum_threshold" :> QuorumThreshold
-    , "Set_voting_period" :> VotingPeriod
-    , "Transfer_contract_tokens" :> TransferContractTokensParam
-    , "Transfer_ownership" :> TransferOwnershipParam
-    , "Vote" :> [PermitProtected $ VoteParam proposalMetadata]
-    , "Get_total_supply" :> Void_ FA2.TokenId Natural
-    ]
-  , FA2.ParameterC param
-  )
-
-data ParameterL
+data Parameter
   = Migratable MigratableParam
   | Transfer_contract_tokens TransferContractTokensParam
   deriving stock (Show)
@@ -506,9 +477,9 @@ data AddressFreezeHistory = AddressFreezeHistory
   , fhStaked :: Natural
   } deriving stock (Eq, Show)
 
-data StorageL = StorageL
+data Storage = Storage
   { sAdmin :: Address
-  , sExtra :: ContractExtraL
+  , sExtra :: ContractExtra
   , sFrozenTokenId :: FA2.TokenId
   , sLedger :: Ledger
   , sMetadata :: TZIP16.MetadataMap BigMap
@@ -516,8 +487,8 @@ data StorageL = StorageL
   , sOperators :: Operators
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
-  , sProposals :: BigMap ProposalKeyL ProposalL
-  , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKeyL)
+  , sProposals :: BigMap ProposalKey Proposal
+  , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKey)
   , sQuorumThreshold :: QuorumThreshold
   , sTokenAddress :: Address
   , sVotingPeriod :: VotingPeriod
@@ -529,10 +500,10 @@ data StorageL = StorageL
   }
   deriving stock (Show)
 
-instance HasAnnotation ProposalL where
+instance HasAnnotation Proposal where
   annOptions = baseDaoAnnOptions
 
-instance HasAnnotation StorageL where
+instance HasAnnotation Storage where
   annOptions = baseDaoAnnOptions
 
 instance HasAnnotation AddressFreezeHistory where
@@ -541,35 +512,34 @@ instance HasAnnotation AddressFreezeHistory where
 instance HasAnnotation FullStorage where
   annOptions = baseDaoAnnOptions
 
-instance HasAnnotation ConfigL where
+instance HasAnnotation Config where
   annOptions = baseDaoAnnOptions
 
 instance HasAnnotation LastPeriodChange where
   annOptions = baseDaoAnnOptions
 
-instance HasFieldOfType StorageL name field =>
-         StoreHasField StorageL name field where
+instance HasFieldOfType Storage name field => StoreHasField Storage name field where
   storeFieldOps = storeFieldOpsADT
 
-instance StoreHasSubmap StorageL "sLedger" LedgerKey LedgerValue where
+instance StoreHasSubmap Storage "sLedger" LedgerKey LedgerValue where
   storeSubmapOps = storeSubmapOpsDeeper #sLedger
 
-instance StoreHasSubmap StorageL "sOperators" ("owner" :! Address, "operator" :! Address) () where
+instance StoreHasSubmap Storage "sOperators" ("owner" :! Address, "operator" :! Address) () where
   storeSubmapOps = storeSubmapOpsDeeper #sOperators
 
-instance StoreHasSubmap StorageL "sTotalSupply" FA2.TokenId Natural where
+instance StoreHasSubmap Storage "sTotalSupply" FA2.TokenId Natural where
   storeSubmapOps = storeSubmapOpsDeeper #sTotalSupply
 
-mkStorageL
+mkStorage
   :: "admin" :! Address
   -> "votingPeriod" :? Natural
   -> "quorumThreshold" :? Natural
-  -> "extra" :! ContractExtraL
+  -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
-  -> StorageL
-mkStorageL admin votingPeriod quorumThreshold extra metadata now =
-  StorageL
+  -> Storage
+mkStorage admin votingPeriod quorumThreshold extra metadata now =
+  Storage
     { sAdmin = arg #admin admin
     , sExtra = arg #extra extra
     , sLedger = mempty
@@ -608,10 +578,10 @@ mkMetadataMap hostAddress hostChain key =
       (argF #metadataHostChain hostChain)
       (arg #metadataHostAddress hostAddress)
 
-data ConfigL = ConfigL
-  { cProposalCheck :: '[ProposeParamsL, ContractExtraL] :-> '[Bool]
-  , cRejectedProposalReturnValue :: '[ProposalL, ContractExtraL] :-> '["slash_amount" :! Natural]
-  , cDecisionLambda :: '[ProposalL, ContractExtraL] :-> '[List Operation, ContractExtraL]
+data Config = Config
+  { cProposalCheck :: '[ProposeParams, ContractExtra] :-> '[Bool]
+  , cRejectedProposalReturnValue :: '[Proposal, ContractExtra] :-> '["slash_amount" :! Natural]
+  , cDecisionLambda :: '[Proposal, ContractExtra] :-> '[List Operation, ContractExtra]
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural
@@ -621,12 +591,12 @@ data ConfigL = ConfigL
   , cMaxVotingPeriod :: Natural
   , cMinVotingPeriod :: Natural
 
-  , cCustomEntrypoints :: CustomEntrypointsL
+  , cCustomEntrypoints :: CustomEntrypoints
   }
   deriving stock (Show)
 
-mkConfigL :: [CustomEntrypoint] -> ConfigL
-mkConfigL customEps = ConfigL
+mkConfig :: [CustomEntrypoint] -> Config
+mkConfig customEps = Config
   { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
@@ -645,27 +615,27 @@ mkConfigL customEps = ConfigL
   , cMaxProposals = 500
   }
 
-defaultConfigL :: ConfigL
-defaultConfigL = mkConfigL []
+defaultConfig :: Config
+defaultConfig = mkConfig []
 
 data FullStorage = FullStorage
-  { fsStorage :: StorageL
-  , fsConfig :: ConfigL
+  { fsStorage :: Storage
+  , fsConfig :: Config
   }
   deriving stock (Show)
 
-mkFullStorageL
+mkFullStorage
   :: "admin" :! Address
   -> "votingPeriod" :? Natural
   -> "quorumThreshold" :? Natural
-  -> "extra" :! ContractExtraL
+  -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
-mkFullStorageL admin vp qt extra mdt now cEps = FullStorage
-  { fsStorage = mkStorageL admin vp qt extra mdt now
-  , fsConfig  = mkConfigL (argDef #customEps [] cEps)
+mkFullStorage admin vp qt extra mdt now cEps = FullStorage
+  { fsStorage = mkStorage admin vp qt extra mdt now
+  , fsConfig  = mkConfig (argDef #customEps [] cEps)
   }
 
 -- Instances
@@ -674,8 +644,8 @@ mkFullStorageL admin vp qt extra mdt now cEps = FullStorage
 deriving anyclass instance IsoValue Voter
 
 customGeneric "Voter" ligoLayout
-customGeneric "ProposalL" ligoLayout
-deriving anyclass instance IsoValue ProposalL
+customGeneric "Proposal" ligoLayout
+deriving anyclass instance IsoValue Proposal
 
 customGeneric "MigratableParam" ligoLayout
 deriving anyclass instance IsoValue MigratableParam
@@ -692,10 +662,10 @@ deriving anyclass instance IsoValue AllowXTZParam
 instance ParameterHasEntrypoints AllowXTZParam where
   type ParameterEntrypointsDerivation AllowXTZParam = EpdDelegate
 
-customGeneric "ParameterL" ligoLayout
-deriving anyclass instance IsoValue ParameterL
-instance ParameterHasEntrypoints ParameterL where
-  type ParameterEntrypointsDerivation ParameterL = EpdDelegate
+customGeneric "Parameter" ligoLayout
+deriving anyclass instance IsoValue Parameter
+instance ParameterHasEntrypoints Parameter where
+  type ParameterEntrypointsDerivation Parameter = EpdDelegate
 
 customGeneric "AddressFreezeHistory" ligoLayout
 deriving anyclass instance IsoValue AddressFreezeHistory
@@ -703,11 +673,11 @@ deriving anyclass instance IsoValue AddressFreezeHistory
 customGeneric "LastPeriodChange" ligoLayout
 deriving anyclass instance IsoValue LastPeriodChange
 
-customGeneric "StorageL" ligoLayout
-deriving anyclass instance IsoValue StorageL
+customGeneric "Storage" ligoLayout
+deriving anyclass instance IsoValue Storage
 
-customGeneric "ConfigL" ligoLayout
-deriving anyclass instance IsoValue ConfigL
+customGeneric "Config" ligoLayout
+deriving anyclass instance IsoValue Config
 
 deriving stock instance Generic FullStorage
 deriving anyclass instance IsoValue FullStorage
@@ -717,7 +687,7 @@ deriving anyclass instance IsoValue FullStorage
 
 makeLensesFor
   [ ("sOperators", "sOperatorsLens")
-  ] ''StorageL
+  ] ''Storage
 
 ------------------------------------------------------------------------
 -- Errors
