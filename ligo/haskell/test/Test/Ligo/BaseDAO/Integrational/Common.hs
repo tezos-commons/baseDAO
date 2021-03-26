@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Test.Ligo.BaseDAO.Integrational.Common
@@ -18,7 +18,7 @@ import Data.List.NonEmpty as NE (toList)
 withOriginated
   :: Int
   -> ([Address] -> FullStorage)
-  -> ([Address] -> TAddress ParameterL -> IntegrationalScenarioM a)
+  -> ([Address] -> TAddress Parameter -> IntegrationalScenarioM a)
   -> IntegrationalScenarioM a
 withOriginated addrCount storageFn tests = do
   let addresses = take addrCount $ NE.toList $ genesisAddresses

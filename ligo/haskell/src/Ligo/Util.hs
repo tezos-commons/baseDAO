@@ -1,4 +1,4 @@
--- SPDX-FileCopyrightText: 2020 TQ Tezos
+-- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 -- | Read a contract at compile time.
@@ -19,7 +19,7 @@ import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 
 import Michelson.Parser
-import Michelson.Test.Import
+import Michelson.Test.Import -- TODO morley/565: remove cleveland dependency
 import Michelson.TypeCheck.Instr
 import Michelson.Typed
 

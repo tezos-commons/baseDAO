@@ -92,7 +92,6 @@ library:
   generated-other-modules:
     - Paths_baseDAO_ligo_meta
   dependencies:
-    - HUnit
     - cleveland
     - containers
     - directory

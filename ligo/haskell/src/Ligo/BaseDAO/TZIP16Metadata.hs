@@ -7,7 +7,7 @@ module Ligo.BaseDAO.TZIP16Metadata
   , MetadataSettings (..)
   , defaultMetadataConfig
   , knownBaseDAOMetadata
-  , mkMetadataSettingsL
+  , mkMetadataSettings
 
   , baseDAOViews
   , getBalanceView
@@ -39,23 +39,12 @@ data MetadataConfig = MetadataConfig
 -- | All the information for instantiating metadata.
 --
 -- This includes pieces defined by user (if any) like some constants for
--- off-chain views, as well as abstract storage accessors suitable for
--- Lorentz/LIGO versions of the contract.
-data MetadataSettings store =
-  StorageContains store
-    [ "sLedger" := LedgerKey ~> LedgerValue
-    , "sOperators" := Operator ~> ()
-    , "sPermitsCounter" := Nonce
-    , "sTotalSupply" := FA2.TokenId ~> Natural
-    , "sUnfrozenTokenId" := FA2.TokenId
-    , "sFrozenTokenId" := FA2.TokenId
-    ]
-  =>
-  MetadataSettings
+-- off-chain views, as well as abstract storage accessors of the contract.
+data MetadataSettings = MetadataSettings
   { msConfig :: MetadataConfig
 
     -- Haskell-world accessors
-  , mcOperatorsL :: U.Lens' store Operators
+  , mcOperatorsL :: U.Lens' Storage Operators
   }
 
 -- | Default values for config.
@@ -69,16 +58,16 @@ defaultMetadataConfig =
     }
 
 
--- | Construct settings for LIGO version of the contract.
-mkMetadataSettingsL :: MetadataConfig -> MetadataSettings StorageL
-mkMetadataSettingsL msConfig = MetadataSettings
+-- | Construct MetadataSetting for the contract.
+mkMetadataSettings :: MetadataConfig -> MetadataSettings
+mkMetadataSettings msConfig = MetadataSettings
   { msConfig
   , mcOperatorsL = sOperatorsLens
   }
 
 -- | Parts of metadata that can be filled just knowing the contract,
 -- without user's input.
-knownBaseDAOMetadata :: MetadataSettings store -> Metadata (ToT store)
+knownBaseDAOMetadata :: MetadataSettings -> Metadata (ToT Storage)
 knownBaseDAOMetadata settings = mconcat
   [ version . fromString $ showVersion Paths.version
   , license $ License "MIT" Nothing
@@ -103,12 +92,12 @@ baseDAOViews = U.sequence
   , permitsCounterView
   ]
 
-type DaoView store = MetadataSettings store -> View (ToT store)
+type DaoView = MetadataSettings -> View (ToT Storage)
 
 -- FA2
 ------------------------------------------------------------------------
 
-getBalanceView :: forall store. DaoView store
+getBalanceView :: DaoView
 getBalanceView MetadataSettings{} = View
   { vName = "get_balance"
   , vDescription = Just
@@ -116,7 +105,7 @@ getBalanceView MetadataSettings{} = View
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
-          mkMichelsonStorageView @store @Natural Nothing [] $
+          mkMichelsonStorageView @Storage Nothing [] $
             unsafeCompileViewCode $ WithParam @FA2.BalanceRequestItem $ do
               getField #briOwner; dip (toField #briTokenId); pair
               stGet #sLedger
@@ -124,7 +113,7 @@ getBalanceView MetadataSettings{} = View
       ]
   }
 
-allTokensView :: forall store. DaoView store
+allTokensView :: DaoView
 allTokensView MetadataSettings{} = View
   { vName = "all_tokens"
   , vDescription = Just
@@ -132,7 +121,7 @@ allTokensView MetadataSettings{} = View
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
-          mkMichelsonStorageView @store @[FA2.TokenId] Nothing [] $
+          mkMichelsonStorageView @Storage Nothing [] $
             unsafeCompileViewCode $ WithoutParam $ do
               stGetField #sUnfrozenTokenId
               dip $ do stToField #sFrozenTokenId; dip nil; cons
@@ -140,7 +129,7 @@ allTokensView MetadataSettings{} = View
       ]
   }
 
-isOperatorView :: forall store. DaoView store
+isOperatorView :: DaoView
 isOperatorView MetadataSettings{} = View
   { vName = "is_operator"
   , vDescription = Just
@@ -149,7 +138,7 @@ isOperatorView MetadataSettings{} = View
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
-          mkMichelsonStorageView @store @Bool Nothing [] $
+          mkMichelsonStorageView @Storage Nothing [] $
             unsafeCompileViewCode $ WithParam @FA2.OperatorParam $ do
               dip dup
               convertOperatorParam
@@ -158,7 +147,7 @@ isOperatorView MetadataSettings{} = View
       ]
   }
 
-tokenMetadataView :: forall store. DaoView store
+tokenMetadataView :: DaoView
 tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
   { vName = "token_metadata"
   , vDescription = Just
@@ -166,7 +155,7 @@ tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
-          mkMichelsonStorageView @store @(FA2.TokenId, FA2.TokenMetadata) Nothing [] $
+          mkMichelsonStorageView @Storage Nothing [] $
             unsafeCompileViewCode $ WithParam @FA2.TokenId $ do
               dip $ do
                 dup
@@ -188,7 +177,7 @@ tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
       ]
   }
 
-getTotalSupplyView :: forall store. DaoView store
+getTotalSupplyView :: DaoView
 getTotalSupplyView MetadataSettings{ msConfig = MetadataConfig{} } = View
   { vName = "get_total_supply"
   , vDescription = Just
@@ -196,7 +185,7 @@ getTotalSupplyView MetadataSettings{ msConfig = MetadataConfig{} } = View
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
-          mkMichelsonStorageView @store @Natural Nothing [] $
+          mkMichelsonStorageView @Storage Nothing [] $
             unsafeCompileViewCode $ WithParam @FA2.TokenId $ do
               stGet #sTotalSupply
               ifSome nop $ failCustom_ #fA2_TOKEN_UNDEFINED
@@ -206,7 +195,7 @@ getTotalSupplyView MetadataSettings{ msConfig = MetadataConfig{} } = View
 -- BaseDAO-specific
 ------------------------------------------------------------------------
 
-permitsCounterView :: forall store. DaoView store
+permitsCounterView :: DaoView
 permitsCounterView MetadataSettings{} = View
   { vName = "GetCounter"
   , vDescription = Just
@@ -214,7 +203,7 @@ permitsCounterView MetadataSettings{} = View
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
-          mkSimpleMichelsonStorageView @store $
+          mkSimpleMichelsonStorageView @Storage $
             unsafeCompileViewCode $ WithoutParam $
               stToField #sPermitsCounter
       ]

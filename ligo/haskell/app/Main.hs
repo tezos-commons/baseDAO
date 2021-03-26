@@ -17,7 +17,7 @@ import Paths_baseDAO_ligo_meta (version)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Util.Main
 
-import Ligo.BaseDAO.Types (ParameterL)
+import Ligo.BaseDAO.Types (Parameter)
 import Ligo.Typescript
 import Util.CLI
 import Util.Named
@@ -28,10 +28,10 @@ main = wrapMain $ do
   cmdLnArgs <- Opt.execParser programInfo
   case cmdLnArgs of
     GenerateTypescript fp ->
-      void $ generateTs @ParameterL fp
+      void $ generateTs @Parameter fp
     PrintMetadata mc ->
       putTextLn . decodeUtf8 . encodePretty $
-        knownBaseDAOMetadata (mkMetadataSettingsL mc)
+        knownBaseDAOMetadata (mkMetadataSettings mc)
 
 --------------------------------------------------------------------------------
 -- Arguments parsing

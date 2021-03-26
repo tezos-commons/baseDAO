@@ -17,12 +17,13 @@ import Test.Tasty (TestTree, testGroup)
 import Util.Named
 
 import Ligo.BaseDAO.Types
-import Test.Ligo.BaseDAO.ConfigDesc
 import Test.Ligo.BaseDAO.Common
+import Test.Ligo.BaseDAO.Proposal.Bounds
+import Test.Ligo.BaseDAO.Proposal.Config
 import Test.Ligo.BaseDAO.Proposal.Proposal
 import Test.Ligo.BaseDAO.Proposal.Vote
 
-vote :: Bool -> ProposalKey pm -> PermitProtected (VoteParam pm)
+vote :: Bool -> ProposalKey -> PermitProtected VoteParam
 vote how key =
   NoPermit VoteParam
     { vVoteType = how
@@ -30,7 +31,7 @@ vote how key =
     , vProposalKey = key
     }
 
-upvote, downvote :: ProposalKey pm -> PermitProtected (VoteParam pm)
+upvote, downvote :: ProposalKey -> PermitProtected VoteParam
 upvote = vote True
 downvote = vote False
 
@@ -40,105 +41,105 @@ test_BaseDAO_Proposal :: [TestTree]
 test_BaseDAO_Proposal =
   [ testGroup "Proposal creator:"
       [ nettestScenario "BaseDAO - can propose a valid proposal" $
-          uncapsNettest $ validProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ validProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "cannot propose an invalid proposal (rejected)" $
-          uncapsNettest $ rejectProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ rejectProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "cannot propose a non-unique proposal" $
-          uncapsNettest $ nonUniqueProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ nonUniqueProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "cannot propose in a non-proposal period" $
-          uncapsNettest $ nonProposalPeriodProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ nonProposalPeriodProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
   , testGroup "Voter:"
       [ nettestScenario "can vote on a valid proposal" $
-          uncapsNettest $ voteValidProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ voteValidProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "cannot vote non-existing proposal" $
-          uncapsNettest $ voteNonExistingProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ voteNonExistingProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "can vote on multiple proposals" $
-          uncapsNettest $ voteMultiProposals True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ voteMultiProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       -- TODO [#47]: Disable running in real network due to time-sensitive operations
       , nettestScenarioOnEmulator "cannot vote on outdated proposal" $
           \_emulated ->
-            uncapsNettest $ voteOutdatedProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ voteOutdatedProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
 
   , nettestScenario "cannot vote if the vote amounts exceeds token balance" $
-      uncapsNettest $ insufficientTokenVote True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      uncapsNettest $ insufficientTokenVote (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
   , nettestScenario "cannot propose with insufficient tokens" $
-      uncapsNettest $ insufficientTokenProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      uncapsNettest $ insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
   , testGroup "Permit:"
       [ nettestScenario "can vote from another user behalf" $
-          uncapsNettest $ voteWithPermit True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ voteWithPermit (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "counter works properly in permits" $
-          uncapsNettest $ voteWithPermitNonce True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
   , testGroup "Admin:"
       [ nettestScenario "can set voting period"  $
-          uncapsNettest $ setVotingPeriod True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ setVotingPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenario "can set quorum threshold" $
-          uncapsNettest $ setQuorumThreshold True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ setQuorumThreshold (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       -- TODO [#47]: Disable running in real network due to time-sensitive operations
       , nettestScenarioOnEmulator "can flush proposals that got accepted" $
           \_emulated ->
-            uncapsNettest $ flushAcceptedProposals True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "can flush 2 proposals that got accepted" $
           \_emulated ->
-            uncapsNettest $ flushAcceptedProposalsWithAnAmount True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushAcceptedProposalsWithAnAmount (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
           \_emulated ->
-            uncapsNettest $ flushRejectProposalQuorum True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushRejectProposalQuorum (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
           \_emulated ->
-            uncapsNettest $ flushRejectProposalNegativeVotes True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "flush should not affecting ongoing proposals" $
-          uncapsNettest $ flushNotAffectOngoingProposals True
+          uncapsNettest $ flushNotAffectOngoingProposals
             (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "flush with bad cRejectedProposalReturnValue" $
           \_emulated ->
-            uncapsNettest $ flushWithBadConfig True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecUnsafe)
       -- TODO [#15]: admin burn proposer token and test "flush"
 
       -- TODO [#38]: Improve this when contract size is smaller
       , nettestScenarioOnEmulator "flush and run decision lambda" $
           \_emulated ->
-            uncapsNettest $ flushDecisionLambda True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushDecisionLambda (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "can drop proposals" $
           \_emulated ->
-            uncapsNettest $ dropProposal True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ dropProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
   , testGroup "Bounded Value"
       [ nettestScenario "bounded value on proposals" $
-          uncapsNettest $ proposalBoundedValue True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "bounded value on votes" $
-          uncapsNettest $ votesBoundedValue True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ votesBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "bounded range on quorum_threshold" $
-          uncapsNettest $ quorumThresholdBound True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ quorumThresholdBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "bounded range on voting_period" $
-          uncapsNettest $ votingPeriodBound True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ votingPeriodBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
   , testGroup "Freeze-Unfreeze"
       [ nettestScenario "can freeze tokens" $
-          uncapsNettest $ freezeTokens True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ freezeTokens (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenario "cannot unfreeze tokens from the same period" $
-          uncapsNettest $ cannotUnfreezeFromSamePeriod True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenario "can unfreeze tokens from the previous period" $
-          uncapsNettest $ canUnfreezeFromPreviousPeriod True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenario "handle voting period change" $
-          uncapsNettest $ canHandleVotingPeriodChange True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ canHandleVotingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenario "handle voting period change" $
-          uncapsNettest $ votingPeriodChange True (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ votingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
  , testGroup "LIGO-specific proposal tests:"
@@ -147,7 +148,7 @@ test_BaseDAO_Proposal =
           ((proposer, _), _, dao, admin) <- originateLigoDao
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 42
-          let params :: ProposeParamsL = ProposeParams
+          let params = ProposeParams
                 { ppFrozenToken = 10
                 , ppProposalMetadata = proposalMetadataFromNum 1
                 }
@@ -261,12 +262,9 @@ test_BaseDAO_Proposal =
   ]
 
 nonProposalPeriodProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-nonProposalPeriodProposal _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+nonProposalPeriodProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $
@@ -274,7 +272,7 @@ nonProposalPeriodProposal _ originateFn = do
 
   advanceTime (sec 10)
 
-  let params :: ProposeParamsL = ProposeParams
+  let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
@@ -283,12 +281,9 @@ nonProposalPeriodProposal _ originateFn = do
     & expectCustomErrorNoArg #nOT_PROPOSING_PERIOD
 
 freezeTokens
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-freezeTokens _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+freezeTokens originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10)
@@ -338,12 +333,9 @@ burnsFeeOnFailure reason = do
   checkTokenBalance (unfrozenTokenId) dao proposer 48
 
 cannotUnfreezeFromSamePeriod
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-cannotUnfreezeFromSamePeriod _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+cannotUnfreezeFromSamePeriod originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10)
@@ -354,12 +346,9 @@ cannotUnfreezeFromSamePeriod _ originateFn = do
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
 
 canUnfreezeFromPreviousPeriod
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-canUnfreezeFromPreviousPeriod _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+canUnfreezeFromPreviousPeriod originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10)
@@ -373,12 +362,9 @@ canUnfreezeFromPreviousPeriod _ originateFn = do
   checkTokenBalance unfrozenTokenId dao owner1 100
 
 canHandleVotingPeriodChange
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-canHandleVotingPeriodChange _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+canHandleVotingPeriodChange originateFn = do
   -- Initial voting period is 10 sec
   ((owner1, _), _, dao, admin) <- originateFn testConfig
 
@@ -402,12 +388,9 @@ canHandleVotingPeriodChange _ originateFn = do
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
 
 insufficientTokenProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-insufficientTokenProposal _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+insufficientTokenProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 101
@@ -418,12 +401,9 @@ insufficientTokenProposal _ originateFn = do
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
 
 insufficientTokenVote
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-insufficientTokenVote _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+insufficientTokenVote originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
   advanceTime (sec 120)
 
@@ -450,12 +430,9 @@ insufficientTokenVote _ originateFn = do
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
 
 voteWithPermit
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteWithPermit _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteWithPermit originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
   advanceTime (sec 120)
 
@@ -477,12 +454,9 @@ voteWithPermit _ originateFn = do
   checkTokenBalance frozenTokenId dao owner1 12
 
 voteWithPermitNonce
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-voteWithPermitNonce _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+voteWithPermitNonce originateFn = do
 
   ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
 
@@ -534,12 +508,9 @@ voteWithPermitNonce _ originateFn = do
       & expectError (VoidResult (2 :: Natural))
 
 flushNotAffectOngoingProposals
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-flushNotAffectOngoingProposals _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushNotAffectOngoingProposals originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn testConfig
 
 
@@ -565,12 +536,9 @@ flushNotAffectOngoingProposals _ originateFn = do
   -- checkIfAProposalExist (key2 :: ByteString) dao
 
 flushAcceptedProposals
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-flushAcceptedProposals _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushAcceptedProposals originateFn = do
   ((owner1, _), (owner2, _), dao, admin) <- originateFn testConfig
 
   -- Use 60s for voting period, since in real network by the time we call
@@ -629,12 +597,9 @@ flushAcceptedProposals _ originateFn = do
 
 
 flushAcceptedProposalsWithAnAmount
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-flushAcceptedProposalsWithAnAmount _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushAcceptedProposalsWithAnAmount originateFn = do
   ((owner1, _), (owner2, _), dao, admin) <- originateFn testConfig
 
   advanceTime (sec 10)
@@ -686,12 +651,9 @@ flushAcceptedProposalsWithAnAmount _ originateFn = do
   checkTokenBalance (unfrozenTokenId) dao owner1 60
 
 flushRejectProposalQuorum
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-flushRejectProposalQuorum _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushRejectProposalQuorum originateFn = do
   ((owner1, _), (owner2, _), dao, admin)
     <- originateFn configWithRejectedProposal
 
@@ -734,12 +696,9 @@ flushRejectProposalQuorum _ originateFn = do
   checkTokenBalance (unfrozenTokenId) dao owner2 98 -- voter
 
 flushRejectProposalNegativeVotes
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-flushRejectProposalNegativeVotes _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushRejectProposalNegativeVotes originateFn = do
   ((owner1, _), (owner2, _), dao, admin)
     <- originateFn configWithRejectedProposal
 
@@ -791,12 +750,9 @@ flushRejectProposalNegativeVotes _ originateFn = do
   checkTokenBalance (unfrozenTokenId) dao owner2 97 -- voter
 
 flushWithBadConfig
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-flushWithBadConfig _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushWithBadConfig originateFn = do
   ((owner1, _), (owner2, _), dao, admin) <- originateFn badRejectedValueConfig
 
   withSender (AddressResolved admin) $ do
@@ -830,12 +786,9 @@ flushWithBadConfig _ originateFn = do
   checkTokenBalance (unfrozenTokenId) dao owner2 99
 
 flushDecisionLambda
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-flushDecisionLambda _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushDecisionLambda originateFn = do
   consumer <- originateSimple "consumer" [] (contractConsumer)
   ((owner1, _), (owner2, _), dao, admin) <- originateFn (decisionLambdaConfig consumer)
 
@@ -864,12 +817,9 @@ flushDecisionLambda _ originateFn = do
     "Unexpected accepted proposals list"
 
 dropProposal
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-dropProposal _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+dropProposal originateFn = do
   ((owner1, _), (owner2, _), dao, admin) <- originateFn badRejectedValueConfig
 
   withSender (AddressResolved admin) $ do
@@ -909,52 +859,10 @@ dropProposal _ originateFn = do
   checkTokenBalance (frozenTokenId) dao owner1 30
   checkTokenBalance (unfrozenTokenId) dao owner1 70
 
-setVotingPeriod
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-setVotingPeriod _ originateFn = do
-  ((owner1, _), _, dao, admin) <- originateFn testConfig
-
-  let param = 60 * 60 -- 1 hour
-
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Set_voting_period") param
-    & expectCustomErrorNoArg #nOT_ADMIN
-
-  withSender (AddressResolved admin) $
-    call dao (Call @"Set_voting_period") param
-  -- TODO [#31]: checkStorage
-  --
-
-setQuorumThreshold
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-setQuorumThreshold _ originateFn = do
-  ((owner1, _), _, dao, admin) <- originateFn testConfig
-
-  let param = 100
-
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Set_quorum_threshold") param
-    & expectCustomErrorNoArg #nOT_ADMIN
-
-  withSender (AddressResolved admin) $
-    call dao (Call @"Set_quorum_threshold") param
-  -- TODO [#31]: checkStorage
-
 proposalBoundedValue
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-proposalBoundedValue _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+proposalBoundedValue originateFn = do
   ((owner1, _), _, dao, _) <- originateFn
     ( testConfig >>-
       ConfigDesc configConsts{ cmMaxProposals = Just 1 }
@@ -977,12 +885,9 @@ proposalBoundedValue _ originateFn = do
       & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
 
 votesBoundedValue
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-votesBoundedValue _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+votesBoundedValue originateFn = do
   ((owner1, _), (owner2, _), dao, _) <- originateFn
     ( voteConfig >>-
       ConfigDesc configConsts{ cmMaxVotes = Just 1 }
@@ -1009,12 +914,9 @@ votesBoundedValue _ originateFn = do
       & expectCustomErrorNoArg #mAX_VOTES_REACHED
 
 quorumThresholdBound
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-quorumThresholdBound _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+quorumThresholdBound originateFn = do
   (_, _, dao, admin) <- originateFn
     ( testConfig >>-
       ConfigDesc configConsts
@@ -1031,12 +933,9 @@ quorumThresholdBound _ originateFn = do
       & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
 
 votingPeriodBound
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-votingPeriodBound _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+votingPeriodBound originateFn = do
   (_, _, dao, admin) <- originateFn
     ( testConfig >>-
       ConfigDesc configConsts
@@ -1053,12 +952,9 @@ votingPeriodBound _ originateFn = do
       & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD
 
 votingPeriodChange
-  :: forall caps base m.
-    ( MonadNettest caps base m
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc ConfigL -> OriginateFn ParameterL m) -> m ()
-votingPeriodChange _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+votingPeriodChange originateFn = do
   ((owner1, _), (owner2, _), dao, admin) <- originateFn testConfig
   advanceTime (sec 11)
 

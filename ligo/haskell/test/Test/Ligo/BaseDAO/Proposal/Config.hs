@@ -14,7 +14,6 @@ module Test.Ligo.BaseDAO.Proposal.Config
   , ProposalFrozenTokensCheck (..)
   , RejectedProposalReturnValue (..)
   , DecisionLambdaAction (..)
-  , AllConfigDescsDefined
 
   , testConfig
   , configWithRejectedProposal
@@ -24,7 +23,7 @@ module Test.Ligo.BaseDAO.Proposal.Config
   ) where
 
 import Lorentz
-import Universum (Constraint)
+import Universum (Constraint, (?:))
 
 import qualified Ligo.BaseDAO.Types as DAO
 
@@ -141,14 +140,6 @@ passProposerOnDecision target = DecisionLambdaAction $ do
   transferTokens
   dip nil; cons
 
-type AllConfigDescsDefined config =
-  AreConfigDescsExt config
-  [ ConfigConstants
-  , ProposalFrozenTokensCheck
-  , RejectedProposalReturnValue
-  , DecisionLambdaAction
-  ]
-
 -- Config samples
 ------------------------------------------------------------------------
 
@@ -183,3 +174,45 @@ decisionLambdaConfig
   :: AreConfigDescsExt config '[DecisionLambdaAction]
   => TAddress ("proposer" :! Address) -> ConfigDesc config
 decisionLambdaConfig target = ConfigDesc $ passProposerOnDecision target
+
+--------------------------------------------------------------------------------
+
+instance IsConfigDescExt DAO.Config ConfigConstants where
+  fillConfig ConfigConstants{..} DAO.Config{..} = DAO.Config
+    { cMaxProposals = cmMaxProposals ?: cMaxProposals
+    , cMaxVotes = cmMaxVotes ?: cMaxVotes
+    , cMinVotingPeriod = cmMinVotingPeriod ?: cMinVotingPeriod
+    , cMaxVotingPeriod = cmMaxVotingPeriod ?: cMaxVotingPeriod
+    , cMinQuorumThreshold = cmMinQuorumThreshold ?: cMinQuorumThreshold
+    , cMaxQuorumThreshold = cmMaxQuorumThreshold ?: cMaxQuorumThreshold
+    , ..
+    }
+
+instance IsConfigDescExt DAO.Config ProposalFrozenTokensCheck where
+  fillConfig (ProposalFrozenTokensCheck check) DAO.Config{..} = DAO.Config
+    { cProposalCheck = do
+        dip drop
+        toFieldNamed #ppFrozenToken
+        framed check
+    , ..
+    }
+
+instance IsConfigDescExt DAO.Config RejectedProposalReturnValue where
+  fillConfig (RejectedProposalReturnValue toReturnValue) DAO.Config{..} =
+    DAO.Config
+    { cRejectedProposalReturnValue = do
+        dip drop
+        toField #plProposerFrozenToken; toNamed #proposerFrozenToken
+        framed toReturnValue
+    , ..
+    }
+
+instance IsConfigDescExt DAO.Config DecisionLambdaAction where
+  fillConfig (DecisionLambdaAction lam) DAO.Config{..} =
+    DAO.Config
+    { cDecisionLambda = do
+        getField #plProposerFrozenToken; toNamed #frozen_tokens
+        dip $ do toField #plProposer; toNamed #proposer
+        framed lam
+    , ..
+    }

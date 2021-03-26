@@ -23,38 +23,37 @@ import Tezos.Address
 import Util.Named ((.!))
 
 import Test.Ligo.BaseDAO.Common (totalSupplyFromLedger)
-import qualified Ligo.BaseDAO.Types as DAO
-import qualified Ligo.BaseDAO.TZIP16Metadata as DAO
+import Ligo.BaseDAO.Types
+import Ligo.BaseDAO.TZIP16Metadata
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.Spec.TZIP16Interface
 
-offChainViewStorage :: DAO.StorageL
+offChainViewStorage :: Storage
 offChainViewStorage =
-  (DAO.mkStorageL
+  (mkStorage
   ! #admin addr
-  ! #extra DAO.dynRecUnsafe
+  ! #extra dynRecUnsafe
   ! #metadata mempty
   ! #now (timestampFromSeconds 0)
   ! defaults
-  ) { DAO.sLedger = bal
-    , DAO.sTotalSupply = totalSupplyFromLedger bal
+  ) { sLedger = bal
+    , sTotalSupply = totalSupplyFromLedger bal
     }
   where
     addr = unsafeParseAddress "tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE"
     bal = BigMap $ M.fromList $
-      [ ((addr, DAO.unfrozenTokenId), 100)
-      , ((addr, DAO.frozenTokenId), 200)
+      [ ((addr, unfrozenTokenId), 100)
+      , ((addr, frozenTokenId), 200)
       ]
 
 test_FA2 :: TestTree
 test_FA2 =
-  mkFA2Tests offChainViewStorage (DAO.mkMetadataSettingsL DAO.defaultMetadataConfig)
+  mkFA2Tests offChainViewStorage (mkMetadataSettings defaultMetadataConfig)
 
 runView
-  :: forall ret store.
-    (IsoValue ret, IsoValue store)
-  => View $ ToT store
-  -> store
+  :: forall ret. IsoValue ret
+  => View $ ToT Storage
+  -> Storage
   -> ViewParam
   -> Either MichelsonFailed ret
 runView view storage param =
@@ -67,13 +66,11 @@ addr1, addr2 :: Address
 addr1 = unsafeParseAddress "tz1Sm4RZtPho7FDMHw2Bnszduu8FVFCeczpm"
 addr2 = unsafeParseAddress "tz1R2kv7Uzr8mgeJYEgi7KGQiHFbCg3WN6YC"
 
-mkFA2Tests
-  :: (IsoValue store)
-  => store -> DAO.MetadataSettings store -> TestTree
+mkFA2Tests :: Storage -> MetadataSettings -> TestTree
 mkFA2Tests storage mc = testGroup "FA2 off-chain views"
   [ testGroup "is_operator" $
     let checkOperator st param =
-          runView @Bool (DAO.isOperatorView mc) st (ViewParam param)
+          runView @Bool (isOperatorView mc) st (ViewParam param)
     in
     [ testCase "Empty storage" $
         checkOperator
@@ -85,7 +82,7 @@ mkFA2Tests storage mc = testGroup "FA2 off-chain views"
     , testCase "Present operator" $
         let
           store = storage &~
-            DAO.mcOperatorsL mc .= BigMap (one ((#owner .! addr1, #operator .! addr2), ()))
+            mcOperatorsL mc .= BigMap (one ((#owner .! addr1, #operator .! addr2), ()))
         in
           checkOperator store FA2.OperatorParam
             { opOwner = addr1, opOperator = addr2, opTokenId = FA2.theTokenId }
@@ -102,18 +99,18 @@ mkFA2Tests storage mc = testGroup "FA2 off-chain views"
   , testGroup "token_metadata" $
     [ testCase "Get frozen tokens metadata" $
         runView @(FA2.TokenId, FA2.TokenMetadata)
-          (DAO.tokenMetadataView mc) storage (ViewParam DAO.frozenTokenId)
-        @?= Right (DAO.frozenTokenId, DAO.mcFrozenTokenMetadata DAO.defaultMetadataConfig)
+          (tokenMetadataView mc) storage (ViewParam frozenTokenId)
+        @?= Right (frozenTokenId, mcFrozenTokenMetadata defaultMetadataConfig)
     ]
   , testGroup "get_total_supply" $
     let checkTotalSupply st param =
-          runView @Natural (DAO.getTotalSupplyView mc) st (ViewParam param)
+          runView @Natural (getTotalSupplyView mc) st (ViewParam param)
     in
     [ testCase "Get unfrozen token total supply" $
-        checkTotalSupply storage DAO.unfrozenTokenId
+        checkTotalSupply storage unfrozenTokenId
           @?= Right 100
     , testCase "Get frozen token total supply" $
-        checkTotalSupply storage DAO.frozenTokenId
+        checkTotalSupply storage frozenTokenId
           @?= Right 200
     ]
   ]

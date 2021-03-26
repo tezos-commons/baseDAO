@@ -19,14 +19,9 @@ import Ligo.BaseDAO.Types
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 setVotingPeriod
-  :: forall pm param config caps base m.
-    ( MonadNettest caps base m
-    , ParameterC param pm
-    , AllConfigDescsDefined config
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-setVotingPeriod _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+setVotingPeriod originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn testConfig
 
   let param = 60 * 60 -- 1 hour
@@ -40,14 +35,9 @@ setVotingPeriod _ originateFn = do
   -- TODO [#31]: checkStorage
 
 setQuorumThreshold
-  :: forall pm param config caps base m.
-    ( MonadNettest caps base m
-    , ParameterC param pm
-    , AllConfigDescsDefined config
-    , HasCallStack
-    )
-  => IsLorentz -> (ConfigDesc config -> OriginateFn param m) -> m ()
-setQuorumThreshold _ originateFn = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+setQuorumThreshold originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn testConfig
 
   let param = 100

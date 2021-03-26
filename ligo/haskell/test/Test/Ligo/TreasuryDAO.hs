@@ -221,7 +221,7 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
 
 originateTreasuryDaoWithBalance
  :: forall caps base m. (MonadNettest caps base m)
- => (Address -> Address -> [(LedgerKey, LedgerValue)]) -> OriginateFn ParameterL m
+ => (Address -> Address -> [(LedgerKey, LedgerValue)]) -> OriginateFn m
 originateTreasuryDaoWithBalance bal =
   let fs = fromVal ($(fetchValue @FullStorage "ligo/haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
       testExtra = (sExtra $ fsStorage fs)

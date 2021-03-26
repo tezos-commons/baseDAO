@@ -23,7 +23,7 @@ test_BaseDAO_Token :: TestTree
 test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   [ nettestScenario "can burn tokens from any accounts"
       $ uncapsNettest $ burnScenario
-        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfigL
+        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfig
           (\o1 o2 ->
               [ ((o1, unfrozenTokenId), 10)
               , ((o1, frozenTokenId), 10)
@@ -33,7 +33,7 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
           )
   , nettestScenario "can mint tokens to any accounts"
       $ uncapsNettest $ mintScenario
-        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfigL
+        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfig
           (\o1 _ ->
               [ ((o1, unfrozenTokenId), 0)
               , ((o1, frozenTokenId), 0)
@@ -44,9 +44,8 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   ]
 
 burnScenario
-  :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, ParameterC param pm, HasCallStack)
-  => OriginateFn param m -> m ()
+  :: (MonadNettest caps base m, HasCallStack)
+  => OriginateFn m -> m ()
 burnScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), _, dao, admin) <- originateFn
 
@@ -77,9 +76,8 @@ burnScenario originateFn = withFrozenCallStack $ do
       & expectError (VoidResult (15 :: Natural)) -- initial = 20
 
 mintScenario
-  :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, ParameterC param pm, HasCallStack)
-  => OriginateFn param m -> m ()
+  :: (MonadNettest caps base m, HasCallStack)
+  => OriginateFn m -> m ()
 mintScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), _, dao, admin) <- originateFn
 
@@ -104,9 +102,8 @@ mintScenario originateFn = withFrozenCallStack $ do
       & expectError (VoidResult (50 :: Natural)) -- initial = 0
 
 transferContractTokensScenario
-  :: forall caps base m param pm
-  . (MonadNettest caps base m, FA2.ParameterC param, ParameterC param pm)
-  => OriginateFn param m -> m ()
+  :: MonadNettest caps base m
+  => OriginateFn m -> m ()
 transferContractTokensScenario originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn
   ((target_owner1, _), (target_owner2, _), fa2Contract, _) <- originateFn
