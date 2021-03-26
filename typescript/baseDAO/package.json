@@ -1,0 +1,16 @@
+{
+  "name": "basedao-sdk",
+  "version": "1.0.0",
+  "description": "A Typescript SDK to interact with BaseDAO contracts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "devDependencies": {
+    "typescript": "^4.1.5"
+  },
+  "dependencies": {
+    "@microsoft/api-extractor": "^7.13.1",
+    "@taquito/michel-codec": "^8.0.6-beta.0",
+    "@taquito/signer": "^8.0.4-beta-RC.0",
+    "@taquito/taquito": "^8.0.4-beta-RC.0"
+  }
+}
