@@ -136,9 +136,6 @@ steps:
   #   if: build.source == "schedule"
   #   env:
   #     TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
-  #   # use another agent for long scheduled jobs
-  #   agents:
-  #     queue: "scheduled"
   #   commands: *ligo-nettest
   #   retry:
   #     automatic:
