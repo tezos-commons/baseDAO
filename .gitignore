@@ -11,3 +11,8 @@ template/*.cabal
 
 # Build output
 ligo/out
+
+# npm
+/typescript/baseDAO/node_modules
+/typescript/baseDAO/yarn-error.log
+/typescript/baseDAO/dist

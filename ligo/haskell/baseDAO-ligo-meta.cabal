@@ -25,6 +25,7 @@ library
       Ligo.BaseDAO.ConfigDesc
       Ligo.BaseDAO.Types
       Ligo.BaseDAO.TZIP16Metadata
+      Ligo.Typescript
       Ligo.Util
   other-modules:
       Paths_baseDAO_ligo_meta
@@ -50,6 +51,7 @@ library
     , morley-prelude
     , named
     , template-haskell
+    , text
     , universum
   default-language: Haskell2010
 

@@ -35,7 +35,7 @@ escape_quote = $(subst ','\'',$(1))
 # Where to put build files
 OUT ?= out
 
-.PHONY: all clean test
+.PHONY: all clean test typescript
 
 all: \
 	$(OUT)/baseDAO.tz \
@@ -140,5 +140,11 @@ test: all
     REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
     TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
 
+typescript: all
+	$(MAKE) -C .. build PACKAGE=baseDAO-ligo-meta STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn"
+	rm -rf ../typescript/baseDAO/src/generated/*
+	stack exec -- baseDAO-ligo-meta generate-typescript --target=../typescript/baseDAO/src/generated/
+
 clean:
 	rm -rf $(OUT)
+	rm -rf ../typescript/baseDAO/src/generated/*

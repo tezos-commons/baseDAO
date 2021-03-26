@@ -17,6 +17,7 @@ rec {
   tezos-client = (import "${sources.tezos-packaging}/nix/build/pkgs.nix" {}).ocamlPackages.tezos-client;
   ligo = (import "${sources.ligo}/nix" {}).ligo-bin;
   morley = (import "${sources.morley}/ci.nix").packages.morley.exes.morley;
+  inherit (pkgs.callPackage sources.nix-npm-buildpackage { }) buildYarnPackage;
 
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
@@ -120,6 +121,14 @@ rec {
     nativeBuildInputs = [ ligo ];
     buildPhase = "make";
     installPhase = "mkdir -p $out; cp -r out/* $out";
+  };
+
+  build-typescript = buildYarnPackage {
+    src = ./typescript/baseDAO;
+    yarnBuild = ''
+      yarn install
+      yarn tsc
+    '';
   };
 
   # nixpkgs has weeder 2, but we use weeder 1
