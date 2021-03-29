@@ -103,7 +103,7 @@ test_BaseDAO_Management =
           migrationAuthenticateSender
 
       , nettestScenarioCaps "successfully sets the pending migration address " $
-          migrationSetPendingOwner
+          migrationSetTarget
 
       , nettestScenarioCaps "overwrites previous migration target" $
           migrationOverwritePrevious
@@ -254,10 +254,10 @@ migrationAuthenticateSender = withOriginated 3 $
         call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
         & expectNotAdmin
 
-migrationSetPendingOwner
+migrationSetTarget
   :: MonadNettest caps base m
   => m ()
-migrationSetPendingOwner = withOriginated 2 $
+migrationSetTarget = withOriginated 2 $
     \[owner, newAddress1] baseDao -> do
       withSender (AddressResolved owner) $
         call baseDao (Call @"Migrate") (#newAddress .! newAddress1)

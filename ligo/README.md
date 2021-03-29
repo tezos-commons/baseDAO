@@ -2,7 +2,7 @@
 
 This is the LIGO implementation of BaseDAO, written in the cameLIGO dialect.
 
-The main differences with its [Lorentz counterpart](/README.md) are:
+The main differences with its [Lorentz counterpart](/lorentz/README.md) are:
 - `BaseDAO Lorentz`:
     - uses compile-time configuration to define various options of a DAO,
     - as a consequence, each contract implementing over `baseDAO` will produce a different `Michelson` contract.

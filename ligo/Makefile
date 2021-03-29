@@ -135,13 +135,13 @@ originate-steps: $(OUT)/baseDAO.tz
 	#
 
 test: all
-	$(MAKE) -C .. test PACKAGE=baseDAO-ligo-meta \
+	$(MAKE) -C ../lorentz test PACKAGE=baseDAO-ligo-meta \
     BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
     REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
     TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
 
 typescript: all
-	$(MAKE) -C .. build PACKAGE=baseDAO-ligo-meta STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn"
+	$(MAKE) -C ../lorentz build PACKAGE=baseDAO-ligo-meta STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn"
 	rm -rf ../typescript/baseDAO/src/generated/*
 	stack exec -- baseDAO-ligo-meta generate-typescript --target=../typescript/baseDAO/src/generated/
 

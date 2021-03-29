@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 # This file is derived from
@@ -22,9 +22,9 @@ rec {
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
   local-packages = [
-    { name = "baseDAO"; subdirectory = "."; }
+    { name = "baseDAO"; subdirectory = "./lorentz"; }
     { name = "baseDAO-ligo-meta"; subdirectory = "./ligo/haskell"; }
-    { name = "templateDAO"; subdirectory = "./template"; }
+    { name = "templateDAO"; subdirectory = "./lorentz/template"; }
   ];
 
   # names of all local packages
