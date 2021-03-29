@@ -20,7 +20,6 @@ module Lorentz.Contracts.BaseDAO.TZIP16Metadata
 import qualified Universum as U
 
 import Data.Version (showVersion)
-import Fmt (pretty)
 
 import Lorentz hiding (View)
 import Lorentz.Contracts.Spec.TZIP16Interface
@@ -93,13 +92,6 @@ knownBaseDAOMetadata settings = mconcat
 -- Off-chain views
 ------------------------------------------------------------------------
 
--- | A version of 'compileViewCode' that is simpler to use.
---
--- We cannot use 'compileViewCodeTH' easily because this way passing config
--- won't work.
-compileViewCode_ :: ViewCode st ret -> CompiledViewCode st ret
-compileViewCode_ = U.either (U.error . pretty) U.id . compileViewCode
-
 baseDAOViews :: MetadataSettings store -> [View $ ToT store]
 baseDAOViews = U.sequence
   [ getBalanceView
@@ -125,7 +117,7 @@ getBalanceView MetadataSettings{} = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @store @Natural Nothing [] $
-            compileViewCode_ $ WithParam @FA2.BalanceRequestItem $ do
+            unsafeCompileViewCode $ WithParam @FA2.BalanceRequestItem $ do
               getField #briOwner; dip (toField #briTokenId); pair
               stGet #sLedger
               fromOption 0
@@ -141,7 +133,7 @@ allTokensView MetadataSettings{} = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @store @[FA2.TokenId] Nothing [] $
-            compileViewCode_ $ WithoutParam $ do
+            unsafeCompileViewCode $ WithoutParam $ do
               stGetField #sUnfrozenTokenId
               dip $ do stToField #sFrozenTokenId; dip nil; cons
               cons
@@ -158,7 +150,7 @@ isOperatorView MetadataSettings{} = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @store @Bool Nothing [] $
-            compileViewCode_ $ WithParam @FA2.OperatorParam $ do
+            unsafeCompileViewCode $ WithParam @FA2.OperatorParam $ do
               dip dup
               convertOperatorParam
               pair
@@ -175,7 +167,7 @@ tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @store @(FA2.TokenId, FA2.TokenMetadata) Nothing [] $
-            compileViewCode_ $ WithParam @FA2.TokenId $ do
+            unsafeCompileViewCode $ WithParam @FA2.TokenId $ do
               dip $ do
                 dup
                 dip emptyMap
@@ -205,7 +197,7 @@ getTotalSupplyView MetadataSettings{ msConfig = MetadataConfig{} } = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @store @Natural Nothing [] $
-            compileViewCode_ $ WithParam @FA2.TokenId $ do
+            unsafeCompileViewCode $ WithParam @FA2.TokenId $ do
               stGet #sTotalSupply
               ifSome nop $ failCustom_ #fA2_TOKEN_UNDEFINED
       ]
@@ -223,7 +215,7 @@ permitsCounterView MetadataSettings{} = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkSimpleMichelsonStorageView @store $
-            compileViewCode_ $ WithoutParam $
+            unsafeCompileViewCode $ WithoutParam $
               stToField #sPermitsCounter
       ]
   }
