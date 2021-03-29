@@ -1,15 +1,20 @@
+# IMPORTANT NOTE
+
+This version of the contract has been deprecated and is no longer maintained.
+
+You are adviced to use the [main Ligo](../) version instead, as this is otudated
+and may potentially be not secure.
+
 # BaseDAO
 
 BaseDAO is a generic smart contract framework on Tezos that enables enables a community to collectively govern resources, registries, or rules. The framework enables the a creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by a DAO’s proposals. BaseDAO also includes Permit (TZIP-17) to enable off-chain voting.
-
-The repository currently provides a [LIGO implementation](/ligo/) and a Michelson implementation created using [Morley](https://gitlab.com/morley-framework/morley).
 
 This repository provides:
 * Generic DAO contract (template) that can be used as basis for various DAOs.
 * Instantiations of this template:
   1. Simplest implementation with no custom logic ([TrivialDAO contract](./src/Lorentz/Contracts/TrivialDAO.hs))
   2. A simple example with custom logic called [GameDAO](./src/Lorentz/Contracts/GameDAO.hs).
-  3. Two more practical DAO contracts: [RegistryDAO](./ligo/src/registryDAO.mligo) and [TreasuryDAO](./ligo/src/treasuryDAO.mligo).
+  3. Two more practical DAO contracts: [RegistryDAO](./src/Lorentz/Contracts/RegistryDAO.hs) and [TreasuryDAO](./src/Lorentz/Contracts/TreasuryDAO.hs).
 * A [template package](./template) that one can copy and use to create their own DAO.
 
 BaseDAO currently has an in-development interface called [Homebase](https://github.com/dOrgTech/homebase-app) which enables users to create and manage DAOs created with the BaseDAO framework.
@@ -133,10 +138,10 @@ See [template DAO](./template) for instructions on how to write your own DAO con
 
 ## For Contributors
 
-Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information.
+Please see [CONTRIBUTING.md](../.github/CONTRIBUTING.md) for more information.
 
 Note that `stack build` won't work from `template` folder, because it serves as a copy-and-use package and contains its own `stack.yaml`.
 
 ## License
 
-[MIT License](./LICENSE) Copyright (c) 2020 TQ Tezos
+[MIT License](./LICENSE) Copyright (c) 2021 TQ Tezos
