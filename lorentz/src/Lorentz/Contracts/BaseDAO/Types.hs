@@ -536,7 +536,7 @@ instance CanCastTo a b => DataToSign a `CanCastTo` DataToSign b where
 
 -- | Information about permit.
 --
--- Following TZIP-17, this allows a service to execute an entrypoint from
+-- Following TZIP-017, this allows a service to execute an entrypoint from
 -- user's behalf securely.
 --
 -- Type argument @a@ stands for argument of entrypoint protected by permit.

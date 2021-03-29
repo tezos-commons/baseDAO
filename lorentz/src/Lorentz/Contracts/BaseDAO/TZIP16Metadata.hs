@@ -1,7 +1,7 @@
 -- SPDX-FileCopyrightText: 2020 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
--- | TZIP-16 metadata.
+-- | TZIP-016 metadata.
 module Lorentz.Contracts.BaseDAO.TZIP16Metadata
   ( MetadataConfig (..)
   , MetadataSettings (..)
@@ -112,7 +112,7 @@ getBalanceView :: forall store. DaoView store
 getBalanceView MetadataSettings{} = View
   { vName = "get_balance"
   , vDescription = Just
-      "Get balance of an address according to TZIP-12."
+      "Get balance of an address according to TZIP-012."
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
@@ -128,7 +128,7 @@ allTokensView :: forall store. DaoView store
 allTokensView MetadataSettings{} = View
   { vName = "all_tokens"
   , vDescription = Just
-      "Get all supported tokens according to TZIP-12."
+      "Get all supported tokens according to TZIP-012."
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
@@ -145,7 +145,7 @@ isOperatorView MetadataSettings{} = View
   { vName = "is_operator"
   , vDescription = Just
       "Checks whether given address is allowed to transfer given tokens \
-      \that belong to given owner - according to TZIP-12."
+      \that belong to given owner - according to TZIP-012."
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $
@@ -162,7 +162,7 @@ tokenMetadataView :: forall store. DaoView store
 tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
   { vName = "token_metadata"
   , vDescription = Just
-      "Returns metadata for given token according to TZIP-12."
+      "Returns metadata for given token according to TZIP-012."
   , vPure = Just True
   , vImplementations =
       [ VIMichelsonStorageView $

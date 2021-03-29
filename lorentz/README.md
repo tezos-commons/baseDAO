@@ -48,7 +48,7 @@ Run `stack exec -- baseDAO --help` to see available commands.
 
 ### Deploying a contract
 
-Deploying a TZIP-16-compliant baseDAO contract requires the following steps.
+Deploying a TZIP-016 compliant baseDAO contract requires the following steps.
 
 ### 1. Construct baseDAO metadata
 
