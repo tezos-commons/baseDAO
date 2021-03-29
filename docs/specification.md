@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2020 TQ Tezos
+SPDX-FileCopyrightText: 2021 TQ Tezos
 SPDX-License-Identifier: LicenseRef-MIT-TQ
 -->
 
@@ -67,6 +67,7 @@ type config =
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
   ; rejected_proposal_return_value : proposal * storage -> nat
   // ^ When a proposal is rejected, the value that voters get back can be slashed.
+  // This lambda returns the amount to be slashed.
   ; decision_lambda : proposal * storage -> operation list * storage
   // ^ The decision lambda is executed based on a successful proposal.
   // It has access to the proposal, can modify `contractExtra` and perform arbitrary
@@ -951,15 +952,13 @@ Parameter (in Michelson):
 
 # TZIP-16 metadata
 
-Note: we do not provide a proper support for contract metadata until [the proposal](https://gitlab.com/tzip/tzip/-/merge_requests/94) is finalized and merged.
-
 This contract implements TZIP-16.
 
 The DAO contract itself won't store the metadata, rather a dedicated contract will contain that.
 Motivation:
-* The baseDAO contract is very large and approaches the Tezos hard limits.
-  * Providing the metadata during origination would significantly reduce the amount of functionality we can put into contract;
-  * Inserting the metadata after origination still requires mechanisms to manage the metadata, increasing the contract size.
+* The baseDAO contract is very large and already over the Tezos hard limits.
+  * Providing the metadata during origination would increase the already excessive origination cost;
+  * Inserting the metadata after origination still requires mechanisms to manage the metadata, increasing the contract size even more.
 
 ## Deployment with metadata
 

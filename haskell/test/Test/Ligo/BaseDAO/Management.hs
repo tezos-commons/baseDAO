@@ -116,7 +116,11 @@ test_BaseDAO_Management =
 
       , nettestScenarioCaps "successfully sets the pending migration address " $ do
           now <- getNow
-          migrationSetPendingOwner withOriginated (initialStorage now)
+          migrationSetTarget withOriginated (initialStorage now)
+
+      , nettestScenarioCaps "disallows confirmation from incorrect pending migration address " $ do
+          now <- getNow
+          migrationSetWrongTarget withOriginated (initialStorage now)
 
       , nettestScenarioCaps "overwrites previous migration target" $ do
           now <- getNow
@@ -311,10 +315,10 @@ migrationAuthenticateSender withOriginatedFn initialStorage =
         call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
         & expectNotAdmin
 
-migrationSetPendingOwner
+migrationSetTarget
   :: MonadNettest caps base m
   => WithOriginateFn m -> WithStorage -> m ()
-migrationSetPendingOwner withOriginatedFn initialStorage =
+migrationSetTarget withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, newAddress1] baseDao -> do
       withSender (AddressResolved owner) $
@@ -322,6 +326,19 @@ migrationSetPendingOwner withOriginatedFn initialStorage =
       -- We test this by calling `confirmMigration` and seeing that it does not fail
       withSender (AddressResolved newAddress1) $
         call baseDao (Call @"Confirm_migration") ()
+
+migrationSetWrongTarget
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
+migrationSetWrongTarget withOriginatedFn initialStorage =
+  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
+    \[owner, newAddress1, newAddress2] baseDao -> do
+      withSender(AddressResolved owner) $ do
+        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
+      -- We test this by calling `confirmMigration` and seeing that it does not fail
+      withSender (AddressResolved newAddress2) $
+        call baseDao (Call @"Confirm_migration") ()
+        & expectNotMigrationTarget
 
 migrationOverwritePrevious
   :: MonadNettest caps base m
