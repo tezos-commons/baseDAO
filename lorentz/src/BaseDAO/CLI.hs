@@ -99,7 +99,7 @@ daoContractRegistry contracts = ContractRegistry $ mconcat
   ]
 
 ------------------------------------------------------------------------
--- TZIP-16 metadata
+-- TZIP-016 metadata
 ------------------------------------------------------------------------
 
 tzip16MetadataParser :: Opt.Parser (TZIP16.MetadataMap BigMap)
@@ -136,13 +136,13 @@ tokenMetadataParser
 tokenMetadataParser prefix defSymbol defName defDecimals = do
   symbol <-
     mkCLOptionParser (Just defSymbol) (#name .! (prefix <> "-token-symbol"))
-    (#help .! "Symbol of the token (according to TZIP-12)")
+    (#help .! "Symbol of the token (according to TZIP-012)")
   name <-
     mkCLOptionParser (Just defName) (#name .! (prefix <> "-token-name"))
-    (#help .! "Name of the token (according to TZIP-12)")
+    (#help .! "Name of the token (according to TZIP-012)")
   decimals <-
     mkCLOptionParser (Just defDecimals) (#name .! (prefix <> "-token-decimals"))
-    (#help .! "Decimals field of the token (according to TZIP-12)")
+    (#help .! "Decimals field of the token (according to TZIP-012)")
   return $ FA2.mkTokenMetadata name symbol (pretty decimals)
 
 metadataConfigParser :: Opt.Parser DAO.MetadataConfig
@@ -170,12 +170,12 @@ allArgsParser gitRev registry = asum
   , Opt.hsubparser $
       mkCommandParser "print-metadata"
         (PrintMetadata <$> metadataConfigParser)
-        "Print known part of TZIP-16 metadata."
+        "Print known part of TZIP-016 metadata."
 
   , Opt.hsubparser $
       mkCommandParser "print-metadata-registry"
         (PrintMetadataRegistry <$> metadataConfigParser)
-        "Print known part of TZIP-16 metadata for RegistryDAO contract."
+        "Print known part of TZIP-016 metadata for RegistryDAO contract."
   ]
 
 mkCommandParser

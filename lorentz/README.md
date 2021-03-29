@@ -7,7 +7,7 @@ and may potentially be not secure.
 
 # BaseDAO
 
-BaseDAO is a generic smart contract framework on Tezos that enables enables a community to collectively govern resources, registries, or rules. The framework enables the a creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by a DAO’s proposals. BaseDAO also includes Permit (TZIP-17) to enable off-chain voting.
+BaseDAO is a generic smart contract framework on Tezos that enables enables a community to collectively govern resources, registries, or rules. The framework enables the a creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by a DAO’s proposals. BaseDAO also includes Permit (TZIP-017) to enable off-chain voting.
 
 This repository provides:
 * Generic DAO contract (template) that can be used as basis for various DAOs.
@@ -48,7 +48,7 @@ Run `stack exec -- baseDAO --help` to see available commands.
 
 ### Deploying a contract
 
-Deploying a TZIP-16-compliant baseDAO contract requires the following steps.
+Deploying a TZIP-016 compliant baseDAO contract requires the following steps.
 
 ### 1. Construct baseDAO metadata
 

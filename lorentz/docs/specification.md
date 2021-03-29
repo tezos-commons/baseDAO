@@ -11,7 +11,7 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 * [Contract logic](#contract-logic)
 * [Errors](#errors)
 * [Entrypoints](#entrypoints)
-* [TZIP-16 metadata](#tzip-16-metadata)
+* [TZIP-016 metadata](#tzip-016-metadata)
 
 # Overview
 
@@ -705,7 +705,7 @@ Parameter (in Michelson):
 )
 ```
 
-- This implements permits mechanism similar to the one in TZIP-17 but injected directly to the entrypoint.
+- This implements permits mechanism similar to the one in TZIP-017 but injected directly to the entrypoint.
 - Vote author is identified by permit information, or if it is absent - `sender` is taken.
 - Author MUST have unfrozen tokens equal to `voteAmount` or more (1 unfrozen token is needed for 1 vote).
 - Fails with `VOTING_INSUFFICIENT_BALANCE` if the unfrozen token balance of the author
@@ -823,7 +823,7 @@ Parameter (in Michelson):
 )
 ```
 
-- A `void` entrypoint as defined in [TZIP-4](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
+- A `void` entrypoint as defined in [TZIP-004](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
 - For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
 
 ### **get_total_supply**
@@ -841,7 +841,7 @@ Parameter (in Michelson):
 )
 ```
 
-- A `void` entrypoint as defined in [TZIP-4](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
+- A `void` entrypoint as defined in [TZIP-004](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
 - Return the total number of tokens for the given token id.
 - Fail with `FA2_TOKEN_UNDEFINED` if the given token id is not equal to `0` or `1`.
 
@@ -859,11 +859,11 @@ By default, no custom entrypoints are defined (call of `CallCustom` will fail; i
 DAO developer can provide arbitrary entrypoints that will be callable by their names.
 * For instance, TreasuryDAO may define `data OtherParam = Default ()` entrypoint that will be used to provide mutez to the contract.
 
-# TZIP-16 metadata
+# TZIP-016 metadata
 
 Note: we do not provide a proper support for contract metadata until [the proposal](https://gitlab.com/tzip/tzip/-/merge_requests/94) is finalized and merged.
 
-This contract implements TZIP-16.
+This contract implements TZIP-016.
 
 The DAO contract itself won't store the metadata, rather a dedicated contract will contain that.
 Motivation:
@@ -874,4 +874,4 @@ Motivation:
 ## Deployment with metadata
 
 The deployment of contract with metadata has an extra step: a dedicated contract for carrying metadata has to be originated first.
-Then the baseDAO contract should include the reference to a metadata key in the contract in order to be compliant with TZIP-16.
+Then the baseDAO contract should include the reference to a metadata key in the contract in order to be compliant with TZIP-016.
