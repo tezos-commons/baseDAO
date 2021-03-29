@@ -1,5 +1,5 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 
 Files: typescript/baseDAO/package.json typescript/baseDAO/etc/* typescript/baseDAO/yarn.lock .github/ISSUE_TEMPLATE/* .github/pull_request_template.md typescript/baseDAO/src/generated/*
-Copyright: 2020 TQ Tezos
+Copyright: 2021 TQ Tezos
 License: LicenseRef-MIT-TQ

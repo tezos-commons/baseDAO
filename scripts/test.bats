@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 exe="baseDAO"

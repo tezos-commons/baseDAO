@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: MPL-2.0
 .PHONY: build test haddock haddock-no-deps stylish lint clean
 
