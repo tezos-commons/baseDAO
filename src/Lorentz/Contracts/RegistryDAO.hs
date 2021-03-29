@@ -13,10 +13,8 @@ module Lorentz.Contracts.RegistryDAO
   ) where
 
 import Data.Either (fromRight)
-import Fmt (pretty)
 import Lorentz
 import Universum ((*))
-import qualified Universum as U
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import qualified Lorentz.Contracts.BaseDAO.Proposal as DAO
@@ -252,9 +250,6 @@ registryDAOViews
   => [TZIP16.View (ToT (RegistryDaoStorage k v))]
 registryDAOViews = [proposalReceiversListView @k @v]
 
-compileViewCode_ :: ViewCode st ret -> CompiledViewCode st ret
-compileViewCode_ = U.either (U.error . pretty) U.id . compileViewCode
-
 proposalReceiversListView
   :: forall k v. IsoRegistryDaoProposalMetadata k v
   =>  TZIP16.View (ToT (RegistryDaoStorage k v))
@@ -265,7 +260,7 @@ proposalReceiversListView = TZIP16.View
   , vImplementations =
       [  VIMichelsonStorageView $
           mkMichelsonStorageView @(RegistryDaoStorage k v) @(Set Address) Nothing [] $
-            compileViewCode_ $ WithParam @() $ do
+            unsafeCompileViewCode $ WithParam @() $ do
               drop
               stToField #sExtra
               stackType @(RegistryDaoContractExtra k v : _)
