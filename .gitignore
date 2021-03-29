@@ -10,7 +10,7 @@ lorentz/template/stack.yaml.lock
 lorentz/template/*.cabal
 
 # Build output
-ligo/out
+out
 
 # npm
 /typescript/baseDAO/node_modules

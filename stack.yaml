@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 resolver: lorentz/template/snapshot.yaml
@@ -6,6 +6,6 @@ resolver: lorentz/template/snapshot.yaml
 packages:
   - lorentz
   - lorentz/template
-  - ligo/haskell
+  - haskell
 
 # See extra-deps in template/snapshot.yaml

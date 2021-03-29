@@ -424,7 +424,7 @@ test_RegistryDAO =
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
     initialStorage :: Address -> [Address] -> FullStorage
     initialStorage admin wallets = let
-      fs = fromVal ($(fetchValue @FullStorage "ligo/haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
+      fs = fromVal ($(fetchValue @FullStorage "haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
       oldStorage = fsStorage fs
 
       ledger = BigMap $ Map.fromList [((w, FA2.theTokenId), defaultTokenBalance) | w <- wallets]

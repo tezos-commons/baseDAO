@@ -23,7 +23,7 @@ rec {
   # we need to know subdirectories to make weeder stuff work
   local-packages = [
     { name = "baseDAO"; subdirectory = "./lorentz"; }
-    { name = "baseDAO-ligo-meta"; subdirectory = "./ligo/haskell"; }
+    { name = "baseDAO-ligo-meta"; subdirectory = "./haskell"; }
     { name = "templateDAO"; subdirectory = "./lorentz/template"; }
   ];
 
@@ -69,8 +69,8 @@ rec {
         };
         packages.baseDAO-ligo-meta = {
           preBuild = ''
-            mkdir -p ./ligo/haskell/test
-            cp -r ${build-ligo}/* ./ligo/haskell/test
+            mkdir -p ./haskell/test
+            cp -r ${build-ligo}/* ./haskell/test
           '';
         };
       }
@@ -117,7 +117,7 @@ rec {
 
   build-ligo = pkgs.stdenv.mkDerivation {
     name = "baseDAO-ligo";
-    src = ./ligo;
+    src = ./.;
     nativeBuildInputs = [ ligo ];
     buildPhase = "make";
     installPhase = "mkdir -p $out; cp -r out/* $out";
