@@ -47,7 +47,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley-metadata.git
-    tag: b66b0e6bb96e1f15388594f7ec724d45b68769c5
+    tag: 8b5ce0bc6f2a28b1091e5da34dc13ca87ec32672
     subdir: code/morley-metadata
 
 source-repository-package
