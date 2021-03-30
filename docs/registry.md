@@ -36,10 +36,10 @@ Proposals can be of different type and include (`proposal_metadata`) different d
       - `min_xtz_amount`
       - `max_xtz_amount`
 3. Proposal to update the set of successful-proposal receiver contract addresses.
-This proposal accept a parameter that has two constructors. The proposal can add to,
+This proposal takes a parameter that has two constructors. The proposal can add to,
 or remove from the set of addresses.
 4. Transfer proposals, that can transfer XTZ or tokens.
-Modelled just the same way as [treasuryDAO proposals](./treasury.md).
+Modeled just the same way as [treasuryDAO proposals](./treasury.md).
 
 ## Configuration lambdas
 

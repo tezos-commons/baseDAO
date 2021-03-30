@@ -2,7 +2,7 @@
 
 BaseDAO is a generic smart contract on Tezos that enables a community to collectively govern resources, registries, or rules.
 
-The contract enables the creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by a DAO’s proposals.
+The contract enables the creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by DAO’s proposals.
 BaseDAO also includes Permit (TZIP-017) to enable off-chain voting.
 
 This repository provides:
@@ -19,7 +19,7 @@ The [specification](docs/specification.md) document contains more details and is
 
 BaseDAO uses a runtime configuration, which is part of the overall storage of the
 contract, meaning that DAOs with different logic and needs can be obtained by
-simply providing a different initial storage.
+providing a different initial storage.
 
 Aside from the specification, that contains detail about the configuration as
 well, there are also [example DAOs](#example-daos) below.
@@ -35,7 +35,7 @@ make out/baseDAO.tz
 which will use `ligo compile-contract` and save the result in `out/baseDAO.tz`.
 
 You will also need a contract initial storage, which can be obtained with the
-`ligo compile-storage` command, you can also use:
+`ligo compile-storage` command. You can also use:
 ```sh
 make all
 ```
@@ -51,7 +51,7 @@ This contract is too large to fit inside the current Tezos origination limit.
 To overcome this limitation we advice to use the [morley-large-originator](https://gitlab.com/morley-framework/morley/-/tree/master/code/morley-large-originator)
 tool or the workaround that it's described there.
 
-Note: as explained in its README the latest version of its binary can just be
+Note: as explained in its README the latest version of its binary can be
 downloaded from its repository's CI, without the need to build it.
 
 The tool will give you the possibility to originate the contract for you, by performing
@@ -173,14 +173,14 @@ Tests for this contract are implemented in Haskell using the [cleveland framewor
 
 To compile and execute them you'll need the `stack` tool, see
 [The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial
-for instructions on how to obtain in.
+for instructions on how to obtain it.
 
 As always you can use the `Makefile` to run them, simply using:
 ```
 make test
 ```
 
-For more detail about the tests, check out its [README.md](./haskell/test/)
+For more detail about the test suite, check out its [README.md](./haskell/test/)
 
 ## For Contributors
 

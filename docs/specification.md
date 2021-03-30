@@ -67,7 +67,7 @@ type config =
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
   ; rejected_proposal_return_value : proposal * storage -> nat
   // ^ When a proposal is rejected, the value that voters get back can be slashed.
-  // This lambda returns the amount that be slashed.
+  // This lambda returns the amount to be slashed.
   ; decision_lambda : proposal * storage -> operation list * storage
   // ^ The decision lambda is executed based on a successful proposal.
   // It has access to the proposal, can modify `contractExtra` and perform arbitrary

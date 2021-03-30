@@ -9,7 +9,7 @@ Treasury is a DAO that holds XTZ and FA2 tokens and lets its users decide how to
 spend its XTZ and tokens. Its extra storage data is empty.
 
 It can receive two types of proposals, with different `proposal_metadata`:
-1. Transfer proposal that include a list of items where each item contains:
+1. Transfer proposal that includes a list of items where each item contains:
    - `or %transfers (pair (mutez %amount) (address %recipient)) (pair (address %fa2) (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))` specifies what transfer to make. The left part is used for XTZ transfers, the right part is used for FA2 transfers.
    - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and motivation for it.
 2. Configuration proposals, used to update the parameters specified below,
