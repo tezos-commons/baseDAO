@@ -737,7 +737,7 @@ Parameter (in Michelson):
 )
 ```
 
-- This implements permits mechanism similar to the one in TZIP-017 but injected directly to the entrypoint.
+- This implements permits mechanism similar to the one in [TZIP-017](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-17/tzip-17.md) but injected directly to the entrypoint.
 - Vote author is identified by permit information, or if it is absent - `sender` is taken.
 - Author MUST have unfrozen tokens equal to `voteAmount` or more (1 unstaked frozen token is needed for 1 vote) from past periods.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author from past periods that is not staked
@@ -952,7 +952,7 @@ Parameter (in Michelson):
 
 # TZIP-016 metadata
 
-This contract implements TZIP-016.
+This contract implements [TZIP-016](https://gitlab.com/tzip/tzip/-/blob/21fb73fe01df8a744c9b03303e3d73b0f2265eb2/proposals/tzip-16/tzip-16.md).
 
 The DAO contract itself won't store the metadata, rather a dedicated contract will contain that.
 Motivation:
