@@ -48,6 +48,7 @@ all: \
 # Compile LIGO contract into its michelson representation.
 $(OUT)/baseDAO.tz: src/**
 	mkdir -p $(OUT)
+	ligo --version
 	# ============== Compiling contract ============== #
 	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/baseDAO.tz
 	# ============== Compilation successful ============== #
