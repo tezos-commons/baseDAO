@@ -2,7 +2,7 @@
 
 This version of the contract has been deprecated and is no longer maintained.
 
-You are adviced to use the [main Ligo](../) version instead, as this is otudated
+You are adviced to use the [main Ligo](../) version instead, as this is outdated
 and may potentially be not secure.
 
 # BaseDAO
