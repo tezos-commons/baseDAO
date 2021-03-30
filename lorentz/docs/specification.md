@@ -184,13 +184,6 @@ frozen token balance.
 When unfrozen tokens are transferred, the balance of the `from_` addresses is decreased
 and the balance of the `to_` addresses is increased according to the transferred values.
 
-<!--
-# Storage
-
-The storage must be a nested tree of `pair`s with field annotations.
-It must contain the following fields:
--->
-
 # Errors
 
 In error scenarios the baseDAO contract fails with a string or a pair where the first item is a string.
