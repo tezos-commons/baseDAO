@@ -33,7 +33,7 @@ It should naturally prohibit spam proposals and too big proposals (unless `froze
 Additionally, we require `s < max_proposal_size` as a safety measure because too large proposals can be too costly to deal with in terms of gas.
 `max_proposal_size`, `frozen_scale_value` and `frozen_extra_value` are parameters of the contract specified by the DAO creator.
 
-Note that by setting `frozen_scale_value` to 0 it's possible to require a constant of tokens to be locked.
+Note that by setting `frozen_scale_value` to 0 it's possible to require a constant number of tokens to be locked.
 
 For XTZ transfers their amount must be in range `[min_xtz_amount .. max_xtz_amount]`.
 `max_proposal_size`, `frozen_scale_value`, `frozen_extra_value`, `min_xtz_amount` and `max_xtz_amount` are parameters of the contract specified by the DAO creator.

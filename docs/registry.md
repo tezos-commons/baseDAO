@@ -55,7 +55,7 @@ For transfer proposals, it's required that `min_xtz_amount` <= `amount` <= `max_
 `max_proposal_size`, `frozen_scale_value`, `frozen_extra_value`, `min_xtz_amount` and `max_xtz_amount`
 are parameters of the contract specified by the DAO creator.
 
-Note that by setting `frozen_scale_value` to 0 it's possible to require a constant of tokens to be locked.
+Note that by setting `frozen_scale_value` to 0 it's possible to require a constant number of tokens to be locked.
 
 ### Rejected proposal amount
 
