@@ -504,7 +504,7 @@ instance TypeHasDoc Nonce where
   typeDocMdDescription =
     "Contract-local nonce used to make some data unique."
 
--- | When singing something, you usually want to use this wrapper over your data.
+-- | When signing something, you usually want to use this wrapper over your data.
 -- It ensures that replay attack is not possible.
 data DataToSign d = DataToSign
   { dsChainId :: ChainId
