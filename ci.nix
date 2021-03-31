@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 # This file is derived from
@@ -22,9 +22,9 @@ rec {
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
   local-packages = [
-    { name = "baseDAO"; subdirectory = "."; }
-    { name = "baseDAO-ligo-meta"; subdirectory = "./ligo/haskell"; }
-    { name = "templateDAO"; subdirectory = "./template"; }
+    { name = "baseDAO"; subdirectory = "./lorentz"; }
+    { name = "baseDAO-ligo-meta"; subdirectory = "./haskell"; }
+    { name = "templateDAO"; subdirectory = "./lorentz/template"; }
   ];
 
   # names of all local packages
@@ -69,8 +69,8 @@ rec {
         };
         packages.baseDAO-ligo-meta = {
           preBuild = ''
-            mkdir -p ./ligo/haskell/test
-            cp -r ${build-ligo}/* ./ligo/haskell/test
+            mkdir -p ./haskell/test
+            cp -r ${build-ligo}/* ./haskell/test
           '';
         };
       }
@@ -117,7 +117,7 @@ rec {
 
   build-ligo = pkgs.stdenv.mkDerivation {
     name = "baseDAO-ligo";
-    src = ./ligo;
+    src = ./.;
     nativeBuildInputs = [ ligo ];
     buildPhase = "make";
     installPhase = "mkdir -p $out; cp -r out/* $out";

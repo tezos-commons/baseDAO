@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# SPDX-FileCopyrightText: 2019-2020 Tocqueville Group
+# SPDX-FileCopyrightText: 2019-2021 Tocqueville Group
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 

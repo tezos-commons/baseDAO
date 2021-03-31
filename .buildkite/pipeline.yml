@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 TQ Tezos
+# SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 env:
@@ -40,6 +40,7 @@ steps:
     - nix run -f ci.nix stack2cabal pkgs.diffutils -c ./scripts/ci/validate-cabal-files.sh
 
   - label: build-ligo
+    key: build-ligo
     if: *not_scheduled
     commands:
     - nix-build ci.nix -A build-ligo -o ./ligo-out/
@@ -48,12 +49,14 @@ steps:
       - baseDAO.tz
 
   - label: build-haskell
+    key: build-haskell
     if: *not_scheduled
     commands:
     - nix-build ci.nix -A all-components
 
   - label: bats
     if: *not_scheduled
+    depends_on: build-haskell
     commands:
     - nix run -f ci.nix
           tezos-client
@@ -62,39 +65,32 @@ steps:
           packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
         -c bats ./scripts/test.bats
 
-  - label: test
+  - label: lorentz-test
     if: *not_scheduled
+    depends_on: build-haskell
     commands:
       - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
       - ./result/bin/baseDAO-test --nettest-no-run-network
-
-  # TODO [#124] Uncomment
-  # - label: test-local-chain-008
-  #   env:
-  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
-  #   if: *not_scheduled
-  #   commands: &nettest
-  #   - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
-  #   - export TASTY_NETTEST_DATA_DIR="$(mktemp -d --tmpdir="$$PWD")"
-  #   - nix run -f ci.nix tezos-client -c
-  #     ./result/bin/baseDAO-test --nettest-run-network
-  #       --pattern '\$1 == "On network" || \$NF == "On network" || \$0 ~ /.On network./'
+  # NOTE (#169): the lorentz version is deprecated, so we only run its tests in
+  # an emulated environment to save time.
 
   - label: ligo-test
     if: *not_scheduled
+    depends_on:
+      - build-ligo
+      - build-haskell
     commands:
     - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
     - ./result/bin/baseDAO-test --nettest-no-run-network
-
-  - label: typescript-build
-    commands:
-    - nix-build ci.nix -A build-typescript --arg release false
 
   # TODO [#124] Uncomment
   # - label: ligo-test-local-chain-008
   #   env:
   #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
   #   if: *not_scheduled
+  #   depends_on:
+  #     - build-ligo
+  #     - build-haskell
   #   commands: &ligo-nettest
   #   - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
   #   # Running only on emulator for now due to oversized operations
@@ -103,39 +99,37 @@ steps:
   #     ./result/bin/baseDAO-test --nettest-run-network
   #       --pattern '\$1 == "On network" || \$NF == "On network" || \$0 ~ /.On network./'
 
+  - label: typescript-build
+    depends_on:
+      - build-ligo
+      - build-haskell
+    commands:
+    - nix-build ci.nix -A build-typescript --arg release false
+
   - label: weeder
     if: *not_scheduled
+    depends_on: build-haskell
     commands:
     - nix-build ci.nix -A weeder-script
       # weeder needs .cabal file:
       # (most of them are committed, but the one in `template` is not)
-    - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack template
+    - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack lorentz/template
     - ./result
 
   - label: haddock
     if: *not_scheduled
+    depends_on: build-haskell
     commands:
     - nix-build ci.nix -A haddock --no-out-link
-
-  # TODO [#124] Uncomment
-  # - label: scheduled edonet test
-  #   if: build.source == "schedule"
-  #   env:
-  #     TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
-  #   # use another agent for long scheduled jobs
-  #   agents:
-  #     queue: "scheduled"
-  #   commands: *nettest
-  #   retry:
-  #     automatic:
-  #       limit: 1
-  #   timeout_in_minutes: 150
 
   # TODO [#124] Uncomment
   # - label: scheduled edonet ligo test
   #   if: build.source == "schedule"
   #   env:
   #     TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
+  #   depends_on:
+  #     - build-ligo
+  #     - build-haskell
   #   commands: *ligo-nettest
   #   retry:
   #     automatic:
@@ -143,7 +137,9 @@ steps:
 
 # Autodoc
   - label: contract doc development
+    key: contract-doc-dev
     if: build.branch != "autodoc/master" && build.branch != "master" && build.source != "schedule"
+    depends_on: build-haskell
     commands:
     - nix-build ci.nix -A contracts-doc --arg release false
     - ln -s ./result/*.md .
@@ -153,50 +149,22 @@ steps:
       - RegistryDAO.md
       - TreasuryDAO.md
 
-  - label: contract doc release
-    if: build.branch == "master" && build.source != "schedule"
-    commands:
-    - nix-build ci.nix -A contracts-doc --arg release true
-        --argstr commitSha "$(git rev-parse HEAD)"
-        --argstr commitDate "$(git log HEAD -1 --format=%cd)"
-    - ln -s ./result/*.md .
-    artifact_paths:
-      - TrivialDAO.md
-      - GameDAO.md
-      - RegistryDAO.md
-      - TreasuryDAO.md
-
   - label: xrefcheck generated doc
-    soft_fail: true  # TODO: remove
+    soft_fail: true
     if: build.branch != "autodoc/master" && build.source != "schedule"
+    depends_on: contract-doc-dev
     commands:
     - mkdir tmp
-    - if [ "$BUILDKITE_BRANCH" = "master" ];
-      then CONTRACT_DOC_STEP="contract doc release";
-      else CONTRACT_DOC_STEP="contract doc development";
-      fi
     - buildkite-agent artifact download "*.md" tmp/
-        --step "$$CONTRACT_DOC_STEP"
+        --step "contract doc development"
     - nix run -f ci.nix xrefcheck -c xrefcheck
         --mode local-only --root tmp
-
-  - label: autodoc upload
-    if: build.branch == "master" && build.source != "schedule"
-    commands:
-    - mkdir tmp
-    - buildkite-agent artifact download "*.md" tmp/
-        --step "contract doc release"
-    - ./scripts/ci/upload-autodoc.sh
 
   - label: create auto prerelease
     if: build.branch == "master" && build.source != "schedule"
     commands:
       - mkdir assets
-      - buildkite-agent artifact download RegistryDAO.md assets --step "contract doc release"
-      - buildkite-agent artifact download TreasuryDAO.md assets --step "contract doc release"
       - buildkite-agent artifact download baseDAO.tz assets --step "build-ligo"
-      - nix run -f ci.nix packages.baseDAO.exes.baseDAO -c baseDAO print --name RegistryDAO --output assets/RegistryDAO.tz
-      - nix run -f ci.nix packages.baseDAO.exes.baseDAO -c baseDAO print --name TreasuryDAO --output assets/TreasuryDAO.tz
       - nix run -f ci.nix pkgs.gitAndTools.gh -c gh release delete auto-release --yes || true
       - nix run -f ci.nix pkgs.git -c git fetch && git tag -f auto-release && git push --force --tags
       - nix run -f ci.nix pkgs.gitAndTools.gh -c gh release create --prerelease auto-release --title auto-release --notes ""

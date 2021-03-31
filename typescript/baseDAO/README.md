@@ -1,17 +1,23 @@
-# BaseDAO Typescript Api
+# BaseDAO Typescript API
 
 This package implements a Typescript interface to interact with the BaseDAO
 contract.
 
 ## Build instructions
 
-You will need the `yarn` package manager to build this libraray. It can be built
+You will need the `yarn` package manager to build this library. It can be built
 as follows.
 
-```
+```sh
 yarn install
 yarn tsc
 ```
+
+### Generating Typescript interface types
+
+The Typescript types representing the BaseDAO contract parameter can be generated
+automatically by using the `make typescript` command.
+The files will be saved to the [/src/generated](src/generated) directory.
 
 ## Usage
 
@@ -19,7 +25,7 @@ To add this library as a dependency to your typescript app, you can use `yarn ad
 path to it as follows.
 
 
-```
+```sh
 yarn add file:/path-to-this-repo/typescript/baseDAO/
 ```
 

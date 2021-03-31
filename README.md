@@ -1,142 +1,198 @@
 # BaseDAO
 
-BaseDAO is a generic smart contract framework on Tezos that enables enables a community to collectively govern resources, registries, or rules. The framework enables the a creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by a DAO’s proposals. BaseDAO also includes Permit (TZIP-17) to enable off-chain voting.
+BaseDAO is a generic smart contract on Tezos that enables a community to collectively govern resources, registries, or rules.
 
-The repository currently provides a [LIGO implementation](/ligo/) and a Michelson implementation created using [Morley](https://gitlab.com/morley-framework/morley).
+The contract enables the creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by a DAO’s proposals.
+BaseDAO also includes Permit (TZIP-17) to enable off-chain voting.
 
 This repository provides:
-* Generic DAO contract (template) that can be used as basis for various DAOs.
-* Instantiations of this template:
-  1. Simplest implementation with no custom logic ([TrivialDAO contract](./src/Lorentz/Contracts/TrivialDAO.hs))
-  2. A simple example with custom logic called [GameDAO](./src/Lorentz/Contracts/GameDAO.hs).
-  3. Two more practical DAO contracts: [RegistryDAO](./ligo/src/registryDAO.mligo) and [TreasuryDAO](./ligo/src/treasuryDAO.mligo).
-* A [template package](./template) that one can copy and use to create their own DAO.
+* Generic DAO contract, written in cameLIGO, that can be used for various DAOs implementations.
+* Instantiations of this contract:
+  1. Simplest implementation with no custom logic ([TrivialDAO](#trivialdao))
+  2. Two more practical DAO contracts: [RegistryDAO](#registrydao) and [TreasuryDAO](#treasurydao).
+* A [TypeScript API](#typescript-api) to interact with DAO contracts.
+* [Contract tests](#testing) to validate its implementation.
 
-BaseDAO currently has an in-development interface called [Homebase](https://github.com/dOrgTech/homebase-app) which enables users to create and manage DAOs created with the BaseDAO framework.
+## Contract documentation and configurations
 
-## Contract documentation and requirements
+The [specification](docs/specification.md) document contains more details and is used as a basis for the smart contract development.
 
-The [specification](docs/specification.md) document is the specification used as a basis for the smart contract development.
+BaseDAO uses a runtime configuration, which is part of the overall storage of the
+contract, meaning that DAOs with different logic and needs can be obtained by
+providing a different initial storage.
 
-Documentation of the actually implemented smart contract is generated automatically.
-* [TrivialDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/TrivialDAO.md)
-* [GameDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/GameDAO.md)
-* [RegistryDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/RegistryDAO.md)
-* [TreasuryDAO](https://github.com/tqtezos/baseDAO/blob/autodoc/master/TreasuryDAO.md)
+Aside from the specification, that contains detail about the configuration as
+well, there are also [example DAOs](#example-daos) below.
 
-## Prerequisites
+## Build instructions
 
-Further steps are given in assumption that `stack` tool is used to compile the project.
-For how to obtain `stack` see [The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial.
+You will need the [ligo executable](https://ligolang.org/docs/intro/installation) installed to generate the contract.
 
-Also, you may need the very basic knowledge of Haskell and Lorentz if choosing the Lorentz variant. Consider reading [the Lorentz documentation](https://gitlab.com/morley-framework/morley/-/blob/1fdefdb8c081235971cacc002b6704b709349d5c/code/lorentz/README.md).
-
-## Build Instructions
-
-You can use `stack build` to build `baseDAO` executable.
-
-For how to obtain `stack` see [The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial.
-
-## Usage
-
-Run `stack exec -- baseDAO --help` to see available commands.
-
-### Deploying a contract
-
-Deploying a TZIP-16-compliant baseDAO contract requires the following steps.
-
-### 1. Construct baseDAO metadata
-
-Some predefined parts of the metadata can be obtained via calling
-
-```sh
-stack exec baseDAO -- print-metadata
+Latest working version tested:
+```
+Rolling release
+Commit SHA: 190b660080b5bccc92f88155dcb06e038e5767bd
+Commit Date: 2021-03-29T18:55:49+00:00
 ```
 
-Later it can be merged with user-defined fields like contract name and description.
-
-### 2. Originate metadata contract
-
-Originate a contract that would carry the full metadata information, pass the metadata under some key `K` in initial storage map.
-
-You can obtain the metadata carrier contract via calling
-
+You can use the [`Makefile`](./Makefile) to build the LIGO contract by simply running:
 ```sh
-stack exec baseDAO -- print --name MetadataCarrier
+make out/baseDAO.tz
 ```
+which will use `ligo compile-contract` and save the result in `out/baseDAO.tz`.
 
-### 3. Originate baseDAO
-
-You can dump the entire contract code into a `TrivialDAO.tz` file using the following command:
-
+You will also need a contract initial storage, which can be obtained with the
+`ligo compile-storage` command. You can also use:
 ```sh
-stack exec baseDAO -- print -n TrivialDAO
+make all
 ```
+to generate the contract as well as all the [example DAOs](#example-daos)
+defined below.
 
-This will produce a contract with empty proposal metadata and the simplest possible configuration.
-We also provide some other contracts, for instance `GameDAO` contract.
-The full list can be printed using
+See the [`Makefile`](./Makefile) for details about these and the other commands.
 
-```sh
-stack exec baseDAO list
-```
+## Originating the contract
 
-The initial storage of the contract can be produced using
-
-
-```sh
-admin=<administrator address>
-metadata_carrier=<address of the metadata carrier contract>
-stack exec baseDAO -- storage-TrivialDAO \
-  --admin $admin \
-  --metadata-host-address $metadata_carrier \
-  --metadata-key K \
-  > storage
-```
-
-At this point this contract can be originated with a client.
-However, this contract is too large to fit inside the origination limit.
+This contract is too large to fit inside the current Tezos origination limit.
 
 To overcome this limitation we advice to use the [morley-large-originator](https://gitlab.com/morley-framework/morley/-/tree/master/code/morley-large-originator)
 tool or the workaround that it's described there.
 
-Note: as explained in its README the latest version of its binary can just be
+Note: as explained in its README the latest version of its binary can be
 downloaded from its repository's CI, without the need to build it.
 
 The tool will give you the possibility to originate the contract for you, by performing
 multiple operations, or produce the steps and instructions to let you do the
 origination with your tool of choice (e.g. `tezos-client`).
 
-You can use `morley-large-originator --help` to have more info on its usage.
-An example to perform the large origination is:
+As usual, both these actions can be performed with the help of the `Makefile`:
+these are the usages with all the available arguments:
 ```sh
-morley-large-originator originate --contract-name baseDAO --initial-balance 0 \
-  --from alice --contract BaseDAO.tz --initial-storage "$(<storage)"
+make originate \
+  storage=out/trivialDAO_storage.tz \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+  contract_name=baseDAO
 ```
 
-If you'd like to use `tezos-client`, instructions on how to install its
-executable can be found at official [Tezos installation page](http://tezos.gitlab.io/introduction/howtoget.html) or in [our `tezos-packaging` repository](https://github.com/serokell/tezos-packaging).
-
-### Documentation
-
-You can obtain the actual version of documentation mentioned in [Contract documentation and requirements](#contract-documentation-and-requirements) for any specific contract via e.g.
-
 ```sh
-stack exec baseDAO -- document -n RegistryDAO
+make originate-steps \
+  storage=out/trivialDAO_storage.tz \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+  destination=out/steps
 ```
 
-This command will dump the documentation to `RegistryDAO.md` file.
+These configurable options are:
+- the contract `storage` to use.
+- the `admin_address` who'll perform the origination.
+  Note: it doesn't have to be the same as the contract's `admin_address`.
+  Note: in case of `originate-steps` this cannot be an alias, as that command
+  makes no network operations and has no way of resolving it.
+- the `contract_name` is the alias that the originated contract will be associated with.
+- the `destination` is the directory where the steps files will be saved.
 
-## Writing your own DAOs
+## Example DAOs
 
-See [template DAO](./template) for instructions on how to write your own DAO contract.
+### TrivialDAO
+
+The simplest DAO configuration is the one based on the
+[default storage values](src/defaults.mligo).
+
+This contract has only demonstration purposes and can be generated using:
+```sh
+make out/trivialDAO_storage.tz \
+  admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  now_val=Tezos.now \
+  metadata_map=(Big_map.empty : metadata_map)
+```
+
+All its arguments are optional and will be equal to the values above if not
+specified.
+You can see the [specification](docs/specification.md) for more info about these
+values.
+
+For a more interesting example you can instead use the [Registry DAO](#registrydao)
+or the [Treasury DAO](#treasurydao) examples just below.
+
+### RegistryDAO
+
+Registry DAO is a decentralized key-value storage of arbitrary data.
+Much like [Treasury DAO](#treasurydao) it can also hold XTZ and FA2 tokens that
+its users can decide on how to spend.
+See its [documentation](docs/registry.md) for more info.
+
+The storage, defined in [src/registryDAO.mligo](src/registryDAO.mligo), can be
+compiled with `make`, as usual:
+```sh
+make out/registryDAO_storage.tz \
+  admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  max_proposal_size=100n \
+  frozen_scale_value=1n \
+  frozen_extra_value=0n \
+  slash_scale_value=1n \
+  slash_division_value=-n \
+  min_xtz_amount=0mutez \
+  max_xtz_amount=100mutez \
+  now_val=Tezos.now \
+  metadata_map=(Big_map.empty : metadata_map)
+```
+
+All its arguments are optional and will be equal to the values above if not
+specified.
+
+### TreasuryDAO
+
+Treasury DAO is a DAO that holds XTZ and FA2 tokens and lets its users decide
+how to spend its XTZ and tokens.
+See its [documentation](docs/treasury.md) for more info.
+
+The storage, defined in [src/treasuryDAO.mligo](src/treasuryDAO.mligo), can be
+compiled once again with `make`:
+```sh
+make out/treasuryDAO_storage.tz \
+  admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  max_proposal_size=12n \
+  frozen_scale_value=1n \
+  frozen_extra_value=0n \
+  slash_scale_value=1n \
+  slash_division_value=1n \
+  min_xtz_amount=0mutez \
+  max_xtz_amount=100mutez \
+  now_val=Tezos.now \
+  metadata_map=(Big_map.empty : metadata_map)
+```
+
+As for the other examples, all the arguments are optional and will be equal to
+the values above if not specified.
+
+## Typescript API
+
+This contract includes a TypeScript API, based on [Taquito](https://tezostaquito.io/),
+to interact with DAO contracts.
+
+For more informations see on its features and usage see its [directory](./typescript).
+
+## Testing
+
+Tests for this contract are implemented in Haskell using the [cleveland framework](https://gitlab.com/morley-framework/morley/-/tree/master/code/cleveland).
+
+To compile and execute them you'll need the `stack` tool, see
+[The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial
+for instructions on how to obtain it.
+
+As always you can use the `Makefile` to run them, simply using:
+```
+make test
+```
+
+For more detail about the test suite, check out its [README.md](./haskell/test/)
 
 ## For Contributors
 
 Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information.
 
-Note that `stack build` won't work from `template` folder, because it serves as a copy-and-use package and contains its own `stack.yaml`.
-
 ## License
 
-[MIT License](./LICENSE) Copyright (c) 2020 TQ Tezos
+[MIT License](./LICENSES/LicenseRef-MIT-TQ.txt) Copyright (c) 2021 TQ Tezos

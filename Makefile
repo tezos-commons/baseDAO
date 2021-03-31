@@ -1,58 +1,152 @@
-# SPDX-FileCopyrightText: 2020 TQ Tezos
-# SPDX-License-Identifier: MPL-2.0
-.PHONY: build test haddock haddock-no-deps stylish lint clean
+# SPDX-FileCopyrightText: 2021 TQ Tezos
+# SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-# Build target from the common utility Makefile
-MAKEU = $(MAKE) -C make/
-# Options for development
-STACK_DEV_OPTIONS = --fast --ghc-options -Wwarn --file-watch
-# Options to build more stuff (tests and benchmarks)
-STACK_BUILD_MORE_OPTIONS = --test --bench --no-run-tests --no-run-benchmarks
-# Options for tests
-STACK_DEV_TEST_OPTIONS = --fast --ghc-options -Wwarn
-# Options for CI
-STACK_CI_TEST_OPTIONS = --fast --ghc-options -Werror
-# Addtional (specified by user) options passed to test executable
-TEST_ARGUMENTS ?= ""
-# Packages to apply the command (build, test, e.t.c) for.
-PACKAGE = baseDAO templateDAO
+# Ligo executable
+LIGO ?= ligo
 
-define call_test
-	stack test $(PACKAGE) \
-		--test-arguments "--color always $(TEST_ARGUMENTS) $1" $2
-endef
+# Morley executable used for contract optimization
+MORLEY ?= morley
 
-# Build everything (including tests and benchmarks) with development options.
-build:
-	stack build $(STACK_DEV_OPTIONS) $(STACK_BUILD_MORE_OPTIONS) $(PACKAGE)
+# Morley tool executable for the origination of large contracts
+LARGE_ORIGINATOR ?= morley-large-originator
 
-test:
-	$(call call_test,"",$(STACK_DEV_TEST_OPTIONS))
+# Env variable to determine whether the resulting contract should
+# be optimized via morley
+OPTIMIZE ?= false
 
-# Like 'test' command, but enforces dumb terminal which may be useful to
-# workardoung some issues with `tasty`.
-# Primarily this one: https://github.com/feuerbach/tasty/issues/152
-test-dumb-term:
-	TERM=dumb $(call call_test,"",$(STACK_DEV_TEST_OPTIONS))
+# Compile code
+BUILD = $(LIGO) compile-contract --syntax cameligo
 
-# Run tests with `--hide-successes` option. It forces dumb terminal,
-# because otherwise this option is likely to work incorrectly.
-test-hide-successes:
-	TERM=dumb $(call call_test,"--hide-successes",$(STACK_DEV_TEST_OPTIONS))
+# Compile storage
+BUILD_STORAGE = $(LIGO) compile-storage --syntax cameligo
 
-# Run haddock for all packages.
-haddock:
-	stack haddock $(STACK_DEV_OPTIONS) $(PACKAGE)
+# Compile parameter
+BUILD_PARAMETER = $(LIGO) compile-parameter --syntax cameligo
 
-# Run haddock for all our packages, but not for dependencies.
-haddock-no-deps:
-	stack haddock $(STACK_DEV_OPTIONS) $(PACKAGE) --no-haddock-deps
+# Originate large contract (morley-client based)
+ORIGINATE ?= $(LARGE_ORIGINATOR) originate
 
-stylish:
-	find . -name '.stack-work' -prune -o -name '*.hs' -exec stylish-haskell -i {} \;
+# Originate steps to build a large contract by other means
+ORIGINATE_STEPS ?= $(LARGE_ORIGINATOR) steps
 
-lint:
-	scripts/lint.sh
+# Utility function to escape single quotes
+escape_quote = $(subst ','\'',$(1))
+
+# Where to put build files
+OUT ?= out
+# Where to put typescript files
+TS_OUT ?= typescript
+
+.PHONY: all clean test typescript
+
+all: \
+	$(OUT)/baseDAO.tz \
+	$(OUT)/trivialDAO_storage.tz \
+	$(OUT)/registryDAO_storage.tz \
+	$(OUT)/treasuryDAO_storage.tz
+
+# Compile LIGO contract into its michelson representation.
+$(OUT)/baseDAO.tz: src/**
+	mkdir -p $(OUT)
+	# ============== Compiling contract ============== #
+	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/baseDAO.tz
+	# ============== Compilation successful ============== #
+	# See "$(OUT)/baseDAO.tz" for compilation result #
+
+	# strip the surrounding braces and indentation,
+	# note that dollar char is escaped as part of Makefile
+	sed -i '/^ *$$/d' $(OUT)/baseDAO.tz
+	sed -i 's/^[{ ] //g' $(OUT)/baseDAO.tz
+	sed -i '$$s/[}] *$$//' $(OUT)/baseDAO.tz
+ifeq ($(OPTIMIZE), true)
+	# ============== Optimizing contract ============== #
+	$(MORLEY) optimize --contract $(OUT)/baseDAO.tz --output $(OUT)/baseDAO.tz
+endif
+	#
+
+$(OUT)/trivialDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/trivialDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/trivialDAO_storage.tz : now_val = Tezos.now
+$(OUT)/trivialDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
+$(OUT)/trivialDAO_storage.tz: src/**
+	# ============== Compiling TrivialDAO storage ============== #
+	mkdir -p $(OUT)
+	$(BUILD_STORAGE) --output-file $(OUT)/trivialDAO_storage.tz src/base_DAO.mligo base_DAO_contract 'default_full_storage(("$(admin_address)": address), ("$(token_address)": address), $(now_val), $(metadata_map))'
+	# ================= Compilation successful ================= #
+	# See "$(OUT)/trivialDAO_storage.tz" for compilation result  #
+	#
+
+$(OUT)/registryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/registryDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/registryDAO_storage.tz : frozen_scale_value = 1n
+$(OUT)/registryDAO_storage.tz : frozen_extra_value = 0n
+$(OUT)/registryDAO_storage.tz : max_proposal_size = 100n
+$(OUT)/registryDAO_storage.tz : slash_scale_value = 1n
+$(OUT)/registryDAO_storage.tz : slash_division_value = 0n
+$(OUT)/registryDAO_storage.tz : min_xtz_amount = 0mutez
+$(OUT)/registryDAO_storage.tz : max_xtz_amount = 100mutez
+$(OUT)/registryDAO_storage.tz : now_val = Tezos.now
+$(OUT)/registryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
+$(OUT)/registryDAO_storage.tz: src/**
+	# ============== Compiling RegistryDAO storage ============== #
+	mkdir -p $(OUT)
+	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz src/registryDAO.mligo base_DAO_contract 'default_registry_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), ${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(min_xtz_amount), $(min_xtz_amount), $(now_val), $(metadata_map))'
+	# ================= Compilation successful ================= #
+	# See "$(OUT)/registryDAO_storage.tz" for compilation result #
+	#
+
+$(OUT)/treasuryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/treasuryDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/treasuryDAO_storage.tz : frozen_scale_value = 0n
+$(OUT)/treasuryDAO_storage.tz : frozen_extra_value = 0n
+$(OUT)/treasuryDAO_storage.tz : max_proposal_size = 0n
+$(OUT)/treasuryDAO_storage.tz : slash_scale_value = 0n
+$(OUT)/treasuryDAO_storage.tz : slash_division_value = 0n
+$(OUT)/treasuryDAO_storage.tz : min_xtz_amount = 0mutez
+$(OUT)/treasuryDAO_storage.tz : max_xtz_amount = 100mutez
+$(OUT)/treasuryDAO_storage.tz : now_val = Tezos.now
+$(OUT)/treasuryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
+$(OUT)/treasuryDAO_storage.tz: src/**
+	# ============== Compiling TreasuryDAO storage ============== #
+	mkdir -p $(OUT)
+	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz src/treasuryDAO.mligo base_DAO_contract 'default_treasury_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), (${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(min_xtz_amount), $(max_xtz_amount)), $(now_val), $(metadata_map))'
+	# ============== Compilation successful ============== #
+	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
+	#
+
+originate : storage = $(OUT)/trivialDAO_storage.tz
+originate : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+originate : contract_name = baseDAO
+originate: $(OUT)/baseDAO.tz
+	# ============== Originating DAO with $(storage) ============== #
+	@$(ORIGINATE) --contract $(OUT)/baseDAO.tz --from "$(admin_address)" \
+								--initial-storage '$(call escape_quote,$(shell cat $(storage)))' \
+								 --contract-name "$(contract_name)"
+	# =================== Origination completed =================== #
+	#
+
+originate-steps : storage = $(OUT)/trivialDAO_storage.tz
+originate-steps : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+originate-steps : destination = $(OUT)/steps
+originate-steps: $(OUT)/baseDAO.tz
+	# ============== Originating DAO steps with $(storage) ============== #
+	@$(ORIGINATE_STEPS) --contract $(OUT)/baseDAO.tz --from "$(admin_address)" \
+								--initial-storage '$(call escape_quote,$(shell cat $(storage)))' \
+								 --destination "$(destination)"
+	# ================== Steps saved in $(destination) ================== #
+	#
+
+test: all
+	$(MAKE) -C lorentz test PACKAGE=baseDAO-ligo-meta \
+    BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
+    REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
+    TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
+
+typescript: all
+	$(MAKE) -C lorentz build PACKAGE=baseDAO-ligo-meta STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn"
+	rm -rf $(TS_OUT)/baseDAO/src/generated/*
+	stack exec -- baseDAO-ligo-meta generate-typescript --target=$(TS_OUT)/baseDAO/src/generated/
 
 clean:
-	stack clean $(PACKAGE)
+	rm -rf $(OUT)
+	rm -rf $(TS_OUT)/baseDAO/src/generated/*

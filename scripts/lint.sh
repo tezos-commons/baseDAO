@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2019 Serokell <https://serokell.io>
+# SPDX-FileCopyrightText: 2021 Serokell <https://serokell.io>
 #
 # SPDX-License-Identifier: MPL-2.0
 

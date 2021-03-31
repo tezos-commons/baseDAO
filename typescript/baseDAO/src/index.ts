@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020 TQ Tezos
+// SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 import { TezosToolkit } from '@taquito/taquito';
@@ -28,7 +28,7 @@ export {Propose, ProposeProposal_metadata} from  './generated/Propose';
 export {Set_quorum_threshold} from  './generated/Set_quorum_threshold';
 export {Set_voting_period} from  './generated/Set_voting_period';
 export {Transfer_ownership} from  './generated/Transfer_ownership';
-export {Vote, VoteItem, VoteItemArgument, VoteItemPermit} from  './generated/Vote';
+export {Vote, VoteItem, VoteItemPermit} from  './generated/Vote';
 export
   { Transfer_contract_tokens
   , Transfer_contract_tokensParams

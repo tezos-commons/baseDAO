@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2020 TQ Tezos
+SPDX-FileCopyrightText: 2021 TQ Tezos
 
 SPDX-License-Identifier: LicenseRef-MIT-TQ
 -->
@@ -65,7 +65,7 @@ but, basically, it all boils down to the following:
     file – it is not as hard as it might sound):
 
     ```haskell
-    -- SPDX-FileCopyrightText: 2020 TQ Tezos
+    -- SPDX-FileCopyrightText: 2021 TQ Tezos
     --
     -- SPDX-License-Identifier: LicenseRef-MIT-TQ
     ```
