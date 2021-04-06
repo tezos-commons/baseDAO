@@ -134,9 +134,6 @@ This chapter provides a high-level overview of the contract's logic.
 - The contract maintains a ledger of address and its balance (frozen and unfrozen tokens).
 - The contract manages a special role called "Administrator".
 - The contract stores a list of proposals that can be in one of the states: "ongoing", "rejected", or "accepted".
-- Migration forms a two-step process:
-  + After the migration starts, the contract `migration_status` state is set to `MigratingTo targetAddress` state.
-  + After successful migration confirmation, `migration_status` is set to `MigratedTo newContractAddress` state. All the subsequent operations, except `transfer_contract_tokens`, will fail with the `MIGRATED` tag.
 - The contract forbids transferring XTZ to the contract, because they will be locked forever.
 
 ## Roles
@@ -226,9 +223,6 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `OUT_OF_BOUND_QUORUM_THRESHOLD` | Throws when trying to set quorum threshold that is out of bound from what is specified in the `config`      |
 | `MAX_PROPOSALS_REACHED`         | Throws when trying to propose a proposal when proposals max amount is already reached                       |
 | `MAX_VOTES_REACHED`             | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
-| `MIGRATED`                      | Throw when conract has been migrated                                                                        |
-| `NOT_MIGRATING`                 | Throw when `confirm_migration` is called and contract is not in migration                                   |
-| `NOT_MIGRATION_TARGET`          | Throw when `confirm_migration` is called by address other than the new address                              |
 | `FORBIDDEN_XTZ`                 | Throws when some XTZ was received as part of the contract call                                              |
 | `PROPOSER_NOT_EXIST_IN_LEDGER`  | Expect a proposer address to exist in Ledger but it is not found                                            |
 | `PROPOSAL_NOT_UNIQUE`           | Trying to propose a proposal that is already existed in the Storage.                                        |
@@ -257,8 +251,6 @@ Full list:
 * [`vote`](#vote)
 * [`flush`](#flush)
 * [`drop_proposal`](#drop_proposal)
-* [`migrate`](#migrate)
-* [`confirm_migration`](#confirm_migration)
 * [`get_vote_permit_counter`](#get_vote_permit_counter)
 * [`get_total_supply`](#get_total_supply)
 * [`freeze`](#freeze)
@@ -794,47 +786,6 @@ proposal are returned to the proposer and voters in full. The decision lambda is
 failing decision lambda.
 - Fails with `NOT_ADMIN` if the sender is not the administrator.
 
-## Migrating functions
-
-### **migrate**
-
-```ocaml
-type migrate_param = address
-
-Migrate of migrate_param
-```
-
-Parameter (in Michelson):
-```
-(address %migrate)
-```
-
-- After a successful `migrate` call, the contract will be in a state where it
-  will accept a `confrimMigration` call from the new contract address. Until this
-  call is received, the contract is not considered to be migrated, and will
-  continue normal operations.
-- The address denotes the new DAO address.
-- Overwrites the new address from any previous `migrate` calls.
-- Fails with `NOT_ADMIN` if the sender is not the administrator.
-
-### **confirm_migration**
-
-```ocaml
-Confirm_migration of unit
-```
-
-Parameter (in Michelson):
-```
-(unit %confirm_migration)
-```
-
-- After a successful `confirm_migration` call, the contract is permanently set
-  to the migrated state, no operations are possible. All contract calls, except
-  `transfer_contract_tokens`, fail with `"MIGRATED"`.
-  The `transfer_contract_tokens` entrypoint will continue to work
-  even after migration is completed.
-- Fails with `NOT_MIGRATING` if `migrate` operation has not been called yet.
-- Fails with `NOT_MIGRATION_TARGET` if the sender of this call is not the address of the new version.
 
 [FA2]: https://gitlab.com/tzip/tzip/-/blob/3a6464b1e641008b77a83807a0c102e7602c6af4/proposals/tzip-12/tzip-12.md
 

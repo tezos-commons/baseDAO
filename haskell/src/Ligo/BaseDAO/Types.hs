@@ -44,8 +44,6 @@ module Ligo.BaseDAO.Types
 
     -- * Storage/Parameter
   , TransferOwnershipParam
-  , MigrateParam
-  , MigrationStatus (..)
   , ProposalMetadata
   , ContractExtra
   , CustomEntrypoints
@@ -369,19 +367,6 @@ instance a `CanCastTo` SomeType
 ------------------------------------------------------------------------
 
 type TransferOwnershipParam = ("newOwner" :! Address)
-type MigrateParam = ("newAddress" :! Address)
-
--- | Migration status of the contract
-data MigrationStatus
-  = NotInMigration
-  | MigratingTo Address
-  | MigratedTo Address
-  deriving stock (Generic, Show)
-  deriving anyclass (IsoValue, HasAnnotation)
-
-instance TypeHasDoc MigrationStatus where
-  typeDocMdDescription = "Migration status of the contract"
-
 
 -- | Represents a product type with arbitrary fields.
 --
@@ -434,13 +419,11 @@ data ForbidXTZParam
   = Accept_ownership ()
   | Burn BurnParam
   | Call_FA2 FA2.Parameter
-  | Confirm_migration ()
   | Drop_proposal ProposalKey
   | Flush Natural
   | Freeze FreezeParam
   | Get_vote_permit_counter (Void_ () Nonce)
   | Get_total_supply (Void_ FA2.TokenId Natural)
-  | Migrate MigrateParam
   | Mint MintParam
   | Set_fixed_fee_in_token Natural
   | Set_quorum_threshold QuorumThreshold
@@ -453,16 +436,12 @@ data ForbidXTZParam
 data AllowXTZParam
   = CallCustom CallCustomParam
   | Propose ProposeParams
-  deriving stock (Show)
-
-data MigratableParam
-  = XtzAllowed AllowXTZParam
-  | XtzForbidden ForbidXTZParam
+  | Transfer_contract_tokens TransferContractTokensParam
   deriving stock (Show)
 
 data Parameter
-  = Migratable MigratableParam
-  | Transfer_contract_tokens TransferContractTokensParam
+  = XtzAllowed AllowXTZParam
+  | XtzForbidden ForbidXTZParam
   deriving stock (Show)
 
 data LastPeriodChange = LastPeriodChange
@@ -483,7 +462,6 @@ data Storage = Storage
   , sFrozenTokenId :: FA2.TokenId
   , sLedger :: Ledger
   , sMetadata :: TZIP16.MetadataMap BigMap
-  , sMigrationStatus :: MigrationStatus
   , sOperators :: Operators
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
@@ -544,7 +522,6 @@ mkStorage admin votingPeriod quorumThreshold extra metadata now =
     , sExtra = arg #extra extra
     , sLedger = mempty
     , sMetadata = arg #metadata metadata
-    , sMigrationStatus = NotInMigration
     , sOperators = mempty
     , sPendingOwner = arg #admin admin
     , sPermitsCounter = Nonce 0
@@ -647,11 +624,6 @@ customGeneric "Voter" ligoLayout
 customGeneric "Proposal" ligoLayout
 deriving anyclass instance IsoValue Proposal
 
-customGeneric "MigratableParam" ligoLayout
-deriving anyclass instance IsoValue MigratableParam
-instance ParameterHasEntrypoints MigratableParam where
-  type ParameterEntrypointsDerivation MigratableParam = EpdDelegate
-
 customGeneric "ForbidXTZParam" ligoLayout
 deriving anyclass instance IsoValue ForbidXTZParam
 instance ParameterHasEntrypoints ForbidXTZParam where
@@ -735,27 +707,6 @@ instance CustomErrorHasDoc "nOT_ADMIN" where
   customErrDocMdCause =
     "Received an operation that require administrative privileges\
     \ from an address that is not the current administrator"
-
-type instance ErrorArg "mIGRATED" = Address
-
-instance CustomErrorHasDoc "mIGRATED" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause =
-    "Recieved a call on a migrated contract"
-
-type instance ErrorArg "nOT_MIGRATING" = NoErrorArg
-
-instance CustomErrorHasDoc "nOT_MIGRATING" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause =
-    "Recieved a confirm_migration call on a contract that is not in migration"
-
-type instance ErrorArg "nOT_MIGRATION_TARGET" = NoErrorArg
-
-instance CustomErrorHasDoc "nOT_MIGRATION_TARGET" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause =
-    "Recieved a confirm_migration call on a contract from an address other than the new version"
 
 type instance ErrorArg "fORBIDDEN_XTZ" = NoErrorArg
 

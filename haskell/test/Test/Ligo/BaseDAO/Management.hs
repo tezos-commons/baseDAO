@@ -6,8 +6,6 @@
 -- `withOriginated` function
 module Test.Ligo.BaseDAO.Management
   ( test_BaseDAO_Management
-
-  , expectMigrated
   ) where
 
 import Universum
@@ -82,70 +80,24 @@ test_BaseDAO_Management =
     , nettestScenarioCaps "invalidates pending owner if new owner is current admin" $ do
         now <- getNow
         invalidatePendingOwner withOriginated (initialStorage now)
-
-    , nettestScenarioCaps "Respects migration state" $ do
-        now <- getNow
-        respectMigratedState withOriginated (initialStorage now)
     ]
-  , testGroup "Accept Ownership"
+    , testGroup "Accept Ownership"
       [ nettestScenarioCaps "authenticates the sender" $ do
           now <- getNow
           authenticateSender withOriginated (initialStorage now)
 
-       , nettestScenarioCaps "changes the administrator to pending owner" $ do
+      , nettestScenarioCaps "changes the administrator to pending owner" $ do
           now <- getNow
           changeToPendingAdmin withOriginated (initialStorage now)
 
-       , nettestScenarioCaps "throws error when there is no pending owner" $ do
+      , nettestScenarioCaps "throws error when there is no pending owner" $ do
           now <- getNow
           noPendingAdmin withOriginated (initialStorage now)
 
-       , nettestScenarioCaps "throws error when called by current admin, when pending owner is not the same" $ do
+      , nettestScenarioCaps "throws error when called by current admin, when pending owner is not the same" $ do
           now <- getNow
           pendingOwnerNotTheSame withOriginated (initialStorage now)
-
-      , nettestScenarioCaps "Respects migration state" $ do
-          now <- getNow
-          acceptOwnerRespectMigration withOriginated (initialStorage now)
       ]
-
-  , testGroup "Migration"
-      [ nettestScenarioCaps "authenticates the sender" $ do
-          now <- getNow
-          migrationAuthenticateSender withOriginated (initialStorage now)
-
-      , nettestScenarioCaps "successfully sets the pending migration address " $ do
-          now <- getNow
-          migrationSetTarget withOriginated (initialStorage now)
-
-      , nettestScenarioCaps "disallows confirmation from incorrect pending migration address " $ do
-          now <- getNow
-          migrationSetWrongTarget withOriginated (initialStorage now)
-
-      , nettestScenarioCaps "overwrites previous migration target" $ do
-          now <- getNow
-          migrationOverwritePrevious withOriginated (initialStorage now)
-
-      , nettestScenarioCaps "allows calls until confirm migration is called" $ do
-          now <- getNow
-          migrationAllowCallUntilConfirm withOriginated (initialStorage now)
-      ]
-
-  , testGroup "Confirm Migration"
-      [ nettestScenarioCaps "authenticates the sender" $ do
-          now <- getNow
-          confirmMigAuthenticateSender withOriginated (initialStorage now)
-
-      , nettestScenarioCaps "authenticates migration state" $ do
-          now <- getNow
-          confirmMigAuthenticateState withOriginated (initialStorage now)
-
-      , nettestScenarioCaps "finalizes migration" $ do
-          now <- getNow
-          confirmMigFinalize withOriginated (initialStorage now)
-
-     ]
-
   ]
 
   where
@@ -183,6 +135,48 @@ transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
     withSender (AddressResolved wallet1) $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
       & expectNotAdmin
+
+authenticateSender
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
+authenticateSender withOriginatedFn initialStorage =
+  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
+    \[owner, wallet1, wallet2] baseDao -> do
+      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
+        (#newOwner .! wallet1)
+      withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
+        & expectNotPendingOwner
+
+changeToPendingAdmin
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
+changeToPendingAdmin withOriginatedFn initialStorage =
+  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
+    \[owner, wallet1] baseDao -> do
+      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
+        (#newOwner .! wallet1)
+      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
+
+noPendingAdmin
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
+noPendingAdmin withOriginatedFn initialStorage =
+  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
+    \[_, wallet1] baseDao -> do
+      withSender (AddressResolved wallet1) $
+        call baseDao (Call @"Accept_ownership") ()
+        & expectNotPendingOwner
+
+pendingOwnerNotTheSame
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
+pendingOwnerNotTheSame withOriginatedFn initialStorage =
+  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
+    \[owner, wallet1] baseDao -> withSender (AddressResolved owner) $ do
+      call baseDao (Call @"Transfer_ownership")
+        (#newOwner .! wallet1)
+      call baseDao (Call @"Accept_ownership") ()
+      & expectNotPendingOwner
 
 notSetAdmin
   :: MonadNettest caps base m
@@ -231,175 +225,6 @@ invalidatePendingOwner withOriginatedFn initialStorage =
       withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner
 
-respectMigratedState
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-respectMigratedState withOriginatedFn initialStorage =
-  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1, newOwner] baseDao -> do
-      withSender (AddressResolved owner) $
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      -- We test this by calling `confirmMigration` and seeing that it does not fail
-      withSender (AddressResolved newAddress1) $
-        call baseDao (Call @"Confirm_migration") ()
-      withSender (AddressResolved owner) $
-        call baseDao (Call @"Transfer_ownership")
-        (#newOwner .! newOwner)
-        & expectMigrated newAddress1
-
-authenticateSender
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-authenticateSender withOriginatedFn initialStorage =
-  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
-    \[owner, wallet1, wallet2] baseDao -> do
-      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
-        (#newOwner .! wallet1)
-      withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
-
-changeToPendingAdmin
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-changeToPendingAdmin withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, wallet1] baseDao -> do
-      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
-        (#newOwner .! wallet1)
-      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
-
-noPendingAdmin
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-noPendingAdmin withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[_, wallet1] baseDao -> do
-      withSender (AddressResolved wallet1) $
-        call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
-
-pendingOwnerNotTheSame
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-pendingOwnerNotTheSame withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, wallet1] baseDao -> withSender (AddressResolved owner) $ do
-      call baseDao (Call @"Transfer_ownership")
-        (#newOwner .! wallet1)
-      call baseDao (Call @"Accept_ownership") ()
-      & expectNotPendingOwner
-
-acceptOwnerRespectMigration
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-acceptOwnerRespectMigration withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1] baseDao -> do
-      withSender (AddressResolved owner) $
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      -- We test this by calling `confirmMigration` and seeing that it does not fail
-      withSender (AddressResolved newAddress1) $
-        call baseDao (Call @"Confirm_migration") ()
-      withSender (AddressResolved owner) $ call
-        baseDao (Call @"Accept_ownership") ()
-        & expectMigrated newAddress1
-
-
-migrationAuthenticateSender
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-migrationAuthenticateSender withOriginatedFn initialStorage =
-  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
-    \[_, newAddress1, randomAddress] baseDao -> do
-      withSender (AddressResolved randomAddress) $
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-        & expectNotAdmin
-
-migrationSetTarget
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-migrationSetTarget withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1] baseDao -> do
-      withSender (AddressResolved owner) $
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      -- We test this by calling `confirmMigration` and seeing that it does not fail
-      withSender (AddressResolved newAddress1) $
-        call baseDao (Call @"Confirm_migration") ()
-
-migrationSetWrongTarget
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-migrationSetWrongTarget withOriginatedFn initialStorage =
-  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1, newAddress2] baseDao -> do
-      withSender(AddressResolved owner) $ do
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      -- We test this by calling `confirmMigration` and seeing that it does not fail
-      withSender (AddressResolved newAddress2) $
-        call baseDao (Call @"Confirm_migration") ()
-        & expectNotMigrationTarget
-
-migrationOverwritePrevious
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-migrationOverwritePrevious withOriginatedFn initialStorage =
-  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1, newAddress2] baseDao -> do
-      withSender(AddressResolved owner) $ do
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress2)
-      -- We test this by calling `confirmMigration` and seeing that it does not fail
-      withSender (AddressResolved newAddress2) $
-        call baseDao (Call @"Confirm_migration") ()
-
-migrationAllowCallUntilConfirm
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-migrationAllowCallUntilConfirm withOriginatedFn initialStorage =
-  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1, newAddress2] baseDao -> withSender (AddressResolved owner) $ do
-      call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      call baseDao (Call @"Migrate") (#newAddress .! newAddress2)
-
-confirmMigAuthenticateSender
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-confirmMigAuthenticateSender withOriginatedFn initialStorage =
-  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1, randomAddress] baseDao -> do
-      withSender (AddressResolved owner) $ call
-        baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      -- We test this by calling `confirmMigration` and seeing that it does not fail
-      withSender (AddressResolved randomAddress) $
-        call baseDao (Call @"Confirm_migration") ()
-        & expectNotMigrationTarget
-
-confirmMigAuthenticateState
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-confirmMigAuthenticateState withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[_, newAddress1] baseDao -> do
-      withSender (AddressResolved newAddress1) $
-        call baseDao (Call @"Confirm_migration") ()
-        & expectNotMigrating
-
-confirmMigFinalize
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
-confirmMigFinalize withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, newAddress1] baseDao -> do
-      withSender (AddressResolved owner) $
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-      -- We test this by calling `confirmMigration` and seeing that it does not fail
-      withSender (AddressResolved newAddress1) $
-        call baseDao (Call @"Confirm_migration") ()
-      withSender (AddressResolved owner) $
-        call baseDao (Call @"Migrate") (#newAddress .! newAddress1)
-        & expectMigrated newAddress1
-
 expectNotAdmin
   :: (MonadNettest caps base m)
   => m a -> m ()
@@ -409,21 +234,6 @@ expectNotPendingOwner
   :: (MonadNettest caps base m)
   => m a -> m ()
 expectNotPendingOwner = expectCustomErrorNoArg #nOT_PENDING_ADMIN
-
-expectNotMigrating
-  :: (MonadNettest caps base m)
-  => m a -> m ()
-expectNotMigrating = expectCustomErrorNoArg #nOT_MIGRATING
-
-expectNotMigrationTarget
-  :: (MonadNettest caps base m)
-  => m a -> m ()
-expectNotMigrationTarget = expectCustomErrorNoArg #nOT_MIGRATION_TARGET
-
-expectMigrated
-  :: (MonadNettest caps base m)
-  => Address -> m a -> m ()
-expectMigrated addr = expectCustomError #mIGRATED addr
 
 expectForbiddenXTZ
   :: (MonadNettest caps base m)

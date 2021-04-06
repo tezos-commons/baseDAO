@@ -143,7 +143,11 @@ test: all
     TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
 
 typescript: all
-	$(MAKE) -C lorentz build PACKAGE=baseDAO-ligo-meta STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn"
+	$(MAKE) -C lorentz build PACKAGE=baseDAO-ligo-meta \
+		STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn" \
+    BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
+    REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
+    TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
 	rm -rf $(TS_OUT)/baseDAO/src/generated/*
 	stack exec -- baseDAO-ligo-meta generate-typescript --target=$(TS_OUT)/baseDAO/src/generated/
 

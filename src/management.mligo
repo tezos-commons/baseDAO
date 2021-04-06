@@ -27,31 +27,6 @@ let accept_ownership(param, store : unit * storage) : return =
       (failwith("NOT_PENDING_ADMIN") : return)
 
 (*
- * Auth check for admin and sets the migration status to 'MigratingTo' using
- * the address from parameter, overwriting any address from any previous
- * 'Migrate' calls.
- *)
-let migrate(param, store : migrate_param * storage) : return =
-  let store = authorize_admin(store) in
-    (([] : operation list), { store with migration_status = MigratingTo (param) })
-
-(*
- * Auth check for new contract and sets the migration_status to 'Migrated', using
- * the address from the earlier value in the migration_status field.
- *)
-let confirm_migration(param, store : unit * storage) : return =
-  match store.migration_status with
-    Not_in_migration ->
-        (failwith("NOT_MIGRATING") : return)
-  | MigratingTo (new_addr) -> if new_addr = Tezos.sender
-      then (([] : operation list), { store with migration_status = MigratedTo (new_addr) })
-      else
-          (failwith("NOT_MIGRATION_TARGET") : return)
-  | MigratedTo (new_addr)  ->
-      ([%Michelson ({| { FAILWITH } |} : string * address -> return)]
-        ("MIGRATED", new_addr) : return)
-
-(*
  * Call a custom entrypoint.
  *
  * First it looks up the packed code for the entrypoint using the entrypoint
