@@ -174,6 +174,9 @@ test_RegistryDAO =
             largeProposalSize = metadataSize largeProposalMeta
 
             in do
+              withSender (AddressResolved admin) $
+                call baseDao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
+
               advanceTime (sec 10) -- voting period is 10 secs
               let requiredFrozen = largeProposalSize * frozen_scale_value + frozen_extra_value
 
@@ -181,7 +184,7 @@ test_RegistryDAO =
                 call baseDao (Call @"Freeze") (#amount .! 400)
 
               withSender (AddressResolved voter1) $
-                call baseDao (Call @"Freeze") (#amount .! 10)
+                call baseDao (Call @"Freeze") (#amount .! 100)
 
               advanceTime (sec 11) -- voting period is 10 secs
 
@@ -205,10 +208,10 @@ test_RegistryDAO =
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1)
 
               advanceTime (sec 10) -- voting period is 10 secs
-              -- Then we send 2 upvotes for the proposal (as min quorum is 2)
+              -- Then we send 60 upvotes for the proposal (as min quorum is 1% of 500)
               let proposalKey = makeProposalKey (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
               withSender (AddressResolved voter1) $
-                call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
+                call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 60) Nothing]
 
               advanceTime (sec 11)
               withSender (AddressResolved admin) $
@@ -232,11 +235,14 @@ test_RegistryDAO =
                 ]
               proposalSize = metadataSize proposalMeta
 
+            withSender (AddressResolved admin) $
+              call baseDao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
+
             withSender (AddressResolved wallet1) $
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
 
             withSender (AddressResolved voter1) $
-              call baseDao (Call @"Freeze") (#amount .! 2)
+              call baseDao (Call @"Freeze") (#amount .! 50)
             advanceTime (sec 13) -- voting period is 10 secs
 
             let requiredFrozen = proposalSize -- since frozen_scale_value and frozen_scale_value are 1 and 0.
@@ -246,10 +252,10 @@ test_RegistryDAO =
               call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta)
 
             advanceTime (sec 12)
-            -- Then we send 2 upvotes for the proposal (as min quorum is 2)
+            -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
             let proposalKey = makeProposalKey (ProposeParams requiredFrozen proposalMeta) wallet1
             withSender (AddressResolved voter1) $
-              call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 2) Nothing]
+              call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50) Nothing]
 
             advanceTime (sec 12)
             withSender (AddressResolved admin) $
@@ -273,6 +279,9 @@ test_RegistryDAO =
                   , opOperator = toAddress baseDao
                   , opTokenId = unfrozenTokenId
                   }
+            withSender (AddressResolved admin) $
+              call baseDao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
+
             withSender (AddressResolved wallet2) $
               call baseDao (Call @"Update_operators") [FA2.AddOperator opParams]
 

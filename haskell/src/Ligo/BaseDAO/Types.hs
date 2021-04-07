@@ -25,7 +25,7 @@ module Ligo.BaseDAO.Types
   , ProposeParams(..)
 
     -- * Voting
-  , QuorumThreshold
+  , QuorumThreshold (..)
   , VotingPeriod
   , VoteParam (..)
   , Voter (..)
@@ -162,12 +162,21 @@ type ProposalKey = Hash Blake2b $ Packed (ProposeParams, Address)
 -- Voting
 ------------------------------------------------------------------------
 
--- | QuorumThreshold that a proposal need to meet
+-- | QuorumThreshold that a proposal need to meet, expressed as a fraction of
+-- the frozen tokens total supply.
 -- A proposal will be rejected if the quorum_threshold is not met,
 -- regardless of upvotes > downvotes
--- A proposal will be accepted only if the
--- (quorum_threshold >= upvote + downvote) && (upvote > downvote)
-type QuorumThreshold = Natural
+-- A proposal will be accepted only if:
+-- (quorum_threshold * total_supply >= upvote + downvote) && (upvote > downvote)
+data QuorumThreshold = QuorumThreshold
+  { qtNumerator   :: Natural
+  , qtDenominator :: Natural
+  }
+  deriving stock (Generic, Show)
+  deriving anyclass IsoValue
+
+instance HasAnnotation QuorumThreshold where
+  annOptions = baseDaoAnnOptions
 
 -- | Voting period in seconds
 type VotingPeriod = Natural
@@ -511,7 +520,7 @@ instance StoreHasSubmap Storage "sTotalSupply" FA2.TokenId Natural where
 mkStorage
   :: "admin" :! Address
   -> "votingPeriod" :? Natural
-  -> "quorumThreshold" :? Natural
+  -> "quorumThreshold" :? QuorumThreshold
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
@@ -539,7 +548,7 @@ mkStorage admin votingPeriod quorumThreshold extra metadata now =
     }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
-    quorumThresholdDef = 4
+    quorumThresholdDef = QuorumThreshold 1 10 -- 10% of frozen total supply
 
 mkMetadataMap
   :: "metadataHostAddress" :! Address
@@ -562,8 +571,8 @@ data Config = Config
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural
-  , cMaxQuorumThreshold :: Natural
-  , cMinQuorumThreshold :: Natural
+  , cMaxQuorumThreshold :: QuorumThreshold
+  , cMinQuorumThreshold :: QuorumThreshold
 
   , cMaxVotingPeriod :: Natural
   , cMinVotingPeriod :: Natural
@@ -585,8 +594,8 @@ mkConfig customEps = Config
   , cMaxVotingPeriod = 60 * 60 * 24 * 30
   , cMinVotingPeriod = 1
 
-  , cMaxQuorumThreshold = 1000
-  , cMinQuorumThreshold = 1
+  , cMaxQuorumThreshold = QuorumThreshold 99 100 -- 99%
+  , cMinQuorumThreshold = QuorumThreshold 1 100 -- 1%
 
   , cMaxVotes = 1000
   , cMaxProposals = 500
@@ -604,7 +613,7 @@ data FullStorage = FullStorage
 mkFullStorage
   :: "admin" :! Address
   -> "votingPeriod" :? Natural
-  -> "quorumThreshold" :? Natural
+  -> "quorumThreshold" :? QuorumThreshold
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp

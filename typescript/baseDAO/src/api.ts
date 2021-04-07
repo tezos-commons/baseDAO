@@ -200,7 +200,7 @@ export class BaseDAOContract {
 
   set_quorum_threshold(arg: Set_quorum_threshold): Promise<string|void> {
     return this.withContract(
-      contract => contract.methods.set_quorum_threshold(arg));
+      contract => contract.methods.set_quorum_threshold(arg.numerator, arg.denominator));
   }
 
   set_voting_period(arg: Set_voting_period): Promise<string|void> {

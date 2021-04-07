@@ -40,7 +40,7 @@ setQuorumThreshold
 setQuorumThreshold originateFn = do
   ((owner1, _), _, dao, admin) <- originateFn testConfig
 
-  let param = 100
+  let param = QuorumThreshold 80 100
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Set_quorum_threshold") param

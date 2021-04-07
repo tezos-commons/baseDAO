@@ -53,6 +53,31 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
     then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
     else proposal_key
 
+// Utility function for quorum_threshold comparison.
+// Returns two nats, which can be compared to check for the desired condition.
+// e.g. nat_1 > nat_2 implies that qt_1 > qt_2
+let cmp_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): (nat * nat) =
+  // Calculated this way because there is no support for floating point operations
+  (qt_1.numerator * qt_2.denominator, qt_1.denominator * qt_2.numerator)
+
+[@inline]
+// Returns true iff the first quorum_threshold is strictly bigger than the second.
+let is_gt_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): bool =
+  let (nat_1, nat_2) = cmp_qt (qt_1, qt_2) in
+  nat_1 > nat_2
+
+[@inline]
+// Returns true iff the first quorum_threshold is bigger or equal than the second.
+let is_ge_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): bool =
+  let (nat_1, nat_2) = cmp_qt (qt_1, qt_2) in
+  nat_1 >= nat_2
+
+[@inline]
+// Returns true iff the first quorum_threshold is strictly less than the second.
+let is_le_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): bool =
+  let (nat_1, nat_2) = cmp_qt (qt_1, qt_2) in
+  nat_1 <= nat_2
+
 // -----------------------------------------------------------------
 // Freeze history operations
 // -----------------------------------------------------------------
@@ -248,19 +273,16 @@ let set_voting_period(new_period, config, store : voting_period * config * stora
   let store = { store with voting_period = new_period; last_period_change = vp_log } in
   (([] : operation list), store)
 
-// Update quroum_threshold. The new quorum_threshold affects
+// Update quorum_threshold. The new quorum_threshold affects
 // all ongoing and new proposals.
 [@inline]
 let set_quorum_threshold(new_threshold, config, store : quorum_threshold * config * storage): return =
   let store = authorize_admin store in
-  let store =
-    if   config.max_quorum_threshold < new_threshold
-      || config.min_quorum_threshold > new_threshold
-      then (failwith("OUT_OF_BOUND_QUORUM_THRESHOLD") : storage)
-      else store
-    in
-  let store = { store with quorum_threshold = new_threshold } in
-  (([] : operation list), store)
+  if   is_le_qt (new_threshold, config.max_quorum_threshold)
+    && is_ge_qt (new_threshold, config.min_quorum_threshold)
+    && (new_threshold.numerator < new_threshold.denominator)
+  then (nil_op, { store with quorum_threshold = new_threshold })
+  else (failwith("OUT_OF_BOUND_QUORUM_THRESHOLD") : (operation list * storage))
 
 // Used in "flush". See the Haskell version for explanation.
 [@inline]
@@ -346,7 +368,17 @@ let is_voting_period_over (proposal, store : proposal * storage): bool =
 
 [@inline]
 let do_total_vote_meet_quorum_threshold (proposal, store : proposal * storage): bool =
-  store.quorum_threshold <= proposal.upvotes + proposal.downvotes
+  let votes_placed = proposal.upvotes + proposal.downvotes in
+  let total_supply =
+        match Map.find_opt store.frozen_token_id store.total_supply with
+        | Some v -> v
+        | None -> 0n
+  in
+  // Note: this is equivalent to checking that the number of votes placed is
+  // bigger or equal than the total supply of frozen tokens multiplied by the
+  // quorum_threshold proportion.
+  let reached_quorum = {numerator = votes_placed; denominator = total_supply} in
+  is_ge_qt(reached_quorum, store.quorum_threshold)
 
 // Delete a proposal from 'sProposalKeyListSortByDate'
 [@inline]

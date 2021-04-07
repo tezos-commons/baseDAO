@@ -124,7 +124,15 @@ type proposal =
   }
 
 type voting_period = nat
-type quorum_threshold = nat
+
+// Quorum threshold that a proposal needs to meet in order to be accepted,
+// expressed as a fraction of the total_supply of frozen tokens.
+// Invariant: numerator < denominator
+type quorum_threshold =
+  [@layout:comb]
+  { numerator : nat
+  ; denominator : nat
+  }
 
 type permit =
   { key : key
@@ -174,7 +182,6 @@ type unfreeze_param = nat
 type transfer_ownership_param = address
 
 type voting_period = nat
-type quorum_threshold = nat
 
 type custom_ep_param = (string * bytes)
 
@@ -279,8 +286,8 @@ type config =
 
   ; max_proposals : nat
   ; max_votes : nat
-  ; max_quorum_threshold : nat
-  ; min_quorum_threshold : nat
+  ; max_quorum_threshold : quorum_threshold
+  ; min_quorum_threshold : quorum_threshold
   ; max_voting_period : nat
   ; min_voting_period : nat
 
