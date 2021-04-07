@@ -48,6 +48,11 @@ make out/trivialDAO_storage.tz \
   token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
   now_val=Tezos.now \
   metadata_map=(Big_map.empty : metadata_map)
+  fixed_proposal_fee_in_token=0n \
+  ledger=([] : ledger_list) \
+  quorum_threshold={numerator=1n; denominator=10n} \
+  voting_period=11n \
+  metadata_map=(Big_map.empty : metadata_map) \
 ```
 
 All its arguments are optional and will be equal to the values above if not
@@ -72,7 +77,11 @@ make out/registryDAO_storage.tz \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
   now_val=Tezos.now \
-  metadata_map=(Big_map.empty : metadata_map)
+  metadata_map=(Big_map.empty : metadata_map) \
+  fixed_proposal_fee_in_token=0n \
+  ledger=([] : ledger_list) \
+  quorum_threshold={numerator=1n; denominator=10n} \
+  voting_period=11n
 ```
 
 All its arguments are optional and will be equal to the values above if not
@@ -95,7 +104,20 @@ make out/treasuryDAO_storage.tz \
   max_xtz_amount=100mutez \
   now_val=Tezos.now \
   metadata_map=(Big_map.empty : metadata_map)
+  fixed_proposal_fee_in_token=0n \
+  ledger=([] : ledger_list) \
+  quorum_threshold={numerator=1n; denominator=10n} \
+  voting_period=11n \
+  metadata_map=(Big_map.empty : metadata_map) \
 ```
 
 As for the other examples, all the arguments are optional and will be equal to
-the values above if not specified.
+the values above the values above if not specified.
+
+## Storage generation checks
+The LIGO functions used by the `Makefile` targets above perform some automatic check, specifically:
+If `ledger` is specified, than `total_supply` will be calculated, depending on its value. \
+If `quorum_threshold` is specified, it will be checked for being inside
+`[min_quorum_thresold, max_quorum_threshold]` interval. \
+If it lies outside, `quorum_threshold` will be set to the nearest bound. \
+The same is true for `voting_period`.

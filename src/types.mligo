@@ -272,8 +272,6 @@ type allow_xtz_params =
 type parameter =
   (allow_xtz_params, "", forbid_xtz_params, "") michelson_or
 
-
-
 type custom_entrypoints = (string, bytes) map
 
 type decision_lambda_input =
@@ -282,6 +280,32 @@ type decision_lambda_input =
   }
 
 // -- Config -- //
+
+type initial_ledger_val = address * token_id * nat
+
+type ledger_list = (ledger_key * ledger_value) list
+
+type initial_config_data =
+  { max_quorum : quorum_threshold
+  ; min_quorum : quorum_threshold
+  ; max_period : voting_period
+  ; min_period : voting_period
+  }
+
+type initial_storage_data =
+  { admin : address
+  ; governance_token : governance_token
+  ; now_val : timestamp
+  ; metadata_map : metadata_map
+  ; ledger_lst : ledger_list
+  ; quorum_threshold : quorum_threshold
+  ; voting_period : nat
+  }
+
+type initial_data =
+  { storage_data : initial_storage_data
+  ; config_data : initial_config_data
+  }
 
 type config =
   { proposal_check : propose_params * contract_extra -> bool
@@ -292,8 +316,8 @@ type config =
   ; max_votes : nat
   ; max_quorum_threshold : quorum_threshold
   ; min_quorum_threshold : quorum_threshold
-  ; max_voting_period : nat
-  ; min_voting_period : nat
+  ; max_voting_period : voting_period
+  ; min_voting_period : voting_period
 
   ; custom_entrypoints : custom_entrypoints
   }
