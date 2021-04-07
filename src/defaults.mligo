@@ -24,7 +24,6 @@ let default_storage (admin , token_address , now_val, metadata : address * addre
     admin = admin;
     pending_owner = admin;
     metadata = metadata;
-    migration_status = Not_in_migration;
     voting_period = 11n;
     quorum_threshold = 2n;
     extra = (Map.empty : (string, bytes) map);

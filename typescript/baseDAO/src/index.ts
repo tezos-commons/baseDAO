@@ -17,12 +17,10 @@ export
   , Update_operatorsItemRemove_operator
   , Update_operatorsItemRemove_operatorItem
   } from  './generated/Update_operators';
-export {Confirm_migration} from  './generated/Confirm_migration';
 export {Drop_proposal} from  './generated/Drop_proposal';
 export {Flush} from  './generated/Flush';
 export {Get_vote_permit_counter} from  './generated/Get_vote_permit_counter';
 export {Get_total_supply} from  './generated/Get_total_supply';
-export {Migrate} from  './generated/Migrate';
 export {Mint} from  './generated/Mint';
 export {Propose, ProposeProposal_metadata} from  './generated/Propose';
 export {Set_quorum_threshold} from  './generated/Set_quorum_threshold';

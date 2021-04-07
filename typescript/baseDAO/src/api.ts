@@ -12,11 +12,9 @@ import { CallCustom } from './generated/CallCustom';
 import { Accept_ownership } from './generated/Accept_ownership';
 import { Burn } from './generated/Burn';
 import { Balance_of } from './generated/Balance_of';
-import { Confirm_migration } from './generated/Confirm_migration';
 import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
 import { Get_total_supply } from './generated/Get_total_supply';
-import { Migrate } from './generated/Migrate';
 import { Mint } from './generated/Mint';
 import { Propose } from './generated/Propose';
 import { Set_quorum_threshold } from './generated/Set_quorum_threshold';
@@ -165,11 +163,6 @@ export class BaseDAOContract {
       contract => contract.methods.callCustom(arg[0], arg[1]));
   }
 
-  confirm_migration(): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.confirm_migration(unit));
-  }
-
   drop_proposal(arg: Drop_proposal): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.drop_proposal(arg));
@@ -188,11 +181,6 @@ export class BaseDAOContract {
   get_vote_permit_counter(arg: Get_vote_permit_counter): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.get_vote_permit_counter(arg.voidParam, arg.voidResProxy));
-  }
-
-  migrate(arg: Migrate): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.migrate(arg));
   }
 
   mint(arg: Mint): Promise<string|void> {

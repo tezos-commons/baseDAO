@@ -19,9 +19,6 @@ module Test.Ligo.BaseDAO.FA2
   , noForeignMoneyOwnerScenario
   , adminTransferScenario
   , adminTransferFrozenScenario
-  , transferAfterMigrationScenario
-  , updatingOperatorAfterMigrationScenario
-  , balanceOfRequestAfterMigrationScenario
   ) where
 
 import Universum
@@ -32,7 +29,6 @@ import Morley.Nettest
 import Util.Named
 
 import Test.Ligo.BaseDAO.Common
-import Test.Ligo.BaseDAO.Management (expectMigrated)
 import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
@@ -104,24 +100,6 @@ validTransferOwnerScenario originateFn = do
 
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((owner2, 0 :: Natural), 110 :: Natural)]] )
-
-updatingOperatorAfterMigrationScenario
-  :: MonadNettest caps base m => OriginateFn m -> m ()
-updatingOperatorAfterMigrationScenario originateFn = do
-  ((owner1, _), (owner2, newAddress1), dao, admin) <- originateFn
-  let params = FA2.OperatorParam
-        { opOwner = owner1
-        , opOperator = owner2
-        , opTokenId = unfrozenTokenId
-        }
-
-  withSender (AddressResolved admin) $
-    call dao (Call @"Migrate") (#newAddress .! newAddress1)
-  withSender (AddressResolved newAddress1) $
-    call dao (Call @"Confirm_migration") ()
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Update_operators") [FA2.AddOperator params]
-    & expectCustomError #mIGRATED newAddress1
 
 updatingOperatorScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 updatingOperatorScenario originateFn = do
@@ -355,39 +333,3 @@ adminTransferFrozenScenario originateFn = do
         } ]
   withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
 
-transferAfterMigrationScenario :: MonadNettest caps base m => OriginateFn m -> m ()
-transferAfterMigrationScenario originateFn = do
-  ((owner1, op1), (owner2, newAddress1), dao, admin) <- originateFn
-
-  let params = [ FA2.TransferItem
-        { tiFrom = owner2
-        , tiTxs = [ FA2.TransferDestination
-            { tdTo = owner1
-            , tdTokenId = unfrozenTokenId
-            , tdAmount = 10
-            } ]
-        } ]
-
-  withSender (AddressResolved admin) $
-    call dao (Call @"Migrate") (#newAddress .! newAddress1)
-  withSender (AddressResolved newAddress1) $
-    call dao (Call @"Confirm_migration") ()
-  withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
-    & expectMigrated newAddress1
-
-balanceOfRequestAfterMigrationScenario :: MonadNettest caps base m => OriginateFn m -> m ()
-balanceOfRequestAfterMigrationScenario originateFn = do
-  ((owner1, newAddress1), _, dao, admin) <- originateFn
-  consumer <- originateSimple "consumer" [] contractConsumer
-  let
-    params requestItems = mkFA2View requestItems consumer
-    callWith param = withSender (AddressResolved owner1) $
-      call dao (Call @"Balance_of") param
-
-  withSender (AddressResolved admin) $
-    call dao (Call @"Migrate") (#newAddress .! newAddress1)
-  withSender (AddressResolved newAddress1) $
-    call dao (Call @"Confirm_migration") ()
-
-  callWith (params [ FA2.BalanceRequestItem owner1 unfrozenTokenId ])
-    & expectMigrated newAddress1

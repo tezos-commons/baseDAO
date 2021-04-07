@@ -2,13 +2,11 @@ import {Accept_ownership} from  './Accept_ownership';
 import {Balance_of} from  './Balance_of';
 import {Burn} from  './Burn';
 import {CallCustom} from  './CallCustom';
-import {Confirm_migration} from  './Confirm_migration';
 import {Drop_proposal} from  './Drop_proposal';
 import {Flush} from  './Flush';
 import {Freeze} from  './Freeze';
 import {Get_total_supply} from  './Get_total_supply';
 import {Get_vote_permit_counter} from  './Get_vote_permit_counter';
-import {Migrate} from  './Migrate';
 import {Mint} from  './Mint';
 import {Propose} from  './Propose';
 import {Set_fixed_fee_in_token} from  './Set_fixed_fee_in_token';
@@ -25,13 +23,11 @@ export type Parameter =
   | Balance_of
   | Burn
   | CallCustom
-  | Confirm_migration
   | Drop_proposal
   | Flush
   | Freeze
   | Get_total_supply
   | Get_vote_permit_counter
-  | Migrate
   | Mint
   | Propose
   | Set_fixed_fee_in_token

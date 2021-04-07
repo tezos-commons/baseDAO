@@ -64,12 +64,4 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
                 ]
             )
     ]
-  , testGroup "Entrypoints respect migration status"
-      [ nettestScenario "transfer respects migration status"
-          $ uncapsNettest $ FA2.transferAfterMigrationScenario originateLigoDao
-      , nettestScenario "update operator respects migration status "
-          $ uncapsNettest $ FA2.updatingOperatorAfterMigrationScenario originateLigoDao
-      , nettestScenario "balanceOf request respects migration status"
-          $ uncapsNettest $ FA2.balanceOfRequestAfterMigrationScenario originateLigoDao
-      ]
   ]
