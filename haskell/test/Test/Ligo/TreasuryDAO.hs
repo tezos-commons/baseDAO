@@ -87,7 +87,10 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
       , ((owner2_, unfrozenTokenId), 100)
       ]
 
-  -- Set RegistryDAO as operator of the address that is mean to transfer the tokens
+  withSender (AddressResolved admin) $
+    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
+
+  -- Set RegistryDAO as operator of the address that is meant to transfer the tokens
   let opParams = FA2.OperatorParam
         { opOwner = owner2
         , opOperator = toAddress dao
@@ -126,7 +129,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   let
     upvote = NoPermit VoteParam
         { vVoteType = True
-        , vVoteAmount = 1
+        , vVoteAmount = 2
         , vProposalKey = key1
         }
 

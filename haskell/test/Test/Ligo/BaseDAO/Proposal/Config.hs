@@ -148,7 +148,8 @@ testConfig
   => ConfigDesc config
 testConfig =
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
-  ConfigDesc configConsts{ cmMinVotingPeriod = Just 10, cmMinQuorumThreshold = Just 1 }
+  ConfigDesc configConsts
+    { cmMinVotingPeriod = Just 10, cmMinQuorumThreshold = Just (DAO.QuorumThreshold 1 100) }
 
 -- | Config with longer voting period and bigger quorum threshold
 -- Needed for vote related tests that do not call `flush`
@@ -157,7 +158,8 @@ voteConfig
   => ConfigDesc config
 voteConfig = ConfigDesc $
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
-  ConfigDesc configConsts{ cmMinVotingPeriod = Just 120, cmMinQuorumThreshold = Just 4 }
+  ConfigDesc configConsts
+    { cmMinVotingPeriod = Just 120, cmMinQuorumThreshold = Just (DAO.QuorumThreshold 4 100) }
 
 configWithRejectedProposal
   :: AreConfigDescsExt config '[RejectedProposalReturnValue]

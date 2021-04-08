@@ -41,7 +41,7 @@ checkVotingPeriodTracking  = do
     mkFullStorage
       ! #admin admin
       ! #votingPeriod 10
-      ! #quorumThreshold 10
+      ! #quorumThreshold (QuorumThreshold 10 100)
       ! #extra dynRecUnsafe
       ! #metadata mempty
       ! #now now

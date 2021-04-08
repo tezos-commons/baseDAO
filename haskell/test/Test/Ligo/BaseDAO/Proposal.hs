@@ -228,7 +228,7 @@ test_BaseDAO_Proposal =
           -- the vote entrypoint 30s have already passed.
           withSender (AddressResolved admin) $ do
             call dao (Call @"Set_voting_period") 60
-            call dao (Call @"Set_quorum_threshold") 1
+            call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
             call dao (Call @"Set_fixed_fee_in_token") 42
 
           withSender (AddressResolved voter) $
@@ -299,7 +299,7 @@ burnsFeeOnFailure reason = do
   -- the vote entrypoint 30s have already passed.
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") 1
+    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
     call dao (Call @"Set_fixed_fee_in_token") 42
 
   withSender (AddressResolved proposer) $
@@ -545,7 +545,7 @@ flushAcceptedProposals originateFn = do
   -- vote entrypoint 30s is already passed.
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") 1
+    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $
@@ -659,11 +659,11 @@ flushRejectProposalQuorum originateFn = do
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") 3
+    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 3 5
   advanceTime (sec 60)
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 2)
+    call dao (Call @"Freeze") (#amount .! 5)
 
   -- Rejected Proposal
   key1 <- createSampleProposal 1 65 owner1 dao
@@ -692,8 +692,8 @@ flushRejectProposalQuorum originateFn = do
 
   checkTokenBalance (frozenTokenId) dao owner1 5
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer: cRejectedValue reduce frozen token by half
-  checkTokenBalance (frozenTokenId) dao owner2 2
-  checkTokenBalance (unfrozenTokenId) dao owner2 98 -- voter
+  checkTokenBalance (frozenTokenId) dao owner2 5
+  checkTokenBalance (unfrozenTokenId) dao owner2 95 -- voter
 
 flushRejectProposalNegativeVotes
   :: (MonadNettest caps base m, HasCallStack)
@@ -704,7 +704,7 @@ flushRejectProposalNegativeVotes originateFn = do
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") 3
+    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 3 100
 
   advanceTime (sec 60)
 
@@ -757,11 +757,11 @@ flushWithBadConfig originateFn = do
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") 2
+    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 2
 
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 1)
+    call dao (Call @"Freeze") (#amount .! 3)
   key1 <- createSampleProposal 1 65 owner1 dao
 
   let upvote' = NoPermit VoteParam
@@ -782,8 +782,8 @@ flushWithBadConfig originateFn = do
 
   checkTokenBalance (frozenTokenId) dao owner1 0
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- slash all frozen values
-  checkTokenBalance (frozenTokenId) dao owner2 1
-  checkTokenBalance (unfrozenTokenId) dao owner2 99
+  checkTokenBalance (frozenTokenId) dao owner2 3
+  checkTokenBalance (unfrozenTokenId) dao owner2 97
 
 flushDecisionLambda
   :: (MonadNettest caps base m, HasCallStack)
@@ -794,7 +794,7 @@ flushDecisionLambda originateFn = do
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") 1
+    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 1)
@@ -824,7 +824,7 @@ dropProposal originateFn = do
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 20
-    call dao (Call @"Set_quorum_threshold") 2
+    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 50
   advanceTime (sec 25)
 
   withSender (AddressResolved owner1) $
@@ -920,16 +920,16 @@ quorumThresholdBound originateFn = do
   (_, _, dao, admin) <- originateFn
     ( testConfig >>-
       ConfigDesc configConsts
-        { cmMinQuorumThreshold = Just 1
-        , cmMaxQuorumThreshold = Just 2
+        { cmMinQuorumThreshold = Just $ QuorumThreshold 1 100
+        , cmMaxQuorumThreshold = Just $ QuorumThreshold 2 100
         }
     )
   withSender (AddressResolved admin) $ do
-    call dao (Call @"Set_quorum_threshold") 1
-    call dao (Call @"Set_quorum_threshold") 2
-    call dao (Call @"Set_quorum_threshold") 0
+    call dao (Call @"Set_quorum_threshold") (QuorumThreshold 1 100)
+    call dao (Call @"Set_quorum_threshold") (QuorumThreshold 2 100)
+    call dao (Call @"Set_quorum_threshold") (QuorumThreshold 0 100)
       & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
-    call dao (Call @"Set_quorum_threshold") 3
+    call dao (Call @"Set_quorum_threshold") (QuorumThreshold 3 100)
       & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
 
 votingPeriodBound

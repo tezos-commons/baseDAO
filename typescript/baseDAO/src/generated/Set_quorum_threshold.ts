@@ -1,2 +1,5 @@
 import {Lambda} from '../common';
-export type Set_quorum_threshold = number;
+export interface Set_quorum_threshold {
+  numerator: number;
+  denominator: number;
+};

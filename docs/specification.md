@@ -77,9 +77,9 @@ type config =
   // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   ; max_votes : nat
   // ^ Determine the maximum number of votes associated with a proposal including positive votes
-  ; max_quorum_threshold : nat
+  ; max_quorum_threshold : quorum_threshold
   // ^ Determine the maximum value of quorum threshold that is allowed to be set.
-  ; min_quorum_threshold : nat
+  ; min_quorum_threshold : quorum_threshold
   // ^ Determine the minimum value of quorum threshold that is allowed to be set.
   ; max_voting_period : nat
   // ^ Determine the maximum value of voting period that is allowed to be set.
@@ -93,6 +93,8 @@ type config =
 Note:
 - the `token_metadata` type matches the one defined in FA2.
 - the `proposal` type is defined below.
+- the `quorum_threshold` is expressed as a `nat/nat` fraction of the total supply
+  of frozen tokens, see [set_quorum_threshold](#set_quorum_threshold).
 - `storage` is the storage type of the contract without the configuration.
 - `full_storage` is instead the full storage of the contract, including its configuration,
 which is to say: `type full_storage = storage * config`.
@@ -124,7 +126,8 @@ They must be provided on origination to construct the contract's initial storage
 These values are:
 1. `admin : address` is the address that can perform administrative actions.
 2. `voting_period : nat` specifies how long the voting period lasts.
-3. `quorum_threshold : nat` specifies how many total votes are required for a successful proposal.
+3. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
+   tokens total supply of total votes are required for a successful proposal.
 4. `fixed_proposal_fee_in_token : nat` specifies the fee for submitting a proposal (in native DAO token).
 
 # Contract logic
@@ -663,23 +666,29 @@ Parameter (in Michelson):
 ### **set_quorum_threshold**
 
 ```ocaml
-// Quorum threshold that a proposal need to meet
-// quorum_threshold = upvote + downvote
-type quorum_threshold = nat
+// Quorum threshold that a proposal needs to meet in order to be accepted,
+// expressed as a fraction of the total_supply of frozen tokens.
+// Invariant: numerator < denominator
+type quorum_threshold =
+  [@layout:comb]
+  { numerator : nat
+  ; denominator : nat
+  }
 
 Set_quorum_threshold of quorum_threshold
 ```
 
 Parameter (in Michelson):
 ```
-(nat %set_quorum_threshold)
+(pair %set_quorum_threshold (nat %numerator) (nat %denominator))
 ```
 
-- Update the quorum threshold value which proposals have to met to not get rejected.
-- Quorum threshold value is calculated by adding the number of upvotes with downvotes.
+- Update the quorum threshold which proposals have to meet to not get rejected.
+- The Quorum threshold is calculated as the proportion of total votes (upvotes
+  and downvotes) over the frozen token's total supply.
 - This affects all ongoing and new proposals.
 - Fails with `NOT_ADMIN` if the sender is not the administrator.
-- Fails with `OUT_OF_BOUND_QUORUM_THRESHOLD` if the voting period value is out of the bound set by the configuration
+- Fails with `OUT_OF_BOUND_QUORUM_THRESHOLD` if the quorum threshold value is out of the bound set by the configuration or the numerator is not smaller than the denominator.
 
 ### **vote**
 
