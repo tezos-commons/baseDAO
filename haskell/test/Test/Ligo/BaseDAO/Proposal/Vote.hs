@@ -40,7 +40,7 @@ voteNonExistingProposal originateFn = do
         }
 
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
 voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
@@ -101,4 +101,4 @@ voteOutdatedProposal originateFn = do
     call dao (Call @"Vote") [params]
     advanceTime (sec 25)
     call dao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao

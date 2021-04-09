@@ -20,7 +20,7 @@ let transfer_ownership
  * to 'admin' field. The 'pending_owner' field is left with the address of the
  * new admin.
  *)
-let accept_ownership(param, store : unit * storage) : return =
+let accept_ownership(store : storage) : return =
   if store.pending_owner = Tezos.sender
     then (([] : operation list), { store with admin = Tezos.sender })
     else

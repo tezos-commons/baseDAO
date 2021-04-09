@@ -23,7 +23,7 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Call_FA2 (p) -> call_fa2(p, store)
     | Drop_proposal (p) -> drop_proposal(p, config, store)
     | Transfer_ownership (p) -> transfer_ownership(p, store)
-    | Accept_ownership (p) -> accept_ownership(p, store)
+    | Accept_ownership -> accept_ownership(store)
     | Vote (p) -> vote(p, config, store)
     | Set_fixed_fee_in_token (p) -> set_fixed_fee_in_token(p, store)
     | Set_voting_period (p) -> set_voting_period(p, config, store)
@@ -33,8 +33,8 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Mint (p) -> mint(p, store)
     | Get_vote_permit_counter (p) -> get_vote_permit_counter(p, store)
     | Get_total_supply (p) -> get_total_supply(p, store)
-    | Freeze p -> freeze(p, config, store)
-    | Unfreeze p -> unfreeze(p, config, store)
+    | Freeze p -> freeze(p, store)
+    | Unfreeze p -> unfreeze(p, store)
 
 
 (*

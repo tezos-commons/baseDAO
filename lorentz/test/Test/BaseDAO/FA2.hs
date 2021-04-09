@@ -132,7 +132,7 @@ updatingOperatorAfterMigrationScenario originateFn = do
     call dao (Call @"Confirm_migration") ()
   withSender (AddressResolved owner1) $
     call dao (Call @"Update_operators") [FA2.AddOperator params]
-    & expectCustomError #mIGRATED newAddress1
+    & expectCustomError #mIGRATED dao newAddress1
 
 updatingOperatorScenario
   :: forall caps base m param
@@ -169,12 +169,12 @@ updatingOperatorScenario originateFn = do
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Transfer") transferParams
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
-      & expectCustomErrorNoArg #nOT_OWNER
+      & expectCustomErrorNoArg #nOT_OWNER dao
     call dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
-      & expectCustomErrorNoArg #nOT_OWNER
+      & expectCustomErrorNoArg #nOT_OWNER dao
 
 lowBalanceScenario
   :: forall caps base m param
@@ -192,7 +192,7 @@ lowBalanceScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
-    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
+    & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 200, #present .! 100)
 
 lowBalanceOwnerScenario
   :: forall caps base m param
@@ -210,7 +210,7 @@ lowBalanceOwnerScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
-    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
+    & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 200, #present .! 100)
 
 noSourceAccountScenario
   :: forall caps base m param
@@ -232,7 +232,7 @@ noSourceAccountScenario originateFn = do
   -- Failed with 'fA2_INSUFFICIENT_BALANCE' due to nonexistent account is treated
   -- as an existing account with 0 balance.
   withSender (AddressResolved nonexistent) $ call dao (Call @"Transfer") params
-    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 1, #present .! 0)
+    & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 1, #present .! 0)
 
 badOperatorScenario
   :: forall caps base m param
@@ -251,7 +251,7 @@ badOperatorScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved op3) $ call dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 emptyTransferListScenario
   :: forall caps base m param
@@ -285,9 +285,9 @@ validateTokenScenario originateFn = do
   callWith (params unfrozenTokenId)
 
   callWith (params frozenTokenId)
-    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE
+    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
   callWith (params unknownTokenId)
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 
 validateTokenOwnerScenario
   :: forall caps base m param
@@ -310,9 +310,9 @@ validateTokenOwnerScenario originateFn = do
   callWith (params unfrozenTokenId)
 
   callWith (params frozenTokenId)
-    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE
+    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
   callWith (params unknownTokenId)
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 
 
 noForeignMoneyScenario
@@ -331,7 +331,7 @@ noForeignMoneyScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 noForeignMoneyOwnerScenario
   :: forall caps base m param
@@ -349,7 +349,7 @@ noForeignMoneyOwnerScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 balanceOfOwnerScenario
   :: forall caps base m param
@@ -367,7 +367,7 @@ balanceOfOwnerScenario originateFn = do
   callWith (params [ FA2.BalanceRequestItem owner1 frozenTokenId ])
   callWith (params [])
   callWith (params [ FA2.BalanceRequestItem owner1 unknownTokenId ])
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 
 adminTransferScenario
   :: forall caps base m param
@@ -426,7 +426,7 @@ transferAfterMigrationScenario originateFn = do
   withSender (AddressResolved newAddress1) $
     call dao (Call @"Confirm_migration") ()
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
-    & expectMigrated newAddress1
+    & expectMigrated dao newAddress1
 
 balanceOfRequestAfterMigrationScenario
   :: forall caps base m param pm
@@ -446,4 +446,4 @@ balanceOfRequestAfterMigrationScenario originateFn = do
     call dao (Call @"Confirm_migration") ()
 
   callWith (params [ FA2.BalanceRequestItem owner1 unfrozenTokenId ])
-    & expectMigrated newAddress1
+    & expectMigrated dao newAddress1

@@ -129,13 +129,14 @@ let balance_of (params, store : balance_request_params * storage): return =
 // Update operators entrypoint
 // -----------------------------------------------------------------
 [@inline]
-let validate_operator_token (token_id, unfrozen_token_id, frozen_token_id : token_id * nat * nat): token_id =
+let validate_operator_token (operator_param, unfrozen_token_id, frozen_token_id : operator_param * nat * nat): operator_param =
+  let token_id = operator_param.token_id in
   if (token_id = unfrozen_token_id) then
-    token_id
+    operator_param
   else if (token_id = frozen_token_id) then
-    (failwith("OPERATION_PROHIBITED") : token_id)
+    (failwith("OPERATION_PROHIBITED") : operator_param)
   else
-    (failwith("FA2_TOKEN_UNDEFINED") : token_id)
+    (failwith("FA2_TOKEN_UNDEFINED") : operator_param)
 
 let update_one (store, param: storage * update_operator): storage =
   let (operator_update, operator_param) =
@@ -143,7 +144,7 @@ let update_one (store, param: storage * update_operator): storage =
       Add_operator p -> (Some unit, p)
     | Remove_operator p -> ((None : unit option), p)
   in
-  let valid_token_id = validate_operator_token (operator_param.token_id, store.unfrozen_token_id, store.frozen_token_id) in
+  let operator_param = validate_operator_token (operator_param, store.unfrozen_token_id, store.frozen_token_id) in
   if (sender = operator_param.owner) then
     let key: operator = { owner = operator_param.owner; operator = operator_param.operator} in
     let updated_operators = Big_map.update key operator_update store.operators

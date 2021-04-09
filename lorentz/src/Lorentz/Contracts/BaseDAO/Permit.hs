@@ -39,9 +39,9 @@ toSignedData counterLabel = do
       :: StoreHasField store l Nonce
       => Label l -> store : s :-> Nonce : store : s
     stIncrement l = do
-      stGetField l
+      stGetField (fieldNameFromLabel l)
       dup
-      dip $ do incNonce; stSetField l
+      dip $ do incNonce; stSetField (fieldNameFromLabel l)
 
 -- | Get the implicit address of the author who signed the permit.
 permitSender :: Permit a : s :-> Address : s

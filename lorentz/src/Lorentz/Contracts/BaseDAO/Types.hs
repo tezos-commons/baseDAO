@@ -277,22 +277,6 @@ instance HasFieldOfType (Storage ce pm) name field =>
          StoreHasField (Storage ce pm) name field where
   storeFieldOps = storeFieldOpsADT
 
-instance (IsoValue ce, IsoValue pm) =>
-    StoreHasSubmap (Storage ce pm) "sLedger" LedgerKey LedgerValue where
-  storeSubmapOps = storeSubmapOpsDeeper #sLedger
-
-instance (IsoValue ce, IsoValue pm) =>
-    StoreHasSubmap (Storage ce pm) "sOperators" ("owner" :! Address, "operator" :! Address) () where
-  storeSubmapOps = storeSubmapOpsDeeper #sOperators
-
-instance (IsoValue ce, KnownValue pm) =>
-    StoreHasSubmap (Storage ce pm) "sProposals" (ProposalKey pm) (Proposal pm) where
-  storeSubmapOps = storeSubmapOpsDeeper #sProposals
-
-instance (IsoValue ce, IsoValue pm) =>
-    StoreHasSubmap (Storage ce pm) "sTotalSupply" FA2.TokenId Natural where
-  storeSubmapOps = storeSubmapOpsDeeper #sTotalSupply
-
 type StorageC store ce pm =
   ( StorageContains store
     [ "sLedger" := LedgerKey ~> LedgerValue
@@ -585,9 +569,9 @@ pattern NoPermit a = PermitProtected a Nothing
 instance HasAnnotation a => HasAnnotation (PermitProtected a) where
   getAnnotation _ =
     NTPair
-      (ann @TypeTag "permit_protected")
-      (ann  @FieldTag "argument")
-      (ann @FieldTag "permit")
+      [typeAnnQ|permit_protected|]
+      [fieldAnnQ|argument|]
+      [fieldAnnQ|permit|]
       noAnn noAnn
       (getAnnotation @a NotFollowEntrypoint)
       (getAnnotation @(Maybe (Permit a)) NotFollowEntrypoint)

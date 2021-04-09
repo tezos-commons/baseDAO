@@ -164,11 +164,11 @@ test_BaseDAO_Proposal =
           -- Check total supply
           withSender (AddressResolved proposer) $
             call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-              & expectError (VoidResult (148 :: Natural)) -- initial = 200
+              & expectError dao (VoidResult (148 :: Natural)) -- initial = 200
 
           withSender (AddressResolved proposer) $
             call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-              & expectError (VoidResult (52 :: Natural)) -- initial = 0
+              & expectError dao (VoidResult (52 :: Natural)) -- initial = 0
 
     , nettestScenario "cannot propose with insufficient tokens to pay the fee" $
         uncapsNettest $ do
@@ -185,7 +185,7 @@ test_BaseDAO_Proposal =
                 , ppProposalMetadata = proposalMetadataFromNum 1
                 }
           withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
     , nettestScenario "an owner can change the fee" $
         uncapsNettest $ do
@@ -203,7 +203,7 @@ test_BaseDAO_Proposal =
           advanceTime (sec 10)
 
           withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 10
@@ -218,7 +218,7 @@ test_BaseDAO_Proposal =
 
           withSender (AddressResolved someone) $
             call dao (Call @"Set_fixed_fee_in_token") 1000
-              & expectCustomErrorNoArg #nOT_ADMIN
+              & expectCustomErrorNoArg #nOT_ADMIN dao
 
     , nettestScenario "a proposer is returned a fee after the proposal succeeds" $
         uncapsNettest $ do
@@ -278,7 +278,7 @@ nonProposalPeriodProposal originateFn = do
         }
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-    & expectCustomErrorNoArg #nOT_PROPOSING_PERIOD
+    & expectCustomErrorNoArg #nOT_PROPOSING_PERIOD dao
 
 freezeTokens
   :: (MonadNettest caps base m, HasCallStack)
@@ -343,7 +343,7 @@ cannotUnfreezeFromSamePeriod originateFn = do
 
   -- Cannot unfreeze in the same period
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 canUnfreezeFromPreviousPeriod
   :: (MonadNettest caps base m, HasCallStack)
@@ -382,7 +382,7 @@ canHandleVotingPeriodChange originateFn = do
   -- 10 seconds is advanced, so we are in the current period itself.
 
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
   advanceTime (sec 5)
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
@@ -398,7 +398,7 @@ insufficientTokenProposal originateFn = do
         }
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 insufficientTokenVote
   :: (MonadNettest caps base m, HasCallStack)
@@ -427,7 +427,7 @@ insufficientTokenVote originateFn = do
   advanceTime (sec 120)
 
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
@@ -493,11 +493,11 @@ voteWithPermitNonce originateFn = do
 
     -- Outdated nonce
     call dao (Call @"Vote") [params1]
-      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED dao (checkedCoerce $ lPackValue dataToSign2)
 
     -- Nonce from future
     call dao (Call @"Vote") [params3]
-      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED dao (checkedCoerce $ lPackValue dataToSign2)
 
     -- Good nonce after the previous successful entrypoint call
     call dao (Call @"Vote") [params2]
@@ -505,7 +505,7 @@ voteWithPermitNonce originateFn = do
   -- Check counter
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_vote_permit_counter") (mkVoid ())
-      & expectError (VoidResult (2 :: Natural))
+      & expectError dao (VoidResult (2 :: Natural))
 
 flushNotAffectOngoingProposals
   :: (MonadNettest caps base m, HasCallStack)
@@ -578,7 +578,7 @@ flushAcceptedProposals originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
   checkTokenBalance (frozenTokenId) dao owner1 10
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer
@@ -589,11 +589,11 @@ flushAcceptedProposals originateFn = do
   -- Check total supply (After flush, no changes are made.)
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-      & expectError (VoidResult (187 :: Natural)) -- initial = 200
+      & expectError dao (VoidResult (187 :: Natural)) -- initial = 200
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError (VoidResult (13 :: Natural)) -- initial = 0
+      & expectError dao (VoidResult (13 :: Natural)) -- initial = 0
 
 
 flushAcceptedProposalsWithAnAmount
@@ -635,13 +635,13 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   -- Proposals are flushed
   withSender (AddressResolved owner2) $ do
     call dao (Call @"Vote") [vote' key1]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao
     call dao (Call @"Vote") [vote' key2]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao
 
     -- Proposal is over but not affected
     call dao (Call @"Vote") [vote' key3]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao
 
     -- Proposal is not yet over
     call dao (Call @"Vote") [vote' key4]
@@ -688,7 +688,7 @@ flushRejectProposalQuorum originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
   checkTokenBalance (frozenTokenId) dao owner1 5
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer: cRejectedValue reduce frozen token by half
@@ -742,7 +742,7 @@ flushRejectProposalNegativeVotes originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
   checkTokenBalance (frozenTokenId) dao owner1 5
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer: cRejectedValue reduce frozen token by half
@@ -778,7 +778,7 @@ flushWithBadConfig originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
   checkTokenBalance (frozenTokenId) dao owner1 0
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- slash all frozen values
@@ -851,9 +851,9 @@ dropProposal originateFn = do
   withSender (AddressResolved admin) $ do
     call dao (Call @"Drop_proposal") key1
     call dao (Call @"Drop_proposal") key2
-      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
+      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED dao
     call dao (Call @"Drop_proposal") key3
-      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_OVER
+      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_OVER dao
 
   -- 30 tokens are frozen in total, but 10 tokens are returned after drop_proposal
   checkTokenBalance (frozenTokenId) dao owner1 30
@@ -882,7 +882,7 @@ proposalBoundedValue originateFn = do
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Propose") params
     call dao (Call @"Propose") params
-      & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
+      & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED dao
 
 votesBoundedValue
   :: (MonadNettest caps base m, HasCallStack)
@@ -911,7 +911,7 @@ votesBoundedValue originateFn = do
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Vote") [downvote']
     call dao (Call @"Vote") [upvote']
-      & expectCustomErrorNoArg #mAX_VOTES_REACHED
+      & expectCustomErrorNoArg #mAX_VOTES_REACHED dao
 
 quorumThresholdBound
   :: (MonadNettest caps base m, HasCallStack)
@@ -928,9 +928,9 @@ quorumThresholdBound originateFn = do
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 1 100)
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 2 100)
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 0 100)
-      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD dao
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 3 100)
-      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD dao
 
 votingPeriodBound
   :: (MonadNettest caps base m, HasCallStack)
@@ -947,9 +947,9 @@ votingPeriodBound originateFn = do
     call dao (Call @"Set_voting_period") 1
     call dao (Call @"Set_voting_period") 2
     call dao (Call @"Set_voting_period") 0
-      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD dao
     call dao (Call @"Set_voting_period") 3
-      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD dao
 
 votingPeriodChange
   :: (MonadNettest caps base m, HasCallStack)
@@ -982,4 +982,4 @@ votingPeriodChange originateFn = do
     call dao (Call @"Vote") [params]
     advanceTime (sec 25)
     call dao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao

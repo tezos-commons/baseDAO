@@ -79,7 +79,7 @@ test_RegistryDAO =
             proposalSize = metadataSize proposalMeta
             in withSender (AddressResolved wallet1) $ call
                baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-               & expectFailProposalCheck
+               & expectFailProposalCheck baseDao
 
     , nettestScenarioCaps "checks it fails if required tokens are not frozen" $
         withOriginated 2
@@ -91,7 +91,7 @@ test_RegistryDAO =
             -- tokens to be frozen (6 * 1 + 0) because proposal size happen to be 6 here.
             in withSender (AddressResolved wallet1) $
                call baseDao (Call @"Propose") (ProposeParams 2 proposalMeta)
-               & expectFailProposalCheck
+               & expectFailProposalCheck baseDao
 
     , nettestScenarioCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
@@ -191,7 +191,7 @@ test_RegistryDAO =
               -- We expect this to fail because max_proposal_size is 200 and proposal size is 317.
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
-                & expectFailProposalCheck
+                & expectFailProposalCheck baseDao
 
               -- We create a new proposal to increase max_proposal_size to largeProposalSize + 1.
               let sMaxUpdateproposalMeta1 = DynamicRec $ Map.fromList
@@ -359,7 +359,7 @@ test_RegistryDAO =
             -- Fails because 10 >= max_xtz_amount
             withSender (AddressResolved wallet) $
               call baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-              & expectFailProposalCheck
+              & expectFailProposalCheck baseDao
 
             withSender (AddressResolved wallet) $
               call baseDao (Call @"Freeze") (#amount .! proposalSize2)
@@ -464,8 +464,8 @@ test_RegistryDAO =
 
 
 expectFailProposalCheck
-  :: (MonadNettest caps base m)
-  => m a -> m ()
+  :: (MonadNettest caps base m, ToAddress addr)
+  => addr -> m a -> m ()
 expectFailProposalCheck = expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
 --------------------------------------------------------------------------

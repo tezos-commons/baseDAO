@@ -9,10 +9,12 @@ packages:
   - git:
       https://gitlab.com/morley-framework/indigo.git
     commit:
-      a7c93b410683ec6d86dfcda157f6d7ab9eeda778 # master
+      1177ddb1390610c76b8a735c1fda2eacb2cbef6b # master
     subdirs:
       - .
-  - morley-prelude-0.3.0
+  - morley-1.14.0
+  - morley-prelude-0.4.0
+  - lorentz-0.11.0
   - hex-text-0.1.0.0
   - named-0.3.0.1
   - show-type-0.1.1
@@ -29,19 +31,17 @@ packages:
       https://gitlab.com/morley-framework/morley.git
     # ^ CI cannot use ssh, so we use http clone here
     commit:
-      28e7b38f9628cfdc0b770571bcd9c2b65e73448a # master
+      295bdad3f75d76e780ec0b64b5e2e3d8d8f41441 # morley-1.14.0
     subdirs:
-      - code/morley
-      - code/lorentz
       - code/cleveland
       - code/morley-client
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: c92008db75363a50adf469c44a39e17843c311ec # master
+    commit: 8e1ec4c161ee9c22e03c74dccb579634ced6165c # master
     subdirs:
       - code/morley-ledgers
   - git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 8b5ce0bc6f2a28b1091e5da34dc13ca87ec32672 # master
+    commit: 3062eecde947b865364534e0ab1180c12e73dd4f # master
     subdirs:
       - code/morley-metadata

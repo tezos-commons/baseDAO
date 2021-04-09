@@ -28,12 +28,7 @@ well, there are also [example DAOs](#example-daos) below.
 
 You will need the [ligo executable](https://ligolang.org/docs/intro/installation) installed to generate the contract.
 
-Latest working version tested:
-```
-Rolling release
-Commit SHA: 190b660080b5bccc92f88155dcb06e038e5767bd
-Commit Date: 2021-03-29T18:55:49+00:00
-```
+Latest working version tested is [0.10.0](https://gitlab.com/ligolang/ligo/-/releases/0.10.0).
 
 You can use the [`Makefile`](./Makefile) to build the LIGO contract by simply running:
 ```sh

@@ -346,9 +346,9 @@ data PermitProtected a = PermitProtected
 instance HasAnnotation a => HasAnnotation (PermitProtected a) where
   getAnnotation _ =
     NTPair
-      (ann @TypeTag "permit_protected")
+      [typeAnnQ|permit_protected|]
       (noAnn @FieldTag)
-      (ann @FieldTag "permit")
+      [fieldAnnQ|permit|]
       noAnn noAnn
       (getAnnotation @a NotFollowEntrypoint)
       (getAnnotation @(Maybe (Permit a)) NotFollowEntrypoint)
@@ -507,15 +507,6 @@ instance HasAnnotation LastPeriodChange where
 
 instance HasFieldOfType Storage name field => StoreHasField Storage name field where
   storeFieldOps = storeFieldOpsADT
-
-instance StoreHasSubmap Storage "sLedger" LedgerKey LedgerValue where
-  storeSubmapOps = storeSubmapOpsDeeper #sLedger
-
-instance StoreHasSubmap Storage "sOperators" ("owner" :! Address, "operator" :! Address) () where
-  storeSubmapOps = storeSubmapOpsDeeper #sOperators
-
-instance StoreHasSubmap Storage "sTotalSupply" FA2.TokenId Natural where
-  storeSubmapOps = storeSubmapOpsDeeper #sTotalSupply
 
 mkStorage
   :: "admin" :! Address
