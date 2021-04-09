@@ -30,8 +30,8 @@ import Ligo.Util
 test_TreasuryDAO :: TestTree
 test_TreasuryDAO = testGroup "TreasuryDAO Tests"
   [ testGroup "Proposal creator:"
-      [ nettestScenario "can propose a valid proposal" validProposal
-      -- TODO [#47]: Disable running in real network due to time-sensitive operations
+      [ nettestScenarioOnEmulator "can propose a valid proposal" $
+          \_emulated -> validProposal
       , nettestScenarioOnEmulator "can flush a Token transfer proposal" $
           \_emulated -> flushTokenTransfer
       , nettestScenarioOnEmulator "can flush a Xtz transfer proposal" $

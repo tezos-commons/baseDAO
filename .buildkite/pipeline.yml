@@ -75,6 +75,7 @@ steps:
   # an emulated environment to save time.
 
   - label: ligo-test
+    key: ligo-test
     if: *not_scheduled
     depends_on:
       - build-ligo
@@ -83,21 +84,21 @@ steps:
     - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
     - ./result/bin/baseDAO-test --nettest-no-run-network
 
-  # TODO [#124] Uncomment
-  # - label: ligo-test-local-chain-008
-  #   env:
-  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
-  #   if: *not_scheduled
-  #   depends_on:
-  #     - build-ligo
-  #     - build-haskell
-  #   commands: &ligo-nettest
-  #   - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
-  #   # Running only on emulator for now due to oversized operations
-  #   # Switch to --nettest-run-network in #124
-  #   - nix run -f ci.nix tezos-client -c
-  #     ./result/bin/baseDAO-test --nettest-run-network
-  #       --pattern '\$1 == "On network" || \$NF == "On network" || \$0 ~ /.On network./'
+  - label: ligo-test-local-chain-008
+    env:
+      TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
+    if: *not_scheduled
+    depends_on:
+      - build-ligo
+      - build-haskell
+      - ligo-test
+      # NOTE ^ this last dependency is not strictly necessary, but it saves us
+      # from building the tests twice and 'ligo-test' running time is mostly that.
+    commands: &ligo-nettest
+    - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
+    - nix run -f ci.nix tezos-client -c
+      ./result/bin/baseDAO-test --nettest-run-network
+        --pattern '\$1 == "On network" || \$NF == "On network" || \$0 ~ /.On network./'
 
   - label: typescript-build
     depends_on:
@@ -122,23 +123,23 @@ steps:
     commands:
     - nix-build ci.nix -A haddock --no-out-link
 
-  # TODO [#124] Uncomment
-  # - label: scheduled edonet ligo test
-  #   if: build.source == "schedule"
-  #   env:
-  #     TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
-  #   depends_on:
-  #     - build-ligo
-  #     - build-haskell
-  #   commands: *ligo-nettest
-  #   retry:
-  #     automatic:
-  #       limit: 1
+  - label: scheduled edonet ligo test
+    if: build.source == "schedule"
+    env:
+      TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
+    depends_on:
+      - build-ligo
+      - build-haskell
+    commands: *ligo-nettest
+    retry:
+      automatic:
+        limit: 1
 
 # Autodoc
   - label: contract doc development
     key: contract-doc-dev
-    if: build.branch != "autodoc/master" && build.branch != "master" && build.source != "schedule"
+    if: &development-only
+     build.branch != "autodoc/master" && build.branch != "master" && build.source != "schedule"
     depends_on: build-haskell
     commands:
     - nix-build ci.nix -A contracts-doc --arg release false
@@ -151,7 +152,7 @@ steps:
 
   - label: xrefcheck generated doc
     soft_fail: true
-    if: build.branch != "autodoc/master" && build.source != "schedule"
+    if: *development-only
     depends_on: contract-doc-dev
     commands:
     - mkdir tmp
@@ -162,6 +163,7 @@ steps:
 
   - label: create auto prerelease
     if: build.branch == "master" && build.source != "schedule"
+    depends_on: build-ligo
     commands:
       - mkdir assets
       - buildkite-agent artifact download baseDAO.tz assets --step "build-ligo"
