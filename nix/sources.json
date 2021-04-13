@@ -5,10 +5,10 @@
         "homepage": "",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "a083148b7e4f085e433eacf160dedcb8c3483293",
-        "sha256": "0cir7iznygasb2a3b1q80sb01d3mg68ainy8w1fgfb0h16k7z8nz",
+        "rev": "112586bd4cb58c2ed8ad50745cdf4952d3804556",
+        "sha256": "1fdwg08y9kc1nvnblqwhfh06bmqbqyzzv4fxka2ybpm11jpxkrjm",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/hackage.nix/archive/a083148b7e4f085e433eacf160dedcb8c3483293.tar.gz",
+        "url": "https://github.com/input-output-hk/hackage.nix/archive/112586bd4cb58c2ed8ad50745cdf4952d3804556.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "haskell-nix-weeder": {
@@ -36,10 +36,10 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ligo": {
-        "ref": "dev",
-        "repo": "https://gitlab.com/ligolang/ligo",
-        "rev": "b6c3a9d4257bda78af46250a447ce78c5d2291a4",
-        "type": "git"
+        "sha256": "534d5f4f6b5371c829ac96ced351b2ad45d7fb0afb33153a72d870d7a3c940c7",
+        "type": "file",
+        "url": "https://gitlab.com/ligolang/ligo/-/jobs/1036880076/artifacts/raw/ligo",
+        "url_template": "https://gitlab.com/ligolang/ligo/-/jobs/1036880076/artifacts/raw/ligo"
     },
     "morley": {
         "sha256": "0g9mdqb7l85z8qa931lxmcqrzhscq6451plz1k18v738ylx4dxmj",

@@ -60,8 +60,8 @@ instance Default (RegistryDaoContractExtra k v) where
     }
 
 instance IsoRegistryDaoProposalMetadata k v =>
-    StoreHasSubmap (RegistryDaoContractExtra k v) "ceRegistry" k (RegistryEntry k v) where
-  storeSubmapOps = storeSubmapOpsDeeper #ceRegistry
+    StoreHasField (RegistryDaoContractExtra k v) "ceRegistry" (BigMap k (RegistryEntry k v)) where
+  storeFieldOps = storeFieldOpsADT
 
 data RegistryEntry k v = RegistryEntry
   { reValue :: Maybe v

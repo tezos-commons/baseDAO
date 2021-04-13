@@ -38,11 +38,11 @@ validProposal originateFn = do
   -- Check total supply
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-      & expectError (VoidResult (190 :: Natural)) -- initial = 200
+      & expectError dao (VoidResult (190 :: Natural)) -- initial = 200
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError (VoidResult (10 :: Natural)) -- initial = 0
+      & expectError dao (VoidResult (10 :: Natural)) -- initial = 0
 
   -- TODO [#31]: Currently proposalId is expected to be knowned (checkInStorage)
 
@@ -64,7 +64,7 @@ rejectProposal originateFn = do
         }
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
+    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
 nonUniqueProposal
   :: forall pm param config caps base m.
@@ -77,7 +77,7 @@ nonUniqueProposal originateFn = do
   ((owner1, _), _, dao, _) <- originateFn testConfig
   _ <- createSampleProposal 1 owner1 dao
   createSampleProposal 1 owner1 dao
-    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
+    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dao
 
 voteValidProposal
   :: forall pm param config caps base m.

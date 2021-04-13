@@ -29,20 +29,20 @@ import Michelson.Untyped.Annotation
 
 data AnnotatedField = AnnotatedField
   { afNote :: FieldAnn
-  , afType :: U.Type
+  , afType :: U.Ty
   } deriving stock Show
 
 -- An entrypoint extracted from parameter with entrypoint name
 -- and the type of the parameter it wraps.
 data Entrypoint = Entrypoint
   { epName :: Text
-  , epType :: U.Type
+  , epType :: U.Ty
   } deriving stock (Show, Generic)
 
-toType :: U.T -> U.Type
-toType t = U.Type t noAnn
+toType :: U.T -> U.Ty
+toType t = U.Ty t noAnn
 
-nToType :: Notes t -> U.Type
+nToType :: Notes t -> U.Ty
 nToType (NTString _) = toType U.TString
 nToType (NTInt _) = toType U.TInt
 nToType (NTNat _) = toType U.TNat
@@ -221,7 +221,7 @@ writeModule fp (TsModule name imports decls _) = do
 -- converted into the corresponding TypeScript types after creating type aliases for
 -- their inner fields.
 {-# ANN mkTypesFor ("HLint: ignore Reduce duplication" :: Text) #-}
-mkTypesFor :: Typename -> U.Type -> [TsDecl]
+mkTypesFor :: Typename -> U.Ty -> [TsDecl]
 mkTypesFor typename epType = case U.unwrapT epType of
   U.TPair n1 n2 _ _ f1 f2 -> let
     fields1 = flattenPairs $ AnnotatedField n1 f1
@@ -321,7 +321,7 @@ mkTypesFor typename epType = case U.unwrapT epType of
     -- Mostly same as mkTypesFor, but check if the given type
     -- is a primitive. Is yes, then skip generation of a type alias
     -- to represent it and use the primitive as the type itself.
-    mkTypesExcludingPrimitives :: Typename -> U.Type -> (TsType, [TsDecl])
+    mkTypesExcludingPrimitives :: Typename -> U.Ty -> (TsType, [TsDecl])
     mkTypesExcludingPrimitives tn epType_ = case U.unwrapT epType_ of
       U.TString -> (TsString, [])
       U.TInt -> (TsNumber, [])
@@ -345,12 +345,12 @@ mkTypesFor typename epType = case U.unwrapT epType of
       U.TNever -> (TsVoid, [])
       _ -> (TsCustom tn, mkTypesFor tn epType_)
 
-    hasAtLeastOneNamedField :: [(Fieldname, U.Type)] -> Bool
+    hasAtLeastOneNamedField :: [(Fieldname, U.Ty)] -> Bool
     hasAtLeastOneNamedField fs = isJust $ find (not . null . fst) fs
 
     -- Used to make an interface where the fields are numerically indexed.
     mkTypes_
-      :: (U.Type, Int)
+      :: (U.Ty, Int)
       -> (TsType, [TsDecl])
     mkTypes_ (bt, idx) = let
       subTypename = typename <> (show idx)
@@ -375,7 +375,7 @@ mkTypesFor typename epType = case U.unwrapT epType of
     -- to use in the generation of an Interface.
     mkTypesForField
       :: Bool
-      -> (Fieldname, U.Type)
+      -> (Fieldname, U.Ty)
       -> (InterfaceField, [TsDecl])
     mkTypesForField addDisciminator (fn, bt) = let
       subTypename = typename <> (ucFirst fn)
@@ -399,13 +399,13 @@ mkTypesFor typename epType = case U.unwrapT epType of
 
 -- While creating interfaces, if there are fields where no field
 -- name was found, put numeric strings for the fieldname.
-indexEmptyFields :: [(Fieldname, U.Type)] -> [(Fieldname, U.Type)]
+indexEmptyFields :: [(Fieldname, U.Ty)] -> [(Fieldname, U.Ty)]
 indexEmptyFields f = zipWith zipFn f ([0..] :: [Int])
   where
     zipFn (fn, t) idx = (bool fn (show idx) (fn == ""), t)
 
 -- Flatten an OR type.
-flattenOrs :: AnnotatedField -> [(Fieldname, U.Type)]
+flattenOrs :: AnnotatedField -> [(Fieldname, U.Ty)]
 flattenOrs (AnnotatedField fn bt) = case fn == noAnn of
   -- If this field have an annotation, then
   -- immediately return it. else descent into its branches.
@@ -422,7 +422,7 @@ flattenOrs (AnnotatedField fn bt) = case fn == noAnn of
     _ -> [(unAnnotation fn, bt)]
 
 -- Flatten a Pair type.
-flattenPairs :: AnnotatedField -> [(Fieldname, U.Type)]
+flattenPairs :: AnnotatedField -> [(Fieldname, U.Ty)]
 flattenPairs (AnnotatedField fn bt) = case fn == noAnn of
   False -> [(unAnnotation fn, bt)]
   True -> case U.unwrapT bt of

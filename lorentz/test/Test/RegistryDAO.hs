@@ -78,10 +78,10 @@ validProposal = uncapsNettest $ do
 
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Propose") (params $ expectedToken - 1)
-      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
+      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
     call dao (Call @"Propose") (params $ expectedToken + 1)
-      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
+      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
   -- Expected token is 58 in this case
   _ <- createSampleProposal (getTokensAmount longNormalProposalMetadata) longNormalProposalMetadata owner1 dao
@@ -123,7 +123,7 @@ validConfigProposal = uncapsNettest $ do
 
   -- Fail due too big proposal size
   _ <- createSampleProposal ((getTokensAmount longNormalProposalMetadata) + 5) longNormalProposalMetadata owner1 dao
-    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
+    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
   -- Expected token is 58 + 5 in this case
   _ <- createSampleProposal ((getTokensAmount normalProposalMetadata) + 5) normalProposalMetadata owner1 dao

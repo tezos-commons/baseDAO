@@ -59,7 +59,7 @@ test_BaseDAO_Management =
             , tdEntrypoint = unsafeBuildEpName "transfer_ownership"
             , tdParameter = (#newOwner .! wallet1)
             }
-          & expectForbiddenXTZ
+          & expectForbiddenXTZ baseDao
 
     , nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $ do
         now <- getNow
@@ -134,7 +134,7 @@ transferOwnership
 transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
     withSender (AddressResolved wallet1) $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
-      & expectNotAdmin
+      & expectNotAdmin baseDao
 
 authenticateSender
   :: MonadNettest caps base m
@@ -145,7 +145,7 @@ authenticateSender withOriginatedFn initialStorage =
       withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
+        & expectNotPendingOwner baseDao
 
 changeToPendingAdmin
   :: MonadNettest caps base m
@@ -165,7 +165,7 @@ noPendingAdmin withOriginatedFn initialStorage =
     \[_, wallet1] baseDao -> do
       withSender (AddressResolved wallet1) $
         call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
+        & expectNotPendingOwner baseDao
 
 pendingOwnerNotTheSame
   :: MonadNettest caps base m
@@ -176,7 +176,7 @@ pendingOwnerNotTheSame withOriginatedFn initialStorage =
       call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       call baseDao (Call @"Accept_ownership") ()
-      & expectNotPendingOwner
+      & expectNotPendingOwner baseDao
 
 notSetAdmin
   :: MonadNettest caps base m
@@ -205,7 +205,7 @@ rewritePendingOwner withOriginatedFn initialStorage =
           (#newOwner .! wallet2)
       -- Make the accept ownership call from wallet1 and see that it fails
       withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
+        & expectNotPendingOwner baseDao
       -- Make the accept ownership call from wallet1 and see that it works
       withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
 
@@ -223,19 +223,19 @@ invalidatePendingOwner withOriginatedFn initialStorage =
       -- Make the accept ownership call from wallet1 and see that it fails
       -- with 'not pending owner' error
       withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
+        & expectNotPendingOwner baseDao
 
 expectNotAdmin
-  :: (MonadNettest caps base m)
-  => m a -> m ()
+  :: (MonadNettest caps base m, ToAddress addr)
+  => addr -> m a -> m ()
 expectNotAdmin = expectCustomErrorNoArg #nOT_ADMIN
 
 expectNotPendingOwner
-  :: (MonadNettest caps base m)
-  => m a -> m ()
+  :: (MonadNettest caps base m, ToAddress addr)
+  => addr -> m a -> m ()
 expectNotPendingOwner = expectCustomErrorNoArg #nOT_PENDING_ADMIN
 
 expectForbiddenXTZ
-  :: (MonadNettest caps base m)
-  => m a -> m ()
+  :: (MonadNettest caps base m, ToAddress addr)
+  => addr -> m a -> m ()
 expectForbiddenXTZ = expectCustomErrorNoArg #fORBIDDEN_XTZ

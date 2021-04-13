@@ -28,7 +28,7 @@ setVotingPeriod originateFn = do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Set_voting_period") param
-    & expectCustomErrorNoArg #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN dao
 
   withSender (AddressResolved admin) $
     call dao (Call @"Set_voting_period") param
@@ -44,7 +44,7 @@ setQuorumThreshold originateFn = do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Set_quorum_threshold") param
-    & expectCustomErrorNoArg #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN dao
 
   withSender (AddressResolved admin) $
     call dao (Call @"Set_quorum_threshold") param

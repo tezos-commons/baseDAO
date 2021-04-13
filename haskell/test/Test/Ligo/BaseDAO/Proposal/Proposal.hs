@@ -45,11 +45,11 @@ validProposal originateFn = do
   -- Check total supply
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-      & expectError (VoidResult (190 :: Natural)) -- initial = 200
+      & expectError dao (VoidResult (190 :: Natural)) -- initial = 200
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError (VoidResult (10 :: Natural)) -- initial = 0
+      & expectError dao (VoidResult (10 :: Natural)) -- initial = 0
 
 rejectProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -67,7 +67,7 @@ rejectProposal originateFn = do
   advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
+    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
 nonUniqueProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -77,7 +77,7 @@ nonUniqueProposal originateFn = do
   advanceTime (sec 10)
   _ <- createSampleProposal 1 10 owner1 dao
   createSampleProposal 1 10 owner1 dao
-    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
+    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dao
 
 voteValidProposal
   :: (MonadNettest caps base m, HasCallStack)

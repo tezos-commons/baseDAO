@@ -40,42 +40,50 @@ data FailureReason = QuorumNotMet | Downvoted
 test_BaseDAO_Proposal :: [TestTree]
 test_BaseDAO_Proposal =
   [ testGroup "Proposal creator:"
-      [ nettestScenario "BaseDAO - can propose a valid proposal" $
-          uncapsNettest $ validProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "cannot propose an invalid proposal (rejected)" $
-          uncapsNettest $ rejectProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "cannot propose a non-unique proposal" $
-          uncapsNettest $ nonUniqueProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "cannot propose in a non-proposal period" $
-          uncapsNettest $ nonProposalPeriodProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      [ nettestScenarioOnEmulator "BaseDAO - can propose a valid proposal" $
+          \_emulated ->
+            uncapsNettest $ validProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "cannot propose an invalid proposal (rejected)" $
+          \_emulated ->
+            uncapsNettest $ rejectProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "cannot propose a non-unique proposal" $
+          \_emulated ->
+            uncapsNettest $ nonUniqueProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "cannot propose in a non-proposal period" $
+          \_emulated ->
+            uncapsNettest $ nonProposalPeriodProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
   , testGroup "Voter:"
-      [ nettestScenario "can vote on a valid proposal" $
-          uncapsNettest $ voteValidProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "cannot vote non-existing proposal" $
-          uncapsNettest $ voteNonExistingProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "can vote on multiple proposals" $
-          uncapsNettest $ voteMultiProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
-
-      -- TODO [#47]: Disable running in real network due to time-sensitive operations
+      [ nettestScenarioOnEmulator "can vote on a valid proposal" $
+          \_emulated ->
+            uncapsNettest $ voteValidProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "cannot vote non-existing proposal" $
+          \_emulated ->
+            uncapsNettest $ voteNonExistingProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "can vote on multiple proposals" $
+          \_emulated ->
+            uncapsNettest $ voteMultiProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "cannot vote on outdated proposal" $
           \_emulated ->
             uncapsNettest $ voteOutdatedProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
 
-  , nettestScenario "cannot vote if the vote amounts exceeds token balance" $
-      uncapsNettest $ insufficientTokenVote (originateLigoDaoWithConfigDesc dynRecUnsafe)
+  , nettestScenarioOnEmulator "cannot vote if the vote amounts exceeds token balance" $
+      \_emulated ->
+        uncapsNettest $ insufficientTokenVote (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
   , nettestScenario "cannot propose with insufficient tokens" $
       uncapsNettest $ insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
   , testGroup "Permit:"
-      [ nettestScenario "can vote from another user behalf" $
-          uncapsNettest $ voteWithPermit (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "counter works properly in permits" $
-          uncapsNettest $ voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      [ nettestScenarioOnEmulator "can vote from another user behalf" $
+          \_emulated ->
+            uncapsNettest $ voteWithPermit (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "counter works properly in permits" $
+          \_emulated ->
+            uncapsNettest $ voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
   , testGroup "Admin:"
       [ nettestScenario "can set voting period"  $
@@ -84,7 +92,6 @@ test_BaseDAO_Proposal =
       , nettestScenario "can set quorum threshold" $
           uncapsNettest $ setQuorumThreshold (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      -- TODO [#47]: Disable running in real network due to time-sensitive operations
       , nettestScenarioOnEmulator "can flush proposals that got accepted" $
           \_emulated ->
             uncapsNettest $ flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
@@ -97,8 +104,9 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
           \_emulated ->
             uncapsNettest $ flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "flush should not affecting ongoing proposals" $
-          uncapsNettest $ flushNotAffectOngoingProposals
+      , nettestScenarioOnEmulator "flush should not affecting ongoing proposals" $
+          \_emulated ->
+            uncapsNettest $ flushNotAffectOngoingProposals
             (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "flush with bad cRejectedProposalReturnValue" $
           \_emulated ->
@@ -115,14 +123,17 @@ test_BaseDAO_Proposal =
       ]
 
   , testGroup "Bounded Value"
-      [ nettestScenario "bounded value on proposals" $
-          uncapsNettest $ proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "bounded value on votes" $
-          uncapsNettest $ votesBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      [ nettestScenarioOnEmulator "bounded value on proposals" $
+          \_emulated ->
+            uncapsNettest $ proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "bounded value on votes" $
+          \_emulated ->
+            uncapsNettest $ votesBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenario "bounded range on quorum_threshold" $
           uncapsNettest $ quorumThresholdBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "bounded range on voting_period" $
-          uncapsNettest $ votingPeriodBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "bounded range on voting_period" $
+          \_emulated ->
+            uncapsNettest $ votingPeriodBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
   , testGroup "Freeze-Unfreeze"
@@ -132,19 +143,22 @@ test_BaseDAO_Proposal =
       , nettestScenario "cannot unfreeze tokens from the same period" $
           uncapsNettest $ cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      , nettestScenario "can unfreeze tokens from the previous period" $
-          uncapsNettest $ canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "can unfreeze tokens from the previous period" $
+          \_emulated ->
+            uncapsNettest $ canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      , nettestScenario "handle voting period change" $
-          uncapsNettest $ canHandleVotingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "handle voting period change" $
+          \_emulated ->
+            uncapsNettest $ canHandleVotingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      , nettestScenario "handle voting period change" $
-          uncapsNettest $ votingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "handle voting period change" $
+          \_emulated ->
+            uncapsNettest $ votingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
  , testGroup "LIGO-specific proposal tests:"
-    [ nettestScenario "can propose a valid proposal with a fixed fee" $
-        uncapsNettest $ do
+    [ nettestScenarioOnEmulator "can propose a valid proposal with a fixed fee" $
+        \_emulated -> uncapsNettest $ do
           ((proposer, _), _, dao, admin) <- originateLigoDao
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 42
@@ -164,14 +178,14 @@ test_BaseDAO_Proposal =
           -- Check total supply
           withSender (AddressResolved proposer) $
             call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-              & expectError (VoidResult (148 :: Natural)) -- initial = 200
+              & expectError dao (VoidResult (148 :: Natural)) -- initial = 200
 
           withSender (AddressResolved proposer) $
             call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-              & expectError (VoidResult (52 :: Natural)) -- initial = 0
+              & expectError dao (VoidResult (52 :: Natural)) -- initial = 0
 
-    , nettestScenario "cannot propose with insufficient tokens to pay the fee" $
-        uncapsNettest $ do
+    , nettestScenarioOnEmulator "cannot propose with insufficient tokens to pay the fee" $
+        \_emulated -> uncapsNettest $ do
           ((proposer, _), _, dao, admin) <- originateLigoDao
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 100
@@ -185,10 +199,10 @@ test_BaseDAO_Proposal =
                 , ppProposalMetadata = proposalMetadataFromNum 1
                 }
           withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
-    , nettestScenario "an owner can change the fee" $
-        uncapsNettest $ do
+    , nettestScenarioOnEmulator "an owner can change the fee" $
+        \_emulated -> uncapsNettest $ do
           ((proposer, _), _, dao, admin) <- originateLigoDao
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 1000
@@ -203,7 +217,7 @@ test_BaseDAO_Proposal =
           advanceTime (sec 10)
 
           withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 10
@@ -218,10 +232,10 @@ test_BaseDAO_Proposal =
 
           withSender (AddressResolved someone) $
             call dao (Call @"Set_fixed_fee_in_token") 1000
-              & expectCustomErrorNoArg #nOT_ADMIN
+              & expectCustomErrorNoArg #nOT_ADMIN dao
 
-    , nettestScenario "a proposer is returned a fee after the proposal succeeds" $
-        uncapsNettest $ do
+    , nettestScenarioOnEmulator "a proposer is returned a fee after the proposal succeeds" $
+        \_emulated -> uncapsNettest $ do
           ((proposer, _), (voter, _), dao, admin) <- originateLigoDao
 
           -- Use 60s for voting period, since in real network by the time we call
@@ -253,11 +267,11 @@ test_BaseDAO_Proposal =
           checkTokenBalance (frozenTokenId) dao proposer 52
           checkTokenBalance (unfrozenTokenId) dao proposer 48
 
-    , nettestScenario "the fee is burned if the proposal fails" $
-        uncapsNettest $ burnsFeeOnFailure Downvoted
+    , nettestScenarioOnEmulator "the fee is burned if the proposal fails" $
+        \_emulated -> uncapsNettest $ burnsFeeOnFailure Downvoted
 
-    , nettestScenario "the fee is burned if the proposal doesn't meet the quorum" $
-        uncapsNettest $ burnsFeeOnFailure QuorumNotMet
+    , nettestScenarioOnEmulator "the fee is burned if the proposal doesn't meet the quorum" $
+        \_emulated -> uncapsNettest $ burnsFeeOnFailure QuorumNotMet
     ]
   ]
 
@@ -278,7 +292,7 @@ nonProposalPeriodProposal originateFn = do
         }
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-    & expectCustomErrorNoArg #nOT_PROPOSING_PERIOD
+    & expectCustomErrorNoArg #nOT_PROPOSING_PERIOD dao
 
 freezeTokens
   :: (MonadNettest caps base m, HasCallStack)
@@ -343,7 +357,7 @@ cannotUnfreezeFromSamePeriod originateFn = do
 
   -- Cannot unfreeze in the same period
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 canUnfreezeFromPreviousPeriod
   :: (MonadNettest caps base m, HasCallStack)
@@ -382,7 +396,7 @@ canHandleVotingPeriodChange originateFn = do
   -- 10 seconds is advanced, so we are in the current period itself.
 
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
   advanceTime (sec 5)
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
@@ -398,7 +412,7 @@ insufficientTokenProposal originateFn = do
         }
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 insufficientTokenVote
   :: (MonadNettest caps base m, HasCallStack)
@@ -427,7 +441,7 @@ insufficientTokenVote originateFn = do
   advanceTime (sec 120)
 
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
@@ -493,11 +507,11 @@ voteWithPermitNonce originateFn = do
 
     -- Outdated nonce
     call dao (Call @"Vote") [params1]
-      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED dao (checkedCoerce $ lPackValue dataToSign2)
 
     -- Nonce from future
     call dao (Call @"Vote") [params3]
-      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED dao (checkedCoerce $ lPackValue dataToSign2)
 
     -- Good nonce after the previous successful entrypoint call
     call dao (Call @"Vote") [params2]
@@ -505,7 +519,7 @@ voteWithPermitNonce originateFn = do
   -- Check counter
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_vote_permit_counter") (mkVoid ())
-      & expectError (VoidResult (2 :: Natural))
+      & expectError dao (VoidResult (2 :: Natural))
 
 flushNotAffectOngoingProposals
   :: (MonadNettest caps base m, HasCallStack)
@@ -578,7 +592,7 @@ flushAcceptedProposals originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
   checkTokenBalance (frozenTokenId) dao owner1 10
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer
@@ -589,11 +603,11 @@ flushAcceptedProposals originateFn = do
   -- Check total supply (After flush, no changes are made.)
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-      & expectError (VoidResult (187 :: Natural)) -- initial = 200
+      & expectError dao (VoidResult (187 :: Natural)) -- initial = 200
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError (VoidResult (13 :: Natural)) -- initial = 0
+      & expectError dao (VoidResult (13 :: Natural)) -- initial = 0
 
 
 flushAcceptedProposalsWithAnAmount
@@ -635,13 +649,13 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   -- Proposals are flushed
   withSender (AddressResolved owner2) $ do
     call dao (Call @"Vote") [vote' key1]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao
     call dao (Call @"Vote") [vote' key2]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao
 
     -- Proposal is over but not affected
     call dao (Call @"Vote") [vote' key3]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao
 
     -- Proposal is not yet over
     call dao (Call @"Vote") [vote' key4]
@@ -688,7 +702,7 @@ flushRejectProposalQuorum originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
   checkTokenBalance (frozenTokenId) dao owner1 5
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer: cRejectedValue reduce frozen token by half
@@ -742,7 +756,7 @@ flushRejectProposalNegativeVotes originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
   checkTokenBalance (frozenTokenId) dao owner1 5
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer: cRejectedValue reduce frozen token by half
@@ -778,7 +792,7 @@ flushWithBadConfig originateFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
   checkTokenBalance (frozenTokenId) dao owner1 0
   checkTokenBalance (unfrozenTokenId) dao owner1 90 -- slash all frozen values
@@ -851,9 +865,9 @@ dropProposal originateFn = do
   withSender (AddressResolved admin) $ do
     call dao (Call @"Drop_proposal") key1
     call dao (Call @"Drop_proposal") key2
-      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED
+      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED dao
     call dao (Call @"Drop_proposal") key3
-      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_OVER
+      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_OVER dao
 
   -- 30 tokens are frozen in total, but 10 tokens are returned after drop_proposal
   checkTokenBalance (frozenTokenId) dao owner1 30
@@ -882,7 +896,7 @@ proposalBoundedValue originateFn = do
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Propose") params
     call dao (Call @"Propose") params
-      & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
+      & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED dao
 
 votesBoundedValue
   :: (MonadNettest caps base m, HasCallStack)
@@ -911,7 +925,7 @@ votesBoundedValue originateFn = do
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Vote") [downvote']
     call dao (Call @"Vote") [upvote']
-      & expectCustomErrorNoArg #mAX_VOTES_REACHED
+      & expectCustomErrorNoArg #mAX_VOTES_REACHED dao
 
 quorumThresholdBound
   :: (MonadNettest caps base m, HasCallStack)
@@ -928,9 +942,9 @@ quorumThresholdBound originateFn = do
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 1 100)
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 2 100)
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 0 100)
-      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD dao
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 3 100)
-      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD dao
 
 votingPeriodBound
   :: (MonadNettest caps base m, HasCallStack)
@@ -947,9 +961,9 @@ votingPeriodBound originateFn = do
     call dao (Call @"Set_voting_period") 1
     call dao (Call @"Set_voting_period") 2
     call dao (Call @"Set_voting_period") 0
-      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD dao
     call dao (Call @"Set_voting_period") 3
-      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD
+      & expectCustomErrorNoArg #oUT_OF_BOUND_VOTING_PERIOD dao
 
 votingPeriodChange
   :: (MonadNettest caps base m, HasCallStack)
@@ -982,4 +996,4 @@ votingPeriodChange originateFn = do
     call dao (Call @"Vote") [params]
     advanceTime (sec 25)
     call dao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER
+      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao

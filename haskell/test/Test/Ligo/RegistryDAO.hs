@@ -23,7 +23,7 @@ import Michelson.Typed (convertContract)
 import Michelson.Typed.Convert (untypeValue)
 import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
-import Morley.Nettest.Tasty (nettestScenarioCaps)
+import Morley.Nettest.Tasty (nettestScenarioCaps, nettestScenarioOnEmulatorCaps)
 import Util.Named
 
 import Test.Ligo.BaseDAO.Common (checkTokenBalance, totalSupplyFromLedger, makeProposalKey, sendXtz)
@@ -53,7 +53,7 @@ withOriginated addrCount storageFn tests = do
 test_RegistryDAO :: [TestTree]
 test_RegistryDAO =
   [ testGroup "RegistryDAO Tests"
-    [ nettestScenarioCaps "Calling the propose endpoint with an empty proposal works" $
+    [ nettestScenarioOnEmulatorCaps "Calling the propose endpoint with an empty proposal works" $
         withOriginated 2
           (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao -> do
@@ -79,7 +79,7 @@ test_RegistryDAO =
             proposalSize = metadataSize proposalMeta
             in withSender (AddressResolved wallet1) $ call
                baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-               & expectFailProposalCheck
+               & expectFailProposalCheck baseDao
 
     , nettestScenarioCaps "checks it fails if required tokens are not frozen" $
         withOriginated 2
@@ -91,9 +91,9 @@ test_RegistryDAO =
             -- tokens to be frozen (6 * 1 + 0) because proposal size happen to be 6 here.
             in withSender (AddressResolved wallet1) $
                call baseDao (Call @"Propose") (ProposeParams 2 proposalMeta)
-               & expectFailProposalCheck
+               & expectFailProposalCheck baseDao
 
-    , nettestScenarioCaps "check it correctly calculates required frozen tokens" $
+    , nettestScenarioOnEmulatorCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
           (\(admin: wallet1:_) -> setExtra @Natural [mt|frozen_extra_value|] 2 $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao -> do
@@ -108,7 +108,7 @@ test_RegistryDAO =
             withSender (AddressResolved wallet1) $
                call baseDao (Call @"Propose") (ProposeParams 8 proposalMeta)
 
-    , nettestScenarioCaps "checks it correctly calculates tokens to burn when rejecting" $ do
+    , nettestScenarioOnEmulatorCaps "checks it correctly calculates tokens to burn when rejecting" $ do
         let frozen_scale_value = 2
         let frozen_extra_value = 0
         let slash_scale_value = 1
@@ -155,7 +155,7 @@ test_RegistryDAO =
 
               checkStorage (AddressResolved $ unTAddress consumer) (toVal [[FA2.BalanceResponseItem balanceRequestItem (requiredFrozen - spent)]])
 
-    , nettestScenarioCaps "checks it correctly executes the proposal that has won" $ do
+    , nettestScenarioOnEmulatorCaps "checks it correctly executes the proposal that has won" $ do
         let frozen_scale_value = 1
         let frozen_extra_value = 0
         let slash_scale_value = 1
@@ -191,7 +191,7 @@ test_RegistryDAO =
               -- We expect this to fail because max_proposal_size is 200 and proposal size is 317.
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
-                & expectFailProposalCheck
+                & expectFailProposalCheck baseDao
 
               -- We create a new proposal to increase max_proposal_size to largeProposalSize + 1.
               let sMaxUpdateproposalMeta1 = DynamicRec $ Map.fromList
@@ -221,7 +221,7 @@ test_RegistryDAO =
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
 
-    , nettestScenarioCaps "checks on-chain view correctly returns the registry value" $ do
+    , nettestScenarioOnEmulatorCaps "checks on-chain view correctly returns the registry value" $ do
         -- The default values assigned from initialStorageWithExplictRegistryDAOConfig function
         withOriginated 3
           (\(admin: wallet1: voter1:_) -> setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -268,7 +268,7 @@ test_RegistryDAO =
 
             checkStorage (AddressResolved $ unTAddress consumer) (toVal [([mt|key|], Just [mt|testVal|])])
 
-    , nettestScenarioCaps "checks it can flush a transfer type proposal (#66)" $
+    , nettestScenarioOnEmulatorCaps "checks it can flush a transfer type proposal (#66)" $
         withOriginated 3
           (\(admin : wallets) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -327,7 +327,7 @@ test_RegistryDAO =
             checkTokenBalance frozenTokenId baseDao wallet2 10
             checkTokenBalance unfrozenTokenId baseDao wallet2 (defaultTokenBalance - 10 - 10)
 
-    , nettestScenarioCaps "checks it can propose a valid xtz type proposal (#66)" $
+    , nettestScenarioOnEmulatorCaps "checks it can propose a valid xtz type proposal (#66)" $
         withOriginated 2
           (\(admin : wallets) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -359,7 +359,7 @@ test_RegistryDAO =
             -- Fails because 10 >= max_xtz_amount
             withSender (AddressResolved wallet) $
               call baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-              & expectFailProposalCheck
+              & expectFailProposalCheck baseDao
 
             withSender (AddressResolved wallet) $
               call baseDao (Call @"Freeze") (#amount .! proposalSize2)
@@ -372,7 +372,7 @@ test_RegistryDAO =
             checkTokenBalance frozenTokenId baseDao wallet 184
             checkTokenBalance unfrozenTokenId baseDao wallet 816
 
-    , nettestScenarioCaps "checks it can transfer with receive_xtz_entrypoint (#66)" $
+    , nettestScenarioOnEmulatorCaps "checks it can transfer with receive_xtz_entrypoint (#66)" $
         withOriginated 3
           (\(admin : wallets) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
@@ -464,8 +464,8 @@ test_RegistryDAO =
 
 
 expectFailProposalCheck
-  :: (MonadNettest caps base m)
-  => m a -> m ()
+  :: (MonadNettest caps base m, ToAddress addr)
+  => addr -> m a -> m ()
 expectFailProposalCheck = expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
 
 --------------------------------------------------------------------------

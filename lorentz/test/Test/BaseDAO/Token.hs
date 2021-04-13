@@ -56,14 +56,14 @@ burnScenario originateFn = withFrozenCallStack $ do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
-    & expectCustomErrorNoArg #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN dao
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 11)
-      & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 11, #present .! 10)
+      & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 11, #present .! 10)
 
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.frozenTokenId 11)
-      & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 11, #present .! 10)
+      & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 11, #present .! 10)
 
     call dao (Call @"Burn") (DAO.BurnParam owner1 DAO.unfrozenTokenId 10)
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 0
@@ -74,11 +74,11 @@ burnScenario originateFn = withFrozenCallStack $ do
   -- Check total supply
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid DAO.unfrozenTokenId)
-      & expectError (VoidResult (10 :: Natural)) -- initial = 20
+      & expectError dao (VoidResult (10 :: Natural)) -- initial = 20
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid DAO.frozenTokenId)
-      & expectError (VoidResult (15 :: Natural)) -- initial = 20
+      & expectError dao (VoidResult (15 :: Natural)) -- initial = 20
 
 mintScenario
   :: forall caps base m param pm
@@ -89,7 +89,7 @@ mintScenario originateFn = withFrozenCallStack $ do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 10)
-    & expectCustomErrorNoArg #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN dao
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Mint") (DAO.MintParam owner1 DAO.unfrozenTokenId 100)
@@ -101,11 +101,11 @@ mintScenario originateFn = withFrozenCallStack $ do
   -- Check total supply
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid DAO.unfrozenTokenId)
-      & expectError (VoidResult (100 :: Natural)) -- initial = 0
+      & expectError dao (VoidResult (100 :: Natural)) -- initial = 0
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid DAO.frozenTokenId)
-      & expectError (VoidResult (50 :: Natural)) -- initial = 0
+      & expectError dao (VoidResult (50 :: Natural)) -- initial = 0
 
 transferContractTokensScenario
   :: forall caps base m param pm
@@ -137,7 +137,7 @@ transferContractTokensScenario originateFn = do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Transfer_contract_tokens") param
-    & expectCustomErrorNoArg #nOT_ADMIN
+    & expectCustomErrorNoArg #nOT_ADMIN dao
 
   withSender (AddressResolved admin) $
     call dao (Call @"Transfer_contract_tokens") param

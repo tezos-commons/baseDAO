@@ -15,7 +15,7 @@ rec {
   pkgs = import sources.nixpkgs haskell-nix.nixpkgsArgs;
   weeder-hacks = import sources.haskell-nix-weeder { inherit pkgs; };
   tezos-client = (import "${sources.tezos-packaging}/nix/build/pkgs.nix" {}).ocamlPackages.tezos-client;
-  ligo = (import "${sources.ligo}/nix" {}).ligo-bin;
+  ligo = (pkgs.runCommand "ligo" {} "mkdir -p $out/bin; cp ${sources.ligo} $out/bin/ligo; chmod +x $out/bin/ligo");
   morley = (import "${sources.morley}/ci.nix").packages.morley.exes.morley;
   inherit (pkgs.callPackage sources.nix-npm-buildpackage { }) buildYarnPackage;
 

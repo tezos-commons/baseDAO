@@ -58,7 +58,6 @@ let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     frozen_token = proposal.proposer_frozen_token;
     proposal_metadata = proposal.metadata
     } in
-  let proposal_key = to_proposal_key (propose_param, proposal.proposer) in
   let ts = unpack_transfer_type_list("transfers", proposal.metadata) in
   let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
       let (is_valid, extras, ops) = acc in

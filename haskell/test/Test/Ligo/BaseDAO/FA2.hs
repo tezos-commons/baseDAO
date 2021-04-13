@@ -133,12 +133,12 @@ updatingOperatorScenario originateFn = do
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Transfer") transferParams
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
-      & expectCustomErrorNoArg #nOT_OWNER
+      & expectCustomErrorNoArg #nOT_OWNER dao
     call dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
-      & expectCustomErrorNoArg #nOT_OWNER
+      & expectCustomErrorNoArg #nOT_OWNER dao
 
 lowBalanceScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 lowBalanceScenario originateFn = do
@@ -153,7 +153,7 @@ lowBalanceScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
-    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
+    & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 200, #present .! 100)
 
 lowBalanceOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 lowBalanceOwnerScenario originateFn = do
@@ -168,7 +168,7 @@ lowBalanceOwnerScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
-    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 200, #present .! 100)
+    & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 200, #present .! 100)
 
 noSourceAccountScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 noSourceAccountScenario originateFn = do
@@ -187,7 +187,7 @@ noSourceAccountScenario originateFn = do
   -- Failed with 'fA2_INSUFFICIENT_BALANCE' due to nonexistent account is treated
   -- as an existing account with 0 balance.
   withSender (AddressResolved nonexistent) $ call dao (Call @"Transfer") params
-    & expectCustomError #fA2_INSUFFICIENT_BALANCE (#required .! 1, #present .! 0)
+    & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 1, #present .! 0)
 
 badOperatorScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 badOperatorScenario originateFn = do
@@ -203,7 +203,7 @@ badOperatorScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved op3) $ call dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 emptyTransferListScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 emptyTransferListScenario originateFn = do
@@ -231,9 +231,9 @@ validateTokenScenario originateFn = do
   callWith (params unfrozenTokenId)
 
   callWith (params frozenTokenId)
-    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE
+    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
   callWith (params unknownTokenId)
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 
 validateTokenOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 validateTokenOwnerScenario originateFn = do
@@ -253,9 +253,9 @@ validateTokenOwnerScenario originateFn = do
   callWith (params unfrozenTokenId)
 
   callWith (params frozenTokenId)
-    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE
+    & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
   callWith (params unknownTokenId)
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 
 
 noForeignMoneyScenario :: MonadNettest caps base m => OriginateFn m -> m ()
@@ -271,7 +271,7 @@ noForeignMoneyScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 noForeignMoneyOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 noForeignMoneyOwnerScenario originateFn = do
@@ -286,7 +286,7 @@ noForeignMoneyOwnerScenario originateFn = do
             } ]
         } ]
   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
-    & expectCustomError_ #fA2_NOT_OPERATOR
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 balanceOfOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 balanceOfOwnerScenario originateFn = do
@@ -301,7 +301,7 @@ balanceOfOwnerScenario originateFn = do
   callWith (params [ FA2.BalanceRequestItem owner1 frozenTokenId ])
   callWith (params [])
   callWith (params [ FA2.BalanceRequestItem owner1 unknownTokenId ])
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED
+    & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 
 adminTransferScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 adminTransferScenario originateFn = do
