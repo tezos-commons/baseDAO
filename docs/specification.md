@@ -214,7 +214,6 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `NOT_ADMIN`                     | The sender is not the administrator                                                                         |
 | `NOT_PENDING_ADMIN`             | Authorized sender is not the current pending administrator                                                  |
 | `NOT_TOKEN_OWNER`               | Trying to configure operators for a different wallet which sender does not own                              |
-| `FAIL_TRANSFER_CONTRACT_TOKENS` | Trying to cross-transfer DAO tokens to another contract that does not exist or is not a valid FA2 contract. |
 | `FAIL_PROPOSAL_CHECK`           | Throws when trying to propose a proposal that does not pass `proposalCheck`                                 |
 | `FROZEN_TOKEN_NOT_TRANSFERABLE` | Transfer entrypoint is called for frozen token by a non-admin sender                                        |
 | `PROPOSAL_INSUFFICIENT_BALANCE` | Throws when trying to propose a proposal without having enough unfrozen token                               |
@@ -235,6 +234,7 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `NOT_PROPOSING_PERIOD`          | Throw when `propose` call is made on a non-proposing period.                                                |
 | `NOT_ENOUGH_FROZEN_TOKENS`      | Throw when there is not enough frozen tokens for the operation.                                             |
 | `NOT_ENOUGH_STAKED_TOKENS`      | Throw when there is not enough staked tokens for the operation.                                             |
+| `BAD_TOKEN_CONTRACT`            | Throw when the token contract is not of expected type.
 
 # Entrypoints
 

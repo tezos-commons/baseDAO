@@ -65,19 +65,21 @@ endif
 	#
 
 $(OUT)/trivialDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/trivialDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/trivialDAO_storage.tz : governance_token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/trivialDAO_storage.tz : governance_token_id = 0n
 $(OUT)/trivialDAO_storage.tz : now_val = Tezos.now
 $(OUT)/trivialDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/trivialDAO_storage.tz: src/**
 	# ============== Compiling TrivialDAO storage ============== #
 	mkdir -p $(OUT)
-	$(BUILD_STORAGE) --output-file $(OUT)/trivialDAO_storage.tz src/base_DAO.mligo base_DAO_contract 'default_full_storage(("$(admin_address)": address), ("$(token_address)": address), $(now_val), $(metadata_map))'
+	$(BUILD_STORAGE) --output-file $(OUT)/trivialDAO_storage.tz src/base_DAO.mligo base_DAO_contract 'default_full_storage(("$(admin_address)": address), {address=("$(governance_token_address)": address); token_id=$(governance_token_id)}, $(now_val), $(metadata_map))'
 	# ================= Compilation successful ================= #
 	# See "$(OUT)/trivialDAO_storage.tz" for compilation result  #
 	#
 
 $(OUT)/registryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/registryDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/registryDAO_storage.tz : governance_token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/registryDAO_storage.tz : governance_token_id = 0n
 $(OUT)/registryDAO_storage.tz : frozen_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : frozen_extra_value = 0n
 $(OUT)/registryDAO_storage.tz : max_proposal_size = 100n
@@ -90,13 +92,14 @@ $(OUT)/registryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
 	mkdir -p $(OUT)
-	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz src/registryDAO.mligo base_DAO_contract 'default_registry_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), ${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(min_xtz_amount), $(min_xtz_amount), $(now_val), $(metadata_map))'
+	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz src/registryDAO.mligo base_DAO_contract 'default_registry_DAO_full_storage(("$(admin_address)": address), {address=("$(governance_token_address)": address); token_id=$(governance_token_id)}, ${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(min_xtz_amount), $(min_xtz_amount), $(now_val), $(metadata_map))'
 	# ================= Compilation successful ================= #
 	# See "$(OUT)/registryDAO_storage.tz" for compilation result #
 	#
 
 $(OUT)/treasuryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/treasuryDAO_storage.tz : token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/treasuryDAO_storage.tz : governance_token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/treasuryDAO_storage.tz : governance_token_id = 0n
 $(OUT)/treasuryDAO_storage.tz : frozen_scale_value = 0n
 $(OUT)/treasuryDAO_storage.tz : frozen_extra_value = 0n
 $(OUT)/treasuryDAO_storage.tz : max_proposal_size = 0n
@@ -109,7 +112,7 @@ $(OUT)/treasuryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
 	mkdir -p $(OUT)
-	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz src/treasuryDAO.mligo base_DAO_contract 'default_treasury_DAO_full_storage(("$(admin_address)": address), ("$(token_address)": address), (${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(min_xtz_amount), $(max_xtz_amount)), $(now_val), $(metadata_map))'
+	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz src/treasuryDAO.mligo base_DAO_contract 'default_treasury_DAO_full_storage(("$(admin_address)": address), {address=("$(governance_token_address)": address); token_id=$(governance_token_id)}, (${frozen_scale_value}, $(frozen_extra_value), $(max_proposal_size), $(slash_scale_value), $(slash_division_value), $(min_xtz_amount), $(max_xtz_amount)), $(now_val), $(metadata_map))'
 	# ============== Compilation successful ============== #
 	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
 	#

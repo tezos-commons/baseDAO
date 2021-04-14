@@ -17,10 +17,10 @@ let default_config : config = {
     custom_entrypoints = (Map.empty : custom_entrypoints);
     }
 
-let default_storage (admin , token_address , now_val, metadata : address * address * timestamp * metadata_map) : storage = {
+let default_storage (admin , governance_token, now_val, metadata : address * governance_token * timestamp * metadata_map) : storage = {
     ledger = (Big_map.empty : ledger);
     operators = (Big_map.empty : operators);
-    token_address = token_address;
+    governance_token = governance_token;
     admin = admin;
     pending_owner = admin;
     metadata = metadata;
@@ -33,13 +33,11 @@ let default_storage (admin , token_address , now_val, metadata : address * addre
     freeze_history = (Big_map.empty : freeze_history);
     total_supply = Map.literal
         [ (frozen_token_id, 0n)
-        ; (unfrozen_token_id, 0n)
         ];
     fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
-    unfrozen_token_id = unfrozen_token_id;
     last_period_change = {changed_on = now_val; period_num = 0n}
 }
 
-let default_full_storage (admin, token_address, now_val, metadata_map : address * address * timestamp * metadata_map) : full_storage =
-  (default_storage (admin, token_address, now_val, metadata_map), default_config)
+let default_full_storage (admin, governance_token, now_val, metadata_map : address * governance_token * timestamp * metadata_map) : full_storage =
+  (default_storage (admin, governance_token, now_val, metadata_map), default_config)

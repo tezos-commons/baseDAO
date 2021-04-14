@@ -5,7 +5,6 @@
 -- | Types mirrored from LIGO implementation.
 module Ligo.BaseDAO.Types
   ( frozenTokenId
-  , unfrozenTokenId
   , baseDaoAnnOptions
 
     -- * Operators
@@ -23,6 +22,7 @@ module Ligo.BaseDAO.Types
     -- * Proposals
   , ProposalKey
   , ProposeParams(..)
+  , GovernanceToken(..)
 
     -- * Voting
   , QuorumThreshold (..)
@@ -71,10 +71,9 @@ import Control.Lens (makeLensesFor)
 import qualified Data.Map as M
 
 import Lorentz hiding (now)
+import Lorentz.Annotation ()
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
-import Lorentz.Annotation ()
-import Michelson.Runtime.GState (genesisAddress)
 import Michelson.Typed.Annotation
 import Michelson.Typed.T (T(TUnit))
 import Michelson.Untyped.Annotation
@@ -101,10 +100,7 @@ instance HasAnnotation FA2.Parameter
 ------------------------------------------------------------------------
 
 frozenTokenId :: FA2.TokenId
-frozenTokenId = FA2.TokenId 1
-
-unfrozenTokenId :: FA2.TokenId
-unfrozenTokenId = FA2.TokenId 0
+frozenTokenId = FA2.TokenId 0
 
 baseDaoAnnOptions :: AnnOptions
 baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnake }
@@ -465,6 +461,14 @@ data AddressFreezeHistory = AddressFreezeHistory
   , fhStaked :: Natural
   } deriving stock (Eq, Show)
 
+data GovernanceToken = GovernanceToken
+  { gtAddress :: Address
+  , gtTokenId :: FA2.TokenId
+  } deriving stock (Eq, Show)
+
+customGeneric "GovernanceToken" ligoLayout
+deriving anyclass instance IsoValue GovernanceToken
+
 data Storage = Storage
   { sAdmin :: Address
   , sExtra :: ContractExtra
@@ -477,15 +481,17 @@ data Storage = Storage
   , sProposals :: BigMap ProposalKey Proposal
   , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKey)
   , sQuorumThreshold :: QuorumThreshold
-  , sTokenAddress :: Address
+  , sGovernanceToken :: GovernanceToken
   , sVotingPeriod :: VotingPeriod
   , sTotalSupply :: TotalSupply
-  , sUnfrozenTokenId :: FA2.TokenId
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
   , sLastPeriodChange :: LastPeriodChange
   , sFixedProposalFeeInToken :: Natural
   }
   deriving stock (Show)
+
+instance HasAnnotation GovernanceToken where
+  annOptions = baseDaoAnnOptions
 
 instance HasAnnotation Proposal where
   annOptions = baseDaoAnnOptions
@@ -515,8 +521,9 @@ mkStorage
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
+  -> "tokenAddress" :! Address
   -> Storage
-mkStorage admin votingPeriod quorumThreshold extra metadata now =
+mkStorage admin votingPeriod quorumThreshold extra metadata now tokenAddress =
   Storage
     { sAdmin = arg #admin admin
     , sExtra = arg #extra extra
@@ -528,13 +535,15 @@ mkStorage admin votingPeriod quorumThreshold extra metadata now =
     , sProposals = mempty
     , sProposalKeyListSortByDate = mempty
     , sQuorumThreshold = argDef #quorumThreshold quorumThresholdDef quorumThreshold
-    , sTokenAddress = genesisAddress
+    , sGovernanceToken = GovernanceToken
+        { gtAddress = arg #tokenAddress tokenAddress
+        , gtTokenId = FA2.theTokenId
+        }
     , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
-    , sTotalSupply = M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)]
+    , sTotalSupply = M.fromList [(frozenTokenId, 0)]
     , sFreezeHistory = mempty
     , sLastPeriodChange = LastPeriodChange 0 (arg #now now)
     , sFixedProposalFeeInToken = 0
-    , sUnfrozenTokenId = unfrozenTokenId
     , sFrozenTokenId = frozenTokenId
     }
   where
@@ -608,10 +617,11 @@ mkFullStorage
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
+  -> "tokenAddress" :! Address
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
-mkFullStorage admin vp qt extra mdt now cEps = FullStorage
-  { fsStorage = mkStorage admin vp qt extra mdt now
+mkFullStorage admin vp qt extra mdt now tokenAddress cEps = FullStorage
+  { fsStorage = mkStorage admin vp qt extra mdt now tokenAddress
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
   }
 

@@ -153,10 +153,15 @@ type last_period_change =
 
 // -- Storage -- //
 
+type governance_token =
+  { address : address
+  ; token_id : token_id
+  }
+
 type storage =
   { ledger : ledger
   ; operators : operators
-  ; token_address : address
+  ; governance_token : governance_token
   ; admin : address
   ; pending_owner : address
   ; metadata : metadata_map
@@ -169,7 +174,6 @@ type storage =
   ; total_supply : total_supply
   ; freeze_history : freeze_history
   ; fixed_proposal_fee_in_token : nat
-  ; unfrozen_token_id : token_id
   ; frozen_token_id : token_id
   ; last_period_change : last_period_change
   }
@@ -304,8 +308,6 @@ type return_with_full_storage = operation list * full_storage
 
 let nil_op = ([] : operation list)
 
-let unfrozen_token_id: nat = 0n
-
-let frozen_token_id: nat = 1n
+let frozen_token_id: nat = 0n
 
 #endif  // TYPES_H included
