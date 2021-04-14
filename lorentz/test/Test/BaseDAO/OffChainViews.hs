@@ -7,8 +7,8 @@ module Test.BaseDAO.OffChainViews
 
 import Universum hiding (view)
 
-import qualified Data.Map as M
 import Control.Lens ((&~), (.=))
+import qualified Data.Map as M
 import Fmt (pretty)
 import Lorentz.Value
 import Michelson.Interpret (MichelsonFailed)
@@ -21,11 +21,11 @@ import Test.Tasty.HUnit (testCase)
 import Tezos.Address
 import Util.Named ((.!))
 
-import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.BaseDAO.TZIP16Metadata as DAO
+import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Test.BaseDAO.Common (totalSupplyFromLedger)
 import Lorentz.Contracts.Spec.TZIP16Interface
+import Test.BaseDAO.Common (totalSupplyFromLedger)
 
 offChainViewStorage :: DAO.Storage () ()
 offChainViewStorage =
@@ -51,7 +51,7 @@ test_FA2 =
 
 runView
   :: forall ret store.
-    (IsoValue ret, IsoValue store)
+    (HasCallStack, IsoValue ret, IsoValue store)
   => View $ ToT store
   -> store
   -> ViewParam

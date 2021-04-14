@@ -6,6 +6,7 @@
 #include "types.mligo"
 #include "common.mligo"
 #include "token/fa2.mligo"
+#include "token.mligo"
 #include "permit.mligo"
 
 // -----------------------------------------------------------------
@@ -137,12 +138,17 @@ let check_proposal_limit_reached (config, store : config * storage): storage =
     then (failwith("MAX_PROPOSALS_REACHED") : storage)
     else store
 
-let freeze_on_ledger (tokens, addr, ledger, total_supply, unfrozen_token_id, frozen_token_id : nat * address * ledger * total_supply * token_id * token_id)
-    : (ledger * total_supply) =
-  let (ledger, total_supply) = debit_from (tokens, addr, unfrozen_token_id, ledger, total_supply) in
-  let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
-  (ledger, total_supply)
+let freeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, governance_token : nat * address * ledger * total_supply * token_id * governance_token)
+    : (operation * ledger * total_supply) =
+  // Call transfer on token_contract to transfer `token` number of
+  // tokens from `addr` to the address of this contract.
+  let param = { from_ = addr; txs = [{ amount = tokens; to_ = Tezos.self_address; token_id = governance_token.token_id }]} in
+  let operation = make_transfer_on_token ([param], governance_token.address) in
 
+  // Once this contract is credited on the token contract, we can mint frozen tokens
+  // to credit the `addr` address here.
+  let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
+  (operation, ledger, total_supply)
 
 let stake_tk(token_amount, addr, store : nat * address * storage): storage =
   let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
@@ -159,10 +165,16 @@ let stake_tk(token_amount, addr, store : nat * address * storage): storage =
   in { store with freeze_history = new_freeze_history }
 
 [@inline]
-let unfreeze_on_ledger (tokens, addr, ledger, total_supply, unfrozen_token_id, frozen_token_id : nat * address * ledger * total_supply * token_id * token_id): (ledger * total_supply) =
+let unfreeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, governance_token : nat * address * ledger * total_supply * token_id * governance_token): (operation * ledger * total_supply) =
+  // Call transfer on token_contract to transfer `token` number of
+  // tokens from `addr` to the address of this contract.
+  let param = { from_ = Tezos.self_address; txs = [{ amount = tokens; to_ = addr; token_id = governance_token.token_id }]} in
+  let operation = make_transfer_on_token ([param], governance_token.address) in
+
+  // Once this contract is credited on the token contract, we can burn frozen tokens
+  // to debit the `addr` address here.
   let (ledger, total_supply) = debit_from (tokens, addr, frozen_token_id, ledger, total_supply) in
-  let (ledger, total_supply) = credit_to (tokens, addr, unfrozen_token_id, ledger, total_supply) in
-  (ledger, total_supply)
+  (operation, ledger, total_supply)
 
 let add_proposal (propose_params, store : propose_params * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
@@ -446,7 +458,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
 
 let freeze (amt, store : freeze_param * storage) : return =
   let addr = Tezos.sender in
-  let (ledger, total_supply) = freeze_on_ledger (amt, addr, store.ledger, store.total_supply, store.unfrozen_token_id, store.frozen_token_id) in
+  let (operation, ledger, total_supply) = freeze_on_ledger (amt, addr, store.ledger, store.total_supply, store.frozen_token_id, store.governance_token) in
 
   // Add the `amt` to the current period frozen token count of the freeze-history.
   let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
@@ -456,7 +468,7 @@ let freeze (amt, store : freeze_param * storage) : return =
         add_frozen_fh(amt, fh)
     | None -> { current_period_num = current_period; staked = 0n; current_unstaked = amt; past_unstaked = 0n;}
   in
-  (([] : operation list), { store with
+  (([operation] : operation list), { store with
       ledger = ledger
     ; total_supply = total_supply
     ; freeze_history = Big_map.update addr (Some(new_freeze_history_for_address)) store.freeze_history
@@ -477,9 +489,9 @@ let unfreeze (amt, store : unfreeze_param * storage) : return =
           ("NOT_ENOUGH_FROZEN_TOKENS", ()) : freeze_history)
   in
 
-  let (ledger, total_supply) = unfreeze_on_ledger (amt, Tezos.sender, store.ledger, store.total_supply, store.unfrozen_token_id, store.frozen_token_id) in
+  let (operation, ledger, total_supply) = unfreeze_on_ledger (amt, Tezos.sender, store.ledger, store.total_supply, store.frozen_token_id, store.governance_token) in
 
-    (([] : operation list), { store with
+    (([operation] : operation list), { store with
         ledger = ledger
       ; total_supply = total_supply
       ; freeze_history = new_freeze_history

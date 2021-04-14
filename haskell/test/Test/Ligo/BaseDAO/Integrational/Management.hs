@@ -12,15 +12,15 @@ import Universum hiding (compare, drop, (>>))
 
 import Lorentz hiding (now)
 import Lorentz.Test
+import Named ((!))
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)
-import Named ((!))
 
-import Tezos.Core
-import Test.Ligo.BaseDAO.Integrational.Common
 import Ligo.BaseDAO.Types
-import Michelson.Untyped (unsafeBuildEpName)
 import Michelson.Test.Integrational
+import Michelson.Untyped (unsafeBuildEpName)
+import Test.Ligo.BaseDAO.Integrational.Common
+import Tezos.Core
 import Util.Named
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
@@ -38,13 +38,14 @@ checkVotingPeriodTracking  = do
   now <- use isNow
 
   withOriginated 2 (\(admin:_) ->
-    mkFullStorage
+    pure $ mkFullStorage
       ! #admin admin
       ! #votingPeriod 10
       ! #quorumThreshold (QuorumThreshold 10 100)
       ! #extra dynRecUnsafe
       ! #metadata mempty
       ! #now now
+      ! #tokenAddress genesisAddress
       ! #customEps mempty
     ) $ \(admin:_:_) baseDao -> do
         -- On origination the vp_history is unset

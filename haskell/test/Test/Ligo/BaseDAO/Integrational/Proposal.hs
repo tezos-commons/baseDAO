@@ -10,18 +10,19 @@ module Test.Ligo.BaseDAO.Integrational.Proposal
 
 import Universum hiding (compare, drop, (>>))
 
+import qualified Data.ByteString as BS
+import qualified Data.Map as Map
 import Lorentz hiding (now)
 import Lorentz.Test
-import Test.Tasty (TestTree, testGroup)
-import qualified Data.Map as Map
-import qualified Data.ByteString as BS
-import Test.Tasty.HUnit (testCase)
 import Named ((!))
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.HUnit (testCase)
 
-import Test.Ligo.BaseDAO.Integrational.Common
 import Ligo.BaseDAO.Types
-import Michelson.Untyped (unsafeBuildEpName)
 import Michelson.Test.Integrational
+import Michelson.Untyped (unsafeBuildEpName)
+import Test.Ligo.BaseDAO.Common (dummyFA2Contract)
+import Test.Ligo.BaseDAO.Integrational.Common
 import Util.Named
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
@@ -41,14 +42,16 @@ checkFreezeHistoryTracking  = do
 
   now <- use isNow
 
-  withOriginated 2 (\(admin:_) ->
-    mkFullStorage
+  withOriginated 2 (\(admin:_) -> do
+    tokenContract <- lOriginate dummyFA2Contract "TokenContract" [] (toMutez 0)
+    pure $ mkFullStorage
       ! #admin admin
       ! #votingPeriod 10
       ! #quorumThreshold (QuorumThreshold 10 100)
       ! #extra dynRecUnsafe
       ! #metadata mempty
       ! #now now
+      ! #tokenAddress (unTAddress tokenContract)
       ! #customEps mempty
     ) $ \(admin:wallet1:_) baseDao -> let
       proposalMeta1 = DynamicRec $ Map.fromList $ [([mt|key1|], "val"), ([mt|key2|], "val")] -- 44
@@ -57,7 +60,6 @@ checkFreezeHistoryTracking  = do
       in do
         let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
 
-        tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "mint") (toVal (MintParam wallet1 unfrozenTokenId 1000)) -- Mint some tokens for wallet1.
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "freeze") (toVal requiredFrozen)
 
         rewindTime 21

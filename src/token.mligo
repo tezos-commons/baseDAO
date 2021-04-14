@@ -23,14 +23,17 @@ let mint(param, store : mint_param * storage) : return =
   let (ledger, total_supply) = credit_to (param.amount, param.to_, param.token_id, store.ledger, store.total_supply)
   in (([] : operation list), {store with ledger = ledger; total_supply = total_supply})
 
+let make_transfer_on_token (tps, contract_addr : transfer_params * address) : operation =
+  let token_contract =
+    begin
+      match (Tezos.get_entrypoint_opt "%transfer" contract_addr : ((transfer_params contract) option)) with
+        | Some (c) -> c
+        | None -> (failwith "BAD_TOKEN_CONTRACT" : (transfer_params contract))
+    end
+  in Tezos.transaction tps 0mutez token_contract
+
 let transfer_contract_tokens
     (param, store : transfer_contract_tokens_param * storage) : return =
   let store = authorize_admin(store) in
-  match (Tezos.get_entrypoint_opt "%transfer" param.contract_address
-      : transfer_params contract option) with
-    Some contract ->
-      let transfer_operation = Tezos.transaction param.params 0mutez contract
-      in (([transfer_operation] : operation list), store)
-  | None ->
-      (failwith("FAIL_TRANSFER_CONTRACT_TOKENS") : return)
-
+  let operation = make_transfer_on_token(param.params, param.contract_address)
+  in (([operation] : operation list), store)

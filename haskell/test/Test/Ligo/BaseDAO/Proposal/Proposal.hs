@@ -17,9 +17,10 @@ import Lorentz hiding ((>>))
 import Morley.Nettest
 import Util.Named
 
+import Ligo.BaseDAO.Types
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
-import Ligo.BaseDAO.Types
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -27,7 +28,7 @@ validProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 validProposal originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
+  ((owner1, _), _, dao, tokenContract, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = proposalMetadataFromNum 1
@@ -36,26 +37,25 @@ validProposal originateFn = do
   advanceTime (sec 10)
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 10)
+  -- Check the token contract got a transfer call from
+  -- baseDAO
+  checkStorage (AddressResolved $ unTAddress tokenContract)
+    (toVal [[FA2.TransferItem { tiFrom = owner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]])
   advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-  checkTokenBalance frozenTokenId dao owner1 10
-  checkTokenBalance unfrozenTokenId dao owner1 90
+  checkTokenBalance frozenTokenId dao owner1 110
 
   -- Check total supply
   withSender (AddressResolved owner1) $
-    call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-      & expectError dao (VoidResult (190 :: Natural)) -- initial = 200
-
-  withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError dao (VoidResult (10 :: Natural)) -- initial = 0
+      & expectError dao (VoidResult (210 :: Natural)) -- initial = 0
 
 rejectProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 rejectProposal originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
+  ((owner1, _), _, dao, _, _) <- originateFn testConfig
   advanceTime (sec 10)
   let params = ProposeParams
         { ppFrozenToken = 9
@@ -73,7 +73,7 @@ nonUniqueProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 nonUniqueProposal originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
+  ((owner1, _), _, dao, _, _) <- originateFn testConfig
   advanceTime (sec 10)
   _ <- createSampleProposal 1 10 owner1 dao
   createSampleProposal 1 10 owner1 dao
@@ -83,7 +83,7 @@ voteValidProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteValidProposal originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
+  ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
   advanceTime (sec 120)
 
   withSender (AddressResolved owner2) $
@@ -99,6 +99,5 @@ voteValidProposal originateFn = do
 
   advanceTime (sec 120)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
-  checkTokenBalance (unfrozenTokenId) dao owner2 98
-  checkTokenBalance (frozenTokenId) dao owner2 2
+  checkTokenBalance frozenTokenId dao owner2 102
   -- TODO [#31]: check if the vote is updated properly

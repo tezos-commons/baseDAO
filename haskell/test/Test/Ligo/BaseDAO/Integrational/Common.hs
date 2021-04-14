@@ -10,18 +10,19 @@ import Universum
 import Lorentz
 import Lorentz.Test
 
+import Data.List.NonEmpty as NE (toList)
 import qualified Ligo.BaseDAO.Contract as DAO
 import Ligo.BaseDAO.Types
 import Michelson.Test.Integrational (tOriginate)
-import Data.List.NonEmpty as NE (toList)
 
 withOriginated
   :: Int
-  -> ([Address] -> FullStorage)
+  -> ([Address] -> IntegrationalScenarioM FullStorage)
   -> ([Address] -> TAddress Parameter -> IntegrationalScenarioM a)
   -> IntegrationalScenarioM a
 withOriginated addrCount storageFn tests = do
   let addresses = take addrCount $ NE.toList $ genesisAddresses
-  let storage = storageFn addresses
+  storage <- storageFn addresses
+
   dao <- tOriginate DAO.baseDAOContractLigo "BaseDAOLigo" (toVal storage) (toMutez 0)
   tests addresses (TAddress dao)

@@ -26,11 +26,11 @@ import Morley.Nettest
 import Named (defaults, (!))
 import Util.Named ((.!))
 
-import Test.BaseDAO.Common (totalSupplyFromLedger)
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
 import qualified Lorentz.Contracts.TrivialDAO as DAO
+import Test.BaseDAO.Common (totalSupplyFromLedger)
 
 -- | Helper functions which originate BaseDAO with a predefined owners, operators and initial storage.
 -- used in FA2 Proposals tests.

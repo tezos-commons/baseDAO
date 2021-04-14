@@ -21,6 +21,7 @@ module Ligo.BaseDAO.TZIP16Metadata
 import qualified Universum as U
 
 import Data.Version (showVersion)
+import qualified Data.Map as Map
 
 import Lorentz hiding (View)
 import Lorentz.Contracts.Spec.TZIP16Interface
@@ -123,9 +124,7 @@ allTokensView MetadataSettings{} = View
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @Storage Nothing [] $
             unsafeCompileViewCode $ WithoutParam $ do
-              stGetField #sUnfrozenTokenId
-              dip $ do stToField #sFrozenTokenId; dip nil; cons
-              cons
+              stToField #sFrozenTokenId; dip nil; cons
       ]
   }
 
@@ -157,22 +156,36 @@ tokenMetadataView MetadataSettings{ msConfig = MetadataConfig{..} } = View
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @Storage Nothing [] $
             unsafeCompileViewCode $ WithParam @FA2.TokenId $ do
+              -- token id, storage
+              stackType @'[FA2.TokenId, Storage]
               dip $ do
+                -- storage
                 dup
+                -- storage, storage
                 dip emptyMap
+                stackType @'[Storage, Map.Map FA2.TokenId FA2.TokenMetadata, Storage]
+                -- storage, map, storage
                 stToField #sFrozenTokenId
+                -- fTokenId, map, storage
                 push (Just mcFrozenTokenMetadata)
+                -- metadata, fTokenId, map, storage
                 swap
+                -- fTokenId, metadata, map, storage
                 update
-                swap
-                stToField #sUnfrozenTokenId
-                push (Just mcUnfrozenTokenMetadata)
-                swap
-                update
+                -- map, storage
+                dup
+                -- map, map, storage
+              -- token_id, map, map, storage
               dup
               dip $ do
                 get
+                stackType @'[Maybe FA2.TokenMetadata, Map.Map FA2.TokenId FA2.TokenMetadata, Storage]
+                -- metadata option, map, storage
                 ifSome nop $ failCustom_ #fA2_TOKEN_UNDEFINED
+                stackType @'[FA2.TokenMetadata, Map.Map FA2.TokenId FA2.TokenMetadata, Storage]
+                dip $ do
+                  drop
+                  drop
               pair
       ]
   }
@@ -212,26 +225,28 @@ permitsCounterView MetadataSettings{} = View
 -- TODO reconsider this
 convertOperatorParam
   :: forall store s.
-     ( StoreHasField store "sUnfrozenTokenId" FA2.TokenId
-     , StoreHasField store "sFrozenTokenId" FA2.TokenId
+     ( StoreHasField store "sFrozenTokenId" FA2.TokenId
      )
   => FA2.OperatorParam : store : s
   :-> ("owner" :! Address) : ("operator" :! Address) : s
 convertOperatorParam = do
+  stackType @(FA2.OperatorParam ': store ': _)
   getField #opTokenId
+  stackType @(FA2.TokenId ': FA2.OperatorParam ': store ': _)
   dip do
+    stackType @(FA2.OperatorParam ': store ': _)
     getField #opOperator; toNamed #operator
+    stackType @("operator" :! Address ': FA2.OperatorParam ': store ': _)
     dip $ do toField #opOwner; toNamed #owner
+    stackType @("operator" :! Address ': "owner" :! Address ': store ': _)
     dig @2
+    stackType @(store ': "operator" :! Address ': "owner" :! Address ': _)
   -- validateOperatorToken
-  dip (stGetField #sUnfrozenTokenId)
+  stackType @(FA2.TokenId ': store ': "operator" :! Address ': "owner" :! Address ': _)
+  dip (stGetField #sFrozenTokenId)
   dup
   dip swap
   if IsEq
-  then dropN @2 @(FA2.TokenId : store : _)
-  else do
-    dip (stToField #sFrozenTokenId)
-    if IsEq
-    then failUsing [mt|OPERATION_PROHIBITED|]
-    else failCustom_ #fA2_TOKEN_UNDEFINED
+    then dropN @2 @(FA2.TokenId : store : _)
+    else failUsing [mt|OPERATION_PROHIBITED|]
   swap

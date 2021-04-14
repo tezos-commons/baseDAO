@@ -22,7 +22,7 @@ setVotingPeriod
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 setVotingPeriod originateFn = do
-  ((owner1, _), _, dao, admin) <- originateFn testConfig
+  ((owner1, _), _, dao, _, admin) <- originateFn testConfig
 
   let param = 60 * 60 -- 1 hour
 
@@ -38,7 +38,7 @@ setQuorumThreshold
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 setQuorumThreshold originateFn = do
-  ((owner1, _), _, dao, admin) <- originateFn testConfig
+  ((owner1, _), _, dao, _, admin) <- originateFn testConfig
 
   let param = QuorumThreshold 80 100
 

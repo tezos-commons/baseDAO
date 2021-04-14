@@ -15,9 +15,9 @@ import Lorentz.Test hiding (withSender)
 import Morley.Nettest
 import Util.Named
 
+import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
-import Ligo.BaseDAO.Types
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -25,7 +25,7 @@ voteNonExistingProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteNonExistingProposal originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn testConfig
+  ((owner1, _), (owner2, _), dao, _, _) <- originateFn testConfig
   advanceTime (sec 10)
 
   withSender (AddressResolved owner2) $
@@ -46,7 +46,7 @@ voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteMultiProposals originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
+  ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
 
   advanceTime (sec 120)
   withSender (AddressResolved owner1) $
@@ -74,15 +74,14 @@ voteMultiProposals originateFn = do
 
   advanceTime (sec 120)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
-  checkTokenBalance (unfrozenTokenId) dao owner2 95
-  checkTokenBalance (frozenTokenId) dao owner2 5
+  checkTokenBalance (frozenTokenId) dao owner2 105
   -- TODO [#31]: check storage if the vote update the proposal properly
 
 voteOutdatedProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteOutdatedProposal originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn testConfig
+  ((owner1, _), (owner2, _), dao, _, _) <- originateFn testConfig
   advanceTime (sec 10)
 
   withSender (AddressResolved owner2) $

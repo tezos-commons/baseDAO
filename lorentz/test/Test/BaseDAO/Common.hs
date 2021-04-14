@@ -32,10 +32,10 @@ import Morley.Nettest
 import Named (defaults, (!))
 import Util.Named ((.!))
 
-import qualified Test.BaseDAO.Proposal.Config as DAO (ConfigDesc(..), fillConfig)
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
 import qualified Lorentz.Contracts.BaseDAO.Types as DAO
+import qualified Test.BaseDAO.Proposal.Config as DAO (ConfigDesc(..), fillConfig)
 
 type OriginateFn param m = m ((Address, Address), (Address, Address), TAddress param, Address)
 

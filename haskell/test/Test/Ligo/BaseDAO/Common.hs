@@ -11,6 +11,7 @@ module Test.Ligo.BaseDAO.Common
 
   , mkFA2View
   , checkTokenBalance
+  , dummyFA2Contract
   , makeProposalKey
   , addDataToSign
   , permitProtect
@@ -26,28 +27,39 @@ module Test.Ligo.BaseDAO.Common
 import Universum
 
 import Lorentz hiding (now, (>>))
-import Lorentz.Test (contractConsumer)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Test (contractConsumer)
 import Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Nettest
-import Named (defaults, (!))
+import Named ((!))
 import Time (sec)
 import Util.Named
 
-import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
+import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
-type OriginateFn m = m ((Address, Address), (Address, Address), TAddress Parameter, Address)
+type OriginateFn m = m ((Address, Address), (Address, Address), TAddress Parameter, TAddress FA2.Parameter, Address)
+
+-- | A dummy contract with FA2 parameter that remembers the
+-- transfer calls.
+dummyFA2Contract :: Contract FA2.Parameter [FA2.TransferParams]
+dummyFA2Contract = defaultContract $
+  unpair #
+    (entryCase @FA2.Parameter (Proxy @PlainEntrypointsKind)
+      ( #cBalance_of /-> Lorentz.drop
+      , #cTransfer /-> cons
+      , #cUpdate_operators /-> Lorentz.drop
+      )) # nil # pair
 
 totalSupplyFromLedger :: Ledger -> TotalSupply
 totalSupplyFromLedger (BigMap ledger) =
   M.foldrWithKey (\(_, tokenId) val totalSup ->
       M.adjust ((+) val) tokenId totalSup
     )
-    (M.fromList [(frozenTokenId, 0), (unfrozenTokenId, 0)])
+    (M.fromList [(frozenTokenId, 0)])
     ledger
 
 -- | Create FA2 View
@@ -165,6 +177,7 @@ originateLigoDaoWithBalance extra config balFunc = do
         ]
 
   now <- getNow
+  tokenContract <- originateSimple "TokenContract" [] dummyFA2Contract
 
   let fullStorage = FullStorage
         { fsStorage =
@@ -174,8 +187,8 @@ originateLigoDaoWithBalance extra config balFunc = do
               ! #votingPeriod (cMinVotingPeriod config)
               ! #quorumThreshold (cMinQuorumThreshold config)
               ! #metadata mempty
+              ! #tokenAddress (unTAddress tokenContract)
               ! #now now
-              ! defaults
             )
             { sLedger = bal
             , sOperators = operators
@@ -194,7 +207,7 @@ originateLigoDaoWithBalance extra config balFunc = do
   daoUntyped <- originateLargeUntyped originateData
   let dao = TAddress @Parameter daoUntyped
 
-  pure ((owner1, operator1), (owner2, operator2), dao, admin)
+  pure ((owner1, operator1), (owner2, operator2), dao, tokenContract, admin)
 
 originateLigoDaoWithConfig
  :: MonadNettest caps base m
@@ -204,8 +217,8 @@ originateLigoDaoWithConfig
 originateLigoDaoWithConfig extra config =
   originateLigoDaoWithBalance extra config
     (\owner1_ owner2_ ->
-    [ ((owner1_, unfrozenTokenId), 100)
-    , ((owner2_, unfrozenTokenId), 100)
+    [ ((owner1_, frozenTokenId), 100)
+    , ((owner2_, frozenTokenId), 100)
     ])
 
 originateLigoDaoWithConfigDesc
@@ -216,8 +229,8 @@ originateLigoDaoWithConfigDesc
 originateLigoDaoWithConfigDesc extra config =
   originateLigoDaoWithBalance extra (fillConfig config defaultConfig)
     (\owner1_ owner2_ ->
-    [ ((owner1_, unfrozenTokenId), 100)
-    , ((owner2_, unfrozenTokenId), 100)
+    [ ((owner1_, frozenTokenId), 100)
+    , ((owner2_, frozenTokenId), 100)
     ])
 
 originateLigoDao :: MonadNettest caps base m => OriginateFn m
