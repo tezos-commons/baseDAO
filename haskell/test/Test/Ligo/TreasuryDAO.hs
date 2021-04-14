@@ -19,10 +19,10 @@ import Time (sec)
 import Util.Named
 
 import Ligo.BaseDAO.Common.Types
-import Test.Ligo.BaseDAO.Common
-  (OriginateFn, checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
 import Ligo.BaseDAO.Types
 import Ligo.Util
+import Test.Ligo.BaseDAO.Common
+  (OriginateFn, checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -48,10 +48,10 @@ metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md
 
 validProposal :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ withFrozenCallStack do
-  ((owner1, _), (owner2, _), dao, _) <-
+  ((owner1, _), (owner2, _), dao, _, _) <-
     originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
-      [ ((owner1_, unfrozenTokenId), 200)
-      , ((owner2_, unfrozenTokenId), 200)
+      [ ((owner1_, frozenTokenId), 200)
+      , ((owner2_, frozenTokenId), 200)
       ]
   let
     proposalMeta = DynamicRec $ Map.fromList $
@@ -76,34 +76,20 @@ validProposal = uncapsNettest $ withFrozenCallStack do
   withSender (AddressResolved owner1) $
     call dao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
 
-  checkTokenBalance (frozenTokenId) dao owner1 166
-  checkTokenBalance (unfrozenTokenId) dao owner1 34
+  checkTokenBalance frozenTokenId dao owner1 366
 
 flushTokenTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
-  ((owner1, _), (owner2, _), dao, admin) <-
-    originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
-      [ ((owner1_, unfrozenTokenId), 200)
-      , ((owner2_, unfrozenTokenId), 100)
+  ((owner1, _), (owner2, _), dao, fa2Contract, admin) <-
+    originateTreasuryDaoWithBalance $ \_ owner2_ ->
+      [ ((owner2_, frozenTokenId), 100)
       ]
-
-  withSender (AddressResolved admin) $
-    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
-
-  -- Set RegistryDAO as operator of the address that is meant to transfer the tokens
-  let opParams = FA2.OperatorParam
-        { opOwner = owner2
-        , opOperator = toAddress dao
-        , opTokenId = unfrozenTokenId
-        }
-  withSender (AddressResolved owner2) $
-    call dao (Call @"Update_operators") [FA2.AddOperator opParams]
 
   let
     proposalMeta = DynamicRec $ Map.fromList $
       [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
       , ([mt|transfers|], lPackValueRaw @([TransferType])
-          [ tokenTransferType (toAddress dao) owner2 owner1
+          [ tokenTransferType (toAddress fa2Contract) owner2 owner1
           ]
         )
       ]
@@ -114,7 +100,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
     call dao (Call @"Freeze") (#amount .! proposalSize)
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 10)
+    call dao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period (which is 1).
   advanceTime (sec 1.5)
@@ -123,13 +109,12 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
     call dao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams owner1
 
-  checkTokenBalance (frozenTokenId) dao owner1 166
-  checkTokenBalance (unfrozenTokenId) dao owner1 34
+  checkTokenBalance frozenTokenId dao owner1 166
 
   let
     upvote = NoPermit VoteParam
         { vVoteType = True
-        , vVoteAmount = 2
+        , vVoteAmount = 20
         , vProposalKey = key1
         }
 
@@ -138,16 +123,14 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceTime (sec 1)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
-  checkTokenBalance (frozenTokenId) dao owner1 proposalSize
-  checkTokenBalance (frozenTokenId) dao owner2 10
+  checkTokenBalance frozenTokenId dao owner1 proposalSize
+  checkTokenBalance frozenTokenId dao owner2 120
 
 flushXtzTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
-  ((owner1, _), (owner2, _), dao, admin) <-
-    originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
-      [ ((owner1_, unfrozenTokenId), 100)
-      , ((owner2_, unfrozenTokenId), 100)
-      ]
+  ((owner1, _), (owner2, _), dao, _, admin) <-
+    originateTreasuryDaoWithBalance $ \_ _ ->
+      []
 
   sendXtz (toAddress dao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
@@ -182,7 +165,6 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   let key1 = makeProposalKey (proposeParams 3) owner1
 
   checkTokenBalance (frozenTokenId) dao owner1 94
-  checkTokenBalance (unfrozenTokenId) dao owner1 6
 
   let
     upvote = NoPermit VoteParam
@@ -216,7 +198,7 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
       { tiFrom = fromAddr
       , tiTxs = [ FA2.TransferDestination
           { tdTo = toAddr
-          , tdTokenId = unfrozenTokenId
+          , tdTokenId = FA2.theTokenId
           , tdAmount = 10
           } ]
       } ]

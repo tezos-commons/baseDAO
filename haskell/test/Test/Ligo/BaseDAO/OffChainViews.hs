@@ -7,12 +7,13 @@ module Test.Ligo.BaseDAO.OffChainViews
 
 import Universum hiding (view)
 
-import qualified Data.Map as M
 import Control.Lens ((&~), (.=))
+import qualified Data.Map as M
 import Fmt (pretty)
 
 import Lorentz.Value
 import Michelson.Interpret (MichelsonFailed)
+import Michelson.Runtime.GState (genesisAddress)
 import Michelson.Test.Dummy
 import Morley.Metadata
 import Named (defaults, (!))
@@ -22,11 +23,11 @@ import Test.Tasty.HUnit (testCase)
 import Tezos.Address
 import Util.Named ((.!))
 
-import Test.Ligo.BaseDAO.Common (totalSupplyFromLedger)
-import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.TZIP16Metadata
+import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.Spec.TZIP16Interface
+import Test.Ligo.BaseDAO.Common (totalSupplyFromLedger)
 
 offChainViewStorage :: Storage
 offChainViewStorage =
@@ -35,6 +36,7 @@ offChainViewStorage =
   ! #extra dynRecUnsafe
   ! #metadata mempty
   ! #now (timestampFromSeconds 0)
+  ! #tokenAddress genesisAddress
   ! defaults
   ) { sLedger = bal
     , sTotalSupply = totalSupplyFromLedger bal
@@ -42,8 +44,7 @@ offChainViewStorage =
   where
     addr = unsafeParseAddress "tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE"
     bal = BigMap $ M.fromList $
-      [ ((addr, unfrozenTokenId), 100)
-      , ((addr, frozenTokenId), 200)
+      [ ((addr, frozenTokenId), 200)
       ]
 
 test_FA2 :: TestTree
@@ -51,7 +52,7 @@ test_FA2 =
   mkFA2Tests offChainViewStorage (mkMetadataSettings defaultMetadataConfig)
 
 runView
-  :: forall ret. IsoValue ret
+  :: forall ret. (HasCallStack, IsoValue ret)
   => View $ ToT Storage
   -> Storage
   -> ViewParam
@@ -76,7 +77,7 @@ mkFA2Tests storage mc = testGroup "FA2 off-chain views"
         checkOperator
           storage
           FA2.OperatorParam
-            { opOwner = addr1, opOperator = addr2, opTokenId = FA2.theTokenId }
+            { opOwner = addr1, opOperator = addr2, opTokenId = frozenTokenId }
         @?= Right False
 
     , testCase "Present operator" $
@@ -85,7 +86,7 @@ mkFA2Tests storage mc = testGroup "FA2 off-chain views"
             mcOperatorsL mc .= BigMap (one ((#owner .! addr1, #operator .! addr2), ()))
         in
           checkOperator store FA2.OperatorParam
-            { opOwner = addr1, opOperator = addr2, opTokenId = FA2.theTokenId }
+            { opOwner = addr1, opOperator = addr2, opTokenId = frozenTokenId }
           @?= Right True
 
     , testCase "Invalid token_id" $
@@ -106,10 +107,7 @@ mkFA2Tests storage mc = testGroup "FA2 off-chain views"
     let checkTotalSupply st param =
           runView @Natural (getTotalSupplyView mc) st (ViewParam param)
     in
-    [ testCase "Get unfrozen token total supply" $
-        checkTotalSupply storage unfrozenTokenId
-          @?= Right 100
-    , testCase "Get frozen token total supply" $
+    [ testCase "Get frozen token total supply" $
         checkTotalSupply storage frozenTokenId
           @?= Right 200
     ]

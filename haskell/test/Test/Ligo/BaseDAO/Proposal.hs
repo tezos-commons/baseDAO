@@ -5,8 +5,8 @@ module Test.Ligo.BaseDAO.Proposal
   ( test_BaseDAO_Proposal
   ) where
 
-import Universum
 import Lorentz hiding (assert, (>>))
+import Universum
 
 import Time (sec)
 
@@ -17,6 +17,7 @@ import Test.Tasty (TestTree, testGroup)
 import Util.Named
 
 import Ligo.BaseDAO.Types
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Bounds
 import Test.Ligo.BaseDAO.Proposal.Config
@@ -31,8 +32,7 @@ vote how key =
     , vProposalKey = key
     }
 
-upvote, downvote :: ProposalKey -> PermitProtected VoteParam
-upvote = vote True
+downvote :: ProposalKey -> PermitProtected VoteParam
 downvote = vote False
 
 data FailureReason = QuorumNotMet | Downvoted
@@ -140,8 +140,9 @@ test_BaseDAO_Proposal =
       [ nettestScenario "can freeze tokens" $
           uncapsNettest $ freezeTokens (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      , nettestScenario "cannot unfreeze tokens from the same period" $
-          uncapsNettest $ cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulator "cannot unfreeze tokens from the same period" $
+          \_emulated ->
+            uncapsNettest $ cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenarioOnEmulator "can unfreeze tokens from the previous period" $
           \_emulated ->
@@ -159,7 +160,7 @@ test_BaseDAO_Proposal =
  , testGroup "LIGO-specific proposal tests:"
     [ nettestScenarioOnEmulator "can propose a valid proposal with a fixed fee" $
         \_emulated -> uncapsNettest $ do
-          ((proposer, _), _, dao, admin) <- originateLigoDao
+          ((proposer, _), _, dao, _, admin) <- originateLigoDao
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 42
           let params = ProposeParams
@@ -172,21 +173,15 @@ test_BaseDAO_Proposal =
           advanceTime (sec 10)
 
           withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-          checkTokenBalance frozenTokenId dao proposer 52
-          checkTokenBalance unfrozenTokenId dao proposer 48
-
-          -- Check total supply
-          withSender (AddressResolved proposer) $
-            call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-              & expectError dao (VoidResult (148 :: Natural)) -- initial = 200
+          checkTokenBalance frozenTokenId dao proposer 152
 
           withSender (AddressResolved proposer) $
             call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-              & expectError dao (VoidResult (52 :: Natural)) -- initial = 0
+              & expectError dao (VoidResult (252 :: Natural)) -- initial = 0
 
     , nettestScenarioOnEmulator "cannot propose with insufficient tokens to pay the fee" $
         \_emulated -> uncapsNettest $ do
-          ((proposer, _), _, dao, admin) <- originateLigoDao
+          ((proposer, _), _, dao, _, admin) <- originateLigoDao
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 100
 
@@ -203,7 +198,7 @@ test_BaseDAO_Proposal =
 
     , nettestScenarioOnEmulator "an owner can change the fee" $
         \_emulated -> uncapsNettest $ do
-          ((proposer, _), _, dao, admin) <- originateLigoDao
+          ((proposer, _), _, dao, _, admin) <- originateLigoDao
           withSender (AddressResolved admin) $
             call dao (Call @"Set_fixed_fee_in_token") 1000
 
@@ -223,12 +218,11 @@ test_BaseDAO_Proposal =
             call dao (Call @"Set_fixed_fee_in_token") 10
 
           withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-          checkTokenBalance frozenTokenId dao proposer 52
-          checkTokenBalance unfrozenTokenId dao proposer 48
+          checkTokenBalance frozenTokenId dao proposer 152
 
     , nettestScenario "a non-owner cannot change the fee" $
         uncapsNettest $ do
-          ((someone, _), _, dao, _) <- originateLigoDao
+          ((someone, _), _, dao, _, _) <- originateLigoDao
 
           withSender (AddressResolved someone) $
             call dao (Call @"Set_fixed_fee_in_token") 1000
@@ -236,7 +230,7 @@ test_BaseDAO_Proposal =
 
     , nettestScenarioOnEmulator "a proposer is returned a fee after the proposal succeeds" $
         \_emulated -> uncapsNettest $ do
-          ((proposer, _), (voter, _), dao, admin) <- originateLigoDao
+          ((proposer, _), (voter, _), dao, _, admin) <- originateLigoDao
 
           -- Use 60s for voting period, since in real network by the time we call
           -- the vote entrypoint 30s have already passed.
@@ -246,7 +240,7 @@ test_BaseDAO_Proposal =
             call dao (Call @"Set_fixed_fee_in_token") 42
 
           withSender (AddressResolved voter) $
-            call dao (Call @"Freeze") (#amount .! 1)
+            call dao (Call @"Freeze") (#amount .! 20)
 
           withSender (AddressResolved proposer) $
             call dao (Call @"Freeze") (#amount .! 42)
@@ -254,18 +248,22 @@ test_BaseDAO_Proposal =
           advanceTime (sec 61)
           key1 <- createSampleProposal 1 60 proposer dao
           advanceTime (sec 60)
+          let vote_ =
+                NoPermit VoteParam
+                  { vVoteType = True
+                  , vVoteAmount = 10
+                  , vProposalKey = key1
+                  }
           withSender (AddressResolved voter) $
-            call dao (Call @"Vote") [upvote key1]
+            call dao (Call @"Vote") [vote_]
 
-          let expectedFrozen = 42 + 10 -- 'createSampleProposal' freezes 10 tokens
-          checkTokenBalance (frozenTokenId) dao proposer expectedFrozen
-          checkTokenBalance (unfrozenTokenId) dao proposer (100 - expectedFrozen)
+          let expectedFrozen = 100 + 42 + 10 -- 'createSampleProposal' freezes 10 tokens
+          checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
           advanceTime (sec 60)
           withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
-          checkTokenBalance (frozenTokenId) dao proposer 52
-          checkTokenBalance (unfrozenTokenId) dao proposer 48
+          checkTokenBalance frozenTokenId dao proposer 152
 
     , nettestScenarioOnEmulator "the fee is burned if the proposal fails" $
         \_emulated -> uncapsNettest $ burnsFeeOnFailure Downvoted
@@ -279,7 +277,7 @@ nonProposalPeriodProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 nonProposalPeriodProposal originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
+  ((owner1, _), _, dao, _, _) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 10)
@@ -298,16 +296,22 @@ freezeTokens
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 freezeTokens originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
+  ((owner1, _), _, dao, tokenContract, _) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10)
-  checkTokenBalance frozenTokenId dao owner1 10
+  checkTokenBalance frozenTokenId dao owner1 110
+  -- Check that the FA2 token got a transfer call as expected.
+  checkStorage (AddressResolved $ unTAddress tokenContract)
+    (toVal [[FA2.TransferItem
+      { tiFrom = owner1
+      , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+      }]])
 
 burnsFeeOnFailure
   :: forall caps base m. (MonadNettest caps base m)
   => FailureReason -> m ()
 burnsFeeOnFailure reason = do
-  ((proposer, _), (voter, _), dao, admin) <- originateLigoDao
+  ((proposer, _), (voter, _), dao, _, admin) <- originateLigoDao
 
   -- Use 60s for voting period, since in real network by the time we call
   -- the vote entrypoint 30s have already passed.
@@ -332,9 +336,8 @@ burnsFeeOnFailure reason = do
         call dao (Call @"Vote") [downvote key1]
     QuorumNotMet -> return ()
 
-  let expectedFrozen = 42 + 10 -- 'createSampleProposal' freezes 10 tokens
-  checkTokenBalance (frozenTokenId) dao proposer expectedFrozen
-  checkTokenBalance (unfrozenTokenId) dao proposer (100 - expectedFrozen)
+  let expectedFrozen = 100 + 42 + 10 -- 'createSampleProposal' freezes 10 tokens
+  checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
@@ -343,17 +346,16 @@ burnsFeeOnFailure reason = do
   -- frozen), except for the fee and slash amount. The latter is zero in this
   -- case, so we expect 42 tokens to be burnt
   let expectedBurn = 42
-  checkTokenBalance (frozenTokenId) dao proposer (52 - expectedBurn)
-  checkTokenBalance (unfrozenTokenId) dao proposer 48
+  checkTokenBalance frozenTokenId dao proposer (100 + (52 - expectedBurn))
 
 cannotUnfreezeFromSamePeriod
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 cannotUnfreezeFromSamePeriod originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
+  ((owner1, _), _, dao, _, _) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10)
-  checkTokenBalance frozenTokenId dao owner1 10
+  checkTokenBalance frozenTokenId dao owner1 110
 
   -- Cannot unfreeze in the same period
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
@@ -363,27 +365,36 @@ canUnfreezeFromPreviousPeriod
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 canUnfreezeFromPreviousPeriod originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
+  ((owner1, _), _, dao, tokenContract, _) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10)
-  checkTokenBalance frozenTokenId dao owner1 10
+  checkTokenBalance frozenTokenId dao owner1 110
 
   advanceTime (sec 15)
 
-  -- Cannot unfreeze in the same period
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
-  checkTokenBalance frozenTokenId dao owner1 0
-  checkTokenBalance unfrozenTokenId dao owner1 100
+  checkTokenBalance frozenTokenId dao owner1 100
+  -- Check that the FA2 token got a transfer call as expected.
+  checkStorage (AddressResolved $ unTAddress tokenContract)
+    (toVal
+      [ [ FA2.TransferItem
+        { tiFrom = unTAddress dao
+        , tiTxs = [FA2.TransferDestination { tdTo = owner1, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+        }]
+      , [FA2.TransferItem
+        { tiFrom = owner1
+        , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+      }]])
 
 canHandleVotingPeriodChange
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 canHandleVotingPeriodChange originateFn = do
   -- Initial voting period is 10 sec
-  ((owner1, _), _, dao, admin) <- originateFn testConfig
+  ((owner1, _), _, dao, _, admin) <- originateFn testConfig
 
   withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10)
-  checkTokenBalance frozenTokenId dao owner1 10
+  checkTokenBalance frozenTokenId dao owner1 110
 
   advanceTime (sec 5)
 
@@ -405,7 +416,7 @@ insufficientTokenProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 insufficientTokenProposal originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn testConfig
+  ((owner1, _), _, dao, _, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 101
         , ppProposalMetadata = proposalMetadataFromNum 1
@@ -418,7 +429,7 @@ insufficientTokenVote
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 insufficientTokenVote originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
+  ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
   advanceTime (sec 120)
 
   withSender (AddressResolved owner2) $
@@ -447,7 +458,7 @@ voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteWithPermit originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
+  ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
   advanceTime (sec 120)
 
   withSender (AddressResolved owner1) $
@@ -465,14 +476,14 @@ voteWithPermit originateFn = do
 
   advanceTime (sec 120)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
-  checkTokenBalance frozenTokenId dao owner1 12
+  checkTokenBalance frozenTokenId dao owner1 112
 
 voteWithPermitNonce
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteWithPermitNonce originateFn = do
 
-  ((owner1, _), (owner2, _), dao, _) <- originateFn voteConfig
+  ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
 
   advanceTime (sec 120)
 
@@ -525,7 +536,7 @@ flushNotAffectOngoingProposals
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushNotAffectOngoingProposals originateFn = do
-  ((owner1, _), _, dao, admin) <- originateFn testConfig
+  ((owner1, _), _, dao, _, admin) <- originateFn testConfig
 
 
   -- Note: Cannot set to few seconds, since in real network, each
@@ -553,7 +564,7 @@ flushAcceptedProposals
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushAcceptedProposals originateFn = do
-  ((owner1, _), (owner2, _), dao, admin) <- originateFn testConfig
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn testConfig
 
   -- Use 60s for voting period, since in real network by the time we call
   -- vote entrypoint 30s is already passed.
@@ -583,9 +594,8 @@ flushAcceptedProposals originateFn = do
     call dao (Call @"Vote") [upvote', downvote']
 
   -- Checking balance of proposer and voters
-  checkTokenBalance (frozenTokenId) dao owner1 10
-  checkTokenBalance (frozenTokenId) dao owner2 3
-  checkTokenBalance (unfrozenTokenId) dao owner2 97
+  checkTokenBalance (frozenTokenId) dao owner1 110
+  checkTokenBalance (frozenTokenId) dao owner2 103
 
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
@@ -594,27 +604,19 @@ flushAcceptedProposals originateFn = do
   -- checkIfAProposalExist (key1 :: ByteString) dao
   --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
-  checkTokenBalance (frozenTokenId) dao owner1 10
-  checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer
+  checkTokenBalance (frozenTokenId) dao owner1 110
 
-  checkTokenBalance (frozenTokenId) dao owner2 3
-  checkTokenBalance (unfrozenTokenId) dao owner2 97 -- voter
-
-  -- Check total supply (After flush, no changes are made.)
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
-      & expectError dao (VoidResult (187 :: Natural)) -- initial = 200
+  checkTokenBalance (frozenTokenId) dao owner2 103
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError dao (VoidResult (13 :: Natural)) -- initial = 0
-
+      & expectError dao (VoidResult (213 :: Natural)) -- initial = 0
 
 flushAcceptedProposalsWithAnAmount
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushAcceptedProposalsWithAnAmount originateFn = do
-  ((owner1, _), (owner2, _), dao, admin) <- originateFn testConfig
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn testConfig
 
   advanceTime (sec 10)
   -- Accepted Proposals
@@ -640,8 +642,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
 
   key4 <- createSampleProposal 4 0 owner1 dao
 
-  checkTokenBalance (frozenTokenId) dao owner1 40
-  checkTokenBalance (unfrozenTokenId) dao owner1 60
+  checkTokenBalance frozenTokenId dao owner1 140
 
   advanceTime (sec 10)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 2
@@ -661,14 +662,13 @@ flushAcceptedProposalsWithAnAmount originateFn = do
     call dao (Call @"Vote") [vote' key4]
 
   -- Only 2 proposals are flush, so only 20 tokens are unfrozen back.
-  checkTokenBalance (frozenTokenId) dao owner1 40
-  checkTokenBalance (unfrozenTokenId) dao owner1 60
+  checkTokenBalance frozenTokenId dao owner1 140
 
 flushRejectProposalQuorum
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushRejectProposalQuorum originateFn = do
-  ((owner1, _), (owner2, _), dao, admin)
+  ((owner1, _), (owner2, _), dao, _, admin)
     <- originateFn configWithRejectedProposal
 
   withSender (AddressResolved admin) $ do
@@ -685,12 +685,7 @@ flushRejectProposalQuorum originateFn = do
   let votes = fmap NoPermit
         [ VoteParam
           { vVoteType = True
-          , vVoteAmount = 1
-          , vProposalKey = key1
-          }
-        , VoteParam
-          { vVoteType = True
-          , vVoteAmount = 1
+          , vVoteAmount = 3
           , vProposalKey = key1
           }
         ]
@@ -704,16 +699,14 @@ flushRejectProposalQuorum originateFn = do
   -- checkIfAProposalExist (key1 :: ByteString) dao
   --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
-  checkTokenBalance (frozenTokenId) dao owner1 5
-  checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer: cRejectedValue reduce frozen token by half
-  checkTokenBalance (frozenTokenId) dao owner2 5
-  checkTokenBalance (unfrozenTokenId) dao owner2 95 -- voter
+  checkTokenBalance frozenTokenId dao owner1 105
+  checkTokenBalance frozenTokenId dao owner2 105 -- Since voter tokens are not burned
 
 flushRejectProposalNegativeVotes
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushRejectProposalNegativeVotes originateFn = do
-  ((owner1, _), (owner2, _), dao, admin)
+  ((owner1, _), (owner2, _), dao, _, admin)
     <- originateFn configWithRejectedProposal
 
   withSender (AddressResolved admin) $ do
@@ -749,7 +742,7 @@ flushRejectProposalNegativeVotes originateFn = do
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") votes
 
   -- Check proposer balance
-  checkTokenBalance (frozenTokenId) dao owner1 10
+  checkTokenBalance frozenTokenId dao owner1 110
 
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
@@ -758,16 +751,14 @@ flushRejectProposalNegativeVotes originateFn = do
   -- checkIfAProposalExist (key1 :: ByteString) dao
   --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
-  checkTokenBalance (frozenTokenId) dao owner1 5
-  checkTokenBalance (unfrozenTokenId) dao owner1 90 -- proposer: cRejectedValue reduce frozen token by half
-  checkTokenBalance (frozenTokenId) dao owner2 3
-  checkTokenBalance (unfrozenTokenId) dao owner2 97 -- voter
+  checkTokenBalance frozenTokenId dao owner1 105
+  checkTokenBalance frozenTokenId dao owner2 103
 
 flushWithBadConfig
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushWithBadConfig originateFn = do
-  ((owner1, _), (owner2, _), dao, admin) <- originateFn badRejectedValueConfig
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn badRejectedValueConfig
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
@@ -786,7 +777,6 @@ flushWithBadConfig originateFn = do
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
-  checkTokenBalance (unfrozenTokenId) dao owner1 90
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -794,30 +784,28 @@ flushWithBadConfig originateFn = do
   -- checkIfAProposalExist (key1 :: ByteString) dao
   --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
-  checkTokenBalance (frozenTokenId) dao owner1 0
-  checkTokenBalance (unfrozenTokenId) dao owner1 90 -- slash all frozen values
-  checkTokenBalance (frozenTokenId) dao owner2 3
-  checkTokenBalance (unfrozenTokenId) dao owner2 97
+  checkTokenBalance frozenTokenId dao owner1 100
+  checkTokenBalance frozenTokenId dao owner2 103
 
 flushDecisionLambda
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushDecisionLambda originateFn = do
   consumer <- originateSimple "consumer" [] (contractConsumer)
-  ((owner1, _), (owner2, _), dao, admin) <- originateFn (decisionLambdaConfig consumer)
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn (decisionLambdaConfig consumer)
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
     call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 1)
+    call dao (Call @"Freeze") (#amount .! 10)
   advanceTime (sec 65)
   key1 <- createSampleProposal 1 60 owner1 dao
 
   let upvote' = NoPermit VoteParam
         { vVoteType = True
-        , vVoteAmount = 1
+        , vVoteAmount = 10
         , vProposalKey = key1
         }
   advanceTime (sec 60)
@@ -834,7 +822,7 @@ dropProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 dropProposal originateFn = do
-  ((owner1, _), (owner2, _), dao, admin) <- originateFn badRejectedValueConfig
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn badRejectedValueConfig
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 20
@@ -845,7 +833,7 @@ dropProposal originateFn = do
     call dao (Call @"Freeze") (#amount .! 30)
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 2)
+    call dao (Call @"Freeze") (#amount .! 20)
   advanceTime (sec 20)
 
   key1 <- createSampleProposal 1 0 owner1 dao
@@ -854,7 +842,7 @@ dropProposal originateFn = do
   advanceTime (sec 20)
   let params key = NoPermit VoteParam
         { vVoteType = True
-        , vVoteAmount = 2
+        , vVoteAmount = 20
         , vProposalKey = key
         }
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params key1]
@@ -870,14 +858,13 @@ dropProposal originateFn = do
       & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_OVER dao
 
   -- 30 tokens are frozen in total, but 10 tokens are returned after drop_proposal
-  checkTokenBalance (frozenTokenId) dao owner1 30
-  checkTokenBalance (unfrozenTokenId) dao owner1 70
+  checkTokenBalance frozenTokenId dao owner1 130
 
 proposalBoundedValue
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 proposalBoundedValue originateFn = do
-  ((owner1, _), _, dao, _) <- originateFn
+  ((owner1, _), _, dao, _, _) <- originateFn
     ( testConfig >>-
       ConfigDesc configConsts{ cmMaxProposals = Just 1 }
     )
@@ -902,7 +889,7 @@ votesBoundedValue
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 votesBoundedValue originateFn = do
-  ((owner1, _), (owner2, _), dao, _) <- originateFn
+  ((owner1, _), (owner2, _), dao, _, _) <- originateFn
     ( voteConfig >>-
       ConfigDesc configConsts{ cmMaxVotes = Just 1 }
     )
@@ -931,7 +918,7 @@ quorumThresholdBound
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 quorumThresholdBound originateFn = do
-  (_, _, dao, admin) <- originateFn
+  (_, _, dao, _, admin) <- originateFn
     ( testConfig >>-
       ConfigDesc configConsts
         { cmMinQuorumThreshold = Just $ QuorumThreshold 1 100
@@ -950,7 +937,7 @@ votingPeriodBound
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 votingPeriodBound originateFn = do
-  (_, _, dao, admin) <- originateFn
+  (_, _, dao, _, admin) <- originateFn
     ( testConfig >>-
       ConfigDesc configConsts
         { cmMinVotingPeriod = Just 1
@@ -969,7 +956,7 @@ votingPeriodChange
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 votingPeriodChange originateFn = do
-  ((owner1, _), (owner2, _), dao, admin) <- originateFn testConfig
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn testConfig
   advanceTime (sec 11)
 
   withSender (AddressResolved owner2) $

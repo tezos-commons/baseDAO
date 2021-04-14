@@ -10,10 +10,11 @@ module Test.Ligo.BaseDAO.Management
 
 import Universum
 
-import Test.Tasty (TestTree, testGroup)
 import Named (defaults, (!))
+import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (now, (>>))
+import Michelson.Runtime.GState (genesisAddress)
 import Michelson.Typed (convertContract)
 import Michelson.Typed.Convert (untypeValue)
 import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
@@ -116,6 +117,7 @@ test_BaseDAO_Management =
       ! #extra dynRecUnsafe
       ! #metadata mempty
       ! #now now
+      ! #tokenAddress genesisAddress
       ! #customEps
           [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)
           ]

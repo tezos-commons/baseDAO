@@ -15,9 +15,9 @@ import Lorentz.Test
 import Named (defaults, (!))
 import Util.Named ((.!))
 
-import Test.BaseDAO.Common (totalSupplyFromLedger)
 import qualified Lorentz.Contracts.BaseDAO as DAO
 import Lorentz.Contracts.BaseDAO.Types
+import Test.BaseDAO.Common (totalSupplyFromLedger)
 
 lOriginateBaseDao
   :: forall ce pm op.

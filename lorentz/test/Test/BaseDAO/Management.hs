@@ -13,11 +13,11 @@ module Test.BaseDAO.Management
 
 import Universum
 
-import Test.Tasty (TestTree, testGroup)
 import Lorentz hiding ((>>))
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
 import Named (defaults, (!))
+import Test.Tasty (TestTree, testGroup)
 import Util.Named
 
 import qualified Lorentz.Contracts.BaseDAO as DAO
