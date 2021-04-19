@@ -3,6 +3,8 @@
 
 #include "types.mligo"
 
+let frozen_token_id: nat = 0n
+
 let default_config : config = {
     proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
     rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
