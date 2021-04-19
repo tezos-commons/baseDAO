@@ -57,7 +57,7 @@ dummyFA2Contract = defaultContract $
 totalSupplyFromLedger :: Ledger -> TotalSupply
 totalSupplyFromLedger (BigMap ledger) =
   M.foldrWithKey (\(_, tokenId) val totalSup ->
-      M.adjust ((+) val) tokenId totalSup
+      M.alter (\v -> Just (fromMaybe 0 v + val)) tokenId totalSup
     )
     (M.fromList [(frozenTokenId, 0)])
     ledger
@@ -196,7 +196,6 @@ originateLigoDaoWithBalance extra config balFunc = do
             }
         , fsConfig = config
         }
-
   let
     originateData = UntypedOriginateData
       { uodName = "BaseDAO"
@@ -204,6 +203,7 @@ originateLigoDaoWithBalance extra config balFunc = do
       , uodStorage = untypeValue $ toVal $ fullStorage
       , uodContract = convertContract baseDAOContractLigo
       }
+
   daoUntyped <- originateLargeUntyped originateData
   let dao = TAddress @Parameter daoUntyped
 
