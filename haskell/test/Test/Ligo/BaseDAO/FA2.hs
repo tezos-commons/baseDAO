@@ -19,7 +19,6 @@ module Test.Ligo.BaseDAO.FA2
   , noForeignMoneyOwnerScenario
   , adminTransferScenario
   , prohibitedAdminTransferScenario
-  , adminTransferFrozenScenario
   ) where
 
 import Universum
@@ -347,19 +346,3 @@ prohibitedAdminTransferScenario = do
         } ]
   withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
     & expectCustomError_ #fA2_NOT_OPERATOR dao
-
-adminTransferFrozenScenario :: MonadNettest caps base m => OriginateFn m -> m ()
-adminTransferFrozenScenario originateFn = do
-  ((owner1, _), (owner2, _), dao, _, admin)
-    <- originateFn
-
-  let params = [ FA2.TransferItem
-        { tiFrom = owner2
-        , tiTxs = [ FA2.TransferDestination
-            { tdTo = owner1
-            , tdTokenId = frozenTokenId
-            , tdAmount = 10
-            } ]
-        } ]
-  withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
-

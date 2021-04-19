@@ -12,7 +12,6 @@ import Morley.Nettest.Tasty (nettestScenario)
 import Test.Tasty (TestTree, testGroup)
 
 import qualified Test.Ligo.BaseDAO.FA2 as FA2
-import qualified Ligo.BaseDAO.Types as Ligo
 
 import Test.Ligo.BaseDAO.Common
 
@@ -57,13 +56,5 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
         $ uncapsNettest $ FA2.adminTransferScenario originateLigoDao
     , nettestScenario "cannot transfer unfrozen tokens from any address to any address"
         $ uncapsNettest $ FA2.prohibitedAdminTransferScenario
-    , nettestScenario "transfer frozen tokens"
-        $ uncapsNettest $ FA2.adminTransferFrozenScenario
-        $ originateLigoDaoWithBalance Ligo.dynRecBigMapUnsafe Ligo.defaultConfig
-            (\owner1 owner2 ->
-                [ ((owner1, Ligo.frozenTokenId), 100)
-                , ((owner2, Ligo.frozenTokenId), 100)
-                ]
-            )
     ]
   ]
