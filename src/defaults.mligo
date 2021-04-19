@@ -3,8 +3,6 @@
 
 #include "types.mligo"
 
-let frozen_token_id: nat = 0n
-
 let default_config : config = {
     proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
     rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
@@ -19,7 +17,9 @@ let default_config : config = {
     custom_entrypoints = (Map.empty : custom_entrypoints);
     }
 
-let default_storage (admin , governance_token, now_val, metadata : address * governance_token * timestamp * metadata_map) : storage = {
+let default_storage (admin , governance_token, now_val, metadata : address * governance_token * timestamp * metadata_map) : storage =
+ let frozen_token_id: nat = 0n in
+ {
     ledger = (Big_map.empty : ledger);
     operators = (Big_map.empty : operators);
     governance_token = governance_token;
