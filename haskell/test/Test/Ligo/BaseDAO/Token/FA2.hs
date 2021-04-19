@@ -26,7 +26,7 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
       , nettestScenario "allows valid transfer and check balance"
           $ uncapsNettest $ FA2.validTransferScenario originateLigoDao
       , nettestScenario "validates token id"
-          $ uncapsNettest $ FA2.validateTokenScenario originateLigoDao
+          $ uncapsNettest $ FA2.validateTokenScenario
       , nettestScenario "accepts an empty list of transfers"
           $ uncapsNettest $ FA2.emptyTransferListScenario originateLigoDao
       , nettestScenario "aborts if there is a failure (due to low balance)"
@@ -35,26 +35,28 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
           $ uncapsNettest $ FA2.noSourceAccountScenario originateLigoDao
       , nettestScenario "aborts if there is a failure (due to bad operator)"
           $ uncapsNettest $ FA2.badOperatorScenario originateLigoDao
-      -- , nettestScenario "cannot transfer foreign money"
-      --     $ uncapsNettest $ FA2.noForeignMoneyScenario originateLigoDao
+      , nettestScenario "cannot transfer foreign money"
+          $ uncapsNettest $ FA2.noForeignMoneyScenario
       ]
   , testGroup "Owner:"
-      [ -- nettestScenario "allows valid transfer and check balance"
-        --   $ uncapsNettest $ FA2.validTransferOwnerScenario originateLigoDao
-      nettestScenario "allows updating operator "
-          $ uncapsNettest $ FA2.updatingOperatorScenario originateLigoDao
+      [ nettestScenario "allows valid transfer and check balance"
+          $ uncapsNettest $ FA2.validTransferOwnerScenario
+      , nettestScenario "allows updating operator"
+          $ uncapsNettest $ FA2.updatingOperatorScenario
       , nettestScenario "allows balanceOf request"
           $ uncapsNettest $ FA2.balanceOfOwnerScenario originateLigoDao
       , nettestScenario "validates token id"
-          $ uncapsNettest $ FA2.validateTokenOwnerScenario originateLigoDao
+          $ uncapsNettest $ FA2.validateTokenOwnerScenario
       , nettestScenario "aborts if there is a failure (due to low balance)"
           $ uncapsNettest $ FA2.lowBalanceOwnerScenario originateLigoDao
-      -- , nettestScenario "cannot transfer foreign money"
-      --     $ uncapsNettest $ FA2.noForeignMoneyOwnerScenario originateLigoDao
+      , nettestScenario "cannot transfer foreign money"
+          $ uncapsNettest $ FA2.noForeignMoneyOwnerScenario
       ]
   , testGroup "Admin:"
-    [ nettestScenario "transfer tokens from any address to any address"
+    [ nettestScenario "can transfer frozen tokens from any address to any address"
         $ uncapsNettest $ FA2.adminTransferScenario originateLigoDao
+    , nettestScenario "cannot transfer unfrozen tokens from any address to any address"
+        $ uncapsNettest $ FA2.prohibitedAdminTransferScenario
     , nettestScenario "transfer frozen tokens"
         $ uncapsNettest $ FA2.adminTransferFrozenScenario
         $ originateLigoDaoWithBalance Ligo.dynRecBigMapUnsafe Ligo.defaultConfig

@@ -10,14 +10,15 @@ module Test.Ligo.BaseDAO.FA2
   , lowBalanceScenario
   , noSourceAccountScenario
   , badOperatorScenario
-  -- , noForeignMoneyScenario
-  -- , validTransferOwnerScenario
+  , noForeignMoneyScenario
+  , validTransferOwnerScenario
   , updatingOperatorScenario
   , balanceOfOwnerScenario
   , validateTokenOwnerScenario
   , lowBalanceOwnerScenario
-  -- , noForeignMoneyOwnerScenario
+  , noForeignMoneyOwnerScenario
   , adminTransferScenario
+  , prohibitedAdminTransferScenario
   , adminTransferFrozenScenario
   ) where
 
@@ -33,6 +34,23 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Common
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
+
+unfrozenTokenId :: FA2.TokenId
+unfrozenTokenId = FA2.TokenId 42
+
+unknownTokenId :: FA2.TokenId
+unknownTokenId = FA2.TokenId 2
+
+originateWithCustomToken :: MonadNettest caps base m => OriginateFn m
+originateWithCustomToken =
+  originateLigoDaoWithBalance dynRecUnsafe defaultConfig
+      (\owner1 owner2 ->
+          [ ((owner1, frozenTokenId), 100)
+          , ((owner2, frozenTokenId), 100)
+          , ((owner1, FA2.TokenId 42), 1000)
+          , ((owner2, FA2.TokenId 42), 1000)
+          ]
+      )
 
 zeroTransferScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 zeroTransferScenario originateFn = do
@@ -50,7 +68,6 @@ zeroTransferScenario originateFn = do
   withSender (AddressResolved nonexistent) $
     call dao (Call @"Transfer") params
 
--- TODO [#54]: Add a test for transfer with an sender who is not admin.
 validTransferScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 validTransferScenario originateFn = do
   ((owner1, _op1), (owner2, _), dao, _, admin) <- originateFn
@@ -77,69 +94,68 @@ validTransferScenario originateFn = do
   checkStorage (AddressResolved $ toAddress consumer)
     (toVal [[((owner2, frozenTokenId), 110 :: Natural)]] )
 
--- TODO [#54]: Disabling this test since there is no unfrozen token available to test it.
--- validTransferOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
--- validTransferOwnerScenario originateFn = do
---   ((owner1, _), (owner2, _), dao, _, _) <- originateFn
---   let params = [ FA2.TransferItem
---         { tiFrom = owner1
---         , tiTxs = [ FA2.TransferDestination
---             { tdTo = owner2
---             , tdTokenId = unfrozenTokenId
---             , tdAmount = 10
---             } ]
---         } ]
---
---   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
---   -- Check the balance
---   consumer <- originateSimple "consumer" [] contractConsumer
---
---   withSender (AddressResolved owner2) $ call dao (Call @"Balance_of")
---     (mkFA2View [ FA2.BalanceRequestItem
---       { briOwner = owner2
---       , briTokenId = unfrozenTokenId
---       } ] consumer)
---
---   checkStorage (AddressResolved $ toAddress consumer)
---     (toVal [[((owner2, unfrozenTokenId), 110 :: Natural)]] )
+validTransferOwnerScenario :: MonadNettest caps base m => m ()
+validTransferOwnerScenario = do
+   ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+   let params = [ FA2.TransferItem
+         { tiFrom = owner1
+         , tiTxs = [ FA2.TransferDestination
+             { tdTo = owner2
+             , tdTokenId = unfrozenTokenId
+             , tdAmount = 10
+             } ]
+         } ]
 
-updatingOperatorScenario :: MonadNettest caps base m => OriginateFn m -> m ()
-updatingOperatorScenario originateFn = do
-  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn
-  let params = FA2.OperatorParam
+   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
+   -- Check the balance
+   consumer <- originateSimple "consumer" [] contractConsumer
+
+   withSender (AddressResolved owner2) $ call dao (Call @"Balance_of")
+     (mkFA2View [ FA2.BalanceRequestItem
+       { briOwner = owner2
+       , briTokenId = unfrozenTokenId
+       } ] consumer)
+
+   checkStorage (AddressResolved $ toAddress consumer)
+     (toVal [[((owner2, unfrozenTokenId), 1010 :: Natural)]] )
+
+updatingOperatorScenario :: MonadNettest caps base m => m ()
+updatingOperatorScenario = do
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateWithCustomToken
+  let params tokenId = FA2.OperatorParam
         { opOwner = owner1
         , opOperator = admin
-        , opTokenId = frozenTokenId
+        , opTokenId = tokenId
         }
-      transferParams = [ FA2.TransferItem
+      transferParams tokenId = [ FA2.TransferItem
         { tiFrom = owner1
         , tiTxs = [ FA2.TransferDestination
             { tdTo = owner2
-            , tdTokenId = frozenTokenId
+            , tdTokenId = tokenId
             , tdAmount = 10
             } ]
         } ]
   withSender (AddressResolved owner1) $
-    call dao (Call @"Update_operators") [FA2.AddOperator params]
+    call dao (Call @"Update_operators") [FA2.AddOperator (params frozenTokenId)]
   withSender (AddressResolved admin) $
-    call dao (Call @"Transfer") transferParams
+    call dao (Call @"Transfer") (transferParams frozenTokenId)
 
   withSender (AddressResolved owner1) $
-    call dao (Call @"Update_operators") [FA2.RemoveOperator params]
+    call dao (Call @"Update_operators") [FA2.RemoveOperator (params frozenTokenId)]
 
-  let notOwnerParams = FA2.OperatorParam
+  let notOwnerParams tokenId = FA2.OperatorParam
         { opOwner = owner2
         , opOperator = admin
-        , opTokenId = frozenTokenId
+        , opTokenId = tokenId
         }
 
   withSender (AddressResolved owner2) $
-    call dao (Call @"Transfer") transferParams
+    call dao (Call @"Transfer") (transferParams frozenTokenId)
     & expectCustomError_ #fA2_NOT_OPERATOR dao
   withSender (AddressResolved owner1) $ do
-    call dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
+    call dao (Call @"Update_operators") ([FA2.AddOperator (notOwnerParams frozenTokenId)])
       & expectCustomErrorNoArg #nOT_OWNER dao
-    call dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
+    call dao (Call @"Update_operators") [FA2.RemoveOperator (notOwnerParams frozenTokenId)]
       & expectCustomErrorNoArg #nOT_OWNER dao
 
 lowBalanceScenario :: MonadNettest caps base m => OriginateFn m -> m ()
@@ -212,12 +228,9 @@ emptyTransferListScenario originateFn = do
   ((_, op1), _, dao, _, _) <- originateFn
   withSender (AddressResolved op1) $ call dao (Call @"Transfer") []
 
-unknownTokenId :: FA2.TokenId
-unknownTokenId = FA2.TokenId 2
-
-validateTokenScenario :: MonadNettest caps base m => OriginateFn m -> m ()
-validateTokenScenario originateFn = do
-  ((owner1, op1), (owner2, _), dao, _, _) <- originateFn
+validateTokenScenario :: MonadNettest caps base m => m ()
+validateTokenScenario = do
+  ((owner1, op1), (owner2, _), dao, _, _) <- originateWithCustomToken
 
   let params tokenId = [ FA2.TransferItem
         { tiFrom = owner1
@@ -230,14 +243,17 @@ validateTokenScenario originateFn = do
       callWith param = withSender (AddressResolved op1) $
         call dao (Call @"Transfer") param
 
+  callWith (params unfrozenTokenId)
+
   callWith (params frozenTokenId)
     & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
   callWith (params unknownTokenId)
     & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 
-validateTokenOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
-validateTokenOwnerScenario originateFn = do
-  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn
+
+validateTokenOwnerScenario :: MonadNettest caps base m => m ()
+validateTokenOwnerScenario = do
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateWithCustomToken
 
   let params tokenId = [ FA2.TransferItem
         { tiFrom = owner1
@@ -254,40 +270,40 @@ validateTokenOwnerScenario originateFn = do
 
   callWith (params frozenTokenId) owner1
     & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
-  callWith (params unknownTokenId) admin
+  callWith (params unknownTokenId) owner1
     & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
+  callWith (params unfrozenTokenId) admin
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
+noForeignMoneyScenario :: MonadNettest caps base m => m ()
+noForeignMoneyScenario = do
+  ((owner1, op1), (owner2, _), dao, _, _) <- originateWithCustomToken
 
--- TODO [#54]: Disabled for now since there is no unfrozen token available
--- noForeignMoneyScenario :: MonadNettest caps base m => OriginateFn m -> m ()
--- noForeignMoneyScenario originateFn = do
---   ((owner1, op1), (owner2, _), dao, _, _) <- originateFn
---
---   let params = [ FA2.TransferItem
---         { tiFrom = owner2
---         , tiTxs = [ FA2.TransferDestination
---             { tdTo = owner1
---             , tdTokenId = unfrozenTokenId
---             , tdAmount = 10
---             } ]
---         } ]
---   withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
---     & expectCustomError_ #fA2_NOT_OPERATOR
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = unfrozenTokenId
+            , tdAmount = 10
+            } ]
+        } ]
+  withSender (AddressResolved op1) $ call dao (Call @"Transfer") params
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
--- noForeignMoneyOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
--- noForeignMoneyOwnerScenario originateFn = do
---   ((owner1, _), (owner2, _), dao, _, _) <- originateFn
---
---   let params = [ FA2.TransferItem
---         { tiFrom = owner2
---         , tiTxs = [ FA2.TransferDestination
---             { tdTo = owner1
---             , tdTokenId = unfrozenTokenId
---             , tdAmount = 10
---             } ]
---         } ]
---   withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
---     & expectCustomError_ #fA2_NOT_OPERATOR
+noForeignMoneyOwnerScenario :: MonadNettest caps base m => m ()
+noForeignMoneyOwnerScenario = do
+  ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = unfrozenTokenId
+            , tdAmount = 10
+            } ]
+        } ]
+  withSender (AddressResolved owner1) $ call dao (Call @"Transfer") params
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 balanceOfOwnerScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 balanceOfOwnerScenario originateFn = do
@@ -317,6 +333,20 @@ adminTransferScenario originateFn = do
         } ]
   withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
 
+prohibitedAdminTransferScenario :: MonadNettest caps base m => m ()
+prohibitedAdminTransferScenario = do
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateWithCustomToken
+
+  let params = [ FA2.TransferItem
+        { tiFrom = owner2
+        , tiTxs = [ FA2.TransferDestination
+            { tdTo = owner1
+            , tdTokenId = unfrozenTokenId
+            , tdAmount = 10
+            } ]
+        } ]
+  withSender (AddressResolved admin) $ call dao (Call @"Transfer") params
+    & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 adminTransferFrozenScenario :: MonadNettest caps base m => OriginateFn m -> m ()
 adminTransferFrozenScenario originateFn = do
