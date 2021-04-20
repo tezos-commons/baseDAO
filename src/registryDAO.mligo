@@ -77,6 +77,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
     | Normal_proposal diff_ -> has_correct_token_lock
     | Update_receivers_proposal urp_ -> has_correct_token_lock
     | Configuration_proposal cp_ -> has_correct_token_lock
+    | VotingPeriodConstantsUpdate cp_ -> has_correct_token_lock
 
   else
     false
@@ -115,7 +116,7 @@ let update_receivers(current_set, updates, update_fn : proposal_receivers * addr
  * used for updating corresponding configuraton.
  *)
 let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
-    : operation list * contract_extra =
+    : operation list * (voting_period_params option * contract_extra) =
   let propose_param : propose_params = {
     frozen_token = proposal.proposer_frozen_token;
     proposal_metadata = proposal.metadata
@@ -127,7 +128,7 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
       let extras = apply_diff(np.registry_diff, extras) in
       let extras =
         apply_diff_affected(proposal_key, np.registry_diff, extras) in
-        (ops, extras)
+        (ops, ((None : voting_period_params option), extras))
   | Update_receivers_proposal urp ->
       let current_set = unpack_proposal_receivers(find_big_map("proposal_receivers", extras)) in
       begin
@@ -136,7 +137,7 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
               update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.add i c))
           | Remove_receivers receivers ->
               update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.remove i c))
-        in (ops, Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras)
+        in (ops, ((None : voting_period_params option), Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras))
       end
   | Configuration_proposal cp ->
       let new_ce = match cp.frozen_scale_value with
@@ -163,7 +164,7 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
         | Some (slash_division_value) ->
             Big_map.update "slash_division_value" (Some (Bytes.pack (slash_division_value))) new_ce
         | None -> new_ce
-      in (ops, new_ce)
+      in (ops, ((None : voting_period_params option),  new_ce))
   | Transfer_proposal tp ->
       let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
         let (is_valid, extras, ops) = acc in
@@ -191,10 +192,12 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
       in
       let (is_valid, extras, ops) = List.fold handle_transfer tp.transfers (true, extras, ops) in
       if is_valid then
-        (ops, extras)
+        (ops, ((None : voting_period_params option), extras))
       else
         // TODO: [#87] Improve handling of failed proposals
-        (failwith("FAIL_DECISION_LAMBDA") : operation list * contract_extra)
+        (failwith("FAIL_DECISION_LAMBDA") : operation list * (voting_period_params option * contract_extra))
+  | VotingPeriodConstantsUpdate vpp ->
+        (ops, (Some(vpp), extras))
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.

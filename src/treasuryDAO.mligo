@@ -27,14 +27,15 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
     (params.frozen_token = required_token_lock) && (proposal_size < max_proposal_size) in
 
   if has_correct_token_lock then
-    let pm = unpack_proposal_metadata(params.proposal_metadata) in
-
-    let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
-      match transfer_type with
-      | Token_transfer_type tt -> is_valid
-      | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
-    in
-      List.fold is_all_transfers_valid pm.transfers true
+    match unpack_proposal(params.proposal_metadata) with
+      | Transfer_proposal (ts) ->
+          let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
+            match transfer_type with
+            | Token_transfer_type tt -> is_valid
+            | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
+          in
+            List.fold is_all_transfers_valid ts true
+      | VotingPeriodConstantsUpdate _ -> true
   else
     false
 
@@ -44,43 +45,45 @@ let treasury_DAO_rejected_proposal_return_value (params, extras : proposal * con
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
 let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
-    : operation list * contract_extra =
+    : operation list * (voting_period_params option * contract_extra) =
   let propose_param : propose_params = {
     frozen_token = proposal.proposer_frozen_token;
     proposal_metadata = proposal.metadata
     } in
-  let pm = unpack_proposal_metadata(proposal.metadata) in
-  let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
-      let (is_valid, extras, ops) = acc in
-      if is_valid then
-        match transfer_type with
-          Token_transfer_type tt ->
-            let result = match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
-                : transfer_params contract option) with
-              Some contract ->
-                let token_transfer_operation = Tezos.transaction tt.transfer_list 0mutez contract
-                in (is_valid, extras, token_transfer_operation :: ops)
-            | None ->
-                (false, extras, ops)
-            in result
-        | Xtz_transfer_type xt ->
-            let result = match (Tezos.get_contract_opt xt.recipient
-                : unit contract option) with
-              Some contract ->
-                let xtz_transfer_operation = Tezos.transaction unit xt.amount contract
-                in (is_valid, extras, xtz_transfer_operation :: ops)
-            | None ->
-                (false, extras, ops)
-            in result
-      else
-        (false, extras, ops)
-  in
-  let (is_valid, extras, ops) = List.fold handle_transfer pm.transfers (true, extras, ([] : operation list)) in
-  if is_valid then
-    (ops, extras)
-  else
-    // TODO: [#87] Improve handling of failed proposals
-    (failwith("FAIL_DECISION_LAMBDA") : operation list * contract_extra)
+  match unpack_proposal_metadata(proposal.metadata) with
+    | Transfer_proposal (ts) ->
+        let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
+            let (is_valid, extras, ops) = acc in
+            if is_valid then
+              match transfer_type with
+                Token_transfer_type tt ->
+                  let result = match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
+                      : transfer_params contract option) with
+                    Some contract ->
+                      let token_transfer_operation = Tezos.transaction tt.transfer_list 0mutez contract
+                      in (is_valid, extras, token_transfer_operation :: ops)
+                  | None ->
+                      (false, extras, ops)
+                  in result
+              | Xtz_transfer_type xt ->
+                  let result = match (Tezos.get_contract_opt xt.recipient
+                      : unit contract option) with
+                    Some contract ->
+                      let xtz_transfer_operation = Tezos.transaction unit xt.amount contract
+                      in (is_valid, extras, xtz_transfer_operation :: ops)
+                  | None ->
+                      (false, extras, ops)
+                  in result
+            else
+              (false, extras, ops)
+        in
+        let (is_valid, extras, ops) = List.fold handle_transfer ts (true, extras, ([] : operation list)) in
+        if is_valid then
+          (ops, ((None : voting_period_params option), extras))
+        else
+          // TODO: [#87] Improve handling of failed proposals
+          (failwith("FAIL_DECISION_LAMBDA") : operation list * ((voting_period_params option) * contract_extra))
+    | VotingPeriodConstantsUpdate (v) -> (([] : operation list), (Some(v), extras))
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.

@@ -326,13 +326,13 @@ type initial_data =
 type config =
   { proposal_check : propose_params * contract_extra -> bool
   ; rejected_proposal_return_value : proposal * contract_extra -> nat
-  ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
+  ; decision_lambda : proposal * contract_extra -> operation list * ((voting_period_params option) * contract_extra)
 
   ; max_proposals : nat
   ; max_votes : nat
   ; max_quorum_threshold : quorum_threshold
   ; min_quorum_threshold : quorum_threshold
-  ; max_voting_period : voting_period
+  ; max_voting_period : voting_period // TODO@SRAS these two probably can be removed now
   ; min_voting_period : voting_period
 
   ; custom_entrypoints : custom_entrypoints

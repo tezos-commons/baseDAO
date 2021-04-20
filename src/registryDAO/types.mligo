@@ -35,6 +35,7 @@ type registry_dao_proposal_metadata =
   | Update_receivers_proposal of update_receiver_param
   | Configuration_proposal of config_proposal
   | Transfer_proposal of transfer_proposal
+  | VotingPeriodConstantsUpdate of voting_period_params
 
 type lookup_registry_param =
   [@layout:comb]

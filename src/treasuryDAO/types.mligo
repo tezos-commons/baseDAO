@@ -21,7 +21,9 @@ type initial_treasuryDAO_storage =
 
 // Treasury dao `proposal_metadata` contains the type of proposal.
 // Currently only `transfer_proposal` type exists.
-type treasury_dao_proposal_metadata = transfer_proposal
+type treasury_dao_proposal_metadata = 
+  | Transfer_proposal of transfer_proposal
+  | VotingPeriodConstantsUpdate of voting_period_params
 
 
 // -- Unpack Helpers (fail if the unpacked result is none) -- //

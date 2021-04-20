@@ -5,19 +5,18 @@
 #include "proposal.mligo"
 
 let default_config (data : initial_config_data) : config = {
-  proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
-  rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
-  decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
-
-  max_proposals = 500n;
-  max_votes = 1000n;
-  max_quorum_threshold = data.max_quorum;
-  min_quorum_threshold = data.min_quorum;
-  max_voting_period = data.max_period;
-  min_voting_period = data.min_period;
-
-  custom_entrypoints = (Big_map.empty : custom_entrypoints);
-}
+    proposal_check = (fun (_, _ : propose_params * contract_extra) -> true);
+    rejected_proposal_return_value = (fun (_, _ : proposal * contract_extra) -> 0n);
+    decision_lambda = (fun (_, extras : proposal * contract_extra) -> (([] : (operation list))
+      , ((None : voting_period_params option), extras)));
+    max_proposals = 500n;
+    max_votes = 1000n;
+    max_quorum_threshold = data.max_quorum;
+    min_quorum_threshold = data.min_quorum;
+    max_voting_period = data.max_period;
+    min_voting_period = data.min_period;
+    custom_entrypoints = (Big_map.empty : custom_entrypoints);
+    }
 
 let bound_vp (vp, min_vp, max_vp : voting_period * voting_period * voting_period)
     : voting_period =
