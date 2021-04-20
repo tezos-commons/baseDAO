@@ -31,60 +31,7 @@ import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  (TransferProposal(..), checkTokenBalance, dummyFA2Contract, makeProposalKey, sendXtz, totalSupplyFromLedger)
-
--- | Helper type for unpack/pack
-data RegistryDaoProposalMetadata
-  = Normal_proposal NormalProposal
-  | Update_receivers_proposal UpdateReceiverParam
-  | Configuration_proposal ConfigProposal
-  | Transfer_proposal TransferProposal
-
-instance HasAnnotation RegistryDaoProposalMetadata where
-  annOptions = baseDaoAnnOptions
-
-data UpdateReceiverParam
-  = Add_receivers [Address]
-  | Remove_receivers [Address]
-
-instance HasAnnotation UpdateReceiverParam where
-  annOptions = baseDaoAnnOptions
-
-data NormalProposal = NormalProposal
-  { npAgoraPostId :: Natural
-  , npRegistryDiff :: [(MText, Maybe MText)]
-  }
-
-instance HasAnnotation NormalProposal where
-  annOptions = baseDaoAnnOptions
-
-data ConfigProposal = ConfigProposal
-  { cpFrozenScaleValue :: Maybe Natural
-  , cpFrozenExtraValue :: Maybe Natural
-  , cpSlashScaleValue :: Maybe Natural
-  , cpSlashDivisionValue :: Maybe Natural
-  , cpMaxProposalSize :: Maybe Natural
-  }
-
-instance HasAnnotation ConfigProposal where
-  annOptions = baseDaoAnnOptions
-
-
--- Note: Somehow setting `[@layout:comb]` in ligo types does not work.
--- Have to use `ligoLayout` instead.
-
-customGeneric "RegistryDaoProposalMetadata" ligoLayout
-deriving anyclass instance IsoValue RegistryDaoProposalMetadata
-
-customGeneric "UpdateReceiverParam" ligoLayout
-deriving anyclass instance IsoValue UpdateReceiverParam
-
-customGeneric "ConfigProposal" ligoLayout
-deriving anyclass instance IsoValue ConfigProposal
-
-customGeneric "NormalProposal" ligoLayout
-deriving anyclass instance IsoValue NormalProposal
-
+  (addressToKeyHash, checkTokenBalance, dummyFA2Contract, makeProposalKey, sendXtz, totalSupplyFromLedger)
 
 withOriginated
   :: MonadNettest caps base m
@@ -122,7 +69,7 @@ test_RegistryDAO =
             let proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $ Normal_proposal $ NormalProposal 1 []
             let proposalSize = metadataSize proposalMeta
             withSender (AddressResolved wallet1) $
-              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+              call baseDao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash wallet1))
 
             -- Advance one voting period, which is currently set as 10 secs.
             advanceTime (sec $ 11)
@@ -164,7 +111,7 @@ test_RegistryDAO =
               proposalSize = metadataSize proposalMeta -- 10
 
             withSender (AddressResolved wallet1) $
-              call baseDao (Call @"Freeze") (#amount .! (proposalSize + 2))
+(??)              call baseDao (Call @"Freeze") (#amount .! 8)
             advanceTime (sec $ 11)
 
             -- Here the proposal size and the configuration params frozen_scale_value,
@@ -194,7 +141,7 @@ test_RegistryDAO =
               let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
 
               withSender (AddressResolved wallet1) $
-                call baseDao (Call @"Freeze") (#amount .! requiredFrozen)
+                call baseDao (Call @"Freeze") (#amount .! requiredFrozen, #keyhash .! (addressToKeyHash wallet1))
 
               advanceTime (sec 10) -- voting period is 10 secs
 
@@ -247,10 +194,10 @@ test_RegistryDAO =
               let requiredFrozen = largeProposalSize * frozen_scale_value + frozen_extra_value
 
               withSender (AddressResolved wallet1) $
-                call baseDao (Call @"Freeze") (#amount .! 400)
+                call baseDao (Call @"Freeze") (#amount .! 400, #keyhash .! (addressToKeyHash wallet1))
 
               withSender (AddressResolved voter1) $
-                call baseDao (Call @"Freeze") (#amount .! 100)
+                call baseDao (Call @"Freeze") (#amount .! 100, #keyhash .! (addressToKeyHash voter1))
 
               advanceTime (sec 11) -- voting period is 10 secs
 
@@ -305,10 +252,10 @@ test_RegistryDAO =
               call baseDao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
             withSender (AddressResolved wallet1) $
-              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+              call baseDao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash wallet1))
 
             withSender (AddressResolved voter1) $
-              call baseDao (Call @"Freeze") (#amount .! 50)
+              call baseDao (Call @"Freeze") (#amount .! 50, #keyhash .! (addressToKeyHash voter1))
             advanceTime (sec 13) -- voting period is 10 secs
 
             let requiredFrozen = proposalSize -- since frozen_scale_value and frozen_scale_value are 1 and 0.
@@ -348,9 +295,9 @@ test_RegistryDAO =
               proposeParams = ProposeParams proposalSize proposalMeta
 
             withSender (AddressResolved wallet1) $
-              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+              call baseDao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash wallet1))
             withSender (AddressResolved wallet2) $
-              call baseDao (Call @"Freeze") (#amount .! 20)
+              call baseDao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash wallet2))
 
             advanceTime (sec 13)
 
@@ -396,7 +343,7 @@ test_RegistryDAO =
               proposalSize2 = metadataSize proposalMeta2
 
             withSender (AddressResolved wallet) $
-              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+              call baseDao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash wallet))
 
             advanceTime (sec 10)
 
@@ -406,7 +353,7 @@ test_RegistryDAO =
               & expectFailProposalCheck baseDao
 
             withSender (AddressResolved wallet) $
-              call baseDao (Call @"Freeze") (#amount .! proposalSize2)
+              call baseDao (Call @"Freeze") (#amount .! proposalSize2, #keyhash .! (addressToKeyHash wallet))
 
             advanceTime (sec 10)
 
@@ -430,9 +377,9 @@ test_RegistryDAO =
               proposeParams = ProposeParams proposalSize proposalMeta
 
             withSender (AddressResolved wallet1) $
-              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+              call baseDao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash wallet1))
             withSender (AddressResolved wallet2) $
-              call baseDao (Call @"Freeze") (#amount .! 10)
+              call baseDao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash wallet2))
 
             advanceTime (sec 11)
 

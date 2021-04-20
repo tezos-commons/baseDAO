@@ -11,6 +11,7 @@ module Test.Ligo.BaseDAO.Common
   , totalSupplyFromLedger
 
   , mkFA2View
+  , addressToKeyHash
   , checkTokenBalance
   , dummyFA2Contract
   , makeProposalKey
@@ -34,6 +35,7 @@ import Morley.Nettest
 import Named ((!))
 import Time (sec)
 import Util.Named
+import Tezos.Address (Address(..))
 
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -44,18 +46,9 @@ import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
 type OriginateFn m = m ((Address, Address), (Address, Address), TAddress Parameter, TAddress FA2.Parameter, Address)
 
--- | Shared Proposal type used in Registry DAO and Treasury DAO
-data TransferProposal = TransferProposal
-  { tpAgoraPostId :: Natural
-  , tpTransfers :: [TransferType]
-  }
-
-instance HasAnnotation TransferProposal where
-  annOptions = baseDaoAnnOptions
-
-customGeneric "TransferProposal" ligoLayout
-deriving anyclass instance IsoValue TransferProposal
-
+addressToKeyHash :: Address -> KeyHash
+addressToKeyHash (KeyAddress h) = h
+addressToKeyHash _ = error "Not an implicit address"
 
 -- | A dummy contract with FA2 parameter that remembers the
 -- transfer calls.
@@ -248,7 +241,7 @@ createSampleProposal counter vp owner1 dao = do
 
   when (vp > 0) $ do
     withSender (AddressResolved owner1) $
-      call dao (Call @"Freeze") (#amount .! 10)
+      call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
     advanceTime (sec (fromIntegral vp))
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
