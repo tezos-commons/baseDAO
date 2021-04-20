@@ -456,13 +456,6 @@ test_RegistryDAO =
       setExtra @Natural [mt|max_xtz_amount|] 5 $
       setExtra @Natural [mt|max_proposal_size|] 100 (initialStorage admin wallets)
 
-    setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
-    setExtra key v (s@FullStorage {..}) = let
-     oldExtra = unDynamic $ sExtra fsStorage
-     newExtra = Map.insert key (lPackValueRaw v) oldExtra
-     newStorage = fsStorage { sExtra = DynamicRec newExtra }
-     in s { fsStorage = newStorage }
-
 
 expectFailProposalCheck
   :: (MonadNettest caps base m, ToAddress addr)

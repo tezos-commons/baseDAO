@@ -57,7 +57,7 @@ test_BaseDAO_FA2 = testGroup "BaseDAO FA2 tests:"
         $ uncapsNettest $ FA2.adminTransferScenario originateLigoDao
     , nettestScenario "transfer frozen tokens"
         $ uncapsNettest $ FA2.adminTransferFrozenScenario
-        $ originateLigoDaoWithBalance Ligo.dynRecUnsafe Ligo.defaultConfig
+        $ originateLigoDaoWithBalance Ligo.dynRecBigMapUnsafe Ligo.defaultConfig
             (\owner1 owner2 ->
                 [ ((owner1, Ligo.frozenTokenId), 100)
                 , ((owner2, Ligo.frozenTokenId), 100)

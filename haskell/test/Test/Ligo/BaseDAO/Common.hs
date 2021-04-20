@@ -235,7 +235,7 @@ originateLigoDaoWithConfigDesc extra config =
 
 originateLigoDao :: MonadNettest caps base m => OriginateFn m
 originateLigoDao =
-  originateLigoDaoWithConfig dynRecUnsafe defaultConfig
+  originateLigoDaoWithConfig dynRecBigMapUnsafe defaultConfig
 
 createSampleProposal
   :: (MonadNettest caps base m, HasCallStack)

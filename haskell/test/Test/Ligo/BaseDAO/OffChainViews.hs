@@ -33,7 +33,7 @@ offChainViewStorage :: Storage
 offChainViewStorage =
   (mkStorage
   ! #admin addr
-  ! #extra dynRecUnsafe
+  ! #extra dynRecBigMapUnsafe
   ! #metadata mempty
   ! #now (timestampFromSeconds 0)
   ! #tokenAddress genesisAddress

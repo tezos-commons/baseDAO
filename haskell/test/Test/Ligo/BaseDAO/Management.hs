@@ -114,7 +114,7 @@ test_BaseDAO_Management =
 
     initialStorage now admin = mkFullStorage
       ! #admin admin
-      ! #extra dynRecUnsafe
+      ! #extra dynRecBigMapUnsafe
       ! #metadata mempty
       ! #now now
       ! #tokenAddress genesisAddress
