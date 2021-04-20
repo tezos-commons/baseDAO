@@ -70,7 +70,12 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     );
     fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
-    last_period_change = {changed_on = data.now_val; period_num = 0n}
+    voting_period_params =
+      { levels_per_cycle_change_at = (0n, 0n)
+      ; cycles_per_period_change_at = (0n, 0n)
+      ; levels_per_cycle = 4096n
+      ; cycles_per_period = 5n
+      }
 }
 
 let default_full_storage (data : initial_data) : full_storage =
