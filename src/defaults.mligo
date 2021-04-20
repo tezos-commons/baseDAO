@@ -26,7 +26,7 @@ let default_storage (admin , governance_token, now_val, metadata : address * gov
     metadata = metadata;
     voting_period = 11n;
     quorum_threshold = {numerator = 1n; denominator = 10n}; // 10%
-    extra = (Map.empty : (string, bytes) map);
+    extra = (Big_map.empty : (string, bytes) big_map);
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     proposal_key_list_sort_by_date = (Set.empty : (timestamp * proposal_key) set);
     permits_counter = 0n;

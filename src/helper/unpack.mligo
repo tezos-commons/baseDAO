@@ -6,25 +6,44 @@
 
 #include "../types.mligo"
 
-// ------------------------------
-// Unpack Helpers
-// ------------------------------
+(* Required version of `Map.find_opt`. Fail immediately if the required key does not exist  *)
+let find_map (key_name, ce : string * ((string, bytes) map)) : (string * bytes) =
+  match Map.find_opt key_name ce with
+  | Some (packed_b) -> (key_name, packed_b)
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> (string * bytes))]
+              ("MISSING_VALUE", key_name) : (string * bytes))
 
-let unpack_key (key_name, p : string * ((string, bytes) map)) : bytes =
-    match Map.find_opt key_name p with
-      Some (b) -> b
-    | None -> (failwith "UNPACK_KEY_NOT_FOUND" : bytes)
+(* Required version of `Big_map.find_opt`. Fail immediately if the required key does not exist  *)
+let find_big_map (key_name, ce : string * ((string, bytes) big_map)) : (string * bytes) =
+  match Big_map.find_opt key_name ce with
+  | Some (packed_b) -> (key_name, packed_b)
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> (string * bytes))]
+              ("MISSING_VALUE", key_name) : (string * bytes))
 
-let unpack_nat (key_name, p : string * ((string, bytes) map)) : nat =
-  let b = unpack_key (key_name, p)
-  in match ((Bytes.unpack b) : (nat option)) with
-    Some (v) -> v
-  | None -> (failwith "UNPACKING_NOT_NAT_TYPE" : nat)
 
-let unpack_tez (key_name, p : string * ((string, bytes) map)) : tez =
-  let b = unpack_key (key_name, p)
-  in match ((Bytes.unpack b) : tez option) with
-    Some (v) -> v
-  | None -> (failwith "UNPACKING_NOT_TEZ_TYPE" : tez)
+(*
+ * Unpack Helpers
+ *
+ * All the `unpack_<type>` functions are required version of `Bytes.unpack`.
+ * They each fail immediately if the unpacked result is `None`.
+ *)
+
+let unpack_tez(key_name, packed_b: string * bytes) : tez =
+  match ((Bytes.unpack packed_b) : (tez option)) with
+  | Some (v) -> v
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> tez)]
+              ("UNPACKING_FAILED", key_name) : tez)
+
+let unpack_nat(key_name, packed_b: string * bytes) : nat =
+  match ((Bytes.unpack packed_b) : (nat option)) with
+  | Some (v) -> v
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> nat)]
+              ("UNPACKING_FAILED", key_name) : nat)
+
+let unpack_nat_opt(key_name, packed_b: string * bytes) : nat option =
+  match ((Bytes.unpack packed_b) : (nat option) option) with
+  | Some (v) -> v
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> nat option)]
+              ("UNPACKING_FAILED", key_name) : nat option)
 
 #endif

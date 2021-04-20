@@ -52,3 +52,31 @@ type lookup_registry_param =
   }
 
 type lookup_registry_view = (registry_key * (registry_value option)) contract
+
+
+
+// -- Unpack Helpers (fail if the unpacked result is none) -- //
+
+let unpack_registry (key_name, packed_b: string * bytes) : registry =
+  match ((Bytes.unpack packed_b) : (registry option)) with
+  | Some (v) -> v
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> registry)]
+              ("UNPACKING_FAILED", key_name) : registry)
+
+let unpack_registry_affected (key_name, packed_b: string * bytes) : registry_affected =
+  match ((Bytes.unpack packed_b) : (registry_affected option)) with
+  |  Some (v) -> v
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> registry_affected)]
+              ("UNPACKING_FAILED", key_name) : registry_affected)
+
+let unpack_proposal_receivers (key_name, packed_b: string * bytes) : proposal_receivers =
+  match ((Bytes.unpack packed_b) : (proposal_receivers option)) with
+  | Some (v) -> v
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> proposal_receivers)]
+              ("UNPACKING_FAILED", key_name) : proposal_receivers)
+
+let unpack_lookup_registry_param (key_name, packed_b: string * bytes) : lookup_registry_param =
+  match ((Bytes.unpack packed_b) : (lookup_registry_param option)) with
+  | Some (v) -> v
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> lookup_registry_param)]
+              ("UNPACKING_FAILED", key_name) : lookup_registry_param)

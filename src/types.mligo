@@ -140,7 +140,7 @@ type permit =
   }
 
 type metadata_map = (string, bytes) big_map
-type contract_extra = (string, bytes) map
+type contract_extra = (string, bytes) big_map
 
 // Some information to track changes made to the voting period so that we can
 // calculate the current voting period even after many changes to the period length

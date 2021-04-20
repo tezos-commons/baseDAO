@@ -35,9 +35,12 @@ These two parts are coupled into one smart contract because interaction between 
 BaseDAO is a concrete smart contract, but also a framework to implement various DAOs.
 It can be configured at origination for any specific needs.
 
-In order to do so the contract has two type synonyms for `(string, bytes) map`
-(or in Michelson: `map string bytes`), that can contain arbitrary data:
-`proposal_metadata` and `contract_extra`.
+In order to do so the contract has types that can contain arbitary data:
+- `proposal_metadata` which is a type synonym for `(string, bytes) map`
+  (or in Michelson: `map string bytes`)
+- `contract_extra` which is a type synonym for `(string, bytes) big_map`
+  (or in Michelson: `big_map string bytes`)
+
 
 The former contains fields that are required to submit a proposal.
 The latter keeps global information like information about accepted proposals.
@@ -230,7 +233,8 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `PROPOSAL_NOT_UNIQUE`           | Trying to propose a proposal that is already existed in the Storage.                                        |
 | `MISSIGNED`                     | Parameter signature does not match the expected one - for permits.                                          |
 | `ENTRYPOINT_NOT_FOUND`          | Throw when `CallCustom` is called with a non-existing entrypoint                                            |
-| `UNPACKING_FAILED`              | Throw when unpacking of a stored entrypoint or its parameter fails.                                         |
+| `UNPACKING_FAILED`              | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.               |
+| `MISSING_VALUE`                 | Throw when trying to unpack a field that does not exist.                                                    |
 | `NOT_PROPOSING_PERIOD`          | Throw when `propose` call is made on a non-proposing period.                                                |
 | `NOT_ENOUGH_FROZEN_TOKENS`      | Throw when there is not enough frozen tokens for the operation.                                             |
 | `NOT_ENOUGH_STAKED_TOKENS`      | Throw when there is not enough staked tokens for the operation.                                             |
