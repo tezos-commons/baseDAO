@@ -209,7 +209,7 @@ originateTreasuryDaoWithBalance
  => (Address -> Address -> [(LedgerKey, LedgerValue)]) -> OriginateFn m
 originateTreasuryDaoWithBalance bal =
   let fs = fromVal ($(fetchValue @FullStorage "haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
-      testExtra = (sExtra $ fsStorage fs)
+      FullStorage{..} = fs
         & setExtra @Natural [mt|frozen_scale_value|] 1
         & setExtra @Natural [mt|frozen_extra_value|] 0
         & setExtra @Natural [mt|slash_scale_value|] 1
@@ -218,8 +218,4 @@ originateTreasuryDaoWithBalance bal =
         & setExtra @Natural [mt|min_xtz_amount|] 2
         & setExtra @Natural [mt|max_xtz_amount|] 5
 
-  in originateLigoDaoWithBalance testExtra (fsConfig fs) bal
-  where
-    setExtra :: forall a n. NicePackedValue a => MText -> a -> DynamicRec n -> DynamicRec n
-    setExtra key v extra =
-      DynamicRec $ Map.insert key (lPackValueRaw v) (unDynamic extra)
+  in originateLigoDaoWithBalance (sExtra fsStorage) fsConfig bal

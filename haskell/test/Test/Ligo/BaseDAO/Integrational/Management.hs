@@ -42,7 +42,7 @@ checkVotingPeriodTracking  = do
       ! #admin admin
       ! #votingPeriod 10
       ! #quorumThreshold (QuorumThreshold 10 100)
-      ! #extra dynRecUnsafe
+      ! #extra dynRecBigMapUnsafe
       ! #metadata mempty
       ! #now now
       ! #tokenAddress genesisAddress

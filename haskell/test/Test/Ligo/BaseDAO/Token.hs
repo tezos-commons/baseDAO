@@ -24,7 +24,7 @@ test_BaseDAO_Token :: TestTree
 test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   [ nettestScenario "can burn tokens from any accounts"
       $ uncapsNettest $ burnScenario
-        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfig
+        $ originateLigoDaoWithBalance dynRecBigMapUnsafe defaultConfig
           (\o1 o2 ->
               [ ((o1, frozenTokenId), 10)
               , ((o2, frozenTokenId), 10)-- for total supply
@@ -32,7 +32,7 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
           )
   , nettestScenario "can mint tokens to any accounts"
       $ uncapsNettest $ mintScenario
-        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfig
+        $ originateLigoDaoWithBalance dynRecBigMapUnsafe defaultConfig
           (\o1 _ ->
               [ ((o1, frozenTokenId), 0)
               ]

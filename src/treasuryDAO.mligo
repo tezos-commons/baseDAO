@@ -11,33 +11,23 @@
 #include "treasuryDAO/types.mligo"
 
 // -------------------------------------
-// Helpers
-// -------------------------------------
-
-let unpack_transfer_type_list (key_name, p : string * ((string, bytes) map)) : transfer_type list =
-  let b = unpack_key (key_name, p)
-  in match ((Bytes.unpack b) : ((transfer_type list) option)) with
-    Some (v) -> v
-  | None -> (failwith "UNPACKING_NOT_TRANSFER_TYPE_LIST" : transfer_type list)
-
-// -------------------------------------
 // Configuration Lambdas
 // -------------------------------------
 
 let treasury_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
   let proposal_size = Bytes.size(Bytes.pack(params.proposal_metadata)) in
-  let frozen_scale_value = unpack_nat("frozen_scale_value", extras) in
-  let frozen_extra_value = unpack_nat("frozen_extra_value", extras) in
-  let max_proposal_size = unpack_nat("max_proposal_size", extras) in
-  let min_xtz_amount = unpack_tez("min_xtz_amount", extras) in
-  let max_xtz_amount = unpack_tez("max_xtz_amount", extras) in
+  let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
+  let frozen_extra_value = unpack_nat(find_big_map("frozen_extra_value", extras)) in
+  let max_proposal_size = unpack_nat(find_big_map("max_proposal_size", extras)) in
+  let min_xtz_amount = unpack_tez(find_big_map("min_xtz_amount", extras)) in
+  let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
 
   let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
   let has_correct_token_lock =
     (params.frozen_token = required_token_lock) && (proposal_size < max_proposal_size) in
 
   if has_correct_token_lock then
-    let ts = unpack_transfer_type_list("transfers", params.proposal_metadata) in
+    let ts = unpack_transfer_type_list(find_map("transfers", params.proposal_metadata)) in
     let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
       match transfer_type with
       | Token_transfer_type tt -> is_valid
@@ -48,8 +38,8 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
     false
 
 let treasury_DAO_rejected_proposal_return_value (params, extras : proposal * contract_extra) : nat =
-  let slash_scale_value = unpack_nat("slash_scale_value", extras) in
-  let slash_division_value =  unpack_nat("slash_division_value", extras)
+  let slash_scale_value = unpack_nat(find_big_map("slash_scale_value", extras)) in
+  let slash_division_value =  unpack_nat(find_big_map("slash_division_value", extras))
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
 let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
@@ -58,7 +48,7 @@ let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     frozen_token = proposal.proposer_frozen_token;
     proposal_metadata = proposal.metadata
     } in
-  let ts = unpack_transfer_type_list("transfers", proposal.metadata) in
+  let ts = unpack_transfer_type_list(find_map("transfers", proposal.metadata)) in
   let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
       let (is_valid, extras, ops) = acc in
       if is_valid then
@@ -105,7 +95,7 @@ let default_treasury_DAO_full_storage (admin, governance_token, contract_extra, 
   let (store, config) = default_full_storage (admin, governance_token, now_val, metadata_map) in
   let (frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, min_xtz_amount, max_xtz_amount) = contract_extra in
   let new_storage = { store with
-    extra = Map.literal [
+    extra = Big_map.literal [
           ("frozen_scale_value" , Bytes.pack frozen_scale_value);
           ("frozen_extra_value" , Bytes.pack frozen_extra_value);
           ("max_proposal_size" , Bytes.pack max_proposal_size);

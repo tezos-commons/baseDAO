@@ -56,11 +56,14 @@ module Ligo.BaseDAO.Types
   , LastPeriodChange (..)
   , DynamicRec (..)
   , dynRecUnsafe
+  , DynamicRecBigMap (..)
+  , dynRecBigMapUnsafe
   , mkStorage
   , mkMetadataMap
   , mkConfig
   , defaultConfig
   , mkFullStorage
+  , setExtra
 
   , sOperatorsLens
   ) where
@@ -384,9 +387,17 @@ newtype DynamicRec n = DynamicRec { unDynamic :: Map MText ByteString }
 dynRecUnsafe :: DynamicRec n
 dynRecUnsafe = DynamicRec mempty
 
--- TODO consider making these all 'BigMap's instead
+-- | The same as `DynamicRec` but uses `BigMap` instead.
+newtype DynamicRecBigMap n = DynamicRecBigMap { unDynamicBigMap :: BigMap MText ByteString }
+  deriving stock (Generic, Show, Eq)
+  deriving newtype (IsoValue, HasAnnotation, Default, One, Semigroup)
+
+-- | Construct 'DynamicRecBigMap' assuming it contains no mandatory entries.
+dynRecBigMapUnsafe :: DynamicRecBigMap n
+dynRecBigMapUnsafe = DynamicRecBigMap mempty
+
 type ProposalMetadata = DynamicRec "pm"
-type ContractExtra = DynamicRec "ce"
+type ContractExtra = DynamicRecBigMap "ce"
 type CustomEntrypoints = DynamicRec "ep"
 
 
@@ -624,6 +635,13 @@ mkFullStorage admin vp qt extra mdt now tokenAddress cEps = FullStorage
   { fsStorage = mkStorage admin vp qt extra mdt now tokenAddress
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
   }
+
+setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
+setExtra key v (s@FullStorage {..}) = s { fsStorage = newStorage }
+  where
+    (BigMap oldExtra) = unDynamicBigMap $ sExtra fsStorage
+    newExtra = BigMap $ M.insert key (lPackValueRaw v) oldExtra
+    newStorage = fsStorage { sExtra = DynamicRecBigMap newExtra }
 
 -- Instances
 ------------------------------------------------

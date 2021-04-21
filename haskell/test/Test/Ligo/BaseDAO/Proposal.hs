@@ -42,119 +42,119 @@ test_BaseDAO_Proposal =
   [ testGroup "Proposal creator:"
       [ nettestScenarioOnEmulator "BaseDAO - can propose a valid proposal" $
           \_emulated ->
-            uncapsNettest $ validProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ validProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "cannot propose an invalid proposal (rejected)" $
           \_emulated ->
-            uncapsNettest $ rejectProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ rejectProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "cannot propose a non-unique proposal" $
           \_emulated ->
-            uncapsNettest $ nonUniqueProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ nonUniqueProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "cannot propose in a non-proposal period" $
           \_emulated ->
-            uncapsNettest $ nonProposalPeriodProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ nonProposalPeriodProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       ]
 
   , testGroup "Voter:"
       [ nettestScenarioOnEmulator "can vote on a valid proposal" $
           \_emulated ->
-            uncapsNettest $ voteValidProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ voteValidProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "cannot vote non-existing proposal" $
           \_emulated ->
-            uncapsNettest $ voteNonExistingProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ voteNonExistingProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "can vote on multiple proposals" $
           \_emulated ->
-            uncapsNettest $ voteMultiProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ voteMultiProposals (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "cannot vote on outdated proposal" $
           \_emulated ->
-            uncapsNettest $ voteOutdatedProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ voteOutdatedProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       ]
 
 
   , nettestScenarioOnEmulator "cannot vote if the vote amounts exceeds token balance" $
       \_emulated ->
-        uncapsNettest $ insufficientTokenVote (originateLigoDaoWithConfigDesc dynRecUnsafe)
+        uncapsNettest $ insufficientTokenVote (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
 
   , nettestScenario "cannot propose with insufficient tokens" $
-      uncapsNettest $ insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      uncapsNettest $ insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
 
   , testGroup "Permit:"
       [ nettestScenarioOnEmulator "can vote from another user behalf" $
           \_emulated ->
-            uncapsNettest $ voteWithPermit (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ voteWithPermit (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "counter works properly in permits" $
           \_emulated ->
-            uncapsNettest $ voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       ]
   , testGroup "Admin:"
       [ nettestScenario "can set voting period"  $
-          uncapsNettest $ setVotingPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ setVotingPeriod (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
 
       , nettestScenario "can set quorum threshold" $
-          uncapsNettest $ setQuorumThreshold (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ setQuorumThreshold (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
 
       , nettestScenarioOnEmulator "can flush proposals that got accepted" $
           \_emulated ->
-            uncapsNettest $ flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "can flush 2 proposals that got accepted" $
           \_emulated ->
-            uncapsNettest $ flushAcceptedProposalsWithAnAmount (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushAcceptedProposalsWithAnAmount (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
           \_emulated ->
-            uncapsNettest $ flushRejectProposalQuorum (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushRejectProposalQuorum (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
           \_emulated ->
-            uncapsNettest $ flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "flush should not affecting ongoing proposals" $
           \_emulated ->
             uncapsNettest $ flushNotAffectOngoingProposals
-            (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "flush with bad cRejectedProposalReturnValue" $
           \_emulated ->
-            uncapsNettest $ flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       -- TODO [#15]: admin burn proposer token and test "flush"
 
       -- TODO [#38]: Improve this when contract size is smaller
       , nettestScenarioOnEmulator "flush and run decision lambda" $
           \_emulated ->
-            uncapsNettest $ flushDecisionLambda (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushDecisionLambda (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "can drop proposals" $
           \_emulated ->
-            uncapsNettest $ dropProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ dropProposal (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       ]
 
   , testGroup "Bounded Value"
       [ nettestScenarioOnEmulator "bounded value on proposals" $
           \_emulated ->
-            uncapsNettest $ proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "bounded value on votes" $
           \_emulated ->
-            uncapsNettest $ votesBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ votesBoundedValue (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenario "bounded range on quorum_threshold" $
-          uncapsNettest $ quorumThresholdBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ quorumThresholdBound (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       , nettestScenarioOnEmulator "bounded range on voting_period" $
           \_emulated ->
-            uncapsNettest $ votingPeriodBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ votingPeriodBound (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       ]
 
   , testGroup "Freeze-Unfreeze"
       [ nettestScenario "can freeze tokens" $
-          uncapsNettest $ freezeTokens (originateLigoDaoWithConfigDesc dynRecUnsafe)
+          uncapsNettest $ freezeTokens (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
 
       , nettestScenarioOnEmulator "cannot unfreeze tokens from the same period" $
           \_emulated ->
-            uncapsNettest $ cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
 
       , nettestScenarioOnEmulator "can unfreeze tokens from the previous period" $
           \_emulated ->
-            uncapsNettest $ canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
 
       , nettestScenarioOnEmulator "handle voting period change" $
           \_emulated ->
-            uncapsNettest $ canHandleVotingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ canHandleVotingPeriodChange (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
 
       , nettestScenarioOnEmulator "handle voting period change" $
           \_emulated ->
-            uncapsNettest $ votingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ votingPeriodChange (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       ]
 
  , testGroup "LIGO-specific proposal tests:"
