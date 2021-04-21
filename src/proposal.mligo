@@ -474,6 +474,10 @@ let freeze (freeze_param, store : freeze_param * storage) : return =
     then credit_to (tokens, sender_, store.frozen_token_id, store.ledger, store.total_supply)
     else (failwith "CANT_EXCEED_VOTING_POWER" : (ledger * total_supply)) in
 
+  let new_frozen_total_supply = if store.frozen_total_supply.0 = current_period
+        then (current_period, store.frozen_total_supply.1 + freeze_param.0)
+        else (current_period, freeze_param.0) in
+
   // Add the `amt` to the current period frozen token count of the freeze-history.
   let new_freeze_history_for_address = match Big_map.find_opt sender_ store.freeze_history with
     | Some fh ->
@@ -485,6 +489,7 @@ let freeze (freeze_param, store : freeze_param * storage) : return =
       freeze_history = Big_map.update sender_ (Some(new_freeze_history_for_address)) store.freeze_history
     ; ledger = ledger
     ; total_supply = total_supply
+    ; frozen_total_supply = new_frozen_total_supply
     })
 
 let unfreeze (amt, store : unfreeze_param * storage) : return =

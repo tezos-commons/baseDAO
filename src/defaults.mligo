@@ -67,6 +67,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
       [ (frozen_token_id, 0n)
       ]
     );
+    frozen_total_supply = (0n, 0n);
     fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
     voting_period_params =

@@ -4,6 +4,7 @@
 // Corresponds to Token/FA2.hs module
 
 #include "../types.mligo"
+#include "../common.mligo"
 
 // -----------------------------------------------------------------
 // Helper
@@ -110,7 +111,15 @@ let transfer (params, store : transfer_params * storage): return =
 let balance_of (params, store : balance_request_params * storage): return =
   let check_one (req : balance_request_item): balance_response_item =
     let valid_token_id = validate_token_type(req.token_id, store) in
-    let bal =
+    let bal = if req.token_id = frozen_token_id
+      // If the balance is requested for frozen token
+      // then we only return tokens frozen in current period, because
+      // tokens frozen in other periods are invalidated at the end of that period
+      // and cannot be counted as frozen.
+    then
+      let current_period = get_current_period_num(store.voting_period_params) in
+      get_frozen_tokens_for_current_period(current_period, req.owner, store)
+    else
       match Big_map.find_opt (req.owner, valid_token_id) store.ledger with
         Some bal -> bal
       | None -> 0n

@@ -188,6 +188,10 @@ type storage =
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
   ; permits_counter : nonce
   ; total_supply : total_supply
+  ; frozen_total_supply : (period * nat)
+      // ^^ we need to track this separately because tokens frozen in a period
+      // are invalidated at the end of that period, and is no longer considered as
+      // frozen.
   ; freeze_history : freeze_history
   ; fixed_proposal_fee_in_token : nat
   ; frozen_token_id : token_id

@@ -51,9 +51,16 @@ let get_vote_permit_counter (param, store : vote_permit_counter_param * storage)
     ("VoidResult", param.postprocess store.permits_counter) : return)
 
 let get_total_supply (param, store : get_total_supply_param * storage) : return =
-  let result = match Big_map.find_opt param.token_id store.total_supply with
-      None ->
-        (failwith("FA2_TOKEN_UNDEFINED") : nat)
-    | Some v -> v in
+  let result = if param.token_id = store.frozen_token_id
+    then let
+      current_period = get_current_period_num(store.voting_period_params)
+      in if store.frozen_total_supply.0 = current_period
+          then store.frozen_total_supply.1
+          else 0n
+    else
+      match Big_map.find_opt param.token_id store.total_supply with
+        None ->
+          (failwith("FA2_TOKEN_UNDEFINED") : nat)
+      | Some v -> v in
   ([%Michelson ({| { FAILWITH } |} : string * token_id -> return)]
     ("VoidResult", param.postprocess result) : return)
