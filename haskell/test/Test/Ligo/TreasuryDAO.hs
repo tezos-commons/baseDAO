@@ -8,7 +8,6 @@ module Test.Ligo.TreasuryDAO
 import Universum
 
 import qualified Data.ByteString as BS
-import qualified Data.Map as Map
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Michelson.Untyped.Entrypoints
@@ -22,9 +21,12 @@ import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  (OriginateFn, checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
+  (OriginateFn, TransferProposal(..), checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
+
+-- | Helper type for unpack/pack
+type TreasuryDaoProposalMetadata = TransferProposal
 
 -- | Testing a Treasury-like DAO. Ex. DNS Treasury
 test_TreasuryDAO :: TestTree
@@ -43,8 +45,8 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
   ]
 
 
-metadataSize :: DynamicRec "pm" -> Natural
-metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md
+metadataSize :: ByteString -> Natural
+metadataSize md = fromIntegral $ BS.length md
 
 validProposal :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 validProposal = uncapsNettest $ withFrozenCallStack do
@@ -54,14 +56,12 @@ validProposal = uncapsNettest $ withFrozenCallStack do
       , ((owner2_, frozenTokenId), 200)
       ]
   let
-    proposalMeta = DynamicRec $ Map.fromList $
-      [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
-      , ([mt|transfers|], lPackValueRaw @([TransferType])
-          [ tokenTransferType (toAddress dao) owner1 owner2
-          ]
-        )
-      ]
-    proposalSize = metadataSize proposalMeta
+    proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
+      TransferProposal
+        { tpAgoraPostId = 1
+        , tpTransfers = [ tokenTransferType (toAddress dao) owner1 owner2 ]
+        }
+    proposalSize = metadataSize proposalMeta -- 115
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! proposalSize)
@@ -76,7 +76,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
   withSender (AddressResolved owner1) $
     call dao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
 
-  checkTokenBalance frozenTokenId dao owner1 366
+  checkTokenBalance frozenTokenId dao owner1 315
 
 flushTokenTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
 flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
@@ -86,13 +86,11 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
       ]
 
   let
-    proposalMeta = DynamicRec $ Map.fromList $
-      [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
-      , ([mt|transfers|], lPackValueRaw @([TransferType])
-          [ tokenTransferType (toAddress fa2Contract) owner2 owner1
-          ]
-        )
-      ]
+    proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
+      TransferProposal
+        { tpAgoraPostId = 1
+        , tpTransfers = [ tokenTransferType (toAddress fa2Contract) owner2 owner1 ]
+        }
     proposalSize = metadataSize proposalMeta
     proposeParams = ProposeParams proposalSize proposalMeta
 
@@ -109,7 +107,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
     call dao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams owner1
 
-  checkTokenBalance frozenTokenId dao owner1 166
+  checkTokenBalance frozenTokenId dao owner1 115
 
   let
     upvote = NoPermit VoteParam
@@ -135,13 +133,11 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   sendXtz (toAddress dao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
   let
-    proposalMeta amt = DynamicRec $ Map.fromList $
-      [ ([mt|agora_post_id|], lPackValueRaw @Natural 1)
-      , ([mt|transfers|], lPackValueRaw @([TransferType])
-          [ xtzTransferType amt owner2 -- transfer from dao to owner2
-          ]
-        )
-      ]
+    proposalMeta amt = lPackValueRaw @TreasuryDaoProposalMetadata $
+      TransferProposal
+        { tpAgoraPostId = 1
+        , tpTransfers = [ xtzTransferType amt owner2 ]
+        }
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
   withSender (AddressResolved owner1) $
@@ -164,7 +160,7 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
     call dao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3) owner1
 
-  checkTokenBalance (frozenTokenId) dao owner1 94
+  checkTokenBalance (frozenTokenId) dao owner1 43
 
   let
     upvote = NoPermit VoteParam
