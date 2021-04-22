@@ -28,7 +28,7 @@ voteNonExistingProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn testConfig
   advanceTime (sec 10)
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner2))
 
   -- Create sample proposal
@@ -39,7 +39,7 @@ voteNonExistingProposal originateFn = do
         , vProposalKey = HashUnsafe "\11\12\13"
         }
 
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
+  withSender owner2 $ call dao (Call @"Vote") [params]
     & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
 voteMultiProposals
@@ -49,10 +49,10 @@ voteMultiProposals originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
 
   advanceTime (sec 120)
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash owner1))
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 5, #keyhash .! (addressToKeyHash owner2))
   advanceTime (sec 120)
 
@@ -73,7 +73,7 @@ voteMultiProposals originateFn = do
         ]
 
   advanceTime (sec 120)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
+  withSender owner2 $ call dao (Call @"Vote") params
   checkTokenBalance (frozenTokenId) dao owner2 105
   -- TODO [#31]: check storage if the vote update the proposal properly
 
@@ -84,7 +84,7 @@ voteOutdatedProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn testConfig
   advanceTime (sec 10)
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner2))
   -- Create sample proposal
   key1 <- createSampleProposal 1 10 owner1 dao
@@ -96,7 +96,7 @@ voteOutdatedProposal originateFn = do
         }
 
   advanceTime (sec 10)
-  withSender (AddressResolved owner2) $ do
+  withSender owner2 $ do
     call dao (Call @"Vote") [params]
     advanceTime (sec 25)
     call dao (Call @"Vote") [params]

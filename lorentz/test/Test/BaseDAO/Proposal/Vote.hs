@@ -37,7 +37,7 @@ voteNonExistingProposal originateFn = do
         , vProposalKey = HashUnsafe "\11\12\13"
         }
 
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
+  withSender owner2 $ call dao (Call @"Vote") [params]
     & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
 
 voteMultiProposals
@@ -66,7 +66,7 @@ voteMultiProposals originateFn = do
             }
         ]
 
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
+  withSender owner2 $ call dao (Call @"Vote") params
   checkTokenBalance (unfrozenTokenId) dao owner2 95
   checkTokenBalance (frozenTokenId) dao owner2 5
   -- TODO [#31]: check storage if the vote update the proposal properly
@@ -90,7 +90,7 @@ voteOutdatedProposal originateFn = do
         , vProposalKey = key1
         }
 
-  withSender (AddressResolved owner2) $ do
+  withSender owner2 $ do
     call dao (Call @"Vote") [params]
     advanceTime (sec 25)
     call dao (Call @"Vote") [params]

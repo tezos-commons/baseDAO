@@ -39,7 +39,7 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
       ]
   ]
 
-validProposal :: (Monad m) => NettestImpl m -> m ()
+validProposal :: (Monad m) => NettestImpl m -> Address -> m ()
 validProposal = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, _) <-
       originateBaseDaoWithBalance def config
@@ -56,7 +56,7 @@ validProposal = uncapsNettest $ do
         }
       expectedToken = fromInteger $ toInteger $ length $ lPackValueRaw proposal
 
-  withSender (AddressResolved owner1) $ do
+  withSender owner1 $ do
     call dao (Call @"Propose") (params $ expectedToken - 1)
       & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
@@ -69,7 +69,7 @@ validProposal = uncapsNettest $ do
   checkTokenBalance (DAO.frozenTokenId) dao owner1 115
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 85
 
-flushTokenTransfer :: (Monad m) => NettestImpl m -> m ()
+flushTokenTransfer :: (Monad m) => NettestImpl m -> Address -> m ()
 flushTokenTransfer = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <-
       originateBaseDaoWithBalance def config
@@ -85,7 +85,7 @@ flushTokenTransfer = uncapsNettest $ do
         , opOperator = toAddress dao
         , opTokenId = DAO.unfrozenTokenId
         }
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Update_operators") [FA2.AddOperator opParams]
 
   let proposal = tokenTransferProposalMetadata (toAddress dao) owner2 owner1 -- transfer token from owner2 -> owner1
@@ -103,9 +103,9 @@ flushTokenTransfer = uncapsNettest $ do
         , vProposalKey = key1
         }
 
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
+  withSender owner2 $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 20)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 210
@@ -113,7 +113,7 @@ flushTokenTransfer = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 90
 
 -- TODO: [#86] Add custom entrypoints
-flushXtzTransfer :: (Monad m) => NettestImpl m -> m ()
+flushXtzTransfer :: (Monad m) => NettestImpl m -> Address -> m ()
 flushXtzTransfer = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig def config
 
@@ -135,9 +135,9 @@ flushXtzTransfer = uncapsNettest $ do
         , vProposalKey = key1
         }
 
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
+  withSender owner2 $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 20)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
 --   -- TODO: check xtz balance
 
@@ -191,5 +191,5 @@ createSampleProposal t pm owner1 dao = do
         , ppProposalMetadata = pm
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)

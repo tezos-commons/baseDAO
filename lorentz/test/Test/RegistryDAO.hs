@@ -49,7 +49,7 @@ configBS = config
 type Parameter =
   DAO.Parameter (RegistryDaoProposalMetadata ByteString ByteString) (RegistryDAOCustomParam ByteString ByteString)
 
-getRegistryValue :: (Monad m) => NettestImpl m -> m ()
+getRegistryValue :: (Monad m) => NettestImpl m -> Address -> m ()
 getRegistryValue = uncapsNettest $ do
   -- To check the view, we put a test value in registry during contract initialization
   -- so that we don't have to create and execute a proposal to put the value there. Some
@@ -64,9 +64,9 @@ getRegistryValue = uncapsNettest $ do
 
   consumer <- originateSimple "consumer" [] (contractConsumer @(ByteString, (Maybe ByteString)))
   call dao (Call @"CallCustom") (LookupRegistry $ mkView dummyKey consumer)
-  checkStorage (AddressResolved $ unTAddress consumer) (toVal [(dummyKey, Just dummyVal)])
+  checkStorage (unTAddress consumer) (toVal [(dummyKey, Just dummyVal)])
 
-validProposal :: (Monad m) => NettestImpl m -> m ()
+validProposal :: (Monad m) => NettestImpl m -> Address -> m ()
 validProposal = uncapsNettest $ do
   ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def configBS
 
@@ -76,7 +76,7 @@ validProposal = uncapsNettest $ do
         }
       expectedToken = fromInteger $ toInteger $ length $ lPackValueRaw longNormalProposalMetadata
 
-  withSender (AddressResolved owner1) $ do
+  withSender owner1 $ do
     call dao (Call @"Propose") (params $ expectedToken - 1)
       & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
@@ -89,7 +89,7 @@ validProposal = uncapsNettest $ do
   checkTokenBalance (DAO.frozenTokenId) dao owner1 62
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 38
 
-validConfigProposal :: (Monad m) => NettestImpl m -> m ()
+validConfigProposal :: (Monad m) => NettestImpl m -> Address -> m ()
 validConfigProposal = uncapsNettest $ do
   ((owner1, _), (owner2, _), dao, admin) <- originateBaseDaoWithConfig def configBS
 
@@ -116,10 +116,10 @@ validConfigProposal = uncapsNettest $ do
         , vProposalKey = key1
         }
 
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
+  withSender owner2 $ call dao (Call @"Vote") [upvote]
 
   advanceTime (sec 20)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   -- Fail due too big proposal size
   _ <- createSampleProposal ((getTokensAmount longNormalProposalMetadata) + 5) longNormalProposalMetadata owner1 dao
@@ -132,7 +132,7 @@ validConfigProposal = uncapsNettest $ do
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 37
 
   advanceTime (sec 20)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   -- Only half are returned
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
@@ -182,5 +182,5 @@ createSampleProposal t pm owner1 dao = do
         , ppProposalMetadata = pm
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)

@@ -145,13 +145,13 @@ checkTokenBalance
 checkTokenBalance tokenId dao addr expectedValue = withFrozenCallStack $ do
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  withSender (AddressResolved addr) $ call dao (Call @"Balance_of")
+  withSender addr $ call dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = addr
       , briTokenId = tokenId
       } ] consumer)
 
-  checkStorage (AddressResolved $ toAddress consumer)
+  checkStorage (toAddress consumer)
     (toVal [[((addr, tokenId), expectedValue)]] )
 
 makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ProposalKey pm
@@ -162,7 +162,7 @@ sendXtz
   => Address -> EpName -> pm -> m ()
 sendXtz addr epName pm = withFrozenCallStack $ do
   let transferData = TransferData
-        { tdTo = AddressResolved addr
+        { tdTo = addr
         , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
         , tdEntrypoint = epName
         , tdParameter = pm
@@ -193,7 +193,7 @@ createSampleProposal counter owner1 dao = do
         , ppProposalMetadata = proposalMetadataFromNum counter
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)
 
 -- TODO: Implement this via [#31] instead
@@ -204,7 +204,7 @@ createSampleProposal counter owner1 dao = do
 --   owner :: Address <- newAddress "owner"
 --   consumer <- originateSimple "consumer" [] contractConsumer
 --   -- | If the proposal exists, there should be no error
---   callFrom (AddressResolved owner) dao (Call @"Proposal_metadata") (mkView proposalKey consumer)
+--   callFrom owner dao (Call @"Proposal_metadata") (mkView proposalKey consumer)
 
 -- TODO [#31]: See this ISSUES: https://gitlab.com/morley-framework/morley/-/issues/415#note_435327096
 -- Check if certain field in storage

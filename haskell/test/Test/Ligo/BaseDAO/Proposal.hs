@@ -161,31 +161,31 @@ test_BaseDAO_Proposal =
     [ nettestScenarioOnEmulator "can propose a valid proposal with a fixed fee" $
         \_emulated -> uncapsNettest $ do
           ((proposer, _), _, dao, _, admin) <- originateLigoDao
-          withSender (AddressResolved admin) $
+          withSender admin $
             call dao (Call @"Set_fixed_fee_in_token") 42
           let params = ProposeParams
                 { ppFrozenToken = 10
                 , ppProposalMetadata = lPackValueRaw @Integer 1
                 }
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Freeze") (#amount .! 52, #keyhash .! (addressToKeyHash proposer))
           advanceTime (sec 10)
 
-          withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
+          withSender proposer $ call dao (Call @"Propose") params
           checkTokenBalance frozenTokenId dao proposer 152
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
               & expectError dao (VoidResult (252 :: Natural)) -- initial = 0
 
     , nettestScenarioOnEmulator "cannot propose with insufficient tokens to pay the fee" $
         \_emulated -> uncapsNettest $ do
           ((proposer, _), _, dao, _, admin) <- originateLigoDao
-          withSender (AddressResolved admin) $
+          withSender admin $
             call dao (Call @"Set_fixed_fee_in_token") 100
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Freeze") (#amount .! 52, #keyhash .! (addressToKeyHash proposer))
           advanceTime (sec 10)
 
@@ -193,13 +193,13 @@ test_BaseDAO_Proposal =
                 { ppFrozenToken = 1
                 , ppProposalMetadata = lPackValueRaw @Integer 1
                 }
-          withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
+          withSender proposer $ call dao (Call @"Propose") params
             & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
     , nettestScenarioOnEmulator "an owner can change the fee" $
         \_emulated -> uncapsNettest $ do
           ((proposer, _), _, dao, _, admin) <- originateLigoDao
-          withSender (AddressResolved admin) $
+          withSender admin $
             call dao (Call @"Set_fixed_fee_in_token") 1000
 
           let params = ProposeParams
@@ -207,24 +207,24 @@ test_BaseDAO_Proposal =
                 , ppProposalMetadata = lPackValueRaw @Integer 1
                 }
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Freeze") (#amount .! 52, #keyhash .! (addressToKeyHash proposer))
           advanceTime (sec 10)
 
-          withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
+          withSender proposer $ call dao (Call @"Propose") params
             & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
-          withSender (AddressResolved admin) $
+          withSender admin $
             call dao (Call @"Set_fixed_fee_in_token") 10
 
-          withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
+          withSender proposer $ call dao (Call @"Propose") params
           checkTokenBalance frozenTokenId dao proposer 152
 
     , nettestScenario "a non-owner cannot change the fee" $
         uncapsNettest $ do
           ((someone, _), _, dao, _, _) <- originateLigoDao
 
-          withSender (AddressResolved someone) $
+          withSender someone $
             call dao (Call @"Set_fixed_fee_in_token") 1000
               & expectCustomErrorNoArg #nOT_ADMIN dao
 
@@ -234,15 +234,15 @@ test_BaseDAO_Proposal =
 
           -- Use 60s for voting period, since in real network by the time we call
           -- the vote entrypoint 30s have already passed.
-          withSender (AddressResolved admin) $ do
+          withSender admin $ do
             call dao (Call @"Set_voting_period") 60
             call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
             call dao (Call @"Set_fixed_fee_in_token") 42
 
-          withSender (AddressResolved voter) $
+          withSender voter $
             call dao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash voter))
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Freeze") (#amount .! 42, #keyhash .! (addressToKeyHash proposer))
 
           advanceTime (sec 61)
@@ -254,14 +254,14 @@ test_BaseDAO_Proposal =
                   , vVoteAmount = 10
                   , vProposalKey = key1
                   }
-          withSender (AddressResolved voter) $
+          withSender voter $
             call dao (Call @"Vote") [vote_]
 
           let expectedFrozen = 100 + 42 + 10 -- 'createSampleProposal' freezes 10 tokens
           checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
           advanceTime (sec 60)
-          withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+          withSender admin $ call dao (Call @"Flush") 100
 
           checkTokenBalance frozenTokenId dao proposer 152
 
@@ -279,7 +279,7 @@ nonProposalPeriodProposal
 nonProposalPeriodProposal originateFn = do
   ((owner1, _), _, dao, _, _) <- originateFn testConfig
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
 
   advanceTime (sec 10)
@@ -289,7 +289,7 @@ nonProposalPeriodProposal originateFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
     & expectCustomErrorNoArg #nOT_PROPOSING_PERIOD dao
 
 freezeTokens
@@ -298,10 +298,10 @@ freezeTokens
 freezeTokens originateFn = do
   ((owner1, _), _, dao, tokenContract, _) <- originateFn testConfig
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
+  withSender owner1 $ call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
   checkTokenBalance frozenTokenId dao owner1 110
   -- Check that the FA2 token got a transfer call as expected.
-  checkStorage (AddressResolved $ unTAddress tokenContract)
+  checkStorage (unTAddress tokenContract)
     (toVal [[FA2.TransferItem
       { tiFrom = owner1
       , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
@@ -315,15 +315,15 @@ burnsFeeOnFailure reason = do
 
   -- Use 60s for voting period, since in real network by the time we call
   -- the vote entrypoint 30s have already passed.
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_voting_period") 60
     call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
     call dao (Call @"Set_fixed_fee_in_token") 42
 
-  withSender (AddressResolved proposer) $
+  withSender proposer $
     call dao (Call @"Freeze") (#amount .! 42, #keyhash .! (addressToKeyHash proposer))
 
-  withSender (AddressResolved voter) $
+  withSender voter $
     call dao (Call @"Freeze") (#amount .! 1, #keyhash .! (addressToKeyHash voter))
 
   advanceTime (sec 61)
@@ -332,7 +332,7 @@ burnsFeeOnFailure reason = do
   advanceTime (sec 60)
   case reason of
     Downvoted -> do
-      withSender (AddressResolved voter) $
+      withSender voter $
         call dao (Call @"Vote") [downvote key1]
     QuorumNotMet -> return ()
 
@@ -340,7 +340,7 @@ burnsFeeOnFailure reason = do
   checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   -- Tokens frozen with the proposal are returned as unstaked (but still
   -- frozen), except for the fee and slash amount. The latter is zero in this
@@ -354,11 +354,11 @@ cannotUnfreezeFromSamePeriod
 cannotUnfreezeFromSamePeriod originateFn = do
   ((owner1, _), _, dao, _, _) <- originateFn testConfig
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
+  withSender owner1 $ call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
   checkTokenBalance frozenTokenId dao owner1 110
 
   -- Cannot unfreeze in the same period
-  withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
+  withSender owner1 $ call dao (Call @"Unfreeze") (#amount .! 10)
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 canUnfreezeFromPreviousPeriod
@@ -367,15 +367,15 @@ canUnfreezeFromPreviousPeriod
 canUnfreezeFromPreviousPeriod originateFn = do
   ((owner1, _), _, dao, tokenContract, _) <- originateFn testConfig
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
+  withSender owner1 $ call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
   checkTokenBalance frozenTokenId dao owner1 110
 
   advanceTime (sec 15)
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
+  withSender owner1 $ call dao (Call @"Unfreeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dao owner1 100
   -- Check that the FA2 token got a transfer call as expected.
-  checkStorage (AddressResolved $ unTAddress tokenContract)
+  checkStorage (unTAddress tokenContract)
     (toVal
       [ [ FA2.TransferItem
         { tiFrom = unTAddress dao
@@ -393,12 +393,12 @@ canHandleVotingPeriodChange originateFn = do
   -- Initial voting period is 10 sec
   ((owner1, _), _, dao, _, admin) <- originateFn testConfig
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
+  withSender owner1 $ call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
   checkTokenBalance frozenTokenId dao owner1 110
 
   advanceTime (sec 5)
 
-  withSender (AddressResolved admin) $
+  withSender admin $
     call dao (Call @"Set_voting_period") 15
 
   advanceTime (sec 10)
@@ -406,11 +406,11 @@ canHandleVotingPeriodChange originateFn = do
   -- additional 15 seconds to wait before the next period starts. Here only
   -- 10 seconds is advanced, so we are in the current period itself.
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
+  withSender owner1 $ call dao (Call @"Unfreeze") (#amount .! 10)
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
   advanceTime (sec 5)
-  withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
+  withSender owner1 $ call dao (Call @"Unfreeze") (#amount .! 10)
 
 insufficientTokenProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -422,7 +422,7 @@ insufficientTokenProposal originateFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 insufficientTokenVote
@@ -432,7 +432,7 @@ insufficientTokenVote originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
   advanceTime (sec 120)
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 100, #keyhash .! (addressToKeyHash owner2))
 
   -- Create sample proposal
@@ -451,7 +451,7 @@ insufficientTokenVote originateFn = do
         ]
   advanceTime (sec 120)
 
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
+  withSender owner2 $ call dao (Call @"Vote") params
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
 voteWithPermit
@@ -461,13 +461,13 @@ voteWithPermit originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
   advanceTime (sec 120)
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner1))
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 120 owner1 dao
 
-  params <- permitProtect (AddressResolved owner1) =<< addDataToSign dao (Nonce 0)
+  params <- permitProtect owner1 =<< addDataToSign dao (Nonce 0)
         VoteParam
         { vVoteType = True
         , vVoteAmount = 2
@@ -475,7 +475,7 @@ voteWithPermit originateFn = do
         }
 
   advanceTime (sec 120)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
+  withSender owner2 $ call dao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dao owner1 112
 
 voteWithPermitNonce
@@ -487,10 +487,10 @@ voteWithPermitNonce originateFn = do
 
   advanceTime (sec 120)
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 50, #keyhash .! (addressToKeyHash owner1))
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 50, #keyhash .! (addressToKeyHash owner2))
 
   -- Create sample proposal
@@ -508,11 +508,11 @@ voteWithPermitNonce originateFn = do
   signed2@(dataToSign2, _) <- addDataToSign dao (Nonce 1) voteParam
   signed3@(_          , _) <- addDataToSign dao (Nonce 2) voteParam
 
-  params1 <- permitProtect (AddressResolved owner1) signed1
-  params2 <- permitProtect (AddressResolved owner1) signed2
-  params3 <- permitProtect (AddressResolved owner1) signed3
+  params1 <- permitProtect owner1 signed1
+  params2 <- permitProtect owner1 signed2
+  params3 <- permitProtect owner1 signed3
 
-  withSender (AddressResolved owner2) $ do
+  withSender owner2 $ do
     -- Good nonce
     call dao (Call @"Vote") [params1]
 
@@ -528,7 +528,7 @@ voteWithPermitNonce originateFn = do
     call dao (Call @"Vote") [params2]
 
   -- Check counter
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Get_vote_permit_counter") (mkVoid ())
       & expectError dao (VoidResult (2 :: Natural))
 
@@ -541,11 +541,11 @@ flushNotAffectOngoingProposals originateFn = do
 
   -- Note: Cannot set to few seconds, since in real network, each
   -- calls takes some times to run. 20 seconds seem to be the ideal.
-  withSender (AddressResolved admin) $
+  withSender admin $
     call dao (Call @"Set_voting_period") (2 * 60)
   advanceTime (sec 120)
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash owner1))
 
   advanceTime (sec 125)
@@ -553,7 +553,7 @@ flushNotAffectOngoingProposals originateFn = do
   _key1 <- createSampleProposal 1 0 owner1 dao
   _key2 <- createSampleProposal 2 0 owner1 dao
   advanceTime (sec 125)
-  withSender (AddressResolved admin) $
+  withSender admin $
     call dao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -568,12 +568,12 @@ flushAcceptedProposals originateFn = do
 
   -- Use 60s for voting period, since in real network by the time we call
   -- vote entrypoint 30s is already passed.
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_voting_period") 60
     call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
   advanceTime (sec 60)
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 3, #keyhash .! (addressToKeyHash owner2))
 
   -- Accepted Proposals
@@ -590,7 +590,7 @@ flushAcceptedProposals originateFn = do
         , vVoteAmount = 1
         , vProposalKey = key1
         }
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Vote") [upvote', downvote']
 
   -- Checking balance of proposer and voters
@@ -598,7 +598,7 @@ flushAcceptedProposals originateFn = do
   checkTokenBalance (frozenTokenId) dao owner2 103
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -608,7 +608,7 @@ flushAcceptedProposals originateFn = do
 
   checkTokenBalance (frozenTokenId) dao owner2 103
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
       & expectError dao (VoidResult (213 :: Natural)) -- initial = 0
 
@@ -620,10 +620,10 @@ flushAcceptedProposalsWithAnAmount originateFn = do
 
   advanceTime (sec 10)
   -- Accepted Proposals
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 40, #keyhash .! (addressToKeyHash owner1))
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner2))
 
   advanceTime (sec 15)
@@ -645,10 +645,10 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   checkTokenBalance frozenTokenId dao owner1 140
 
   advanceTime (sec 10)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 2
+  withSender admin $ call dao (Call @"Flush") 2
 
   -- Proposals are flushed
-  withSender (AddressResolved owner2) $ do
+  withSender owner2 $ do
     call dao (Call @"Vote") [vote' key1]
       & expectCustomErrorNoArg #vOTING_PERIOD_OVER dao
     call dao (Call @"Vote") [vote' key2]
@@ -671,12 +671,12 @@ flushRejectProposalQuorum originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin)
     <- originateFn configWithRejectedProposal
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_voting_period") 60
     call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 3 5
   advanceTime (sec 60)
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 5, #keyhash .! (addressToKeyHash owner2))
 
   -- Rejected Proposal
@@ -690,10 +690,10 @@ flushRejectProposalQuorum originateFn = do
           }
         ]
   advanceTime (sec 60)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") votes
+  withSender owner2 $ call dao (Call @"Vote") votes
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -709,13 +709,13 @@ flushRejectProposalNegativeVotes originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin)
     <- originateFn configWithRejectedProposal
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_voting_period") 60
     call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 3 100
 
   advanceTime (sec 60)
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 3, #keyhash .! (addressToKeyHash owner2))
 
   -- Rejected Proposal
@@ -739,13 +739,13 @@ flushRejectProposalNegativeVotes originateFn = do
           }
         ]
   advanceTime (sec 60)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") votes
+  withSender owner2 $ call dao (Call @"Vote") votes
 
   -- Check proposer balance
   checkTokenBalance frozenTokenId dao owner1 110
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -760,12 +760,12 @@ flushWithBadConfig
 flushWithBadConfig originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <- originateFn badRejectedValueConfig
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_voting_period") 60
     call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 2
 
   advanceTime (sec 60)
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 3, #keyhash .! (addressToKeyHash owner2))
   key1 <- createSampleProposal 1 65 owner1 dao
 
@@ -775,10 +775,10 @@ flushWithBadConfig originateFn = do
         , vProposalKey = key1
         }
   advanceTime (sec 60)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
+  withSender owner2 $ call dao (Call @"Vote") [upvote']
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -794,11 +794,11 @@ flushDecisionLambda originateFn = do
   consumer <- originateSimple "consumer" [] (contractConsumer)
   ((owner1, _), (owner2, _), dao, _, admin) <- originateFn (decisionLambdaConfig consumer)
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_voting_period") 60
     call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner2))
   advanceTime (sec 65)
   key1 <- createSampleProposal 1 60 owner1 dao
@@ -809,12 +809,12 @@ flushDecisionLambda originateFn = do
         , vProposalKey = key1
         }
   advanceTime (sec 60)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
+  withSender owner2 $ call dao (Call @"Vote") [upvote']
 
   advanceTime (sec 60)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
-  results <- fromVal <$> getStorage (AddressResolved $ toAddress consumer)
+  results <- fromVal <$> getStorage (toAddress consumer)
   assert (results == (#proposer <.!> [owner1]))
     "Unexpected accepted proposals list"
 
@@ -824,15 +824,15 @@ dropProposal
 dropProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <- originateFn badRejectedValueConfig
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_voting_period") 20
     call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 50
   advanceTime (sec 25)
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 30, #keyhash .! (addressToKeyHash owner1))
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash owner2))
   advanceTime (sec 20)
 
@@ -845,12 +845,12 @@ dropProposal originateFn = do
         , vVoteAmount = 20
         , vProposalKey = key
         }
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params key1]
+  withSender owner2 $ call dao (Call @"Vote") [params key1]
   advanceTime (sec 20)
 
   key3 <- createSampleProposal 3 0 owner1 dao
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Drop_proposal") key1
     call dao (Call @"Drop_proposal") key2
       & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED dao
@@ -870,7 +870,7 @@ proposalBoundedValue originateFn = do
     )
   advanceTime (sec 11)
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash owner1))
 
   advanceTime (sec 10)
@@ -880,7 +880,7 @@ proposalBoundedValue originateFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved owner1) $ do
+  withSender owner1 $ do
     call dao (Call @"Propose") params
     call dao (Call @"Propose") params
       & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED dao
@@ -893,7 +893,7 @@ votesBoundedValue originateFn = do
     ( voteConfig >>-
       ConfigDesc configConsts{ cmMaxVotes = Just 1 }
     )
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner1))
 
   advanceTime (sec 120)
@@ -909,7 +909,7 @@ votesBoundedValue originateFn = do
         , vProposalKey = key1
         }
   advanceTime (sec 120)
-  withSender (AddressResolved owner1) $ do
+  withSender owner1 $ do
     call dao (Call @"Vote") [downvote']
     call dao (Call @"Vote") [upvote']
       & expectCustomErrorNoArg #mAX_VOTES_REACHED dao
@@ -925,7 +925,7 @@ quorumThresholdBound originateFn = do
         , cmMaxQuorumThreshold = Just $ QuorumThreshold 2 100
         }
     )
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 1 100)
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 2 100)
     call dao (Call @"Set_quorum_threshold") (QuorumThreshold 0 100)
@@ -944,7 +944,7 @@ votingPeriodBound originateFn = do
         , cmMaxVotingPeriod = Just 2
         }
     )
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Set_voting_period") 1
     call dao (Call @"Set_voting_period") 2
     call dao (Call @"Set_voting_period") 0
@@ -959,10 +959,10 @@ votingPeriodChange originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <- originateFn testConfig
   advanceTime (sec 11)
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner2))
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
 
   advanceTime (sec 10)
@@ -971,7 +971,7 @@ votingPeriodChange originateFn = do
   key1 <- createSampleProposal 1 0 owner1 dao
 
   advanceTime (sec 10)
-  withSender (AddressResolved admin) $ call dao (Call @"Set_voting_period") 20
+  withSender admin $ call dao (Call @"Set_voting_period") 20
 
   let params = NoPermit VoteParam
         { vVoteType = True
@@ -979,7 +979,7 @@ votingPeriodChange originateFn = do
         , vProposalKey = key1
         }
 
-  withSender (AddressResolved owner2) $ do
+  withSender owner2 $ do
     call dao (Call @"Vote") [params]
     advanceTime (sec 25)
     call dao (Call @"Vote") [params]

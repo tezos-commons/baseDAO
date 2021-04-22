@@ -54,23 +54,23 @@ burnScenario
 burnScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), _, dao, _, admin) <- originateFn
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Burn") (BurnParam owner1 frozenTokenId 10)
     & expectCustomErrorNoArg #nOT_ADMIN dao
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Burn") (BurnParam owner1 frozenTokenId 11)
       & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 11, #present .! 10)
 
     call dao (Call @"Burn") (BurnParam owner1 frozenTokenId 11)
       & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 11, #present .! 10)
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Burn") (BurnParam owner1 frozenTokenId 5)
   checkTokenBalance frozenTokenId dao owner1 5
 
   -- Check total supply
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
       & expectError dao (VoidResult (15 :: Natural)) -- initial = 20
 
@@ -80,16 +80,16 @@ mintScenario
 mintScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), _, dao, _, admin) <- originateFn
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Mint") (MintParam owner1 frozenTokenId 10)
     & expectCustomErrorNoArg #nOT_ADMIN dao
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Mint") (MintParam owner1 frozenTokenId 10)
   checkTokenBalance frozenTokenId dao owner1 10
 
   -- Check total supply
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
       & expectError dao (VoidResult (10 :: Natural)) -- initial = 0
 
@@ -124,14 +124,14 @@ transferContractTokensScenario originateFn = do
         , tcParams = transferParams
         }
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Transfer_contract_tokens") param
     & expectCustomErrorNoArg #nOT_ADMIN dao
 
-  withSender (AddressResolved admin) $
+  withSender admin $
     call dao (Call @"Transfer_contract_tokens") param
 
-  checkStorage (AddressResolved $ unTAddress fa2Contract)
+  checkStorage (unTAddress fa2Contract)
     (toVal
       [ [ FA2.TransferItem { tiFrom = target_owner1, tiTxs = [FA2.TransferDestination { tdTo = target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
       ])

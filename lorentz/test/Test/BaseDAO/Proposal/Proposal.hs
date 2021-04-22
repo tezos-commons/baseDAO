@@ -31,16 +31,16 @@ validProposal originateFn = do
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
   checkTokenBalance frozenTokenId dao owner1 10
   checkTokenBalance unfrozenTokenId dao owner1 90
 
   -- Check total supply
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Get_total_supply") (mkVoid unfrozenTokenId)
       & expectError dao (VoidResult (190 :: Natural)) -- initial = 200
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
       & expectError dao (VoidResult (10 :: Natural)) -- initial = 0
 
@@ -63,7 +63,7 @@ rejectProposal originateFn = do
         , ppProposalMetadata = proposalMetadataFromNum 1
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
 nonUniqueProposal
@@ -97,7 +97,7 @@ voteValidProposal originateFn = do
         , vProposalKey = key1
         }
 
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
+  withSender owner2 $ call dao (Call @"Vote") [params]
   checkTokenBalance (unfrozenTokenId) dao owner2 98
   checkTokenBalance (frozenTokenId) dao owner2 2
   -- TODO [#31]: check if the vote is updated properly

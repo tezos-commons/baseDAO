@@ -35,19 +35,19 @@ validProposal originateFn = do
         }
 
   advanceTime (sec 10)
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
   -- Check the token contract got a transfer call from
   -- baseDAO
-  checkStorage (AddressResolved $ unTAddress tokenContract)
+  checkStorage (unTAddress tokenContract)
     (toVal [[FA2.TransferItem { tiFrom = owner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]])
   advanceTime (sec 10)
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
   checkTokenBalance frozenTokenId dao owner1 110
 
   -- Check total supply
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
       & expectError dao (VoidResult (210 :: Natural)) -- initial = 0
 
@@ -62,11 +62,11 @@ rejectProposal originateFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner1))
   advanceTime (sec 10)
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
 nonUniqueProposal
@@ -86,7 +86,7 @@ voteValidProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
   advanceTime (sec 120)
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 2, #keyhash .! (addressToKeyHash owner2))
 
   -- Create sample proposal (first proposal has id = 0)
@@ -98,6 +98,6 @@ voteValidProposal originateFn = do
         }
 
   advanceTime (sec 120)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
+  withSender owner2 $ call dao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dao owner2 102
   -- TODO [#31]: check if the vote is updated properly

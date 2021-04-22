@@ -48,7 +48,7 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
 metadataSize :: ByteString -> Natural
 metadataSize md = fromIntegral $ BS.length md
 
-validProposal :: (Monad m, HasCallStack) => NettestImpl m -> m ()
+validProposal :: (Monad m, HasCallStack) => NettestImpl m -> Address -> m ()
 validProposal = uncapsNettest $ withFrozenCallStack do
   ((owner1, _), (owner2, _), dao, _, _) <-
     originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
@@ -63,22 +63,22 @@ validProposal = uncapsNettest $ withFrozenCallStack do
         }
     proposalSize = metadataSize proposalMeta -- 115
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash owner1))
 
   -- Advance one voting period.
   advanceTime (sec 1.5)
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
 
   checkTokenBalance frozenTokenId dao owner1 315
 
-flushTokenTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
+flushTokenTransfer :: (Monad m, HasCallStack) => NettestImpl m -> Address -> m ()
 flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   ((owner1, _), (owner2, _), dao, fa2Contract, admin) <-
     originateTreasuryDaoWithBalance $ \_ owner2_ ->
@@ -94,16 +94,16 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
     proposalSize = metadataSize proposalMeta
     proposeParams = ProposeParams proposalSize proposalMeta
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash owner1))
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 20, #keyhash .! (addressToKeyHash owner2))
 
   -- Advance one voting period (which is 1).
   advanceTime (sec 1.5)
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams owner1
 
@@ -117,14 +117,14 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
         }
 
   advanceTime (sec 1)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
+  withSender owner2 $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 1)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   checkTokenBalance frozenTokenId dao owner1 proposalSize
   checkTokenBalance frozenTokenId dao owner2 120
 
-flushXtzTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
+flushXtzTransfer :: (Monad m, HasCallStack) => NettestImpl m -> Address -> m ()
 flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   ((owner1, _), (owner2, _), dao, _, admin) <-
     originateTreasuryDaoWithBalance $ \_ _ ->
@@ -140,15 +140,15 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         }
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta 3), #keyhash .! (addressToKeyHash owner1))
 
-  withSender (AddressResolved owner2) $
+  withSender owner2 $
     call dao (Call @"Freeze") (#amount .! 10, #keyhash .! (addressToKeyHash owner2))
   -- Advance one voting period.
   advanceTime (sec 1.5)
 
-  withSender (AddressResolved owner1) $ do
+  withSender owner1 $ do
   -- due to smaller than min_xtz_amount
     call dao (Call @"Propose") (proposeParams 1)
       & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dao
@@ -170,9 +170,9 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         }
 
   advanceTime (sec 1)
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
+  withSender owner2 $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 1)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
 --   -- TODO: check xtz balance
 

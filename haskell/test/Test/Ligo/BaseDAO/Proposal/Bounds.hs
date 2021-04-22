@@ -26,11 +26,11 @@ setVotingPeriod originateFn = do
 
   let param = 60 * 60 -- 1 hour
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Set_voting_period") param
     & expectCustomErrorNoArg #nOT_ADMIN dao
 
-  withSender (AddressResolved admin) $
+  withSender admin $
     call dao (Call @"Set_voting_period") param
   -- TODO [#31]: checkStorage
 
@@ -42,11 +42,11 @@ setQuorumThreshold originateFn = do
 
   let param = QuorumThreshold 80 100
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Set_quorum_threshold") param
     & expectCustomErrorNoArg #nOT_ADMIN dao
 
-  withSender (AddressResolved admin) $
+  withSender admin $
     call dao (Call @"Set_quorum_threshold") param
   -- TODO [#31]: checkStorage
 

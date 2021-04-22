@@ -34,13 +34,13 @@ test_GameDAO = testGroup "GameDAO Tests"
       ]
   ]
 
-validProposal :: (Monad m) => NettestImpl m -> m ()
+validProposal :: (Monad m) => NettestImpl m -> Address -> m ()
 validProposal = uncapsNettest $ do
   (consumer :: TAddress MText) <- originateSimple "consumer" [] contractConsumer
   ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def config
 
   -- Fail due to proposing new content require 50 token.
-  withSender (AddressResolved owner1) $ do
+  withSender owner1 $ do
     call dao (Call @"Propose")
       (DAO.ProposeParams
         { ppFrozenToken = 20
@@ -56,7 +56,7 @@ validProposal = uncapsNettest $ do
   checkTokenBalance (DAO.frozenTokenId) dao owner1 15
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 85
 
-flushAcceptedProposals :: (Monad m) => NettestImpl m -> m ()
+flushAcceptedProposals :: (Monad m) => NettestImpl m -> Address -> m ()
 flushAcceptedProposals = uncapsNettest $ do
   (consumer :: TAddress MText) <- originateSimple "consumer" [] contractConsumer
   ((owner1, _), (owner2, _), dao, admin)
@@ -76,12 +76,12 @@ flushAcceptedProposals = uncapsNettest $ do
         , vVoteAmount = 1
         , vProposalKey = key1
         }
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote, downvote]
+  withSender owner2 $ call dao (Call @"Vote") [upvote, downvote]
   checkTokenBalance (DAO.frozenTokenId) dao owner2 3
   checkTokenBalance (DAO.unfrozenTokenId) dao owner2 97
 
   advanceTime (sec 21)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender admin $ call dao (Call @"Flush") 100
 
   checkTokenBalance (DAO.frozenTokenId) dao owner1 0
   checkTokenBalance (DAO.unfrozenTokenId) dao owner1 100 -- proposer
@@ -91,16 +91,16 @@ flushAcceptedProposals = uncapsNettest $ do
 
   -- Consumer contract is used in decision lambda and should contain accepted proposal
   -- description.
-  checkStorage (AddressResolved $ toAddress consumer)
+  checkStorage (toAddress consumer)
     (toVal [([mt|Balance Item|] :: MText)])
 
   -- TODO [#31]: add a check on proposals counter
 
-callDefaultEp :: (Monad m) => NettestImpl m -> m ()
+callDefaultEp :: (Monad m) => NettestImpl m -> Address -> m ()
 callDefaultEp = uncapsNettest $ do
   ((owner1, _), _, dao, _) <- originateBaseDaoWithConfig def config
 
-  withSender (AddressResolved owner1) $ call dao CallDefault ()
+  withSender owner1 $ call dao CallDefault ()
 
 -------------------------------------------------------------------------------
 -- Helper
@@ -146,5 +146,5 @@ createSampleProposal pm owner1 dao = do
         , ppProposalMetadata = pm
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
+  withSender owner1 $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)

@@ -125,13 +125,13 @@ checkTokenBalance
 checkTokenBalance tokenId dao addr expectedValue = do
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  withSender (AddressResolved addr) $ call dao (Call @"Balance_of")
+  withSender addr $ call dao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = addr
       , briTokenId = tokenId
       } ] consumer)
 
-  checkStorage (AddressResolved $ toAddress consumer)
+  checkStorage (toAddress consumer)
     (toVal [[((addr, tokenId), expectedValue)]] )
 
 makeProposalKey :: NicePackedValue pm => DAO.ProposeParams pm -> Address -> ProposalKey pm
