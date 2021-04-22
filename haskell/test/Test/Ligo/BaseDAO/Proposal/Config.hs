@@ -213,6 +213,7 @@ instance IsConfigDescExt DAO.Config DecisionLambdaAction where
   fillConfig (DecisionLambdaAction lam) DAO.Config{..} =
     DAO.Config
     { cDecisionLambda = do
+        dip (do none; pair)
         getField #plProposerFrozenToken; toNamed #frozen_tokens
         dip $ do toField #plProposer; toNamed #proposer
         framed lam

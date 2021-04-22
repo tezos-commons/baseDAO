@@ -497,6 +497,7 @@ data Storage = Storage
   , sQuorumThreshold :: QuorumThreshold
   , sGovernanceToken :: GovernanceToken
   , sVotingPeriod :: VotingPeriod
+  , sFrozenTotalSupply :: (Period, Natural)
   , sTotalSupply :: TotalSupply
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
   , sFixedProposalFeeInToken :: Natural
@@ -558,6 +559,7 @@ mkStorage admin votingPeriod quorumThreshold extra metadata now tokenAddress =
         }
     , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
     , sTotalSupply = M.fromList [(frozenTokenId, 0)]
+    , sFrozenTotalSupply = (0, 0)
     , sFreezeHistory = mempty
     , sFixedProposalFeeInToken = 0
     , sFrozenTokenId = frozenTokenId
@@ -589,7 +591,7 @@ mkMetadataMap hostAddress hostChain key =
 data Config = Config
   { cProposalCheck :: '[ProposeParams, ContractExtra] :-> '[Bool]
   , cRejectedProposalReturnValue :: '[Proposal, ContractExtra] :-> '["slash_amount" :! Natural]
-  , cDecisionLambda :: '[Proposal, ContractExtra] :-> '[List Operation, ContractExtra]
+  , cDecisionLambda :: '[Proposal, ContractExtra] :-> '[List Operation, (Maybe VotingPeriodParams, ContractExtra)]
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural
@@ -610,7 +612,7 @@ mkConfig customEps = Config
   , cRejectedProposalReturnValue = do
       dropN @2; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
-      drop; nil
+      drop; none ; pair;  nil
   , cCustomEntrypoints = DynamicRec $ BigMap $ M.fromList customEps
 
   , cMaxVotingPeriod = 60 * 60 * 24 * 30
