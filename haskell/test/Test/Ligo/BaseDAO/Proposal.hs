@@ -155,6 +155,9 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulator "handle voting period change" $
           \_emulated ->
             uncapsNettest $ votingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulator "NEW TEST: cannot freeze more than VOTING_POWER" $
+            uncapsNettestEmulated $ votingPowerLimitFreeze (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
       ]
 
  , testGroup "LIGO-specific proposal tests:"
@@ -306,6 +309,17 @@ freezeTokens originateFn = do
       { tiFrom = owner1
       , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
       }]])
+
+votingPowerLimitFreeze
+  :: (MonadEmulated caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+votingPowerLimitFreeze originateFn = do
+  ((owner1, _), _, dao, tokenContract, _) <- originateFn testConfig
+  let owner1KeyHash = addressToKeyHash owner1
+  setVotingPowers (mkVotingPowers [(owner1KeyHash, 10)])
+  withSender owner1 $
+    call dao (Call @"Freeze") (#amount .! 11, #keyhash .! (addressToKeyHash owner1))
+    & expectCustomErrorNoArg #cANT_EXCEED_VOTING_POWER dao
 
 burnsFeeOnFailure
   :: forall caps base m. (MonadNettest caps base m)

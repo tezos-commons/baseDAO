@@ -858,3 +858,10 @@ type instance ErrorArg "nEGATIVE_TOTAL_SUPPLY" = ()
 instance CustomErrorHasDoc "nEGATIVE_TOTAL_SUPPLY" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "An error occured when trying to burn an amount of token more than its current total supply"
+
+type instance ErrorArg "cANT_EXCEED_VOTING_POWER" = NoErrorArg
+
+instance CustomErrorHasDoc "cANT_EXCEED_VOTING_POWER" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "Tried to freeze more tokens than VOTING_POWER"

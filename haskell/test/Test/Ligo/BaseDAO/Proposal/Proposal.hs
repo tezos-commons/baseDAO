@@ -15,6 +15,7 @@ import Time (sec)
 
 import Lorentz hiding ((>>))
 import Morley.Nettest
+import Morley.Nettest.Tasty
 import Util.Named
 
 import Ligo.BaseDAO.Types
