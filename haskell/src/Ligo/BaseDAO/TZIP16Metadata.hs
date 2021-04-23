@@ -34,7 +34,6 @@ import qualified Paths_baseDAO_ligo_meta as Paths
 -- | Piece of metadata defined by user.
 data MetadataConfig = MetadataConfig
   { mcFrozenTokenMetadata :: FA2.TokenMetadata
-  , mcUnfrozenTokenMetadata :: FA2.TokenMetadata
   }
 
 -- | All the information for instantiating metadata.
@@ -54,8 +53,6 @@ defaultMetadataConfig =
   MetadataConfig
     { mcFrozenTokenMetadata =
         FA2.mkTokenMetadata "frozen_token" "Frozen Token" "8"
-    , mcUnfrozenTokenMetadata =
-        FA2.mkTokenMetadata "unfrozen_token" "Unfrozen Token" "8"
     }
 
 
