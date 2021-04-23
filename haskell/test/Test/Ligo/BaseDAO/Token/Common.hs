@@ -33,7 +33,7 @@ unknownTokens = FA2.TokenId 2
 
 originateWithCustomToken :: MonadNettest caps base m => OriginateFn m
 originateWithCustomToken =
-  originateLigoDaoWithBalance dynRecBigMapUnsafe defaultConfig
+  originateLigoDaoWithBalance dynRecUnsafe defaultConfig
       (\owner1 owner2 ->
           [ ((owner1, frozenTokens), 100)
           , ((owner2, frozenTokens), 100)

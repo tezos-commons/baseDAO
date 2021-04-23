@@ -16,7 +16,7 @@ let default_config (data : initial_config_data) : config = {
   max_voting_period = data.max_period;
   min_voting_period = data.min_period;
 
-  custom_entrypoints = (Map.empty : custom_entrypoints);
+  custom_entrypoints = (Big_map.empty : custom_entrypoints);
 }
 
 let bound_vp (vp, min_vp, max_vp : voting_period * voting_period * voting_period)

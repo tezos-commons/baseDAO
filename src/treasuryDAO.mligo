@@ -108,6 +108,6 @@ let default_treasury_DAO_full_storage (data : initial_treasuryDAO_storage) : ful
     proposal_check = treasury_DAO_proposal_check;
     rejected_proposal_return_value = treasury_DAO_rejected_proposal_return_value;
     decision_lambda = treasury_DAO_decision_lambda;
-    custom_entrypoints = Map.literal [("receive_xtz", Bytes.pack (receive_xtz_entrypoint))];
+    custom_entrypoints = Big_map.literal [("receive_xtz", Bytes.pack (receive_xtz_entrypoint))];
     }
   in (new_storage, new_config)

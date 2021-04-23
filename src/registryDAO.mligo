@@ -234,7 +234,7 @@ let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : ful
     proposal_check = registry_DAO_proposal_check;
     rejected_proposal_return_value = registry_DAO_rejected_proposal_return_value;
     decision_lambda = registry_DAO_decision_lambda;
-    custom_entrypoints = Map.literal
+    custom_entrypoints = Big_map.literal
       [ "lookup_registry", Bytes.pack lookup_registry
       ; "receive_xtz", Bytes.pack receive_xtz_entrypoint
       ];

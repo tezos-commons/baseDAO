@@ -78,7 +78,7 @@ type transfer_proposal =
 ```
 and an empty `contract_extra`.
 
-Lastly, there is one more `(string, bytes) map` type synonym: `custom_entrypoints`,
+Lastly, there is one more `(string, bytes) big_map` type synonym: `custom_entrypoints`,
 used to execute arbitrary logic on the contract, see [its section](#custom-entrypoints)
 for more information on its content and usage.
 
