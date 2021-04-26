@@ -92,7 +92,10 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Proposal.Proposal
       Test.Ligo.BaseDAO.Proposal.Vote
       Test.Ligo.BaseDAO.Token
-      Test.Ligo.BaseDAO.Token.FA2
+      Test.Ligo.BaseDAO.Token.BalanceOf
+      Test.Ligo.BaseDAO.Token.Common
+      Test.Ligo.BaseDAO.Token.Transfer
+      Test.Ligo.BaseDAO.Token.UpdateOperators
       Test.Ligo.BaseDAO.Types
       Test.Ligo.RegistryDAO
       Test.Ligo.TreasuryDAO
