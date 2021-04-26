@@ -308,6 +308,4 @@ type return_with_full_storage = operation list * full_storage
 
 let nil_op = ([] : operation list)
 
-let frozen_token_id: nat = 0n
-
 #endif  // TYPES_H included

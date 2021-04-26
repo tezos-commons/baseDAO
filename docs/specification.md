@@ -25,7 +25,9 @@ These two parts are coupled into one smart contract because interaction between 
 
 - The contract must be FA2 compatible.
 
-- The contract must store tokens of two types: frozen (`token_id` is 1) and unfrozen (`token_id` is 0).
+- The contract must store frozen tokens (`token_id` is 0).
+
+- The contract may store tokens with other token identifiers.
 
 - The storage of the contract must have annotations for all fields
   and must be documented to make its interpretation easy for users.
@@ -330,15 +332,7 @@ Parameter (in Michelson):
 
 - Permission logic follows the default permissions descriptor specified in FA2.
 
-- Although the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`). All `token_id` values passed to this entrypoint by non-admin MUST be 0.
-
-<!--
-- If the destination address is the `freeze_my_tokens` address:
-  - This entrypoint MUST update the unfrozen token balance(`token_id = 0`) according to FA2 requirement.
-  - It MUST also increase the frozen token balance (`token_id = 1`) of the source address by the amount specified in the parameter.
--->
-
-- The administrator can transfer tokens from any address to any address. He also can transfer frozen tokens.
+- The administrator can transfer frozen tokens from any address to any address.
 
 ### **balance_of**
 
@@ -391,8 +385,6 @@ Parameter (in Michelson):
 
 - This entrypoint MUST follow the FA2 requirements.
 
-- Since the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed MUST be either 0 or 1.
-
 ### **update_operators**
 
 ```ocaml
@@ -438,13 +430,13 @@ Parameter (in Michelson)
 
 - This entrypoint MUST follow the FA2 requirements.
 
-- Although the contract supports two types of tokens: frozen token (`token_id = 1`) and unfrozen token (`token_id = 0`), all `token_id` values passed to this entrypoint MUST be 0, because transfers are supported only for unfrozen tokens.
+- Each `owner` must be equal to `SENDER`, otherwise `NOT_OWNER` error occurs.
 
-- Each `owner` must be equal to `SENDER`, otherwise `NOT_TOKEN_OWNER` error occurs.
+- The `token_id` field must not be equal to frozen token identifier (zero), otherwise `OPERATION_PROHIBITED` error occurs.
 
 ## Custom (non-FA2) token functions
 
-Functions related to token transfers, but not present in FA2. They do not have `token_id` argument because only unfrozen token is supported (`token_id = 0`) and not necessary (since they are not part of FA2).
+Functions related to token transfers, but not present in FA2.
 
 ### **mint**
 
@@ -472,6 +464,7 @@ Parameter (in Michelson):
 
 - Produces the given amounts of tokens to the wallet associated with the given address.
 - Fails with `NOT_ADMIN` if the sender is not the administrator.
+- Fails with `FA2_TOKEN_UNDEFINED` if trying to mint an unsupported token.
 
 ### **burn**
 
@@ -849,7 +842,7 @@ Parameter (in Michelson):
 
 - A `void` entrypoint as defined in [TZIP-004](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
 - Return the total number of tokens for the given token id.
-- Fail with `FA2_TOKEN_UNDEFINED` if the given token id is not equal to `0` or `1`.
+- Fail with `FA2_TOKEN_UNDEFINED` if the token with the given id has not been defined by the DAO.
 
 ## Custom entrypoints
 

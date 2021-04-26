@@ -700,6 +700,13 @@ instance CustomErrorHasDoc "nOT_OWNER" where
   customErrDocMdCause =
     "The sender of transaction is not owner"
 
+type instance ErrorArg "oPERATION_PROHIBITED" = NoErrorArg
+
+instance CustomErrorHasDoc "oPERATION_PROHIBITED" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "The sender tries to update an operator of frozen tokens"
+
 type instance ErrorArg "fROZEN_TOKEN_NOT_TRANSFERABLE" = NoErrorArg
 
 instance CustomErrorHasDoc "fROZEN_TOKEN_NOT_TRANSFERABLE" where
