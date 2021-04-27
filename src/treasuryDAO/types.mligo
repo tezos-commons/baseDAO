@@ -20,12 +20,13 @@
  * Contract Extra
  *)
 
-type treasury_contract_extra =
-  ( nat // frozen_scale_value
-  * nat // frozen_extra_value
-  * nat // max_proposal_size
-  * nat // slash_scale_value
-  * nat // slash_division_value
-  * tez // min_xtz_amount
-  * tez // max_xtz_amount
-  )
+type initial_treasuryDAO_storage =
+  { base_data : initial_data
+  ; frozen_scale_value : nat
+  ; frozen_extra_value : nat
+  ; max_proposal_size : nat
+  ; slash_scale_value : nat
+  ; slash_division_value : nat
+  ; min_xtz_amount : tez
+  ; max_xtz_amount : tez
+  }

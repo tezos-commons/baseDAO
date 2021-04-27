@@ -2,44 +2,76 @@
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 #include "types.mligo"
+#include "proposal.mligo"
 
-let default_config : config = {
-    proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
-    rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
-    decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
+let default_config (data : initial_config_data) : config = {
+  proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
+  rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
+  decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
 
-    max_proposals = 500n;
-    max_votes = 1000n;
-    max_quorum_threshold = {numerator = 99n; denominator = 100n}; // 99%
-    min_quorum_threshold = {numerator = 1n; denominator = 100n}; // 1%
-    max_voting_period = 2592000n; // 60 * 60 * 24 * 30
-    min_voting_period = 1n;
-    custom_entrypoints = (Map.empty : custom_entrypoints);
-    }
+  max_proposals = 500n;
+  max_votes = 1000n;
+  max_quorum_threshold = data.max_quorum;
+  min_quorum_threshold = data.min_quorum;
+  max_voting_period = data.max_period;
+  min_voting_period = data.min_period;
 
-let default_storage (admin , governance_token, now_val, metadata : address * governance_token * timestamp * metadata_map) : storage =
- let frozen_token_id: nat = 0n in
- {
-    ledger = (Big_map.empty : ledger);
+  custom_entrypoints = (Map.empty : custom_entrypoints);
+}
+
+let bound_vp (vp, min_vp, max_vp : voting_period * voting_period * voting_period)
+    : voting_period =
+  if vp < min_vp
+  then min_vp
+  else
+    if vp > max_vp
+    then max_vp
+    else vp
+
+let bound_qt (qt, min_qt, max_qt : quorum_threshold * quorum_threshold * quorum_threshold)
+    : quorum_threshold =
+  if is_gt_qt(qt, max_qt)
+  then max_qt
+  else
+    if is_le_qt(qt, min_qt)
+    then min_qt
+    else qt
+
+let ledger_constructor (ledger, param : ledger * (ledger_key * ledger_value)) : ledger =
+  let (key, value) = param in
+  Big_map.add key value ledger
+
+let total_supply_constructor (total_supply, param : total_supply * (ledger_key * ledger_value)) : total_supply =
+  let (key, value) = param in
+  let token_id = key.1 in
+  match Map.find_opt token_id total_supply with
+    | None -> Map.add token_id value total_supply
+    | Some v -> Map.add token_id (v + value) total_supply
+
+let default_storage (data, config_data : initial_storage_data * initial_config_data ) : storage =
+  let frozen_token_id: nat = 0n in
+  {
+    ledger = List.fold ledger_constructor data.ledger_lst (Big_map.empty : ledger);
     operators = (Big_map.empty : operators);
-    governance_token = governance_token;
-    admin = admin;
-    pending_owner = admin;
-    metadata = metadata;
-    voting_period = 11n;
-    quorum_threshold = {numerator = 1n; denominator = 10n}; // 10%
+    governance_token = data.governance_token;
+    admin = data.admin;
+    pending_owner = data.admin;
+    metadata = data.metadata_map;
+    voting_period = bound_vp ( data.voting_period, config_data.min_period, config_data.max_period );
+    quorum_threshold = bound_qt ( data.quorum_threshold, config_data.min_quorum, config_data.max_quorum );
     extra = (Big_map.empty : (string, bytes) big_map);
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     proposal_key_list_sort_by_date = (Set.empty : (timestamp * proposal_key) set);
     permits_counter = 0n;
     freeze_history = (Big_map.empty : freeze_history);
-    total_supply = Map.literal
-        [ (frozen_token_id, 0n)
-        ];
+    total_supply = List.fold total_supply_constructor data.ledger_lst (Map.literal
+      [ (frozen_token_id, 0n)
+      ]
+    );
     fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
-    last_period_change = {changed_on = now_val; period_num = 0n}
+    last_period_change = {changed_on = data.now_val; period_num = 0n}
 }
 
-let default_full_storage (admin, governance_token, now_val, metadata_map : address * governance_token * timestamp * metadata_map) : full_storage =
-  (default_storage (admin, governance_token, now_val, metadata_map), default_config)
+let default_full_storage (data : initial_data) : full_storage =
+  ( default_storage (data.storage_data, data.config_data), default_config (data.config_data) )

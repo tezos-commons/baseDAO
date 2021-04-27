@@ -262,21 +262,20 @@ let lookup_registry (bytes_param, full_store : bytes * full_storage) : operation
   let operation : operation = Tezos.transaction (param.key, value_at_key) 0mutez view_contract
   in ((operation :: ([]: operation list)), full_store.0)
 
-let default_registry_DAO_full_storage (admin, governance_token, frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, min_xtz_amount, max_xtz_amount, now_val, metadata_map
-    : (address * governance_token * nat * nat * nat * nat * nat * tez * tez * timestamp * metadata_map)) : full_storage =
-  let (store, config) = default_full_storage (admin, governance_token, now_val, metadata_map) in
+let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : full_storage =
+  let (store, config) = default_full_storage (data.base_data) in
   let new_storage = { store with
     extra = Big_map.literal [
           ("registry" , Bytes.pack (Map.empty : registry));
           ("registry_affected" , Bytes.pack (Map.empty : registry_affected));
           ("proposal_receivers" , Bytes.pack (Set.empty : proposal_receivers));
-          ("frozen_scale_value" , Bytes.pack frozen_scale_value);
-          ("frozen_extra_value" , Bytes.pack frozen_extra_value);
-          ("max_proposal_size" , Bytes.pack max_proposal_size);
-          ("slash_scale_value" , Bytes.pack slash_scale_value);
-          ("slash_division_value" , Bytes.pack slash_division_value);
-          ("min_xtz_amount" , Bytes.pack min_xtz_amount);
-          ("max_xtz_amount" , Bytes.pack max_xtz_amount);
+          ("frozen_scale_value" , Bytes.pack data.frozen_scale_value);
+          ("frozen_extra_value" , Bytes.pack data.frozen_extra_value);
+          ("max_proposal_size" , Bytes.pack data.max_proposal_size);
+          ("slash_scale_value" , Bytes.pack data.slash_scale_value);
+          ("slash_division_value" , Bytes.pack data.slash_division_value);
+          ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
+          ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
           ];
   } in
   let new_config = { config with

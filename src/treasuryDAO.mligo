@@ -90,19 +90,17 @@ let receive_xtz_entrypoint (params, full_store : bytes * full_storage) : return 
 // Storage Generator
 // -------------------------------------
 
-let default_treasury_DAO_full_storage (admin, governance_token, contract_extra, now_val, metadata_map
-    : address * governance_token * treasury_contract_extra * timestamp * metadata_map) : full_storage =
-  let (store, config) = default_full_storage (admin, governance_token, now_val, metadata_map) in
-  let (frozen_scale_value, frozen_extra_value, max_proposal_size, slash_scale_value, slash_division_value, min_xtz_amount, max_xtz_amount) = contract_extra in
+let default_treasury_DAO_full_storage (data : initial_treasuryDAO_storage) : full_storage =
+  let (store, config) = default_full_storage (data.base_data) in
   let new_storage = { store with
     extra = Big_map.literal [
-          ("frozen_scale_value" , Bytes.pack frozen_scale_value);
-          ("frozen_extra_value" , Bytes.pack frozen_extra_value);
-          ("max_proposal_size" , Bytes.pack max_proposal_size);
-          ("slash_scale_value" , Bytes.pack slash_scale_value);
-          ("slash_division_value" , Bytes.pack slash_division_value);
-          ("min_xtz_amount" , Bytes.pack min_xtz_amount);
-          ("max_xtz_amount" , Bytes.pack max_xtz_amount);
+          ("frozen_scale_value" , Bytes.pack data.frozen_scale_value);
+          ("frozen_extra_value" , Bytes.pack data.frozen_extra_value);
+          ("max_proposal_size" , Bytes.pack data.max_proposal_size);
+          ("slash_scale_value" , Bytes.pack data.slash_scale_value);
+          ("slash_division_value" , Bytes.pack data.slash_division_value);
+          ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
+          ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
           ];
   } in
   let new_config = { config with

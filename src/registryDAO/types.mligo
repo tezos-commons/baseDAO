@@ -80,3 +80,14 @@ let unpack_lookup_registry_param (key_name, packed_b: string * bytes) : lookup_r
   | Some (v) -> v
   | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> lookup_registry_param)]
               ("UNPACKING_FAILED", key_name) : lookup_registry_param)
+
+type initial_registryDAO_storage =
+  { base_data : initial_data
+  ; frozen_scale_value : nat
+  ; frozen_extra_value : nat
+  ; max_proposal_size : nat
+  ; slash_scale_value : nat
+  ; slash_division_value : nat
+  ; min_xtz_amount : tez
+  ; max_xtz_amount : tez
+  }
