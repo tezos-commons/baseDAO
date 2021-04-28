@@ -111,7 +111,7 @@ let transfer (params, store : transfer_params * storage): return =
 let balance_of (params, store : balance_request_params * storage): return =
   let check_one (req : balance_request_item): balance_response_item =
     let valid_token_id = validate_token_type(req.token_id, store) in
-    let bal = if req.token_id = frozen_token_id
+    let bal = if req.token_id = store.frozen_token_id
       // If the balance is requested for frozen token
       // then we only return tokens frozen in current period, because
       // tokens frozen in other periods are invalidated at the end of that period

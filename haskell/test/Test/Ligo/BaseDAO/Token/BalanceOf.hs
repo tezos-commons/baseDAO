@@ -22,20 +22,20 @@ balanceOfTests = testGroup "Balance_of:" $
   [ nettestScenarioCaps "returns an empty response on empty request" $ do
       (_, _, dao, _, _) <- originateWithCustomToken
       consumer <- callBalanceOf [] dao
-      checkStorage (AddressResolved $ toAddress consumer)
+      checkStorage (toAddress consumer)
         (toVal [[] :: [FA2.BalanceResponseItem]])
 
   , nettestScenarioCaps "correctly returns the balance of tokens" $ do
       ((owner1, _), _, dao, _, _) <- originateWithCustomToken
       consumer <- callBalanceOf [(owner1, unfrozenTokens)] dao
-      checkStorage (AddressResolved $ toAddress consumer)
+      checkStorage (toAddress consumer)
         (toVal [[((owner1, unfrozenTokens), 1000 :: Natural)]])
 
   , nettestScenarioCaps "correctly handles several request items" $ do
       ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
       consumer <- callBalanceOf
           [(owner1, frozenTokens), (owner2, unfrozenTokens)] dao
-      checkStorage (AddressResolved $ toAddress consumer)
+      checkStorage (toAddress consumer)
         (toVal [[ ((owner1, frozenTokens), 100 :: Natural)
                 , ((owner2, unfrozenTokens), 1000 :: Natural)]])
 

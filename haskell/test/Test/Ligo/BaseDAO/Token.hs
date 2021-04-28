@@ -99,7 +99,7 @@ unknownMintScenario
 unknownMintScenario originateFn = withFrozenCallStack $ do
   ((owner1, _), _, dao, _, admin) <- originateFn
 
-  withSender (AddressResolved admin) $ do
+  withSender admin $ do
     call dao (Call @"Mint") (MintParam owner1 (FA2.TokenId 2) 10)
     & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 

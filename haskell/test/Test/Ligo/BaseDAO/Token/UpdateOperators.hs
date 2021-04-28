@@ -40,9 +40,9 @@ addOperator = do
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Update_operators") [FA2.AddOperator params]
-  withSender (AddressResolved operator) $
+  withSender operator $
     transfer 10 unfrozenTokens owner1 owner2 dao
 
 removeOperator :: MonadNettest caps base m => m ()
@@ -54,9 +54,9 @@ removeOperator = do
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Update_operators") [FA2.RemoveOperator params]
-  withSender (AddressResolved op1) $
+  withSender op1 $
     transfer 10 unfrozenTokens owner1 owner2 dao
       & expectCustomError_ #fA2_NOT_OPERATOR dao
 
@@ -69,7 +69,7 @@ notOwnerUpdatesOperator = do
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved owner1) $ do
+  withSender owner1 $ do
     call dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
       & expectCustomErrorNoArg #nOT_OWNER dao
     call dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
@@ -84,7 +84,7 @@ adminUnfrozenOperator = do
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved owner1) $ do
+  withSender owner1 $ do
     call dao (Call @"Update_operators") [FA2.AddOperator params]
     transfer 10 unfrozenTokens owner1 owner2 dao
 
@@ -97,14 +97,14 @@ frozenOperator = do
         , opTokenId = frozenTokens
         }
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Update_operators") [FA2.AddOperator (params admin)]
       & expectCustomErrorNoArg #oPERATION_PROHIBITED dao
 
-  withSender (AddressResolved owner1) $
+  withSender owner1 $
     call dao (Call @"Update_operators") [FA2.AddOperator (params owner2)]
       & expectCustomErrorNoArg #oPERATION_PROHIBITED dao
 
-  withSender (AddressResolved admin) $
+  withSender admin $
     call dao (Call @"Update_operators") [FA2.AddOperator (params admin)]
       & expectCustomErrorNoArg #oPERATION_PROHIBITED dao
