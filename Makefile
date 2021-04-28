@@ -88,7 +88,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
             } \
           ; now_val = $(now_val) \
           ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
-          ; ledger_lst = $(ledger) \
+          ; ledger_lst = $(call escape_double_quote,$(ledger)) \
           ; quorum_threshold = $(quorum_threshold) \
           ; voting_period = $(voting_period) \
           } \
@@ -133,7 +133,7 @@ $(OUT)/registryDAO_storage.tz: src/**
               } \
             ; now_val = $(now_val) \
             ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
-            ; ledger_lst = $(ledger) \
+            ; ledger_lst = $(call escape_double_quote,$(ledger)) \
             ; quorum_threshold = $(quorum_threshold) \
             ; voting_period = $(voting_period) \
             } \
@@ -185,7 +185,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
               } \
             ; now_val = $(now_val) \
             ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
-            ; ledger_lst = $(ledger) \
+            ; ledger_lst = $(call escape_double_quote,$(ledger)) \
             ; quorum_threshold = $(quorum_threshold) \
             ; voting_period = $(voting_period) \
             } \
