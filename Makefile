@@ -31,6 +31,8 @@ ORIGINATE_STEPS ?= $(LARGE_ORIGINATOR) steps
 
 # Utility function to escape single quotes
 escape_quote = $(subst ','\'',$(1))
+# Utility function to escape double quotes
+escape_double_quote = $(subst $\",$\\",$(1))
 
 # Where to put build files
 OUT ?= out
@@ -85,8 +87,8 @@ $(OUT)/trivialDAO_storage.tz: src/**
             ; token_id = $(governance_token_id) \
             } \
           ; now_val = $(now_val) \
-          ; metadata_map = $(metadata_map) \
-          ; ledger_lst = $(ledger) \
+          ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
+          ; ledger_lst = $(call escape_double_quote,$(ledger)) \
           ; quorum_threshold = $(quorum_threshold) \
           ; voting_period = $(voting_period) \
           } \
@@ -130,8 +132,8 @@ $(OUT)/registryDAO_storage.tz: src/**
               ; token_id = $(governance_token_id) \
               } \
             ; now_val = $(now_val) \
-            ; metadata_map = $(metadata_map) \
-            ; ledger_lst = $(ledger) \
+            ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
+            ; ledger_lst = $(call escape_double_quote,$(ledger)) \
             ; quorum_threshold = $(quorum_threshold) \
             ; voting_period = $(voting_period) \
             } \
@@ -182,8 +184,8 @@ $(OUT)/treasuryDAO_storage.tz: src/**
               ; token_id =  $(governance_token_id) \
               } \
             ; now_val = $(now_val) \
-            ; metadata_map = $(metadata_map) \
-            ; ledger_lst = $(ledger) \
+            ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
+            ; ledger_lst = $(call escape_double_quote,$(ledger)) \
             ; quorum_threshold = $(quorum_threshold) \
             ; voting_period = $(voting_period) \
             } \
