@@ -65,7 +65,7 @@ endif
 	#
 
 $(OUT)/trivialDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/trivialDAO_storage.tz : governance_token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/trivialDAO_storage.tz : governance_token_address = KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5
 $(OUT)/trivialDAO_storage.tz : governance_token_id = 0n
 $(OUT)/trivialDAO_storage.tz : now_val = Tezos.now
 $(OUT)/trivialDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
@@ -102,7 +102,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
 	#
 
 $(OUT)/registryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/registryDAO_storage.tz : governance_token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/registryDAO_storage.tz : governance_token_address = KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5
 $(OUT)/registryDAO_storage.tz : governance_token_id = 0n
 $(OUT)/registryDAO_storage.tz : frozen_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : frozen_extra_value = 0n
@@ -154,7 +154,7 @@ $(OUT)/registryDAO_storage.tz: src/**
 	#
 
 $(OUT)/treasuryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/treasuryDAO_storage.tz : governance_token_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
+$(OUT)/treasuryDAO_storage.tz : governance_token_address = KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5
 $(OUT)/treasuryDAO_storage.tz : governance_token_id = 0n
 $(OUT)/treasuryDAO_storage.tz : frozen_scale_value = 0n
 $(OUT)/treasuryDAO_storage.tz : frozen_extra_value = 0n

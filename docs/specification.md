@@ -19,7 +19,9 @@ The contract described here consists of two parts:
 - Token functionality ([FA2-based][FA2]).
 - DAO functionality with proposals and voting.
 
-These two parts are coupled into one smart contract because interaction between smart contracts in Tezos is expensive and hard to get right.
+These two parts are coupled into one smart contract to reduce interactions
+between smart contracts, which is expensive and hard to get right in Tezos.
+However, an existing separate FA2 contract is used for governance.
 
 # General Requirements
 
@@ -29,6 +31,10 @@ These two parts are coupled into one smart contract because interaction between 
 
 - The contract may store tokens with other token identifiers.
 
+- The contract must store a 'governance token'. This consist of the address of
+  an FA2 contract and a token id in that contract. The 'governance token'  is
+  used as part of the freeze/unfreeze process by making FA2 transfers on it.
+
 - The storage of the contract must have annotations for all fields
   and must be documented to make its interpretation easy for users.
 
@@ -37,7 +43,7 @@ These two parts are coupled into one smart contract because interaction between 
 BaseDAO is a concrete smart contract, but also a framework to implement various DAOs.
 It can be configured at origination for any specific needs.
 
-In order to do so the contract has types that can contain arbitary data:
+In order to do so the contract has types that can contain arbitrary data:
 - `proposal_metadata` which is a type synonym for `(string, bytes) map`
   (or in Michelson: `map string bytes`)
 - `contract_extra` which is a type synonym for `(string, bytes) big_map`
@@ -130,16 +136,18 @@ Some configuration values are specified in runtime and can be changed during the
 They must be provided on origination to construct the contract's initial storage.
 These values are:
 1. `admin : address` is the address that can perform administrative actions.
-2. `voting_period : nat` specifies how long the voting period lasts.
-3. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
+2. `governance_token` is the FA2 contract address/token id pair that will be used as the governance token.
+3. `voting_period : nat` specifies how long the voting period lasts.
+4. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
    tokens total supply of total votes are required for a successful proposal.
-4. `fixed_proposal_fee_in_token : nat` specifies the fee for submitting a proposal (in native DAO token).
+5. `fixed_proposal_fee_in_token : nat` specifies the fee for submitting a proposal (in native DAO token).
 
 # Contract logic
 
 This chapter provides a high-level overview of the contract's logic.
 
-- The contract maintains a ledger of address and its balance (frozen and unfrozen tokens).
+- The contract maintains a ledger of address and its balance (frozen tokens and optionally others).
+- The contract maintains the address of an a FA2 contract and a token id, to use in the governance process.
 - The contract manages a special role called "Administrator".
 - The contract stores a list of proposals that can be in one of the states: "ongoing", "rejected", or "accepted".
 - The contract forbids transferring XTZ to the contract, because they will be locked forever.
@@ -168,13 +176,24 @@ starting from "voting" for period number `0`.
 Tokens can be frozen in any period, but they can only be used for voting, proposing
 and unfreezing starting from the following one and onwards.
 
+For freezing, the address should have corresponding amount of tokens of proper
+token type (token_id of storage.governance_token.token_id) in the governance
+FA2 contract. During 'Freeze' operation the BaseDAO contracts makes an FA2
+transfer on the governance contract to transfer tokens to its own address from
+the address who is freezing the tokens. Then it mints frozen tokens for the address.
+
+Unfreezing does it reverse, that is, the contract makes the FA2 transfer on governance
+contract to transfer tokens from its own address to the address that is doing unfreezing.
+It then burns the corresponding amount of tokens. Only frozen tokens that are not currently
+staked in a vote or proposal can be unfreezed.
+
 ### Proposals
 
 Everyone can make a new proposal, however, you have to freeze some tokens for that.
 The proposer specifies how many frozen tokens they want to stake and this value is checked by
 the contract according to its compile-time configuration.
 
-This can only be performed in a proposing stage period, meaning one that's odd-numbered and
+Proposing can only be performed in a proposing stage period, meaning one that's odd-numbered and
 the proposer must have frozen his tokens in one of the preceding periods.
 
 Proposals are identified by a key which is a `bytes` value computed via Blake2B hashing function of a
@@ -186,7 +205,7 @@ Once a proposal is submitted, everyone can vote on it as long as they have enoug
 One frozen token is required for one vote.
 
 A vote can only be cast in a voting stage period, meaning one that's even-numbered.
-Moreover the proposal vote on must have been submitted in the proposing period immediately preceeding
+Moreover the proposal to vote on must have been submitted in the proposing period immediately preceding
 and the voter must have frozen his tokens in one of the preceding periods.
 Voting period is specified for the whole smart contract and can be updated by the administrator; on update, the existing proposals are also affected.
 It's possible to vote positively or negatively.
@@ -194,10 +213,8 @@ After the voting ends, the contract is "flushed" by calling a dedicated entrypoi
 
 ## Ledger
 
-Every address that is stored in ledger is associated with its unfrozen token balance and
-frozen token balance.
-When unfrozen tokens are transferred, the balance of the `from_` addresses is decreased
-and the balance of the `to_` addresses is increased according to the transferred values.
+Every address that is stored in ledger is associated with its balance associated with the frozen
+token id.
 
 # Errors
 
@@ -212,7 +229,7 @@ We start with standard FA2 errors which are part of the FA2 specification.
 | `FA2_NOT_OPERATOR`         | A transfer is initiated neither by the token owner nor a permitted operator |
 
 The next group consists of the errors that are not part of the FA2 specification.
-The list of erros may be inaccurate and incomplete, it will be updated during the implementation.
+The list of errors may be inaccurate and incomplete, it will be updated during the implementation.
 
 | Error                           | Description                                                                                                 |
 |---------------------------------|-------------------------------------------------------------------------------------------------------------|
@@ -221,8 +238,6 @@ The list of erros may be inaccurate and incomplete, it will be updated during th
 | `NOT_TOKEN_OWNER`               | Trying to configure operators for a different wallet which sender does not own                              |
 | `FAIL_PROPOSAL_CHECK`           | Throws when trying to propose a proposal that does not pass `proposalCheck`                                 |
 | `FROZEN_TOKEN_NOT_TRANSFERABLE` | Transfer entrypoint is called for frozen token by a non-admin sender                                        |
-| `PROPOSAL_INSUFFICIENT_BALANCE` | Throws when trying to propose a proposal without having enough unfrozen token                               |
-| `VOTING_INSUFFICIENT_BALANCE`   | Throws when trying to vote on a proposal without having enough unfrozen token                               |
 | `PROPOSAL_NOT_EXIST`            | Throws when trying to vote on a proposal that does not exist                                                |
 | `QUORUM_NOT_MET`                | A proposal is flushed, but there are not enough votes                                                       |
 | `VOTING_PERIOD_OVER`            | Throws when trying to vote on a proposal that is already ended                                              |
@@ -737,14 +752,13 @@ Parameter (in Michelson):
 
 - This implements permits mechanism similar to the one in [TZIP-017](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-17/tzip-17.md) but injected directly to the entrypoint.
 - Vote author is identified by permit information, or if it is absent - `sender` is taken.
-- Author MUST have unfrozen tokens equal to `voteAmount` or more (1 unstaked frozen token is needed for 1 vote) from past periods.
+- Author MUST have frozen tokens equal to `voteAmount` or more (1 unstaked frozen token is needed for 1 vote) from past periods.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author from past periods that is not staked
   is less than specified `voteAmount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
 - Fails with `VOTING_PERIOD_OVER` if the voting period of proposal associated with the proposal key has already ended.
 - Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal is already at the max value set by the configuration.
 - Fails with `MISSIGNED` if permit is incorrect with respect to the provided vote parameter and contract state.
-- The author's balance in frozen tokens is increased by `voteAmount` and in unfrozen tokens is decreased by `voteAmount`.
 - The entrypoint accepts a list of vote params. As a result, it is possible to `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
 
 ### **flush**
@@ -762,7 +776,7 @@ Parameter (in Michelson):
 - The order of processing proposals are from 'the oldest' to 'the newest'. The proposals which
 have the same timestamp due to being in the same block, are processed in the order of their proposal keys.
 - Frozen tokens from voters and proposal submitter associated with those proposals are returned
-  in form of unfrozen tokens:
+  in form of tokens in governance token contract:
   - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
     - The return amount for the proposer is equal to or less than the slashed amount based on `rejectedProposalReturnValue`.
     - The paid fee is not returned to the proposer.
@@ -889,8 +903,14 @@ Parameter (in Michelson):
 (nat %freeze)
 ```
 
-- Freezes the specified amount of tokens, which can only be used from the next period onward.
-- Author MUST have unfrozen tokens equal to `freeze_param` or more.
+- Mints the required number of frozen tokens after making an FA2 transfer on
+  the governance token contract from the address of the sender to the address
+  of the BaseDAO contract. The transfer is made using the governance token id.
+  The frozen tokens can only be used from the next period onward.
+
+- Author MUST have tokens equal to `freeze_param` or more, in the governance contract, with token id
+  'governance-token.token_id`.
+
 ### **unfreeze**
 
 ```ocaml
@@ -904,8 +924,9 @@ Parameter (in Michelson):
 (nat %unfreeze)
 ```
 
-- unfreezes the specified amount of tokens from the tokens frozen in previous periods.
-- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the author does not have enough tokens that can be unfrozen
+- Burns the specified amount of tokens from the tokens frozen in previous periods, after making an FA2 transfer
+  on the governance contract from the address of the baseDAO contract to the address of the sender.
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the author does not have enough tokens that can be burned.
 
 # TZIP-016 metadata
 

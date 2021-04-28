@@ -756,18 +756,6 @@ instance CustomErrorHasDoc "fAIL_PROPOSAL_CHECK" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to propose a proposal that does not pass `proposalCheck`"
 
-type instance ErrorArg "pROPOSAL_INSUFFICIENT_BALANCE" = NoErrorArg
-
-instance CustomErrorHasDoc "pROPOSAL_INSUFFICIENT_BALANCE" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause = "Trying to propose a proposal without having enough unfrozen token"
-
-type instance ErrorArg "vOTING_INSUFFICIENT_BALANCE" = NoErrorArg
-
-instance CustomErrorHasDoc "vOTING_INSUFFICIENT_BALANCE" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause = "Trying to vote on a proposal without having enough unfrozen token"
-
 type instance ErrorArg "pROPOSAL_NOT_EXIST" = NoErrorArg
 
 instance CustomErrorHasDoc "pROPOSAL_NOT_EXIST" where

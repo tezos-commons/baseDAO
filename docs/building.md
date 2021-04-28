@@ -45,7 +45,8 @@ This storage is the one based on the [default storage values](../src/defaults.ml
 ```sh
 make out/trivialDAO_storage.tz \
   admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
-  token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
+  governance_token_id=0n \
   now_val=Tezos.now \
   metadata_map=(Big_map.empty : metadata_map)
   fixed_proposal_fee_in_token=0n \
@@ -68,7 +69,8 @@ compiled with `make`, as usual:
 ```sh
 make out/registryDAO_storage.tz \
   admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
-  token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
+  governance_token_id=0n \
   max_proposal_size=100n \
   frozen_scale_value=1n \
   frozen_extra_value=0n \
@@ -94,7 +96,8 @@ can be compiled once again with `make`:
 ```sh
 make out/treasuryDAO_storage.tz \
   admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
-  token_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
+  governance_token_id=0n \
   max_proposal_size=12n \
   frozen_scale_value=1n \
   frozen_extra_value=0n \

@@ -95,6 +95,4 @@ metadataConfigParser :: Opt.Parser MetadataConfig
 metadataConfigParser = do
   mcFrozenTokenMetadata <-
     tokenMetadataParser "frozen" "frozen_token" "Frozen Token" 8
-  mcUnfrozenTokenMetadata <-
-    tokenMetadataParser "unfrozen" "unfrozen_token" "Unfrozen Token" 8
   return MetadataConfig{..}
