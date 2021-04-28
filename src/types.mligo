@@ -272,7 +272,7 @@ type allow_xtz_params =
 type parameter =
   (allow_xtz_params, "", forbid_xtz_params, "") michelson_or
 
-type custom_entrypoints = (string, bytes) map
+type custom_entrypoints = (string, bytes) big_map
 
 type decision_lambda_input =
   { proposal : proposal

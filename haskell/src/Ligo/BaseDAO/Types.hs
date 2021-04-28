@@ -56,8 +56,6 @@ module Ligo.BaseDAO.Types
   , LastPeriodChange (..)
   , DynamicRec (..)
   , dynRecUnsafe
-  , DynamicRecBigMap (..)
-  , dynRecBigMapUnsafe
   , mkStorage
   , mkMetadataMap
   , mkConfig
@@ -379,7 +377,7 @@ type TransferOwnershipParam = ("newOwner" :! Address)
 -- | Represents a product type with arbitrary fields.
 --
 -- Contains a name to make different such records distinguishable.
-newtype DynamicRec n = DynamicRec { unDynamic :: Map MText ByteString }
+newtype DynamicRec n = DynamicRec { unDynamic :: BigMap MText ByteString }
   deriving stock (Generic, Show, Eq)
   deriving newtype (IsoValue, HasAnnotation, Default, One, Semigroup)
 
@@ -387,17 +385,8 @@ newtype DynamicRec n = DynamicRec { unDynamic :: Map MText ByteString }
 dynRecUnsafe :: DynamicRec n
 dynRecUnsafe = DynamicRec mempty
 
--- | The same as `DynamicRec` but uses `BigMap` instead.
-newtype DynamicRecBigMap n = DynamicRecBigMap { unDynamicBigMap :: BigMap MText ByteString }
-  deriving stock (Generic, Show, Eq)
-  deriving newtype (IsoValue, HasAnnotation, Default, One, Semigroup)
-
--- | Construct 'DynamicRecBigMap' assuming it contains no mandatory entries.
-dynRecBigMapUnsafe :: DynamicRecBigMap n
-dynRecBigMapUnsafe = DynamicRecBigMap mempty
-
 type ProposalMetadata = ByteString
-type ContractExtra = DynamicRecBigMap "ce"
+type ContractExtra = DynamicRec "ce"
 type CustomEntrypoints = DynamicRec "ep"
 
 
@@ -600,7 +589,7 @@ mkConfig customEps = Config
       dropN @2; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
       drop; nil
-  , cCustomEntrypoints = DynamicRec $ M.fromList customEps
+  , cCustomEntrypoints = DynamicRec $ BigMap $ M.fromList customEps
 
   , cMaxVotingPeriod = 60 * 60 * 24 * 30
   , cMinVotingPeriod = 1
@@ -639,9 +628,9 @@ mkFullStorage admin vp qt extra mdt now tokenAddress cEps = FullStorage
 setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
 setExtra key v (s@FullStorage {..}) = s { fsStorage = newStorage }
   where
-    (BigMap oldExtra) = unDynamicBigMap $ sExtra fsStorage
+    (BigMap oldExtra) = unDynamic $ sExtra fsStorage
     newExtra = BigMap $ M.insert key (lPackValueRaw v) oldExtra
-    newStorage = fsStorage { sExtra = DynamicRecBigMap newExtra }
+    newStorage = fsStorage { sExtra = DynamicRec newExtra }
 
 -- Instances
 ------------------------------------------------
