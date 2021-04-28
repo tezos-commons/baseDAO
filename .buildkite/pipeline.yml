@@ -84,21 +84,23 @@ steps:
     - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
     - ./result/bin/baseDAO-test --nettest-no-run-network
 
-  - label: ligo-test-local-chain-008
-    env:
-      TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
-    if: *not_scheduled
-    depends_on:
-      - build-ligo
-      - build-haskell
-      - ligo-test
-      # NOTE ^ this last dependency is not strictly necessary, but it saves us
-      # from building the tests twice and 'ligo-test' running time is mostly that.
-    commands: &ligo-nettest
-    - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
-    - nix run -f ci.nix tezos-client -c
-      ./result/bin/baseDAO-test --nettest-run-network
-        --pattern '\$1 == "On network" || \$NF == "On network" || \$0 ~ /.On network./'
+  # TODO #124 uncomment:
+  # - label: ligo-test-local-chain-008
+  #   env:
+  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
+  #   if: *not_scheduled
+  #   depends_on:
+  #     - build-ligo
+  #     - build-haskell
+  #     - ligo-test
+  #     # NOTE ^ this last dependency is not strictly necessary, but it saves us
+  #     # from building the tests twice and 'ligo-test' running time is mostly that.
+  #   commands: &ligo-nettest
+  #   - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
+  #   - export TASTY_NETTEST_DATA_DIR="$(mktemp -d --tmpdir="$$PWD")"
+  #   - nix run -f ci.nix tezos-client -c
+  #     ./result/bin/baseDAO-test --nettest-run-network
+  #       --pattern '\$1 == "On network" || \$NF == "On network" || \$0 ~ /.On network./'
 
   - label: typescript-build
     depends_on:
@@ -123,17 +125,18 @@ steps:
     commands:
     - nix-build ci.nix -A haddock --no-out-link
 
-  - label: scheduled edonet ligo test
-    if: build.source == "schedule"
-    env:
-      TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
-    depends_on:
-      - build-ligo
-      - build-haskell
-    commands: *ligo-nettest
-    retry:
-      automatic:
-        limit: 1
+  # TODO #124 uncomment:
+  # - label: scheduled edonet ligo test
+  #   if: build.source == "schedule"
+  #   env:
+  #     TASTY_NETTEST_NODE_ENDPOINT: "http://edo.testnet.tezos.serokell.team:8732"
+  #   depends_on:
+  #     - build-ligo
+  #     - build-haskell
+  #   commands: *ligo-nettest
+  #   retry:
+  #     automatic:
+  #       limit: 1
 
 # Autodoc
   - label: contract doc development
