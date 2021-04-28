@@ -8,25 +8,16 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 Treasury is a DAO that holds XTZ and FA2 tokens and lets its users decide how to
 spend its XTZ and tokens. Its extra storage data is empty.
 
-It can receive two types of proposals, with different `proposal_metadata`:
-1. Transfer proposal that includes a list of items where each item contains:
+Its `proposal_metadata` contains a proposal type:
+- Transfer proposal that includes a list of items where each item contains:
    - `or %transfers (pair (mutez %amount) (address %recipient)) (pair (address %fa2) (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))` specifies what transfer to make. The left part is used for XTZ transfers, the right part is used for FA2 transfers.
    - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and motivation for it.
-2. Configuration proposals, used to update the parameters specified below,
-it takes 7 `option nat` values:
-- `max_proposal_size`
-- `frozen_scale_value`
-- `frozen_extra_value`
-- `slash_scale_value`
-- `slash_division_value`
-- `min_xtz_amount`
-- `max_xtz_amount`
 
 ## Configuration lambdas
 
 ### Proposal check
 
-The proposer must lock `frozen_scale_value * s + frozen_extra_value` tokens where `s = size(pack(proposal_metadata))`.
+The proposer must lock `frozen_scale_value * s + frozen_extra_value` tokens where `s = size(proposal_metadata)`.
 I. e. `s` is total size of the transfers and post ID.
 It should naturally prohibit spam proposals and too big proposals (unless `frozen_scale_value` is 0).
 

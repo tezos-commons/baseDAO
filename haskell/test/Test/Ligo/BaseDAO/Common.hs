@@ -7,6 +7,7 @@
 
 module Test.Ligo.BaseDAO.Common
   ( OriginateFn
+  , TransferProposal(..)
   , totalSupplyFromLedger
 
   , mkFA2View
@@ -16,7 +17,6 @@ module Test.Ligo.BaseDAO.Common
   , addDataToSign
   , permitProtect
   , sendXtz
-  , ProposalMetadataFromNum (..)
 
   , createSampleProposal
   , originateLigoDaoWithBalance
@@ -37,11 +37,25 @@ import Util.Named
 
 import qualified Data.Map as M
 import qualified Data.Set as S
+import Ligo.BaseDAO.Common.Types (TransferType)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
 type OriginateFn m = m ((Address, Address), (Address, Address), TAddress Parameter, TAddress FA2.Parameter, Address)
+
+-- | Shared Proposal type used in Registry DAO and Treasury DAO
+data TransferProposal = TransferProposal
+  { tpAgoraPostId :: Natural
+  , tpTransfers :: [TransferType]
+  }
+
+instance HasAnnotation TransferProposal where
+  annOptions = baseDaoAnnOptions
+
+customGeneric "TransferProposal" ligoLayout
+deriving anyclass instance IsoValue TransferProposal
+
 
 -- | A dummy contract with FA2 parameter that remembers the
 -- transfer calls.
@@ -126,20 +140,6 @@ sendXtz addr epName pm = withFrozenCallStack $ do
         }
   transfer transferData
 
--- | Since in LIGO proposal metadata type is fixed but is inconvenient to work
--- with, we need a way to abstract away from that complexity - this problem
--- is resolved by the following typeclass.
-class (KnownValue n, NicePackedValue n) => ProposalMetadataFromNum n where
-  -- | Generate a proposal metadata.
-  -- Different numbers must result in different values.
-  proposalMetadataFromNum :: Int -> n
-
-instance ProposalMetadataFromNum Integer where
-  proposalMetadataFromNum = fromIntegral
-
-instance ProposalMetadataFromNum ProposalMetadata where
-  proposalMetadataFromNum n =
-    one ([mt|int|], lPackValueRaw @Integer $ fromIntegral n)
 
 -- TODO: Implement this via [#31] instead
 -- checkIfAProposalExist
@@ -243,7 +243,7 @@ createSampleProposal
 createSampleProposal counter vp owner1 dao = do
   let params = ProposeParams
         { ppFrozenToken = 10
-        , ppProposalMetadata = proposalMetadataFromNum counter
+        , ppProposalMetadata = lPackValueRaw @Integer $ fromIntegral counter
         }
 
   when (vp > 0) $ do

@@ -16,34 +16,25 @@ type update_receiver_param =
   | Add_receivers of (address list)
   | Remove_receivers of (address list)
 
-// For reference only
-// ```
-// type proposal_metadata_transfers =
-//   { agoraPostID : nat
-//   ; transfers : transfer_type list
-//   }
-//
-// type proposal_metadata_updates =
-//   { agoraPostID : nat
-//   ; updates : registry_diff
-//   }
-//
-// type proposal_metadata_update_receivers =
-//   { update_receivers : update_receiver_param
-//   }
-//
-// type proposal_metadata =
-//   | Normal_metadata of proposal_metadata_updates
-//   | Update_receivers_metadata of update_receiver_param
-//   | Transfers_metadata of proposal_metadata_transfers
-//   | Configuration_metadata
-// ```
+type normal_proposal =
+  { agora_post_id : nat
+  ; registry_diff : registry_diff
+  }
 
-type proposal_type =
-  | Normal_proposal of registry_diff
+type config_proposal =
+  { frozen_scale_value : nat option
+  ; frozen_extra_value : nat option
+  ; slash_scale_value : nat option
+  ; slash_division_value : nat option
+  ; max_proposal_size : nat option
+  }
+
+// Registry dao `proposal_metadata` contains the type of proposal.
+type registry_dao_proposal_metadata =
+  | Normal_proposal of normal_proposal
   | Update_receivers_proposal of update_receiver_param
-  | Configuration_proposal
-  | Transfer_proposal of transfer_type list
+  | Configuration_proposal of config_proposal
+  | Transfer_proposal of transfer_proposal
 
 type lookup_registry_param =
   [@layout:comb]
@@ -53,7 +44,16 @@ type lookup_registry_param =
 
 type lookup_registry_view = (registry_key * (registry_value option)) contract
 
-
+type initial_registryDAO_storage =
+  { base_data : initial_data
+  ; frozen_scale_value : nat
+  ; frozen_extra_value : nat
+  ; max_proposal_size : nat
+  ; slash_scale_value : nat
+  ; slash_division_value : nat
+  ; min_xtz_amount : tez
+  ; max_xtz_amount : tez
+  }
 
 // -- Unpack Helpers (fail if the unpacked result is none) -- //
 
@@ -81,13 +81,7 @@ let unpack_lookup_registry_param (key_name, packed_b: string * bytes) : lookup_r
   | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> lookup_registry_param)]
               ("UNPACKING_FAILED", key_name) : lookup_registry_param)
 
-type initial_registryDAO_storage =
-  { base_data : initial_data
-  ; frozen_scale_value : nat
-  ; frozen_extra_value : nat
-  ; max_proposal_size : nat
-  ; slash_scale_value : nat
-  ; slash_division_value : nat
-  ; min_xtz_amount : tez
-  ; max_xtz_amount : tez
-  }
+let unpack_proposal_metadata (pm: proposal_metadata) : registry_dao_proposal_metadata =
+  match ((Bytes.unpack pm) : (registry_dao_proposal_metadata option)) with
+  | Some (v) -> v
+  | None -> (failwith ("UNPACKING_PROPOSAL_METADATA_FAILED") : registry_dao_proposal_metadata)

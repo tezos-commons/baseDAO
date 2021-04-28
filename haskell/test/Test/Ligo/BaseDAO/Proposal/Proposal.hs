@@ -31,7 +31,7 @@ validProposal originateFn = do
   ((owner1, _), _, dao, tokenContract, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 10
-        , ppProposalMetadata = proposalMetadataFromNum 1
+        , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
   advanceTime (sec 10)
@@ -59,7 +59,7 @@ rejectProposal originateFn = do
   advanceTime (sec 10)
   let params = ProposeParams
         { ppFrozenToken = 9
-        , ppProposalMetadata = proposalMetadataFromNum 1
+        , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
   withSender (AddressResolved owner1) $

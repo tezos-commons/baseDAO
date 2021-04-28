@@ -396,7 +396,7 @@ newtype DynamicRecBigMap n = DynamicRecBigMap { unDynamicBigMap :: BigMap MText 
 dynRecBigMapUnsafe :: DynamicRecBigMap n
 dynRecBigMapUnsafe = DynamicRecBigMap mempty
 
-type ProposalMetadata = DynamicRec "pm"
+type ProposalMetadata = ByteString
 type ContractExtra = DynamicRecBigMap "ce"
 type CustomEntrypoints = DynamicRec "ep"
 

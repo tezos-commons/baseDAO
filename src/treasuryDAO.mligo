@@ -15,7 +15,7 @@
 // -------------------------------------
 
 let treasury_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
-  let proposal_size = Bytes.size(Bytes.pack(params.proposal_metadata)) in
+  let proposal_size = Bytes.size(params.proposal_metadata) in
   let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
   let frozen_extra_value = unpack_nat(find_big_map("frozen_extra_value", extras)) in
   let max_proposal_size = unpack_nat(find_big_map("max_proposal_size", extras)) in
@@ -27,13 +27,14 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
     (params.frozen_token = required_token_lock) && (proposal_size < max_proposal_size) in
 
   if has_correct_token_lock then
-    let ts = unpack_transfer_type_list(find_map("transfers", params.proposal_metadata)) in
+    let pm = unpack_proposal_metadata(params.proposal_metadata) in
+
     let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
       match transfer_type with
       | Token_transfer_type tt -> is_valid
       | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
     in
-      List.fold is_all_transfers_valid ts true
+      List.fold is_all_transfers_valid pm.transfers true
   else
     false
 
@@ -48,7 +49,7 @@ let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     frozen_token = proposal.proposer_frozen_token;
     proposal_metadata = proposal.metadata
     } in
-  let ts = unpack_transfer_type_list(find_map("transfers", proposal.metadata)) in
+  let pm = unpack_proposal_metadata(proposal.metadata) in
   let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
       let (is_valid, extras, ops) = acc in
       if is_valid then
@@ -74,7 +75,7 @@ let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
       else
         (false, extras, ops)
   in
-  let (is_valid, extras, ops) = List.fold handle_transfer ts (true, extras, ([] : operation list)) in
+  let (is_valid, extras, ops) = List.fold handle_transfer pm.transfers (true, extras, ([] : operation list)) in
   if is_valid then
     (ops, extras)
   else

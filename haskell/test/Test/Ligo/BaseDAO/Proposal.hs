@@ -165,7 +165,7 @@ test_BaseDAO_Proposal =
             call dao (Call @"Set_fixed_fee_in_token") 42
           let params = ProposeParams
                 { ppFrozenToken = 10
-                , ppProposalMetadata = proposalMetadataFromNum 1
+                , ppProposalMetadata = lPackValueRaw @Integer 1
                 }
 
           withSender (AddressResolved proposer) $
@@ -191,7 +191,7 @@ test_BaseDAO_Proposal =
 
           let params = ProposeParams
                 { ppFrozenToken = 1
-                , ppProposalMetadata = proposalMetadataFromNum 1
+                , ppProposalMetadata = lPackValueRaw @Integer 1
                 }
           withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
             & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
@@ -204,7 +204,7 @@ test_BaseDAO_Proposal =
 
           let params = ProposeParams
                 { ppFrozenToken = 0
-                , ppProposalMetadata = proposalMetadataFromNum 1
+                , ppProposalMetadata = lPackValueRaw @Integer 1
                 }
 
           withSender (AddressResolved proposer) $
@@ -286,7 +286,7 @@ nonProposalPeriodProposal originateFn = do
 
   let params = ProposeParams
         { ppFrozenToken = 10
-        , ppProposalMetadata = proposalMetadataFromNum 1
+        , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
@@ -419,7 +419,7 @@ insufficientTokenProposal originateFn = do
   ((owner1, _), _, dao, _, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 101
-        , ppProposalMetadata = proposalMetadataFromNum 1
+        , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
@@ -877,7 +877,7 @@ proposalBoundedValue originateFn = do
 
   let params = ProposeParams
         { ppFrozenToken = 10
-        , ppProposalMetadata = proposalMetadataFromNum 1
+        , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
   withSender (AddressResolved owner1) $ do

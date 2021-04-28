@@ -54,8 +54,8 @@ checkFreezeHistoryTracking  = do
       ! #tokenAddress (unTAddress tokenContract)
       ! #customEps mempty
     ) $ \(admin:wallet1:_) baseDao -> let
-      proposalMeta1 = DynamicRec $ Map.fromList $ [([mt|key1|], "val"), ([mt|key2|], "val")] -- 44
-      proposalSize1 = metadataSize proposalMeta1
+      proposalMeta1 = ""
+      proposalSize1 = fromIntegral . BS.length $ proposalMeta1
 
       in do
         let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
@@ -91,6 +91,3 @@ checkFreezeHistoryTracking  = do
                   }
             when (fh /= (Just expected)) $
               Left $ CustomTestError "BaseDAO contract did not unstake tokens after voting period"
-    where
-      metadataSize :: ProposalMetadata -> Natural
-      metadataSize md = fromIntegral $ BS.length $ lPackValueRaw md

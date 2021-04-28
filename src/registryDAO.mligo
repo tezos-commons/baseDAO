@@ -14,51 +14,6 @@
 // storage expression.
 #include "base_DAO.mligo"
 
-(*
- * Implements logic that differentiates between various proposals, and wraps
- * the relavant data in appropriate constructors.
- *)
-let extract_proposal (metadata : proposal_metadata) : proposal_type =
-  match Map.find_opt "agoraPostID" metadata with
-  | Some (packed_b) ->
-      begin
-        match ((Bytes.unpack packed_b) : (nat option)) with
-        | Some (agora_post_id) ->
-            begin
-              match Map.find_opt "transfers" metadata with
-              | Some (packed_b) ->
-                  begin
-                    match ((Bytes.unpack packed_b) : ((transfer_type list) option)) with
-                    | Some (transfer_type) -> Transfer_proposal transfer_type
-                    | None -> (failwith "TRANSFERS_UNPACKING_FAILED" : proposal_type)
-                  end
-              | None ->
-                  begin
-                    match Map.find_opt "updates" metadata with
-                    | Some (packed_b) ->
-                        begin
-                          match ((Bytes.unpack packed_b) : (registry_diff option)) with
-                          | Some (diff) -> Normal_proposal diff
-                          | None ->
-                            (failwith "UPDATES_UNPACKING_FAILED" : proposal_type)
-                        end
-                    | None -> (failwith "NO_UPDATES_NOR_TRANSFERS" : proposal_type)
-                  end
-            end
-        | None -> (failwith "UNPACKING FAILED" : proposal_type)
-      end
-  | None ->
-      begin
-        match Map.find_opt "update_receivers" metadata with
-          | Some (packed_b) ->
-              begin
-                match ((Bytes.unpack packed_b) : update_receiver_param option) with
-                  | Some upr_param -> Update_receivers_proposal upr_param
-                  | None -> (failwith "UNPACKING FAILED" : proposal_type)
-              end
-          | None -> Configuration_proposal
-      end
-
 let apply_diff_registry (diff, registry : registry_diff * registry) : registry =
   let
     foldFn (registry, update: registry * (registry_key * registry_value option)) : registry =
@@ -99,7 +54,7 @@ let apply_diff_affected (proposal_key, diff, ce : proposal_key *
  * where min_xtz_amount and max_xtz_amount are from storage configuration.
  *)
 let registry_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
-  let proposal_size = Bytes.size(Bytes.pack(params.proposal_metadata)) in
+  let proposal_size = Bytes.size(params.proposal_metadata) in
   let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
   let frozen_extra_value = unpack_nat(find_big_map("frozen_extra_value", extras)) in
   let max_proposal_size = unpack_nat(find_big_map("max_proposal_size", extras)) in
@@ -109,18 +64,20 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
     (params.frozen_token = required_token_lock) && (proposal_size < max_proposal_size) in
 
   if has_correct_token_lock then
-    let ts = unpack_transfer_type_list_safe(Map.find_opt "transfers" params.proposal_metadata) in
-    match ts with
-    | None -> has_correct_token_lock
-    | Some ts ->
-      let min_xtz_amount = unpack_tez(find_big_map("min_xtz_amount", extras)) in
-      let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
-      let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
-        match transfer_type with
-        | Token_transfer_type tt -> is_valid
-        | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
-      in
-      List.fold is_all_transfers_valid ts has_correct_token_lock
+    match unpack_proposal_metadata(params.proposal_metadata) with
+    | Transfer_proposal tp ->
+        let min_xtz_amount = unpack_tez(find_big_map("min_xtz_amount", extras)) in
+        let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
+        let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
+          match transfer_type with
+          | Token_transfer_type tt -> is_valid
+          | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
+        in
+        List.fold is_all_transfers_valid tp.transfers has_correct_token_lock
+    | Normal_proposal diff_ -> has_correct_token_lock
+    | Update_receivers_proposal urp_ -> has_correct_token_lock
+    | Configuration_proposal cp_ -> has_correct_token_lock
+
   else
     false
 
@@ -165,11 +122,11 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     } in
   let proposal_key = to_proposal_key (propose_param, proposal.proposer) in
   let ops = ([] : operation list) in
-  match extract_proposal(proposal.metadata) with
-  | Normal_proposal diff ->
-      let extras = apply_diff(diff, extras) in
+  match unpack_proposal_metadata(proposal.metadata) with
+  | Normal_proposal np ->
+      let extras = apply_diff(np.registry_diff, extras) in
       let extras =
-        apply_diff_affected(proposal_key, diff, extras) in
+        apply_diff_affected(proposal_key, np.registry_diff, extras) in
         (ops, extras)
   | Update_receivers_proposal urp ->
       let current_set = unpack_proposal_receivers(find_big_map("proposal_receivers", extras)) in
@@ -181,38 +138,33 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
               update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.remove i c))
         in (ops, Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras)
       end
-  | Configuration_proposal ->
-      let m_frozen_scale_value = unpack_nat_opt(find_map("frozen_scale_value", proposal.metadata)) in
-      let m_frozen_extra_value = unpack_nat_opt(find_map("frozen_extra_value", proposal.metadata)) in
-      let m_max_proposal_size = unpack_nat_opt(find_map("max_proposal_size", proposal.metadata)) in
-      let m_slash_scale_value = unpack_nat_opt(find_map("slash_scale_value", proposal.metadata)) in
-      let m_slash_division_value = unpack_nat_opt(find_map("slash_division_value", proposal.metadata)) in
-      let new_ce = match m_frozen_scale_value with
+  | Configuration_proposal cp ->
+      let new_ce = match cp.frozen_scale_value with
         | Some (frozen_scale_value) ->
             Big_map.update "frozen_scale_value" (Some (Bytes.pack (frozen_scale_value))) extras
         | None -> extras in
 
-      let new_ce = match m_frozen_extra_value with
+      let new_ce = match cp.frozen_extra_value with
         | Some (frozen_extra_value) ->
             Big_map.update "frozen_extra_value" (Some (Bytes.pack (frozen_extra_value))) new_ce
         | None -> new_ce in
 
-      let new_ce = match m_max_proposal_size with
+      let new_ce = match cp.max_proposal_size with
         | Some (max_proposal_size) ->
             Big_map.update "max_proposal_size" (Some (Bytes.pack (max_proposal_size))) new_ce
         | None -> new_ce in
 
-      let new_ce = match m_slash_scale_value with
+      let new_ce = match cp.slash_scale_value with
         | Some (slash_scale_value) ->
             Big_map.update "slash_scale_value" (Some (Bytes.pack (slash_scale_value))) new_ce
         | None -> new_ce in
 
-      let new_ce = match m_slash_division_value with
+      let new_ce = match cp.slash_division_value with
         | Some (slash_division_value) ->
             Big_map.update "slash_division_value" (Some (Bytes.pack (slash_division_value))) new_ce
         | None -> new_ce
       in (ops, new_ce)
-  | Transfer_proposal ts ->
+  | Transfer_proposal tp ->
       let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
         let (is_valid, extras, ops) = acc in
         if is_valid then
@@ -237,7 +189,7 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
         else
           (false, extras, ops)
       in
-      let (is_valid, extras, ops) = List.fold handle_transfer ts (true, extras, ops) in
+      let (is_valid, extras, ops) = List.fold handle_transfer tp.transfers (true, extras, ops) in
       if is_valid then
         (ops, extras)
       else

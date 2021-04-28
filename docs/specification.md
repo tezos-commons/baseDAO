@@ -43,24 +43,38 @@ However, an existing separate FA2 contract is used for governance.
 BaseDAO is a concrete smart contract, but also a framework to implement various DAOs.
 It can be configured at origination for any specific needs.
 
-In order to do so the contract has types that can contain arbitrary data:
-- `proposal_metadata` which is a type synonym for `(string, bytes) map`
-  (or in Michelson: `map string bytes`)
+In order to do so the contract has types that can contain arbitary data:
+- `proposal_metadata` which is a type synonym for `bytes`
 - `contract_extra` which is a type synonym for `(string, bytes) big_map`
   (or in Michelson: `big_map string bytes`)
 
 
 The former contains fields that are required to submit a proposal.
-The latter keeps global information like information about accepted proposals.
 
-In both cases we associate a `string` "name" to the `pack`ed representation of
+The latter keeps global information like information about accepted proposals.
+In this case, we associate a `string` "name" to the `pack`ed representation of
 the data, that can then be `unpack`ed by the contract code.
 
-For example a "treasury" style DAO would have a `proposal_metadata` containing:
-```
-"mutezAmount": <packed mutez>
-"recipientId": <packed string>
-"agoraPostId": <packed nat>
+For example, the `proposal_metadata` in a "treasury" style DAO would be the packed version of the type `transfer_proposal` :
+```ocaml
+type xtz_transfer =
+  { amount : tez
+  ; recipient : address
+  }
+
+type token_transfer =
+  { contract_address : address
+  ; transfer_list : transfer_item list
+  }
+
+type transfer_type =
+  | Xtz_transfer_type of xtz_transfer
+  | Token_transfer_type of token_transfer
+
+type transfer_proposal =
+  { agora_post_id : nat
+  ; transfers : transfer_type list
+  }
 ```
 and an empty `contract_extra`.
 
@@ -612,7 +626,7 @@ Parameter (in Michelson):
 ### **propose**
 
 ```ocaml
-type proposal_metadata = (string, bytes) map
+type proposal_metadata = bytes
 
 type propose_params =
   { frozen_token : nat
@@ -626,7 +640,7 @@ Parameter (in Michelson):
 ```
 (pair %propose
   (nat %frozen_token)
-  (map %proposal_metadata string bytes)
+  (bytes %proposal_metadata)
 )
 ```
 

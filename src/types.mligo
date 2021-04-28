@@ -105,7 +105,7 @@ type voter =
   }
 
 type proposal_key = bytes
-type proposal_metadata = (string, bytes) map
+type proposal_metadata = bytes
 type proposal =
   { upvotes : nat
   ; downvotes : nat

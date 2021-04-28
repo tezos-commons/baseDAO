@@ -25,6 +25,10 @@ type transfer_type =
   | Xtz_transfer_type of xtz_transfer
   | Token_transfer_type of token_transfer
 
+type transfer_proposal =
+  { agora_post_id : nat
+  ; transfers : transfer_type list
+  }
 
 // -- Unpack Helpers (fail if the unpacked result is none) -- //
 

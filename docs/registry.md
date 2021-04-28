@@ -45,7 +45,7 @@ Modeled just the same way as [treasuryDAO proposals](./treasury.md).
 
 ### Proposal check
 
-The proposer must lock `frozen_scale_value * s + frozen_extra_value` tokens where `s = size(pack(proposal_metadata))`.
+The proposer must lock `frozen_scale_value * s + frozen_extra_value` tokens where `s = size(proposal_metadata)`.
 I. e. `s` is total size of the diff and post ID.
 It should naturally prohibit spam proposals and too big proposals (unless `frozen_scale_value` is 0).
 
