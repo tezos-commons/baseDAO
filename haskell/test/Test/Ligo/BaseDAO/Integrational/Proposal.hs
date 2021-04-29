@@ -112,7 +112,7 @@ checkVotingPeriodCalculation  = do
       ! #admin admin
       ! #votingPeriod 2
       ! #quorumThreshold (QuorumThreshold 10 100)
-      ! #extra dynRecBigMapUnsafe
+      ! #extra dynRecUnsafe
       ! #metadata mempty
       ! #now now
       ! #tokenAddress (unTAddress tokenContract)

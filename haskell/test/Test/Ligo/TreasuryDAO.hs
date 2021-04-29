@@ -21,7 +21,7 @@ import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  (OriginateFn, addressToKeyHash, checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
+  (OriginateFn, TransferProposal(..), addressToKeyHash, checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 

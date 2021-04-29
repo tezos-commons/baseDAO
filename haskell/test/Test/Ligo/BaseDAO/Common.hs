@@ -50,6 +50,18 @@ addressToKeyHash :: Address -> KeyHash
 addressToKeyHash (KeyAddress h) = h
 addressToKeyHash _ = error "Not an implicit address"
 
+-- | Shared Proposal type used in Registry DAO and Treasury DAO
+data TransferProposal = TransferProposal
+  { tpAgoraPostId :: Natural
+  , tpTransfers :: [TransferType]
+  }
+
+instance HasAnnotation TransferProposal where
+  annOptions = baseDaoAnnOptions
+
+customGeneric "TransferProposal" ligoLayout
+deriving anyclass instance IsoValue TransferProposal
+
 -- | A dummy contract with FA2 parameter that remembers the
 -- transfer calls.
 dummyFA2Contract :: Contract FA2.Parameter [FA2.TransferParams]

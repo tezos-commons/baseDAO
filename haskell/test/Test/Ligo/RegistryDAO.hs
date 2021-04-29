@@ -31,7 +31,60 @@ import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  (addressToKeyHash, checkTokenBalance, dummyFA2Contract, makeProposalKey, sendXtz, totalSupplyFromLedger)
+  (TransferProposal(..), addressToKeyHash, checkTokenBalance, dummyFA2Contract, makeProposalKey, sendXtz, totalSupplyFromLedger)
+
+-- | Helper type for unpack/pack
+data RegistryDaoProposalMetadata
+  = Normal_proposal NormalProposal
+  | Update_receivers_proposal UpdateReceiverParam
+  | Configuration_proposal ConfigProposal
+  | Transfer_proposal TransferProposal
+
+instance HasAnnotation RegistryDaoProposalMetadata where
+  annOptions = baseDaoAnnOptions
+
+data UpdateReceiverParam
+  = Add_receivers [Address]
+  | Remove_receivers [Address]
+
+instance HasAnnotation UpdateReceiverParam where
+  annOptions = baseDaoAnnOptions
+
+data NormalProposal = NormalProposal
+  { npAgoraPostId :: Natural
+  , npRegistryDiff :: [(MText, Maybe MText)]
+  }
+
+instance HasAnnotation NormalProposal where
+  annOptions = baseDaoAnnOptions
+
+data ConfigProposal = ConfigProposal
+  { cpFrozenScaleValue :: Maybe Natural
+  , cpFrozenExtraValue :: Maybe Natural
+  , cpSlashScaleValue :: Maybe Natural
+  , cpSlashDivisionValue :: Maybe Natural
+  , cpMaxProposalSize :: Maybe Natural
+  }
+
+instance HasAnnotation ConfigProposal where
+  annOptions = baseDaoAnnOptions
+
+
+-- Note: Somehow setting `[@layout:comb]` in ligo types does not work.
+-- Have to use `ligoLayout` instead.
+
+customGeneric "RegistryDaoProposalMetadata" ligoLayout
+deriving anyclass instance IsoValue RegistryDaoProposalMetadata
+
+customGeneric "UpdateReceiverParam" ligoLayout
+deriving anyclass instance IsoValue UpdateReceiverParam
+
+customGeneric "ConfigProposal" ligoLayout
+deriving anyclass instance IsoValue ConfigProposal
+
+customGeneric "NormalProposal" ligoLayout
+deriving anyclass instance IsoValue NormalProposal
+
 
 withOriginated
   :: MonadNettest caps base m
@@ -66,7 +119,7 @@ test_RegistryDAO =
         withOriginated 2
           (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao _ -> do
-            let proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $ Normal_proposal $ NormalProposal 1 []
+            let proposalMeta = lPackValueRaw $ Normal_proposal $ NormalProposal 1 []
             let proposalSize = metadataSize proposalMeta
             withSender wallet1 $
               call baseDao (Call @"Freeze") (#amount .! proposalSize, #keyhash .! (addressToKeyHash wallet1))
@@ -83,7 +136,7 @@ test_RegistryDAO =
           \(_:wallet1:_) _ baseDao _ -> let
             -- In the explicitly set configuration max_proposal_size is set at 100.
             -- And here we create a proposal that is bigger then 100.
-            proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $ Normal_proposal $ NormalProposal 1 $
+            proposalMeta = lPackValueRaw $ Normal_proposal $ NormalProposal 1 $
                 [(mkMTextUnsafe ("long_key" <> (show @_ @Int t)), Just [mt|long_value|]) | t <- [1..10]]
             proposalSize = metadataSize proposalMeta
             in withSender wallet1 $ call
@@ -94,7 +147,7 @@ test_RegistryDAO =
         withOriginated 2
           (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao _ -> let
-            proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $ Normal_proposal $ NormalProposal 1 []
+            proposalMeta = lPackValueRaw $ Normal_proposal $ NormalProposal 1 []
             -- Here we only freeze 2 tokens, but the proposal size and the configuration params
             -- frozen_scale_value, frozen_extra_value set to 1 and 0 means that it requires 6
             -- tokens to be frozen (6 * 1 + 0) because proposal size happen to be 6 here.
@@ -107,11 +160,12 @@ test_RegistryDAO =
           (\(admin: wallet1:_) -> setExtra @Natural [mt|frozen_extra_value|] 2 $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
           \(_:wallet1:_) _ baseDao _ -> do
             let
-              proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $ Normal_proposal $ NormalProposal 1 []
+              proposalMeta = lPackValueRaw $ Normal_proposal $ NormalProposal 1 []
               proposalSize = metadataSize proposalMeta -- 10
+              wallet1KeyHash = addressToKeyHash wallet1
 
             withSender wallet1 $
-(??)              call baseDao (Call @"Freeze") (#amount .! 8)
+              call baseDao (Call @"Freeze") (#amount .! 8, #keyhash .! wallet1KeyHash)
             advanceTime (sec $ 11)
 
             -- Here the proposal size and the configuration params frozen_scale_value,
@@ -133,7 +187,7 @@ test_RegistryDAO =
             setExtra @Natural [mt|slash_division_value|] slash_division_value $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
 
           \(admin: wallet1: _) _ baseDao _ -> let
-            proposalMeta1 = lPackValueRaw @RegistryDaoProposalMetadata $ Normal_proposal $ NormalProposal 1 []
+            proposalMeta1 = lPackValueRaw $ Normal_proposal $ NormalProposal 1 []
             proposalSize1 = metadataSize proposalMeta1
 
             in do
@@ -182,7 +236,7 @@ test_RegistryDAO =
 
           \(admin: wallet1: voter1 : _) _ baseDao _ -> let
             -- We currently have max_proposal_size of 200, but the following proposal is 341 bytes long.
-            largeProposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $ Normal_proposal $ NormalProposal 1 $
+            largeProposalMeta = lPackValueRaw $ Normal_proposal $ NormalProposal 1 $
               [(mkMTextUnsafe ("long_key" <> (show @_ @Int t)), Just [mt|long_value|]) | t <- [1..10]]
             largeProposalSize = metadataSize largeProposalMeta -- 341
 
@@ -207,7 +261,7 @@ test_RegistryDAO =
                 & expectFailProposalCheck baseDao
 
               -- We create a new proposal to increase max_proposal_size to largeProposalSize + 1.
-              let sMaxUpdateproposalMeta1 = lPackValueRaw @RegistryDaoProposalMetadata $
+              let sMaxUpdateproposalMeta1 = lPackValueRaw  $
                     Configuration_proposal $ ConfigProposal
                         { cpFrozenScaleValue = Nothing
                         , cpFrozenExtraValue = Nothing

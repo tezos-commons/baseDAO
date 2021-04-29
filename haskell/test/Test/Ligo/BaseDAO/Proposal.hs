@@ -157,7 +157,7 @@ test_BaseDAO_Proposal =
             uncapsNettest $ votingPeriodChange (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenarioOnEmulator "NEW TEST: cannot freeze more than VOTING_POWER" $
-            uncapsNettestEmulated $ votingPowerLimitFreeze (originateLigoDaoWithConfigDesc dynRecBigMapUnsafe)
+            uncapsNettestEmulated $ votingPowerLimitFreeze (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
  , testGroup "LIGO-specific proposal tests:"
