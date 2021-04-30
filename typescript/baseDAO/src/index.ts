@@ -22,7 +22,7 @@ export {Flush} from  './generated/Flush';
 export {Get_vote_permit_counter} from  './generated/Get_vote_permit_counter';
 export {Get_total_supply} from  './generated/Get_total_supply';
 export {Mint} from  './generated/Mint';
-export {Propose, ProposeProposal_metadata} from  './generated/Propose';
+export {Propose} from  './generated/Propose';
 export {Set_quorum_threshold} from  './generated/Set_quorum_threshold';
 export {Set_voting_period} from  './generated/Set_voting_period';
 export {Transfer_ownership} from  './generated/Transfer_ownership';
