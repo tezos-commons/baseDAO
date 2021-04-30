@@ -247,4 +247,3 @@ typescript: all
 
 clean:
 	rm -rf $(OUT)
-	rm -rf $(TS_OUT)/baseDAO/src/generated/*

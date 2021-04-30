@@ -115,7 +115,17 @@ steps:
   #     # from building the tests twice and 'ligo-test' running time is mostly that.
   #   commands: *ligo-nettest
 
+  - label: check typescript api
+    if: *not_scheduled
+    depends_on:
+      - build-ligo
+      - build-haskell
+    commands:
+      - nix run -f ci.nix packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta pkgs.diffutils -c ./scripts/ci/validate-typescript-api.sh
+
+
   - label: typescript-build
+    if: *not_scheduled
     depends_on:
       - build-ligo
       - build-haskell

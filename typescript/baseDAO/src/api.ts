@@ -189,13 +189,8 @@ export class BaseDAOContract {
   }
 
   propose(arg: Propose): Promise<string|void> {
-    let proposalMetadata : MichelsonMap<ExtractMapKey<Propose["proposal_metadata"]>, ExtractMapValue<Propose["proposal_metadata"]>> = new MichelsonMap();
-    for (let [k, v] of arg.proposal_metadata.entries()) {
-      proposalMetadata.set(k, v);
-    }
-
     return this.withContract(
-      contract => contract.methods.propose(arg.frozen_token, proposalMetadata));
+      contract => contract.methods.propose(arg.frozen_token, arg.proposal_metadata));
   }
 
   set_quorum_threshold(arg: Set_quorum_threshold): Promise<string|void> {
