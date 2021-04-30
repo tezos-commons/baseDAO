@@ -29,12 +29,24 @@ type config_proposal =
   ; max_proposal_size : nat option
   }
 
+#if BYO_DAO
 // Registry dao `proposal_metadata` contains the type of proposal.
 type registry_dao_proposal_metadata =
   | Normal_proposal of normal_proposal
   | Update_receivers_proposal of update_receiver_param
   | Configuration_proposal of config_proposal
   | Transfer_proposal of transfer_proposal
+#endif
+
+#if VOTING_POWER_DAO
+// Registry dao `proposal_metadata` contains the type of proposal.
+type registry_dao_proposal_metadata =
+  | Normal_proposal of normal_proposal
+  | Update_receivers_proposal of update_receiver_param
+  | Configuration_proposal of config_proposal
+  | Transfer_proposal of transfer_proposal
+  | VotingPeriodConstantsUpdate of voting_period_params
+#endif
 
 type lookup_registry_param =
   [@layout:comb]

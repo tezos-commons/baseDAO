@@ -26,12 +26,22 @@ type ledger = (ledger_key, ledger_value) big_map
 // tokens that were frozen during that period and the ones frozen in any other before.
 // It does so because only tokens that were frozen in the past can be staked, which is
 // also why it tracks staked tokens in a single field.
+#if BYO_DAO
 type address_freeze_history =
   { current_period_num : nat
   ; staked : nat
   ; current_unstaked : nat
   ; past_unstaked : nat
   }
+#endif
+
+#if VOTING_POWER_DAO
+type address_freeze_history =
+  { current_period_num : nat
+  ; staked : nat
+  ; unstaked : nat
+  }
+#endif
 
 type freeze_history = (address, address_freeze_history) big_map
 
@@ -151,6 +161,7 @@ type last_period_change =
   ; period_num : nat
   }
 
+
 // -- Storage -- //
 
 type governance_token =
@@ -158,6 +169,52 @@ type governance_token =
   ; token_id : token_id
   }
 
+#if VOTING_POWER_DAO
+type period = nat
+type level = nat
+type cycle = nat
+
+// Here we save both levels_per_cycle and cycles_per_period because we need to
+// answer two questions.
+// What cycle are we at?
+//   This is computed as `levels_per_cycle_change_at.cycle + current_level - levels_per_cycle_change_at.level)/levels_per_cycle`.
+// What period are we at?
+//   This is computed as `cycles_per_period_change_at.period + (current_cycle - cycles_per_period_change_at.cycle)/cycles_per_period`.
+type voting_period_params =
+  { levels_per_cycle_change_at : (cycle * level) // first element is the cycle at which change happned, and second element is the first level of that cycle.
+  ; cycles_per_period_change_at : (period * cycle) // first element is the period at which change happned, and second element is the first cycle of that period.
+  ; levels_per_cycle : level
+  ; cycles_per_period : cycle
+  }
+
+type storage =
+  { ledger : ledger
+  ; operators : operators
+  ; governance_token : governance_token
+  ; admin : address
+  ; pending_owner : address
+  ; metadata : metadata_map
+  ; voting_period : voting_period
+  ; quorum_threshold : quorum_threshold
+  ; extra : contract_extra
+  ; proposals : (proposal_key, proposal) big_map
+  ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
+  ; permits_counter : nonce
+  ; total_supply : total_supply
+  ; frozen_total_supply : (period * nat)
+      // ^^ we need to track this separately because tokens frozen in a period
+      // are invalidated at the end of that period, and is no longer considered as
+      // frozen.
+  ; freeze_history : freeze_history
+  ; fixed_proposal_fee_in_token : nat
+  ; frozen_token_id : token_id
+  ; voting_period_params : voting_period_params
+  }
+
+type freeze_param = (nat * key_hash)
+#endif
+
+#if BYO_DAO
 type storage =
   { ledger : ledger
   ; operators : operators
@@ -178,9 +235,11 @@ type storage =
   ; last_period_change : last_period_change
   }
 
+type freeze_param = nat
+#endif
+
 // -- Parameter -- //
 
-type freeze_param = nat
 type unfreeze_param = nat
 
 type transfer_ownership_param = address
@@ -307,6 +366,25 @@ type initial_data =
   ; config_data : initial_config_data
   }
 
+#if VOTING_POWER_DAO
+type config =
+  { proposal_check : propose_params * contract_extra -> bool
+  ; rejected_proposal_return_value : proposal * contract_extra -> nat
+  ; decision_lambda : proposal * contract_extra -> operation list * ((voting_period_params option) * contract_extra)
+
+  ; max_proposals : nat
+  ; max_votes : nat
+  ; max_quorum_threshold : quorum_threshold
+  ; min_quorum_threshold : quorum_threshold
+  ; max_voting_period : voting_period // TODO@SRAS these two probably can be removed now
+  ; min_voting_period : voting_period
+
+  ; custom_entrypoints : custom_entrypoints
+  }
+#endif
+
+#if BYO_DAO
+
 type config =
   { proposal_check : propose_params * contract_extra -> bool
   ; rejected_proposal_return_value : proposal * contract_extra -> nat
@@ -321,6 +399,10 @@ type config =
 
   ; custom_entrypoints : custom_entrypoints
   }
+
+#endif
+
+
 
 type full_storage = storage * config
 

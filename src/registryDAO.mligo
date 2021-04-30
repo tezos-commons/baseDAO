@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+#define VOTING_POWER_DAO
+
 #include "common/types.mligo"
 #include "defaults.mligo"
 #include "types.mligo"
@@ -53,6 +55,8 @@ let apply_diff_affected (proposal_key, diff, ce : proposal_key *
  *   3.b. is a token transfer
  * where min_xtz_amount and max_xtz_amount are from storage configuration.
  *)
+
+#if BYO_DAO
 let registry_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
   let proposal_size = Bytes.size(params.proposal_metadata) in
   let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
@@ -80,6 +84,38 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
 
   else
     false
+#endif
+
+#if VOTING_POWER_DAO
+let registry_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
+  let proposal_size = Bytes.size(params.proposal_metadata) in
+  let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
+  let frozen_extra_value = unpack_nat(find_big_map("frozen_extra_value", extras)) in
+  let max_proposal_size = unpack_nat(find_big_map("max_proposal_size", extras)) in
+
+  let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
+  let has_correct_token_lock =
+    (params.frozen_token = required_token_lock) && (proposal_size < max_proposal_size) in
+
+  if has_correct_token_lock then
+    match unpack_proposal_metadata(params.proposal_metadata) with
+    | Transfer_proposal tp ->
+        let min_xtz_amount = unpack_tez(find_big_map("min_xtz_amount", extras)) in
+        let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
+        let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
+          match transfer_type with
+          | Token_transfer_type tt -> is_valid
+          | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
+        in
+        List.fold is_all_transfers_valid tp.transfers has_correct_token_lock
+    | Normal_proposal diff_ -> has_correct_token_lock
+    | Update_receivers_proposal urp_ -> has_correct_token_lock
+    | Configuration_proposal cp_ -> has_correct_token_lock
+    | VotingPeriodConstantsUpdate cp_ -> has_correct_token_lock
+
+  else
+    false
+#endif
 
 (*
  * Proposal rejection return lambda: returns `slash_scale_value * frozen / slash_division_value`
@@ -98,6 +134,7 @@ let update_receivers(current_set, updates, update_fn : proposal_receivers * addr
     foldFn (existing, item : proposal_receivers * address) : proposal_receivers = update_fn (item, existing)
   in List.fold foldFn updates current_set
 
+#if BYO_DAO
 (*
  * Uses the keys in the proposal metadata to differentiate between configuration
  * proposal and normal proposals. If the map contains `agoraPostID` key, the proposal
@@ -195,6 +232,93 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
       else
         // TODO: [#87] Improve handling of failed proposals
         (failwith("FAIL_DECISION_LAMBDA") : operation list * contract_extra)
+#endif
+
+#if VOTING_POWER_DAO
+let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
+    : operation list * (voting_period_params option * contract_extra) =
+  let propose_param : propose_params = {
+    frozen_token = proposal.proposer_frozen_token;
+    proposal_metadata = proposal.metadata
+    } in
+  let proposal_key = to_proposal_key (propose_param, proposal.proposer) in
+  let ops = ([] : operation list) in
+  match unpack_proposal_metadata(proposal.metadata) with
+  | Normal_proposal np ->
+      let extras = apply_diff(np.registry_diff, extras) in
+      let extras =
+        apply_diff_affected(proposal_key, np.registry_diff, extras) in
+        (ops, ((None : voting_period_params option), extras))
+  | Update_receivers_proposal urp ->
+      let current_set = unpack_proposal_receivers(find_big_map("proposal_receivers", extras)) in
+      begin
+        let new_set = match urp with
+          | Add_receivers receivers ->
+              update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.add i c))
+          | Remove_receivers receivers ->
+              update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.remove i c))
+        in (ops, ((None : voting_period_params option), Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras))
+      end
+  | Configuration_proposal cp ->
+      let new_ce = match cp.frozen_scale_value with
+        | Some (frozen_scale_value) ->
+            Big_map.update "frozen_scale_value" (Some (Bytes.pack (frozen_scale_value))) extras
+        | None -> extras in
+
+      let new_ce = match cp.frozen_extra_value with
+        | Some (frozen_extra_value) ->
+            Big_map.update "frozen_extra_value" (Some (Bytes.pack (frozen_extra_value))) new_ce
+        | None -> new_ce in
+
+      let new_ce = match cp.max_proposal_size with
+        | Some (max_proposal_size) ->
+            Big_map.update "max_proposal_size" (Some (Bytes.pack (max_proposal_size))) new_ce
+        | None -> new_ce in
+
+      let new_ce = match cp.slash_scale_value with
+        | Some (slash_scale_value) ->
+            Big_map.update "slash_scale_value" (Some (Bytes.pack (slash_scale_value))) new_ce
+        | None -> new_ce in
+
+      let new_ce = match cp.slash_division_value with
+        | Some (slash_division_value) ->
+            Big_map.update "slash_division_value" (Some (Bytes.pack (slash_division_value))) new_ce
+        | None -> new_ce
+      in (ops, ((None : voting_period_params option),  new_ce))
+  | Transfer_proposal tp ->
+      let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
+        let (is_valid, extras, ops) = acc in
+        if is_valid then
+          match transfer_type with
+          | Token_transfer_type tt ->
+            begin
+              match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
+                  : transfer_params contract option) with
+              | Some contract ->
+                  let token_transfer_operation = Tezos.transaction tt.transfer_list 0mutez contract
+                  in (true, extras, token_transfer_operation :: ops)
+              | None -> (false, extras, ops)
+            end
+          | Xtz_transfer_type xt ->
+            begin
+              match (Tezos.get_contract_opt xt.recipient : unit contract option) with
+              | Some contract ->
+                  let xtz_transfer_operation = Tezos.transaction unit xt.amount contract
+                  in (true, extras, xtz_transfer_operation :: ops)
+              | None -> (false, extras, ops)
+            end
+        else
+          (false, extras, ops)
+      in
+      let (is_valid, extras, ops) = List.fold handle_transfer tp.transfers (true, extras, ops) in
+      if is_valid then
+        (ops, ((None : voting_period_params option), extras))
+      else
+        // TODO: [#87] Improve handling of failed proposals
+        (failwith("FAIL_DECISION_LAMBDA") : operation list * (voting_period_params option * contract_extra))
+  | VotingPeriodConstantsUpdate vpp ->
+        (ops, (Some(vpp), extras))
+#endif
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.

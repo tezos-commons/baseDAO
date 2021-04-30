@@ -13,4 +13,8 @@ let authorize_admin (store : storage): storage =
   else
     (failwith("NOT_ADMIN") : storage)
 
+#if VOTING_POWER_DAO
+#include "common/votingpower-dao-common.mligo"
+#endif
+
 #endif
