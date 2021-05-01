@@ -111,4 +111,9 @@ mkFA2Tests storage mc = testGroup "FA2 off-chain views"
         checkTotalSupply storage frozenTokenId
           @?= Right 200
     ]
+  , testGroup "governance_token" $
+    [ testCase "Get the address and token_id of the associated FA2 contract" $
+        runView @GovernanceToken (governanceTokenView mc) storage NoParam
+        @?= (Right $ GovernanceToken genesisAddress FA2.theTokenId)
+    ]
   ]

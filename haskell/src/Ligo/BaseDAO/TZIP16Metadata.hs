@@ -16,6 +16,7 @@ module Ligo.BaseDAO.TZIP16Metadata
   , tokenMetadataView
   , getTotalSupplyView
   , permitsCounterView
+  , governanceTokenView
   ) where
 
 import qualified Universum as U
@@ -86,6 +87,7 @@ baseDAOViews = U.sequence
   , isOperatorView
   , tokenMetadataView
   , getTotalSupplyView
+  , governanceTokenView
 
   , permitsCounterView
   ]
@@ -199,6 +201,20 @@ getTotalSupplyView MetadataSettings{ msConfig = MetadataConfig{} } = View
             unsafeCompileViewCode $ WithParam @FA2.TokenId $ do
               stGet #sTotalSupply
               ifSome nop $ failCustom_ #fA2_TOKEN_UNDEFINED
+      ]
+  }
+
+governanceTokenView :: DaoView
+governanceTokenView MetadataSettings{} = View
+  { vName = "governance_token"
+  , vDescription = Just
+      "Return the address and token_id of the associated FA2 contract."
+  , vPure = Just True
+  , vImplementations =
+      [ VIMichelsonStorageView $
+          mkMichelsonStorageView @Storage Nothing [] $
+            unsafeCompileViewCode $ WithoutParam $ do
+              stToField #sGovernanceToken
       ]
   }
 
