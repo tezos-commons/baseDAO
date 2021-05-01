@@ -32,9 +32,7 @@ let get_current_period_num(last_period_change, vp_length : last_period_change * 
         | Some (elapsed_time) -> last_period_change.period_num + elapsed_time/vp_length
         | None -> ([%Michelson ({| { FAILWITH } |} : string * unit -> nat)]
             ("STARTED_ON_IN_FUTURE", ()))
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let ensure_proposal_voting_segment (proposal, store : proposal * storage): storage =
   let current_period = get_current_period_num(store.voting_period_params) in
   if current_period = (proposal.period_num) && not is_proposing_segment(store)
@@ -113,9 +111,7 @@ let sub_frozen_fh (amt, fh : nat * address_freeze_history)
         ( "NOT_ENOUGH_FROZEN_TOKENS", ()) : address_freeze_history)
   | Some new_amt ->
       { fh with past_unstaked = new_amt }
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
  let sub_frozen_fh (amt, fh : nat * address_freeze_history)
      : address_freeze_history =
   match is_nat(fh.unstaked - amt) with
@@ -139,9 +135,7 @@ let unstake_frozen_fh (amt, fh : nat * address_freeze_history)
         ("NOT_ENOUGH_STAKED_TOKENS", ()) : address_freeze_history)
   | Some new_amt ->
       { fh with staked = new_amt; unstaked = fh.unstaked + amt }
-#endif
-
-#if BYO_DAO
+#elif BYO_DAO
 let unstake_frozen_fh (amt, fh : nat * address_freeze_history)
     : address_freeze_history =
   match is_nat(fh.staked - amt) with
@@ -193,9 +187,7 @@ let freeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, gover
   // to credit the `addr` address here.
   let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
   (operation, ledger, total_supply)
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let ensure_sender_key_hash(key_hash, addr : key_hash * address) : address =
   if (Tezos.address(Tezos.implicit_account(key_hash)) = addr)
     then addr
@@ -237,9 +229,7 @@ let stake_tk(token_amount, addr, store : nat * address * storage): storage =
       else ([%Michelson ({| { FAILWITH } |} : (string * unit) -> freeze_history)]
               ("NOT_ENOUGH_FROZEN_TOKENS", ()) : freeze_history)
   in { store with freeze_history = new_freeze_history }
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let stake_tk(token_amount, addr, store : nat * address * storage): storage =
   let current_period = get_current_period_num(store.voting_period_params) in
   let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
@@ -266,9 +256,7 @@ let unfreeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, gov
   // to debit the `addr` address here.
   let (ledger, total_supply) = debit_from (tokens, addr, frozen_token_id, ledger, total_supply) in
   (operation, ledger, total_supply)
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let unfreeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, governance_token : nat * address * ledger * total_supply * token_id * governance_token): (ledger * total_supply) =
   let (ledger, total_supply) = debit_from (tokens, addr, frozen_token_id, ledger, total_supply) in
   (ledger, total_supply)
@@ -297,9 +285,7 @@ let add_proposal (propose_params, store : propose_params * storage): storage =
   ; proposal_key_list_sort_by_date =
       Set.add (timestamp, proposal_key) store.proposal_key_list_sort_by_date
   }
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let add_proposal (propose_params, store : propose_params * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
   let current_period = get_current_period_num(store.voting_period_params) in
@@ -378,9 +364,7 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
   ( ([] : operation list)
   , List.fold accept_vote votes store
   )
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let vote(votes, config, store : vote_param_permited list * config * storage): return =
   let accept_vote = fun (store, pp : storage * vote_param_permited) ->
     let (param, author, store) = verify_permit_protected_vote (pp, store) in
@@ -427,9 +411,7 @@ let set_voting_period(new_period, config, store : voting_period * config * stora
     in
   let store = { store with voting_period = new_period; last_period_change = vp_log } in
   (([] : operation list), store)
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 [@inline]
 let set_voting_period(new_period, config, store : voting_period * config * storage): return =
   let store = authorize_admin store in
@@ -482,9 +464,7 @@ let unstake_tk(token_amount, addr, store : nat * address * storage): storage =
         { store with freeze_history = new_freze_history }
     | None -> ([%Michelson ({| { FAILWITH } |} : (string * unit) -> storage)]
           ("NOT_ENOUGH_STAKED_TOKENS", ()) : storage)
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let unstake_tk(token_amount, addr, store : nat * address * storage): storage =
   let current_period = get_current_period_num(store.voting_period_params) in
   match Big_map.find_opt addr store.freeze_history with
@@ -533,9 +513,7 @@ let unfreeze_proposer_and_voter_token
 let is_voting_period_over (proposal, store : proposal * storage): bool =
   let current_period = get_current_period_num(store.last_period_change, store.voting_period) in
   current_period > proposal.period_num + 1n
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 [@inline]
 let is_voting_period_over (proposal, store : proposal * storage): bool =
   let current_period = get_current_period_num(store.voting_period_params)
@@ -594,9 +572,7 @@ let handle_proposal_is_over
     let store = delete_proposal (start_date, proposal_key, store) in
     (ops, store, counter)
   else (ops, store, counter)
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 [@inline]
 let handle_proposal_is_over
     (config, start_date, proposal_key, store, ops, counter
@@ -690,9 +666,7 @@ let freeze (amt, store : freeze_param * storage) : return =
     ; total_supply = total_supply
     ; freeze_history = Big_map.update addr (Some(new_freeze_history_for_address)) store.freeze_history
   })
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let freeze (freeze_param, store : freeze_param * storage) : return =
   let (tokens, sender_key_hash) = freeze_param in
   let sender_ = ensure_sender_key_hash(sender_key_hash, Tezos.sender) in
@@ -747,9 +721,7 @@ let unfreeze (amt, store : unfreeze_param * storage) : return =
       ; total_supply = total_supply
       ; freeze_history = new_freeze_history
     })
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let unfreeze (amt, store : unfreeze_param * storage) : return =
   let addr = Tezos.sender in
   let current_period = get_current_period_num(store.voting_period_params) in

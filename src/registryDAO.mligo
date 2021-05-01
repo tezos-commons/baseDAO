@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-#define VOTING_POWER_DAO
+// The following include is required so that we have a function with an
+// entrypoint type to use with `compile-storage` command to make Michelson
+// storage expression.
+#include "base_DAO.mligo"
 
 #include "common/types.mligo"
 #include "defaults.mligo"
@@ -10,11 +13,6 @@
 #include "helper/unpack.mligo"
 
 #include "registryDAO/types.mligo"
-
-// The following include is required so that we have a function with an
-// entrypoint type to use with `compile-storage` command to make Michelson
-// storage expression.
-#include "base_DAO.mligo"
 
 let apply_diff_registry (diff, registry : registry_diff * registry) : registry =
   let
@@ -84,9 +82,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
 
   else
     false
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let registry_DAO_proposal_check (params, extras : propose_params * contract_extra) : bool =
   let proposal_size = Bytes.size(params.proposal_metadata) in
   let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
@@ -232,9 +228,7 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
       else
         // TODO: [#87] Improve handling of failed proposals
         (failwith("FAIL_DECISION_LAMBDA") : operation list * contract_extra)
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     : operation list * (voting_period_params option * contract_extra) =
   let propose_param : propose_params = {

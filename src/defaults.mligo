@@ -18,9 +18,7 @@ let default_config (data : initial_config_data) : config = {
     min_voting_period = data.min_period;
     custom_entrypoints = (Big_map.empty : custom_entrypoints);
     }
-#endif
-
-#if BYO_DAO
+#elif BYO_DAO
 let default_config (data : initial_config_data) : config = {
   proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
   rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
@@ -91,9 +89,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     frozen_token_id = frozen_token_id;
     last_period_change = {changed_on = data.now_val; period_num = 0n}
 }
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let default_storage (data, config_data : initial_storage_data * initial_config_data ) : storage =
   let frozen_token_id: nat = 0n in
   {

@@ -33,9 +33,7 @@ type address_freeze_history =
   ; current_unstaked : nat
   ; past_unstaked : nat
   }
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 type address_freeze_history =
   { current_period_num : nat
   ; staked : nat
@@ -212,9 +210,7 @@ type storage =
   }
 
 type freeze_param = (nat * key_hash)
-#endif
-
-#if BYO_DAO
+#elif BYO_DAO
 type storage =
   { ledger : ledger
   ; operators : operators
@@ -381,9 +377,7 @@ type config =
 
   ; custom_entrypoints : custom_entrypoints
   }
-#endif
-
-#if BYO_DAO
+#elif BYO_DAO
 
 type config =
   { proposal_check : propose_params * contract_extra -> bool

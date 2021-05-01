@@ -58,9 +58,7 @@ let get_total_supply (param, store : get_total_supply_param * storage) : return 
     | Some v -> v in
   ([%Michelson ({| { FAILWITH } |} : string * token_id -> return)]
     ("VoidResult", param.postprocess result) : return)
-#endif
-
-#if VOTING_POWER_DAO
+#elif VOTING_POWER_DAO
 let get_total_supply (param, store : get_total_supply_param * storage) : return =
   let result = if param.token_id = store.frozen_token_id
     then let

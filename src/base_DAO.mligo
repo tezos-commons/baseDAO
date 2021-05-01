@@ -3,12 +3,14 @@
 
 // Corresponds to BaseDAO.hs module
 
+//#define VOTING_POWER_DAO
+#define VOTING_POWER_DAO
+
 #include "management.mligo"
 #include "permit.mligo"
 #include "proposal.mligo"
 #include "defaults.mligo"
 #include "token.mligo"
-
 
 (*
  * Entrypoints that require the no xtz to be sent.
