@@ -64,22 +64,22 @@ test_BaseDAO_Management =
 
     , nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $ do
         now <- getNow
-        transferOwnership withOriginated (initialStorage now)
+        transferOwnership @Parameter (error "") (initialStorage now)
 
-    , nettestScenarioCaps "sets pending owner" $ do
-        now <- getNow
-        transferOwnership withOriginated (initialStorage now)
+    -- , nettestScenarioCaps "sets pending owner" $ do
+    --     now <- getNow
+    --     transferOwnership withOriginated (initialStorage now)
 
-    , nettestScenarioCaps "does not set administrator" $ do
-        now <- getNow
-        notSetAdmin withOriginated (initialStorage now)
+    -- , nettestScenarioCaps "does not set administrator" $ do
+    --     now <- getNow
+    --     notSetAdmin withOriginated (initialStorage now)
 
-    , nettestScenarioCaps "rewrite existing pending owner" $ do
-        now <- getNow
-        rewritePendingOwner withOriginated (initialStorage now)
+    -- , nettestScenarioCaps "rewrite existing pending owner" $ do
+    --     now <- getNow
+    --     rewritePendingOwner withOriginated (initialStorage now)
 
-    , nettestScenarioCaps "invalidates pending owner if new owner is current admin" $ do
-        now <- getNow
+    -- , nettestScenarioCaps "invalidates pending owner if new owner is current admin" $ do
+    --     now <- getNow
         invalidatePendingOwner withOriginated (initialStorage now)
     ]
     , testGroup "Accept Ownership"
@@ -128,15 +128,21 @@ type WithOriginateFn m = Integer
   -> ([Address] -> TAddress Parameter  -> m ())
   -> m ()
 
+type WithOriginateFn_ m param = Integer
+  -> ([Address] -> FullStorage)
+  -> ([Address] -> TAddress param  -> m ())
+  -> m ()
+
 type WithStorage = Address -> FullStorage
 
-transferOwnership
-  :: MonadNettest caps base m
-  => WithOriginateFn m -> WithStorage -> m ()
+transferOwnership :: forall param caps base m. (HasEntrypointOfType param "Transfer_ownership" ("newOwner" :! Address), MonadNettest caps base m)
+  => (WithOriginateFn_ m param) -> WithStorage -> m ()
 transferOwnership withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
+  withOriginatedFn 2
+    (\((owner :: Address):_) -> initialStorage owner)
+    (\[_, wallet1] baseDao ->
     withSender (AddressResolved wallet1) $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
-      & expectNotAdmin baseDao
+      & expectNotAdmin baseDao)
 
 authenticateSender
   :: MonadNettest caps base m

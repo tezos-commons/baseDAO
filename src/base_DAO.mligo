@@ -4,7 +4,7 @@
 // Corresponds to BaseDAO.hs module
 
 //#define VOTING_POWER_DAO
-#define VOTING_POWER_DAO
+#define BYO_DAO
 
 #include "management.mligo"
 #include "permit.mligo"
