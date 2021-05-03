@@ -479,6 +479,7 @@ test_RegistryDAO =
         { sAdmin = admin
         , sLedger = ledger
         , sTotalSupply = totalSupplyFromLedger ledger
+        , sVotingPeriod = 11
         }
       in fs { fsStorage = newStorage }
 
