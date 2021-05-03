@@ -14,6 +14,7 @@ type operator =
   [@layout:comb]
   { owner : address
   ; operator : address
+  ; token_id : token_id
   }
 type operators = (operator, unit) big_map
 

@@ -108,7 +108,7 @@ baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnak
 -- Operators
 ------------------------------------------------------------------------
 
-type Operator = ("owner" :! Address, "operator" :! Address)
+type Operator = ("owner" :! Address, "operator" :! Address, "token_id" :! FA2.TokenId)
 
 type Operators = BigMap Operator ()
 

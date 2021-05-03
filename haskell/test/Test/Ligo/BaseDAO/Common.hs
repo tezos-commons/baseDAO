@@ -10,6 +10,11 @@ module Test.Ligo.BaseDAO.Common
   , TransferProposal(..)
   , totalSupplyFromLedger
 
+  , frozenTokens
+  , unfrozenTokens
+  , unfrozenTokens1
+  , unknownTokens
+
   , mkFA2View
   , checkTokenBalance
   , dummyFA2Contract
@@ -75,6 +80,18 @@ totalSupplyFromLedger (BigMap ledger) =
     )
     (M.fromList [(frozenTokenId, 0)])
     ledger
+
+frozenTokens :: FA2.TokenId
+frozenTokens = frozenTokenId
+
+unfrozenTokens :: FA2.TokenId
+unfrozenTokens = FA2.TokenId 42
+
+unfrozenTokens1 :: FA2.TokenId
+unfrozenTokens1 = FA2.TokenId 420
+
+unknownTokens :: FA2.TokenId
+unknownTokens = FA2.TokenId 2
 
 -- | Create FA2 View
 mkFA2View
@@ -172,8 +189,8 @@ originateLigoDaoWithBalance extra config balFunc = do
 
   let bal = BigMap $ M.fromList $ balFunc owner1 owner2
   let operators = BigMap $ M.fromSet (const ()) $ S.fromList
-        [ (#owner .! owner1, #operator .! operator1)
-        , (#owner .! owner2, #operator .! operator2)
+        [ (#owner .! owner1, #operator .! operator1, #token_id .! unfrozenTokens)
+        , (#owner .! owner2, #operator .! operator2, #token_id .! unfrozenTokens)
         ]
 
   now <- getNow

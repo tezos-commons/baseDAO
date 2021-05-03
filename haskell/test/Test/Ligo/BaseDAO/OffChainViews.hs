@@ -27,7 +27,7 @@ import Ligo.BaseDAO.TZIP16Metadata
 import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Contracts.Spec.TZIP16Interface
-import Test.Ligo.BaseDAO.Common (totalSupplyFromLedger)
+import Test.Ligo.BaseDAO.Common (totalSupplyFromLedger, unknownTokens, unfrozenTokens)
 
 offChainViewStorage :: Storage
 offChainViewStorage =
@@ -45,6 +45,7 @@ offChainViewStorage =
     addr = unsafeParseAddress "tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE"
     bal = BigMap $ M.fromList $
       [ ((addr, frozenTokenId), 200)
+      , ((addr, unfrozenTokens), 0)
       ]
 
 test_FA2 :: TestTree
@@ -83,10 +84,10 @@ mkFA2Tests storage mc = testGroup "FA2 off-chain views"
     , testCase "Present operator" $
         let
           store = storage &~
-            mcOperatorsL mc .= BigMap (one ((#owner .! addr1, #operator .! addr2), ()))
+            mcOperatorsL mc .= BigMap (one ((#owner .! addr1, #operator .! addr2, #token_id .! unfrozenTokens), ()))
         in
           checkOperator store FA2.OperatorParam
-            { opOwner = addr1, opOperator = addr2, opTokenId = frozenTokenId }
+            { opOwner = addr1, opOperator = addr2, opTokenId = unfrozenTokens }
           @?= Right True
 
     , testCase "Invalid token_id" $
@@ -94,7 +95,7 @@ mkFA2Tests storage mc = testGroup "FA2 off-chain views"
         checkOperator
           storage
           FA2.OperatorParam
-            { opOwner = addr1, opOperator = addr2, opTokenId = FA2.TokenId 5 }
+            { opOwner = addr1, opOperator = addr2, opTokenId = unknownTokens }
     ]
 
   , testGroup "token_metadata" $
