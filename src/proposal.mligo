@@ -262,7 +262,7 @@ let set_fixed_fee_in_token(new_fee, store : nat * storage): return =
 
 // Update voting period of all ongoing and new proposals.
 [@inline]
-let set_voting_period(new_period, config, store : voting_period * config * storage): return =
+let set_voting_period(new_period, config, store : seconds * config * storage): return =
   let store = authorize_admin store in
   let current_vp = get_current_period_num(store.last_period_change, store.voting_period) in
   let vp_log : last_period_change =

@@ -18,8 +18,8 @@ let default_config (data : initial_config_data) : config = {
   custom_entrypoints = (Big_map.empty : custom_entrypoints);
 }
 
-let bound_vp (vp, min_vp, max_vp : voting_period * voting_period * voting_period)
-    : voting_period =
+let bound_vp (vp, min_vp, max_vp : seconds * seconds * seconds)
+    : seconds =
   if vp < min_vp
   then min_vp
   else
