@@ -13,11 +13,6 @@ let call_fa2(param, store : fa2_parameter * storage) : return =
   | Balance_of (p) -> balance_of(p, store)
   | Update_operators (p) -> update_operators(p, store)
 
-let burn(param, store : burn_param * storage) : return =
-  let store = authorize_admin(store) in
-  let (ledger, total_supply) = debit_from (param.amount, param.from_, param.token_id, store.ledger, store.total_supply)
-  in (([] : operation list), { store with ledger = ledger; total_supply = total_supply})
-
 let make_transfer_on_token (tps, contract_addr : transfer_params * address) : operation =
   let token_contract =
     begin

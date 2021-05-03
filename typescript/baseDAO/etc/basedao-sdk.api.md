@@ -34,8 +34,6 @@ export class BaseDAOContract {
     // (undocumented)
     balance_of(arg: Balance_of): Promise<string | void>;
     // (undocumented)
-    burn(arg: Burn): Promise<string | void>;
-    // (undocumented)
     call_custom(arg: CallCustom): Promise<string | void>;
     // (undocumented)
     confirm_migration(): Promise<string | void>;
@@ -75,15 +73,6 @@ export class BaseDAOContract {
     vote(arg: Vote): Promise<string | void>;
     }
 
-// @public (undocumented)
-export interface Burn {
-    // (undocumented)
-    amount: number;
-    // (undocumented)
-    from_: string;
-    // (undocumented)
-    token_id: number;
-}
 
 // @public (undocumented)
 export type CallCustom = [string, string];

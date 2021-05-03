@@ -10,7 +10,6 @@ import { InMemorySigner, importKey } from '@taquito/signer';
 import { Parameter } from './generated/Parameter';
 import { CallCustom } from './generated/CallCustom';
 import { Accept_ownership } from './generated/Accept_ownership';
-import { Burn } from './generated/Burn';
 import { Balance_of } from './generated/Balance_of';
 import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
@@ -145,11 +144,6 @@ export class BaseDAOContract {
   balance_of(arg: Balance_of): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.balance_of(arg.requests, arg.callback));
-  }
-
-  burn(arg: Burn): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.burn(arg.from_, arg.token_id, arg.amount));
   }
 
   accept_ownership(): Promise<string|void> {

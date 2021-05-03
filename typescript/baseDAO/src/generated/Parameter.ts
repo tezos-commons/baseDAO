@@ -1,6 +1,5 @@
 import {Accept_ownership} from  './Accept_ownership';
 import {Balance_of} from  './Balance_of';
-import {Burn} from  './Burn';
 import {CallCustom} from  './CallCustom';
 import {Drop_proposal} from  './Drop_proposal';
 import {Flush} from  './Flush';
@@ -20,7 +19,6 @@ import {Vote} from  './Vote';
 export type Parameter =
   | Accept_ownership
   | Balance_of
-  | Burn
   | CallCustom
   | Drop_proposal
   | Flush

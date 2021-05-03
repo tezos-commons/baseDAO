@@ -277,7 +277,6 @@ Full list:
 * [`transfer`](#transfer)
 * [`balance_of`](#balance_of)
 * [`update_operators`](#update_operators)
-* [`burn`](#burn)
 * [`transfer_contract_tokens`](#transfer_contract_tokens)
 * [`transfer_ownership`](#transfer_ownership)
 * [`accept_ownership`](#accept_ownership)
@@ -465,35 +464,6 @@ Parameter (in Michelson)
 ## Custom (non-FA2) token functions
 
 Functions related to token transfers, but not present in FA2.
-
-### **burn**
-
-```ocaml
-type burn_param =
-  [@layout:comb]
-  { from_ : address
-  ; token_id : token_id
-  ; amount : nat
-  }
-
-Burn of burn_param
-```
-
-Parameter (in Michelson):
-```
-(pair %burn
-  (address %from_)
-  (pair
-    (nat %token_id)
-    (nat %amount)
-  )
-)
-```
-
-- Reduce the given amounts of tokens to the wallet associated with the given address.
-- Fails with `NOT_ADMIN` if the sender is not the administrator.
-- Fails with `FA2_INSUFFICIENT_BALANCE` if the wallet associated with the given address
-does not have enough tokens to burn.
 
 ### **transfer_contract_tokens**
 
@@ -769,7 +739,7 @@ have the same timestamp due to being in the same block, are processed in the ord
   - If proposal got accepted:
     - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
-- The lost of frozen tokens is due to the fact that the administrator has the right to `burn` or `transfer` frozen tokens of any proposers or voters.
+- The lost of frozen tokens is due to the fact that the administrator has the right to `transfer` frozen tokens of any proposers or voters.
 - If proposal is accepted, decision lambda is called.
 
 ### **drop_proposal**
