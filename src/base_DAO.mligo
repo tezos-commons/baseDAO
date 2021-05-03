@@ -30,7 +30,6 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Set_quorum_threshold (p) -> set_quorum_threshold(p, config, store)
     | Flush (p) -> flush (p, config, store)
     | Burn (p) -> burn(p, store)
-    | Mint (p) -> mint(p, store)
     | Get_vote_permit_counter (p) -> get_vote_permit_counter(p, store)
     | Get_total_supply (p) -> get_total_supply(p, store)
     | Freeze p -> freeze(p, store)

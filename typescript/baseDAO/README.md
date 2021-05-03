@@ -55,10 +55,6 @@ BaseDAO
   .catch(err => console.log(JSON.stringify(err), null, 2));
 
 BaseDAO
-  .mint({to_:  "tz1ZvZCqjaBLEyJLYHCfzq6B8MCFu2SRjzJG", "token_id" : 0, "amount" : 10})
-  .catch(err => console.log(JSON.stringify(err), null, 2));
-
-BaseDAO
   .propose({frozen_token: 10, proposal_metadata: new Map([["key", "FF"]])})
   .catch(err => console.log(JSON.stringify(err), null, 2));
 

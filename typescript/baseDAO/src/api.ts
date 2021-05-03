@@ -15,7 +15,6 @@ import { Balance_of } from './generated/Balance_of';
 import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
 import { Get_total_supply } from './generated/Get_total_supply';
-import { Mint } from './generated/Mint';
 import { Propose } from './generated/Propose';
 import { Set_quorum_threshold } from './generated/Set_quorum_threshold';
 import { Set_voting_period } from './generated/Set_voting_period';
@@ -181,11 +180,6 @@ export class BaseDAOContract {
   get_vote_permit_counter(arg: Get_vote_permit_counter): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.get_vote_permit_counter(arg.voidParam, arg.voidResProxy));
-  }
-
-  mint(arg: Mint): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.mint(arg.to_, arg.token_id, arg.amount));
   }
 
   propose(arg: Propose): Promise<string|void> {

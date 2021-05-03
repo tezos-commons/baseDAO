@@ -277,7 +277,6 @@ Full list:
 * [`transfer`](#transfer)
 * [`balance_of`](#balance_of)
 * [`update_operators`](#update_operators)
-* [`mint`](#mint)
 * [`burn`](#burn)
 * [`transfer_contract_tokens`](#transfer_contract_tokens)
 * [`transfer_ownership`](#transfer_ownership)
@@ -466,34 +465,6 @@ Parameter (in Michelson)
 ## Custom (non-FA2) token functions
 
 Functions related to token transfers, but not present in FA2.
-
-### **mint**
-
-```ocaml
-type mint_param =
-  [@layout:comb]
-  { to_ : address
-  ; token_id : token_id
-  ; amount : nat
-  }
-
-Mint of mint_param
-```
-
-Parameter (in Michelson):
-```
-(pair %mint
-  (address %to_)
-  (pair
-    (nat %token_id)
-    (nat %amount)
-  )
-)
-```
-
-- Produces the given amounts of tokens to the wallet associated with the given address.
-- Fails with `NOT_ADMIN` if the sender is not the administrator.
-- Fails with `FA2_TOKEN_UNDEFINED` if trying to mint an unsupported token.
 
 ### **burn**
 
