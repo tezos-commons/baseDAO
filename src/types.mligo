@@ -166,7 +166,6 @@ type storage =
   ; pending_owner : address
   ; metadata : metadata_map
   ; voting_period : voting_period
-  ; quorum_threshold : quorum_threshold
   ; extra : contract_extra
   ; proposals : (proposal_key, proposal) big_map
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
@@ -285,6 +284,7 @@ type ledger_list = (ledger_key * ledger_value) list
 type initial_config_data =
   { max_period : voting_period
   ; min_period : voting_period
+  ; quorum_threshold : quorum_threshold
   }
 
 type initial_storage_data =
@@ -293,7 +293,6 @@ type initial_storage_data =
   ; now_val : timestamp
   ; metadata_map : metadata_map
   ; ledger_lst : ledger_list
-  ; quorum_threshold : quorum_threshold
   ; voting_period : nat
   }
 
@@ -311,6 +310,7 @@ type config =
   ; max_votes : nat
   ; max_voting_period : voting_period
   ; min_voting_period : voting_period
+  ; quorum_threshold : quorum_threshold
 
   ; custom_entrypoints : custom_entrypoints
   }

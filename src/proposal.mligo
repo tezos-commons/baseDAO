@@ -73,12 +73,6 @@ let is_ge_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): bool =
   let (nat_1, nat_2) = cmp_qt (qt_1, qt_2) in
   nat_1 >= nat_2
 
-[@inline]
-// Returns true iff the first quorum_threshold is strictly less than the second.
-let is_le_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): bool =
-  let (nat_1, nat_2) = cmp_qt (qt_1, qt_2) in
-  nat_1 <= nat_2
-
 // -----------------------------------------------------------------
 // Freeze history operations
 // -----------------------------------------------------------------
@@ -352,7 +346,7 @@ let is_voting_period_over (proposal, store : proposal * storage): bool =
   current_period > proposal.period_num + 1n
 
 [@inline]
-let do_total_vote_meet_quorum_threshold (proposal, store : proposal * storage): bool =
+let do_total_vote_meet_quorum_threshold (proposal, store, quorum_threshold : proposal * storage * quorum_threshold): bool =
   let votes_placed = proposal.upvotes + proposal.downvotes in
   let total_supply =
         match Map.find_opt store.frozen_token_id store.total_supply with
@@ -363,7 +357,7 @@ let do_total_vote_meet_quorum_threshold (proposal, store : proposal * storage): 
   // bigger or equal than the total supply of frozen tokens multiplied by the
   // quorum_threshold proportion.
   let reached_quorum = {numerator = votes_placed; denominator = total_supply} in
-  is_ge_qt(reached_quorum, store.quorum_threshold)
+  is_ge_qt(reached_quorum, quorum_threshold)
 
 // Delete a proposal from 'sProposalKeyListSortByDate'
 [@inline]
@@ -384,7 +378,7 @@ let handle_proposal_is_over
      && counter.current < counter.total // not finished
   then
     let counter = { counter with current = counter.current + 1n } in
-    let cond =    do_total_vote_meet_quorum_threshold(proposal, store)
+    let cond =    do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
                && proposal.upvotes > proposal.downvotes
     in
     let store = unfreeze_proposer_and_voter_token
@@ -432,7 +426,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
   let proposal = check_if_proposal_exist (proposal_key, store) in
   if is_voting_period_over(proposal, store)
   then
-    if   do_total_vote_meet_quorum_threshold(proposal, store)
+    if   do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
       && proposal.upvotes > proposal.downvotes
     then
       let store = unfreeze_proposer_and_voter_token

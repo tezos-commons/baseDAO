@@ -4,7 +4,6 @@
 -- | Contains tests on proposal/vote limits logic for testing the Ligo contract.
 module Test.Ligo.BaseDAO.Proposal.Bounds
   ( setVotingPeriod
-  , setQuorumThreshold
   ) where
 
 import Universum
@@ -33,20 +32,3 @@ setVotingPeriod originateFn = do
   withSender (AddressResolved admin) $
     call dao (Call @"Set_voting_period") param
   -- TODO [#31]: checkStorage
-
-setQuorumThreshold
-  :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-setQuorumThreshold originateFn = do
-  ((owner1, _), _, dao, _, admin) <- originateFn testConfig
-
-  let param = QuorumThreshold 80 100
-
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Set_quorum_threshold") param
-    & expectCustomErrorNoArg #nOT_ADMIN dao
-
-  withSender (AddressResolved admin) $
-    call dao (Call @"Set_quorum_threshold") param
-  -- TODO [#31]: checkStorage
-

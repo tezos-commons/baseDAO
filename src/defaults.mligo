@@ -9,6 +9,7 @@ let default_config (data : initial_config_data) : config = {
   rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
   decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
 
+  quorum_threshold = data.quorum_threshold;
   max_proposals = 500n;
   max_votes = 1000n;
   max_voting_period = data.max_period;
@@ -47,7 +48,6 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     pending_owner = data.admin;
     metadata = data.metadata_map;
     voting_period = bound_vp ( data.voting_period, config_data.min_period, config_data.max_period );
-    quorum_threshold = data.quorum_threshold;
     extra = (Big_map.empty : (string, bytes) big_map);
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     proposal_key_list_sort_by_date = (Set.empty : (timestamp * proposal_key) set);

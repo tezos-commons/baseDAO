@@ -399,7 +399,6 @@ data ForbidXTZParam
   | Get_vote_permit_counter (Void_ () Nonce)
   | Get_total_supply (Void_ FA2.TokenId Natural)
   | Set_fixed_fee_in_token Natural
-  | Set_quorum_threshold QuorumThreshold
   | Set_voting_period VotingPeriod
   | Transfer_ownership TransferOwnershipParam
   | Unfreeze UnfreezeParam
@@ -448,7 +447,6 @@ data Storage = Storage
   , sPermitsCounter :: Nonce
   , sProposals :: BigMap ProposalKey Proposal
   , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKey)
-  , sQuorumThreshold :: QuorumThreshold
   , sGovernanceToken :: GovernanceToken
   , sVotingPeriod :: VotingPeriod
   , sTotalSupply :: TotalSupply
@@ -485,13 +483,12 @@ instance HasFieldOfType Storage name field => StoreHasField Storage name field w
 mkStorage
   :: "admin" :! Address
   -> "votingPeriod" :? Natural
-  -> "quorumThreshold" :? QuorumThreshold
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
   -> "tokenAddress" :! Address
   -> Storage
-mkStorage admin votingPeriod quorumThreshold extra metadata now tokenAddress =
+mkStorage admin votingPeriod extra metadata now tokenAddress =
   Storage
     { sAdmin = arg #admin admin
     , sExtra = arg #extra extra
@@ -502,7 +499,6 @@ mkStorage admin votingPeriod quorumThreshold extra metadata now tokenAddress =
     , sPermitsCounter = Nonce 0
     , sProposals = mempty
     , sProposalKeyListSortByDate = mempty
-    , sQuorumThreshold = argDef #quorumThreshold quorumThresholdDef quorumThreshold
     , sGovernanceToken = GovernanceToken
         { gtAddress = arg #tokenAddress tokenAddress
         , gtTokenId = FA2.theTokenId
@@ -516,7 +512,6 @@ mkStorage admin votingPeriod quorumThreshold extra metadata now tokenAddress =
     }
   where
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
-    quorumThresholdDef = QuorumThreshold 1 10 -- 10% of frozen total supply
 
 mkMetadataMap
   :: "metadataHostAddress" :! Address
@@ -539,9 +534,8 @@ data Config = Config
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural
-  , cMaxQuorumThreshold :: QuorumThreshold
-  , cMinQuorumThreshold :: QuorumThreshold
 
+  , cQuorumThreshold :: QuorumThreshold
   , cMaxVotingPeriod :: Natural
   , cMinVotingPeriod :: Natural
 
@@ -549,8 +543,8 @@ data Config = Config
   }
   deriving stock (Show)
 
-mkConfig :: [CustomEntrypoint] -> Config
-mkConfig customEps = Config
+mkConfig :: [CustomEntrypoint] -> QuorumThreshold -> Config
+mkConfig customEps quorumThreshold  = Config
   { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
@@ -558,19 +552,17 @@ mkConfig customEps = Config
   , cDecisionLambda = do
       drop; nil
   , cCustomEntrypoints = DynamicRec $ BigMap $ M.fromList customEps
+  , cQuorumThreshold = quorumThreshold
 
   , cMaxVotingPeriod = 60 * 60 * 24 * 30
   , cMinVotingPeriod = 1
-
-  , cMaxQuorumThreshold = QuorumThreshold 99 100 -- 99%
-  , cMinQuorumThreshold = QuorumThreshold 1 100 -- 1%
 
   , cMaxVotes = 1000
   , cMaxProposals = 500
   }
 
 defaultConfig :: Config
-defaultConfig = mkConfig []
+defaultConfig = mkConfig [] (QuorumThreshold 1 100)
 
 data FullStorage = FullStorage
   { fsStorage :: Storage
@@ -589,9 +581,11 @@ mkFullStorage
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
 mkFullStorage admin vp qt extra mdt now tokenAddress cEps = FullStorage
-  { fsStorage = mkStorage admin vp qt extra mdt now tokenAddress
-  , fsConfig  = mkConfig (argDef #customEps [] cEps)
+  { fsStorage = mkStorage admin vp extra mdt now tokenAddress
+  , fsConfig  = mkConfig (argDef #customEps [] cEps) (argDef #quorumThreshold quorumThresholdDef qt)
   }
+  where
+    quorumThresholdDef = QuorumThreshold 1 10 -- 10% of frozen total supply
 
 setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
 setExtra key v (s@FullStorage {..}) = s { fsStorage = newStorage }
@@ -734,12 +728,6 @@ type instance ErrorArg "oUT_OF_BOUND_VOTING_PERIOD" = NoErrorArg
 instance CustomErrorHasDoc "oUT_OF_BOUND_VOTING_PERIOD" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to set voting period that is out of bound."
-
-type instance ErrorArg "oUT_OF_BOUND_QUORUM_THRESHOLD" = NoErrorArg
-
-instance CustomErrorHasDoc "oUT_OF_BOUND_QUORUM_THRESHOLD" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause = "Trying to set quorum threshold that is out of bound"
 
 type instance ErrorArg "mAX_PROPOSALS_REACHED" = NoErrorArg
 

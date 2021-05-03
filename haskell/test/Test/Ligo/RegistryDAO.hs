@@ -240,9 +240,6 @@ test_RegistryDAO =
             largeProposalSize = metadataSize largeProposalMeta -- 341
 
             in do
-              withSender (AddressResolved admin) $
-                call baseDao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
-
               advanceTime (sec 10) -- voting period is 10 secs
               let requiredFrozen = largeProposalSize * frozen_scale_value + frozen_extra_value
 
@@ -300,9 +297,6 @@ test_RegistryDAO =
                 [ ([mt|key|], Just [mt|testVal|]) ]
 
               proposalSize = metadataSize proposalMeta
-
-            withSender (AddressResolved admin) $
-              call baseDao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
             withSender (AddressResolved wallet1) $
               call baseDao (Call @"Freeze") (#amount .! proposalSize)

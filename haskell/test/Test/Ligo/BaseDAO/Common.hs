@@ -185,7 +185,6 @@ originateLigoDaoWithBalance extra config balFunc = do
               ! #extra extra
               ! #admin admin
               ! #votingPeriod (cMinVotingPeriod config)
-              ! #quorumThreshold (cMinQuorumThreshold config)
               ! #metadata mempty
               ! #tokenAddress (unTAddress tokenContract)
               ! #now now
