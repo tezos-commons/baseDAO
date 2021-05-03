@@ -15,7 +15,6 @@ import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
 import { Get_total_supply } from './generated/Get_total_supply';
 import { Propose } from './generated/Propose';
-import { Set_quorum_threshold } from './generated/Set_quorum_threshold';
 import { Set_voting_period } from './generated/Set_voting_period';
 import { Transfer } from './generated/Transfer';
 import { Transfer_contract_tokens } from './generated/Transfer_contract_tokens';
@@ -179,11 +178,6 @@ export class BaseDAOContract {
   propose(arg: Propose): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.propose(arg.frozen_token, arg.proposal_metadata));
-  }
-
-  set_quorum_threshold(arg: Set_quorum_threshold): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.set_quorum_threshold(arg.numerator, arg.denominator));
   }
 
   set_voting_period(arg: Set_voting_period): Promise<string|void> {

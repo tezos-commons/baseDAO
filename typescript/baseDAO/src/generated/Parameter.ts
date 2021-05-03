@@ -8,7 +8,6 @@ import {Get_total_supply} from  './Get_total_supply';
 import {Get_vote_permit_counter} from  './Get_vote_permit_counter';
 import {Propose} from  './Propose';
 import {Set_fixed_fee_in_token} from  './Set_fixed_fee_in_token';
-import {Set_quorum_threshold} from  './Set_quorum_threshold';
 import {Set_voting_period} from  './Set_voting_period';
 import {Transfer} from  './Transfer';
 import {Transfer_contract_tokens} from  './Transfer_contract_tokens';
@@ -27,7 +26,6 @@ export type Parameter =
   | Get_vote_permit_counter
   | Propose
   | Set_fixed_fee_in_token
-  | Set_quorum_threshold
   | Set_voting_period
   | Transfer
   | Transfer_contract_tokens
