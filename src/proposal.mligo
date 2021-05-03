@@ -285,17 +285,6 @@ let set_voting_period(new_period, config, store : voting_period * config * stora
   let store = { store with voting_period = new_period; last_period_change = vp_log } in
   (([] : operation list), store)
 
-// Update quorum_threshold. The new quorum_threshold affects
-// all ongoing and new proposals.
-[@inline]
-let set_quorum_threshold(new_threshold, config, store : quorum_threshold * config * storage): return =
-  let store = authorize_admin store in
-  if   is_le_qt (new_threshold, config.max_quorum_threshold)
-    && is_ge_qt (new_threshold, config.min_quorum_threshold)
-    && (new_threshold.numerator < new_threshold.denominator)
-  then (nil_op, { store with quorum_threshold = new_threshold })
-  else (failwith("OUT_OF_BOUND_QUORUM_THRESHOLD") : (operation list * storage))
-
 [@inline]
 let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
   let (ledger, total_supply) = debit_from(tokens, addr, store.frozen_token_id, store.ledger, store.total_supply)

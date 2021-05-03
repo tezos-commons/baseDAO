@@ -93,9 +93,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
           ; voting_period = $(voting_period) \
           } \
         ; config_data = \
-          { max_quorum = {numerator = 99n; denominator = 100n} \
-          ; min_quorum = {numerator = 1n; denominator = 100n} \
-          ; max_period = 2592000n \
+          { max_period = 2592000n \
           ; min_period = 1n \
           } \
         })"
@@ -138,9 +136,7 @@ $(OUT)/registryDAO_storage.tz: src/**
             ; voting_period = $(voting_period) \
             } \
           ; config_data = \
-            { max_quorum = {numerator = 99n; denominator = 100n} \
-            ; min_quorum = {numerator = 1n; denominator = 100n} \
-            ; max_period = 2592000n \
+            { max_period = 2592000n \
             ; min_period = 1n} \
             } \
           ; frozen_scale_value = $(frozen_scale_value) \
@@ -190,9 +186,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
             ; voting_period = $(voting_period) \
             } \
           ; config_data = \
-            { max_quorum = {numerator = 99n; denominator = 100n} \
-            ; min_quorum = {numerator = 1n; denominator = 100n} \
-            ; max_period = 2592000n \
+            { max_period = 2592000n \
             ; min_period = 1n} \
             } \
           ; frozen_scale_value = $(frozen_scale_value) \
