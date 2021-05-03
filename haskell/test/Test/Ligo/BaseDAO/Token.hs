@@ -30,20 +30,6 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
               , ((o2, frozenTokenId), 10)-- for total supply
               ]
           )
-  , nettestScenario "can mint tokens to any accounts"
-      $ uncapsNettest $ mintScenario
-        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfig
-          (\o1 _ ->
-              [ ((o1, frozenTokenId), 0)
-              ]
-          )
-  , nettestScenario "cannot mint unknown tokens"
-      $ uncapsNettest $ unknownMintScenario
-        $ originateLigoDaoWithBalance dynRecUnsafe defaultConfig
-          (\o1 _ ->
-              [ ((o1, frozenTokenId), 0)
-              ]
-          )
   , nettestScenario "can call transfer tokens entrypoint"
       $ uncapsNettest $ transferContractTokensScenario originateLigoDao
   ]
@@ -73,35 +59,6 @@ burnScenario originateFn = withFrozenCallStack $ do
   withSender (AddressResolved owner1) $
     call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
       & expectError dao (VoidResult (15 :: Natural)) -- initial = 20
-
-mintScenario
-  :: (MonadNettest caps base m, HasCallStack)
-  => OriginateFn m -> m ()
-mintScenario originateFn = withFrozenCallStack $ do
-  ((owner1, _), _, dao, _, admin) <- originateFn
-
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Mint") (MintParam owner1 frozenTokenId 10)
-    & expectCustomErrorNoArg #nOT_ADMIN dao
-
-  withSender (AddressResolved admin) $ do
-    call dao (Call @"Mint") (MintParam owner1 frozenTokenId 10)
-  checkTokenBalance frozenTokenId dao owner1 10
-
-  -- Check total supply
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError dao (VoidResult (10 :: Natural)) -- initial = 0
-
-unknownMintScenario
-  :: (MonadNettest caps base m, HasCallStack)
-  => OriginateFn m -> m ()
-unknownMintScenario originateFn = withFrozenCallStack $ do
-  ((owner1, _), _, dao, _, admin) <- originateFn
-
-  withSender (AddressResolved admin) $ do
-    call dao (Call @"Mint") (MintParam owner1 (FA2.TokenId 2) 10)
-    & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
 
 transferContractTokensScenario
   :: MonadNettest caps base m

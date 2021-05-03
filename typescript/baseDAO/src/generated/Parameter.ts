@@ -7,7 +7,6 @@ import {Flush} from  './Flush';
 import {Freeze} from  './Freeze';
 import {Get_total_supply} from  './Get_total_supply';
 import {Get_vote_permit_counter} from  './Get_vote_permit_counter';
-import {Mint} from  './Mint';
 import {Propose} from  './Propose';
 import {Set_fixed_fee_in_token} from  './Set_fixed_fee_in_token';
 import {Set_quorum_threshold} from  './Set_quorum_threshold';
@@ -28,7 +27,6 @@ export type Parameter =
   | Freeze
   | Get_total_supply
   | Get_vote_permit_counter
-  | Mint
   | Propose
   | Set_fixed_fee_in_token
   | Set_quorum_threshold

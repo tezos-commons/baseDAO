@@ -32,7 +32,6 @@ module Ligo.BaseDAO.Types
 
     -- * Non FA2
   , BurnParam (..)
-  , MintParam (..)
   , TransferContractTokensParam (..)
 
     -- * Permissions
@@ -229,21 +228,6 @@ instance TypeHasDoc BurnParam where
 
 instance HasAnnotation BurnParam where
   annOptions = baseDaoAnnOptions
-
-data MintParam = MintParam
-  { mTo_     :: Address
-  , mTokenId :: FA2.TokenId
-  , mAmount  :: Natural
-  }
-  deriving stock (Generic, Show)
-  deriving anyclass IsoValue
-
-instance TypeHasDoc MintParam where
-  typeDocMdDescription = "Describes whose account, which token id and in what amount to mint"
-
-instance HasAnnotation MintParam where
-  annOptions = baseDaoAnnOptions
-
 data TransferContractTokensParam = TransferContractTokensParam
   { tcContractAddress :: Address
   , tcParams          :: FA2.TransferParams
@@ -429,7 +413,6 @@ data ForbidXTZParam
   | Freeze FreezeParam
   | Get_vote_permit_counter (Void_ () Nonce)
   | Get_total_supply (Void_ FA2.TokenId Natural)
-  | Mint MintParam
   | Set_fixed_fee_in_token Natural
   | Set_quorum_threshold QuorumThreshold
   | Set_voting_period VotingPeriod

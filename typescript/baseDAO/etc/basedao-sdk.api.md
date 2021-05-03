@@ -56,8 +56,6 @@ export class BaseDAOContract {
     // (undocumented)
     migrate(arg: Migrate): Promise<string | void>;
     // (undocumented)
-    mint(arg: Mint): Promise<string | void>;
-    // (undocumented)
     propose(arg: Propose): Promise<string | void>;
     // (undocumented)
     set_quorum_threshold(arg: Set_quorum_threshold): Promise<string | void>;
@@ -117,16 +115,6 @@ export interface GetVotePermitCounter {
 
 // @public (undocumented)
 export type Migrate = string;
-
-// @public (undocumented)
-export interface Mint {
-    // (undocumented)
-    amount: number;
-    // (undocumented)
-    to_: string;
-    // (undocumented)
-    token_id: number;
-}
 
 // @public (undocumented)
 export interface Propose {
