@@ -120,7 +120,4 @@ the values above the values above if not specified.
 ## Storage generation checks
 The LIGO functions used by the `Makefile` targets above perform some automatic check, specifically:
 If `ledger` is specified, than `total_supply` will be calculated, depending on its value. \
-If `quorum_threshold` is specified, it will be checked for being inside
-`[min_quorum_thresold, max_quorum_threshold]` interval. \
-If it lies outside, `quorum_threshold` will be set to the nearest bound. \
 The same is true for `voting_period`.
