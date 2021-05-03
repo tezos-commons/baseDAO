@@ -5,6 +5,7 @@
 module Test.Ligo.BaseDAO.Token.Common
   ( frozenTokens
   , unfrozenTokens
+  , unfrozenTokens1
   , unknownTokens
 
   , originateWithCustomToken
@@ -28,6 +29,9 @@ frozenTokens = frozenTokenId
 unfrozenTokens :: FA2.TokenId
 unfrozenTokens = FA2.TokenId 42
 
+unfrozenTokens1 :: FA2.TokenId
+unfrozenTokens1 = FA2.TokenId 420
+
 unknownTokens :: FA2.TokenId
 unknownTokens = FA2.TokenId 2
 
@@ -39,6 +43,7 @@ originateWithCustomToken =
           , ((owner2, frozenTokens), 100)
           , ((owner1, unfrozenTokens), 1000)
           , ((owner2, unfrozenTokens), 1000)
+          , ((owner1, unfrozenTokens1), 1000)
           ]
       )
 

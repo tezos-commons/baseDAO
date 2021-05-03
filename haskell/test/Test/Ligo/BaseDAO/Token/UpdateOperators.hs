@@ -20,6 +20,8 @@ updateOperatorsTests =
   testGroup "Update_operators:"
     [ nettestScenarioCaps "adding an operator allows transfers"
         $ addOperator
+    , nettestScenarioCaps "adding an operator does not allow transfers on all tokens"
+        $ addOperatorSingleToken
     , nettestScenarioCaps "removing an operator prohibits transfers"
         $ removeOperator
     , nettestScenarioCaps "cannot update someone else's operators"
@@ -44,6 +46,22 @@ addOperator = do
     call dao (Call @"Update_operators") [FA2.AddOperator params]
   withSender (AddressResolved operator) $
     transfer 10 unfrozenTokens owner1 owner2 dao
+
+addOperatorSingleToken :: MonadNettest caps base m => m ()
+addOperatorSingleToken = do
+  operator :: Address <- newAddress "operator"
+  ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+  let params = FA2.OperatorParam
+        { opOwner = owner1
+        , opOperator = operator
+        , opTokenId = unfrozenTokens1
+        }
+
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Update_operators") [FA2.AddOperator params]
+  withSender (AddressResolved operator) $
+    transfer 10 unfrozenTokens owner1 owner2 dao
+      & expectCustomError_ #fA2_NOT_OPERATOR dao
 
 removeOperator :: MonadNettest caps base m => m ()
 removeOperator = do
