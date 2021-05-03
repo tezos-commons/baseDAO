@@ -31,7 +31,6 @@ module Ligo.BaseDAO.Types
   , Voter (..)
 
     -- * Non FA2
-  , BurnParam (..)
   , TransferContractTokensParam (..)
 
     -- * Permissions
@@ -215,19 +214,6 @@ instance HasAnnotation VoteParam where
 -- Non FA2
 ------------------------------------------------------------------------
 
-data BurnParam = BurnParam
-  { bFrom_   :: Address
-  , bTokenId :: FA2.TokenId
-  , bAmount  :: Natural
-  }
-  deriving stock (Generic, Show)
-  deriving anyclass IsoValue
-
-instance TypeHasDoc BurnParam where
-  typeDocMdDescription = "Describes whose account, which token id and in what amount to burn"
-
-instance HasAnnotation BurnParam where
-  annOptions = baseDaoAnnOptions
 data TransferContractTokensParam = TransferContractTokensParam
   { tcContractAddress :: Address
   , tcParams          :: FA2.TransferParams
@@ -406,7 +392,6 @@ type UnfreezeParam = ("amount" :! Natural)
 -- https://gitlab.com/morley-framework/morley/-/issues/527
 data ForbidXTZParam
   = Accept_ownership ()
-  | Burn BurnParam
   | Call_FA2 FA2.Parameter
   | Drop_proposal ProposalKey
   | Flush Natural

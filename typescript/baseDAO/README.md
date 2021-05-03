@@ -47,10 +47,6 @@ const BaseDAO = new BaseDAOContract
 // call some entrypoints
 
 BaseDAO
-  .burn({from_: "tz1ZvZCqjaBLEyJLYHCfzq6B8MCFu2SRjzJG", token_id: 0, amount: 100 })
-  .catch(err => console.log(JSON.stringify(err), null, 2));
-
-BaseDAO
   .balance_of({requests: [{owner: "tz1ZvZCqjaBLEyJLYHCfzq6B8MCFu2SRjzJG", token_id: 0}], callback: "KT1TQSvKjZuQGP4jQiuGU6XfkPh9rwb6SGDP"})
   .catch(err => console.log(JSON.stringify(err), null, 2));
 

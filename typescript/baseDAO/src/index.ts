@@ -6,7 +6,6 @@ import { InMemorySigner, importKey } from '@taquito/signer';
 
 export {CallCustom} from  './generated/CallCustom';
 export {Accept_ownership} from  './generated/Accept_ownership';
-export {Burn} from  './generated/Burn';
 export {Balance_of, Balance_ofRequests, Balance_ofRequestsItem} from  './generated/Balance_of';
 export {Transfer, TransferItem, TransferItemTxs, TransferItemTxsItem } from  './generated/Transfer';
 export

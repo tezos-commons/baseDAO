@@ -249,7 +249,6 @@ type forbid_xtz_params =
   | Set_voting_period of voting_period
   | Set_quorum_threshold of quorum_threshold
   | Flush of nat
-  | Burn of burn_param
   | Get_vote_permit_counter of vote_permit_counter_param
   | Get_total_supply of get_total_supply_param
   | Freeze of freeze_param
