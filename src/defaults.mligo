@@ -9,10 +9,9 @@ let default_config (data : initial_config_data) : config = {
   rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
   decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
 
+  quorum_threshold = data.quorum_threshold;
   max_proposals = 500n;
   max_votes = 1000n;
-  max_quorum_threshold = data.max_quorum;
-  min_quorum_threshold = data.min_quorum;
   max_voting_period = data.max_period;
   min_voting_period = data.min_period;
 
@@ -27,15 +26,6 @@ let bound_vp (vp, min_vp, max_vp : voting_period * voting_period * voting_period
     if vp > max_vp
     then max_vp
     else vp
-
-let bound_qt (qt, min_qt, max_qt : quorum_threshold * quorum_threshold * quorum_threshold)
-    : quorum_threshold =
-  if is_gt_qt(qt, max_qt)
-  then max_qt
-  else
-    if is_le_qt(qt, min_qt)
-    then min_qt
-    else qt
 
 let ledger_constructor (ledger, param : ledger * (ledger_key * ledger_value)) : ledger =
   let (key, value) = param in
@@ -58,7 +48,6 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     pending_owner = data.admin;
     metadata = data.metadata_map;
     voting_period = bound_vp ( data.voting_period, config_data.min_period, config_data.max_period );
-    quorum_threshold = bound_qt ( data.quorum_threshold, config_data.min_quorum, config_data.max_quorum );
     extra = (Big_map.empty : (string, bytes) big_map);
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     proposal_key_list_sort_by_date = (Set.empty : (timestamp * proposal_key) set);

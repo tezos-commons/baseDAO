@@ -166,7 +166,6 @@ type storage =
   ; pending_owner : address
   ; metadata : metadata_map
   ; voting_period : voting_period
-  ; quorum_threshold : quorum_threshold
   ; extra : contract_extra
   ; proposals : (proposal_key, proposal) big_map
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
@@ -247,7 +246,6 @@ type forbid_xtz_params =
   | Vote of vote_param_permited list
   | Set_fixed_fee_in_token of nat
   | Set_voting_period of voting_period
-  | Set_quorum_threshold of quorum_threshold
   | Flush of nat
   | Get_vote_permit_counter of vote_permit_counter_param
   | Get_total_supply of get_total_supply_param
@@ -284,10 +282,9 @@ type initial_ledger_val = address * token_id * nat
 type ledger_list = (ledger_key * ledger_value) list
 
 type initial_config_data =
-  { max_quorum : quorum_threshold
-  ; min_quorum : quorum_threshold
-  ; max_period : voting_period
+  { max_period : voting_period
   ; min_period : voting_period
+  ; quorum_threshold : quorum_threshold
   }
 
 type initial_storage_data =
@@ -296,7 +293,6 @@ type initial_storage_data =
   ; now_val : timestamp
   ; metadata_map : metadata_map
   ; ledger_lst : ledger_list
-  ; quorum_threshold : quorum_threshold
   ; voting_period : nat
   }
 
@@ -312,10 +308,9 @@ type config =
 
   ; max_proposals : nat
   ; max_votes : nat
-  ; max_quorum_threshold : quorum_threshold
-  ; min_quorum_threshold : quorum_threshold
   ; max_voting_period : voting_period
   ; min_voting_period : voting_period
+  ; quorum_threshold : quorum_threshold
 
   ; custom_entrypoints : custom_entrypoints
   }

@@ -89,9 +89,6 @@ test_BaseDAO_Proposal =
       [ nettestScenario "can set voting period"  $
           uncapsNettest $ setVotingPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      , nettestScenario "can set quorum threshold" $
-          uncapsNettest $ setQuorumThreshold (originateLigoDaoWithConfigDesc dynRecUnsafe)
-
       , nettestScenarioOnEmulator "can flush proposals that got accepted" $
           \_emulated ->
             uncapsNettest $ flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
@@ -129,8 +126,6 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulator "bounded value on votes" $
           \_emulated ->
             uncapsNettest $ votesBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenario "bounded range on quorum_threshold" $
-          uncapsNettest $ quorumThresholdBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "bounded range on voting_period" $
           \_emulated ->
             uncapsNettest $ votingPeriodBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
@@ -236,7 +231,6 @@ test_BaseDAO_Proposal =
           -- the vote entrypoint 30s have already passed.
           withSender (AddressResolved admin) $ do
             call dao (Call @"Set_voting_period") 60
-            call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
             call dao (Call @"Set_fixed_fee_in_token") 42
 
           withSender (AddressResolved voter) $
@@ -317,7 +311,6 @@ burnsFeeOnFailure reason = do
   -- the vote entrypoint 30s have already passed.
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
     call dao (Call @"Set_fixed_fee_in_token") 42
 
   withSender (AddressResolved proposer) $
@@ -570,7 +563,6 @@ flushAcceptedProposals originateFn = do
   -- vote entrypoint 30s is already passed.
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $
@@ -669,11 +661,10 @@ flushRejectProposalQuorum
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushRejectProposalQuorum originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin)
-    <- originateFn configWithRejectedProposal
+    <- originateFn (configWithRejectedProposal >>- (ConfigDesc (QuorumThreshold 3 5)))
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 3 5
   advanceTime (sec 60)
 
   withSender (AddressResolved owner2) $
@@ -707,11 +698,10 @@ flushRejectProposalNegativeVotes
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushRejectProposalNegativeVotes originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin)
-    <- originateFn configWithRejectedProposal
+    <- originateFn (configWithRejectedProposal >>- (ConfigDesc (QuorumThreshold 3 100)))
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 3 100
 
   advanceTime (sec 60)
 
@@ -758,11 +748,11 @@ flushWithBadConfig
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushWithBadConfig originateFn = do
-  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn badRejectedValueConfig
+  ((owner1, _), (owner2, _), dao, _, admin) <-
+    originateFn (badRejectedValueConfig >>- (ConfigDesc (QuorumThreshold 1 2)))
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 2
 
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $
@@ -796,7 +786,6 @@ flushDecisionLambda originateFn = do
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 60
-    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 100
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 10)
@@ -822,11 +811,11 @@ dropProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 dropProposal originateFn = do
-  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn badRejectedValueConfig
+  ((owner1, _), (owner2, _), dao, _, admin) <-
+    originateFn (badRejectedValueConfig >>- (ConfigDesc (QuorumThreshold 1 50)))
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Set_voting_period") 20
-    call dao (Call @"Set_quorum_threshold") $ QuorumThreshold 1 50
   advanceTime (sec 25)
 
   withSender (AddressResolved owner1) $
@@ -913,25 +902,6 @@ votesBoundedValue originateFn = do
     call dao (Call @"Vote") [downvote']
     call dao (Call @"Vote") [upvote']
       & expectCustomErrorNoArg #mAX_VOTES_REACHED dao
-
-quorumThresholdBound
-  :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-quorumThresholdBound originateFn = do
-  (_, _, dao, _, admin) <- originateFn
-    ( testConfig >>-
-      ConfigDesc configConsts
-        { cmMinQuorumThreshold = Just $ QuorumThreshold 1 100
-        , cmMaxQuorumThreshold = Just $ QuorumThreshold 2 100
-        }
-    )
-  withSender (AddressResolved admin) $ do
-    call dao (Call @"Set_quorum_threshold") (QuorumThreshold 1 100)
-    call dao (Call @"Set_quorum_threshold") (QuorumThreshold 2 100)
-    call dao (Call @"Set_quorum_threshold") (QuorumThreshold 0 100)
-      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD dao
-    call dao (Call @"Set_quorum_threshold") (QuorumThreshold 3 100)
-      & expectCustomErrorNoArg #oUT_OF_BOUND_QUORUM_THRESHOLD dao
 
 votingPeriodBound
   :: (MonadNettest caps base m, HasCallStack)
