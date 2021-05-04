@@ -60,7 +60,7 @@ transferTests = testGroup "Transfer:"
 
           withSender (AddressResolved op1) $
             transfer 0 unknownTokens owner1 owner2 dao
-              & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
+              & expectCustomError_ #fA2_NOT_OPERATOR dao
       ]
 
   , testGroup "Transfers by token owners:"

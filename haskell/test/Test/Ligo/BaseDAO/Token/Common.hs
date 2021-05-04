@@ -3,13 +3,15 @@
 
 -- | Contains FA2 tests for testing the Ligo contract.
 module Test.Ligo.BaseDAO.Token.Common
-  ( frozenTokens
-  , unfrozenTokens
-  , unknownTokens
-
-  , originateWithCustomToken
+  ( originateWithCustomToken
   , transfer
   , assertBalanceOf
+
+  -- * Re-exports
+  , frozenTokens
+  , unfrozenTokens
+  , unfrozenTokens1
+  , unknownTokens
   ) where
 
 import Universum
@@ -22,15 +24,6 @@ import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Common
 
-frozenTokens :: FA2.TokenId
-frozenTokens = frozenTokenId
-
-unfrozenTokens :: FA2.TokenId
-unfrozenTokens = FA2.TokenId 42
-
-unknownTokens :: FA2.TokenId
-unknownTokens = FA2.TokenId 2
-
 originateWithCustomToken :: MonadNettest caps base m => OriginateFn m
 originateWithCustomToken =
   originateLigoDaoWithBalance dynRecUnsafe defaultConfig
@@ -39,6 +32,7 @@ originateWithCustomToken =
           , ((owner2, frozenTokens), 100)
           , ((owner1, unfrozenTokens), 1000)
           , ((owner2, unfrozenTokens), 1000)
+          , ((owner1, unfrozenTokens1), 1000)
           ]
       )
 

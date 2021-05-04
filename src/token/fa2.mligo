@@ -22,7 +22,7 @@ let check_sender (from_, token_id, store : address * nat * storage): address =
   if (Tezos.sender = from_)
   then from_
   else
-    let key: operator = { owner = from_; operator = sender} in
+    let key: operator = { owner = from_; operator = sender; token_id = token_id } in
     if Big_map.mem key store.operators
     then from_
     else
@@ -137,7 +137,11 @@ let update_one (store, param: storage * update_operator): storage =
   in
   let valid_token_id = validate_operator_token (operator_param.token_id, store) in
   if (sender = operator_param.owner) then
-    let key: operator = { owner = operator_param.owner; operator = operator_param.operator} in
+    let key: operator =
+          { owner = operator_param.owner
+          ; operator = operator_param.operator
+          ; token_id = valid_token_id
+          } in
     let updated_operators = Big_map.update key operator_update store.operators
     in  { store with
           operators = updated_operators
