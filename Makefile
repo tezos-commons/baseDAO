@@ -74,7 +74,7 @@ $(OUT)/trivialDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/trivialDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/trivialDAO_storage.tz : ledger = ([] : ledger_list)
 $(OUT)/trivialDAO_storage.tz : quorum_threshold = {numerator = 1n; denominator = 10n}
-$(OUT)/trivialDAO_storage.tz : voting_period = 11n
+$(OUT)/trivialDAO_storage.tz : voting_period = 950400n # 11 days
 $(OUT)/trivialDAO_storage.tz: src/**
 	# ============== Compiling TrivialDAO storage ============== #
 	mkdir -p $(OUT)
@@ -116,7 +116,7 @@ $(OUT)/registryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/registryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/registryDAO_storage.tz : ledger = ([] : ledger_list)
 $(OUT)/registryDAO_storage.tz : quorum_threshold = {numerator = 1n; denominator = 10n}
-$(OUT)/registryDAO_storage.tz : voting_period = 11n
+$(OUT)/registryDAO_storage.tz : voting_period = 950400n # 11 days
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
 	mkdir -p $(OUT)
@@ -166,7 +166,7 @@ $(OUT)/treasuryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/treasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/treasuryDAO_storage.tz : ledger = ([] : ledger_list)
 $(OUT)/treasuryDAO_storage.tz : quorum_threshold = {numerator = 1n; denominator = 10n}
-$(OUT)/treasuryDAO_storage.tz : voting_period = 11n
+$(OUT)/treasuryDAO_storage.tz : voting_period = 950400n # 11 days
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
 	mkdir -p $(OUT)

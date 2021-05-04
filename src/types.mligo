@@ -123,7 +123,8 @@ type proposal =
   ; voters : voter list
   }
 
-type voting_period = nat
+// Type `seconds` used with `voting_period`.
+type seconds = nat
 
 // Quorum threshold that a proposal needs to meet in order to be accepted,
 // expressed as a fraction of the total_supply of frozen tokens.
@@ -165,7 +166,7 @@ type storage =
   ; admin : address
   ; pending_owner : address
   ; metadata : metadata_map
-  ; voting_period : voting_period
+  ; voting_period : seconds
   ; extra : contract_extra
   ; proposals : (proposal_key, proposal) big_map
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
@@ -183,8 +184,6 @@ type freeze_param = nat
 type unfreeze_param = nat
 
 type transfer_ownership_param = address
-
-type voting_period = nat
 
 type custom_ep_param = (string * bytes)
 
@@ -245,7 +244,7 @@ type forbid_xtz_params =
   | Accept_ownership of unit
   | Vote of vote_param_permited list
   | Set_fixed_fee_in_token of nat
-  | Set_voting_period of voting_period
+  | Set_voting_period of seconds
   | Flush of nat
   | Get_vote_permit_counter of vote_permit_counter_param
   | Get_total_supply of get_total_supply_param
@@ -282,8 +281,8 @@ type initial_ledger_val = address * token_id * nat
 type ledger_list = (ledger_key * ledger_value) list
 
 type initial_config_data =
-  { max_period : voting_period
-  ; min_period : voting_period
+  { max_period : seconds
+  ; min_period : seconds
   ; quorum_threshold : quorum_threshold
   }
 
@@ -308,8 +307,8 @@ type config =
 
   ; max_proposals : nat
   ; max_votes : nat
-  ; max_voting_period : voting_period
-  ; min_voting_period : voting_period
+  ; max_voting_period : seconds
+  ; min_voting_period : seconds
   ; quorum_threshold : quorum_threshold
 
   ; custom_entrypoints : custom_entrypoints

@@ -147,7 +147,7 @@ They must be provided on origination to construct the contract's initial storage
 These values are:
 1. `admin : address` is the address that can perform administrative actions.
 2. `governance_token` is the FA2 contract address/token id pair that will be used as the governance token.
-3. `voting_period : nat` specifies how long the voting period lasts.
+3. `voting_period : nat` specifies how long the voting period lasts in seconds.
 4. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
    tokens total supply of total votes are required for a successful proposal.
 5. `fixed_proposal_fee_in_token : nat` specifies the fee for submitting a proposal (in native DAO token).
@@ -608,9 +608,9 @@ Parameter (in Michelson):
 
 ```ocaml
 // Voting period in seconds
-type voting_period = nat
+type seconds = nat
 
-Set_voting_period of voting_period
+Set_voting_period of seconds
 ```
 
 Parameter (in Michelson):

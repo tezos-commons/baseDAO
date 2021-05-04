@@ -52,7 +52,7 @@ make out/trivialDAO_storage.tz \
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
   quorum_threshold={numerator=1n; denominator=10n} \
-  voting_period=11n \
+  voting_period=950400n \
   metadata_map=(Big_map.empty : metadata_map) \
 ```
 
@@ -83,7 +83,7 @@ make out/registryDAO_storage.tz \
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
   quorum_threshold={numerator=1n; denominator=10n} \
-  voting_period=11n
+  voting_period=950400n
 ```
 
 All its arguments are optional and will be equal to the values above if not
@@ -110,7 +110,7 @@ make out/treasuryDAO_storage.tz \
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
   quorum_threshold={numerator=1n; denominator=10n} \
-  voting_period=11n \
+  voting_period=950400n \
   metadata_map=(Big_map.empty : metadata_map) \
 ```
 
