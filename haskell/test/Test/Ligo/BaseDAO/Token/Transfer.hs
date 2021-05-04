@@ -133,11 +133,11 @@ transferTests = testGroup "Transfer:"
             transfer 10 unfrozenTokens owner2 owner1 dao
               & expectCustomError_ #fA2_NOT_OPERATOR dao
 
-      , nettestScenarioCaps "admin can transfer frozen tokens from any address to any address" $ do
+      , nettestScenarioCaps "admin cannot transfer frozen tokens from any address to any address" $ do
           ((owner1, _), (owner2, _), dao, _, admin) <- originateWithCustomToken
 
           withSender (AddressResolved admin) $
             transfer 10 frozenTokens owner1 owner2 dao
-          assertBalanceOf owner2 110 frozenTokens dao
+              & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
       ]
   ]

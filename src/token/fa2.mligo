@@ -19,15 +19,13 @@ let validate_token_type (token_id, store : token_id * storage): token_id =
 
 [@inline]
 let check_sender (from_, token_id, store : address * nat * storage): address =
-  if (Tezos.sender = from_)
-  then from_
-  else
-    let key: operator = { owner = from_; operator = sender; token_id = token_id } in
-    if Big_map.mem key store.operators
-    then from_
-    else
-     ([%Michelson ({| { FAILWITH } |} : string * unit -> address)]
-        ("FA2_NOT_OPERATOR", ()) : address)
+  let key: operator = { owner = from_; operator = sender; token_id = token_id } in
+  if token_id = store.frozen_token_id then
+    (failwith("FROZEN_TOKEN_NOT_TRANSFERABLE") : address)
+  else if (Tezos.sender <> from_) && not (Big_map.mem key store.operators) then
+    ([%Michelson ({| { FAILWITH } |} : string * unit -> address)]
+      ("FA2_NOT_OPERATOR", ()) : address)
+  else from_
 
 [@inline]
 let debit_from (amt, from_, token_id, ledger, total_supply: nat * address * token_id * ledger * total_supply): (ledger * total_supply) =
@@ -80,14 +78,7 @@ let credit_to (amt, to_, token_id, ledger, total_supply : nat * address * nat * 
 
 let transfer_item (store, ti : storage * transfer_item): storage =
   let transfer_one (store, tx : storage * transfer_destination): storage =
-    let valid_from_ =
-      if tx.token_id = store.frozen_token_id
-      then
-        if Tezos.sender = store.admin
-        then ti.from_
-        else (failwith("FROZEN_TOKEN_NOT_TRANSFERABLE") : address)
-      else check_sender (ti.from_, tx.token_id, store)
-      in
+    let valid_from_ = check_sender (ti.from_, tx.token_id, store) in
     let ledger = store.ledger in
     let total_supply = store.total_supply in
     let (ledger, total_supply) = debit_from(tx.amount, valid_from_, tx.token_id, ledger, total_supply) in

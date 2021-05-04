@@ -170,7 +170,6 @@ whole contract (hence "global"):
 * **administrator**
   - Can re-assign this role to a new address.
   - Can perform administrative operations.
-  - Can transfer FA2 tokens owned or operated by this contract.
   - There always must be exactly one administrator.
 
 Additionally, the contract inherits the **operator** role from FA2.
@@ -247,7 +246,7 @@ The list of errors may be inaccurate and incomplete, it will be updated during t
 | `NOT_PENDING_ADMIN`             | Authorized sender is not the current pending administrator                                                  |
 | `NOT_TOKEN_OWNER`               | Trying to configure operators for a different wallet which sender does not own                              |
 | `FAIL_PROPOSAL_CHECK`           | Throws when trying to propose a proposal that does not pass `proposalCheck`                                 |
-| `FROZEN_TOKEN_NOT_TRANSFERABLE` | Transfer entrypoint is called for frozen token by a non-admin sender                                        |
+| `FROZEN_TOKEN_NOT_TRANSFERABLE` | Transfer entrypoint is called for frozen token                                                              |
 | `PROPOSAL_NOT_EXIST`            | Throws when trying to vote on a proposal that does not exist                                                |
 | `QUORUM_NOT_MET`                | A proposal is flushed, but there are not enough votes                                                       |
 | `VOTING_PERIOD_OVER`            | Throws when trying to vote on a proposal that is already ended                                              |
@@ -353,7 +352,7 @@ Parameter (in Michelson):
 
 - Permission logic follows the default permissions descriptor specified in FA2.
 
-- The administrator can transfer frozen tokens from any address to any address.
+- Fails with `FROZEN_TOKEN_NOT_TRANSFERABLE` when trying to transfer frozen tokens.
 
 ### **balance_of**
 
