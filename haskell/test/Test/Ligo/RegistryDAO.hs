@@ -466,6 +466,7 @@ test_RegistryDAO =
     initialStorage admin wallets = let
       fs = fromVal ($(fetchValue @FullStorage "haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
       oldStorage = fsStorage fs
+      oldConfig = fsConfig fs
 
       ledger = BigMap $ Map.fromList [((w, frozenTokenId), defaultTokenBalance) | w <- wallets]
 
@@ -473,9 +474,8 @@ test_RegistryDAO =
         { sAdmin = admin
         , sLedger = ledger
         , sTotalSupply = totalSupplyFromLedger ledger
-        , sVotingPeriod = 11
         }
-      in fs { fsStorage = newStorage }
+      in fs { fsStorage = newStorage, fsConfig = oldConfig { cVotingPeriod = 11} }
 
     initialStorageWithExplictRegistryDAOConfig :: Address -> [Address] -> FullStorage
     initialStorageWithExplictRegistryDAOConfig admin wallets =

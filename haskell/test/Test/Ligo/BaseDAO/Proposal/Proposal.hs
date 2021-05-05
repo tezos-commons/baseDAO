@@ -84,20 +84,20 @@ voteValidProposal
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteValidProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
-  advanceTime (sec 120)
+  advanceTime (sec 10)
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 2)
 
   -- Create sample proposal (first proposal has id = 0)
-  key1 <- createSampleProposal 1 120 owner1 dao
+  key1 <- createSampleProposal 1 10 owner1 dao
   let params = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
         }
 
-  advanceTime (sec 120)
+  advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dao owner2 102
   -- TODO [#31]: check if the vote is updated properly

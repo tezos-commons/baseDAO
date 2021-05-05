@@ -26,7 +26,7 @@ module Ligo.BaseDAO.Types
 
     -- * Voting
   , QuorumThreshold (..)
-  , VotingPeriod
+  , VotingPeriod (..)
   , VoteParam (..)
   , Voter (..)
 
@@ -51,7 +51,6 @@ module Ligo.BaseDAO.Types
   , Config (..)
   , FullStorage (..)
   , AddressFreezeHistory (..)
-  , LastPeriodChange (..)
   , DynamicRec (..)
   , dynRecUnsafe
   , mkStorage
@@ -64,7 +63,7 @@ module Ligo.BaseDAO.Types
   , sOperatorsLens
   ) where
 
-import Universum (One(..), maybe, (*))
+import Universum (Num, One(..), maybe, (*))
 
 import Control.Lens (makeLensesFor)
 import qualified Data.Map as M
@@ -174,7 +173,13 @@ instance HasAnnotation QuorumThreshold where
   annOptions = baseDaoAnnOptions
 
 -- | Voting period in seconds
-type VotingPeriod = Natural
+newtype VotingPeriod = VotingPeriod Natural
+  deriving stock (Generic, Show)
+  deriving newtype Num
+  deriving anyclass IsoValue
+
+instance HasAnnotation VotingPeriod where
+  annOptions = baseDaoAnnOptions
 
 -- | Represents whether a voter has voted against (False) or for (True) a given proposal.
 type VoteType = Bool
@@ -399,7 +404,6 @@ data ForbidXTZParam
   | Get_vote_permit_counter (Void_ () Nonce)
   | Get_total_supply (Void_ FA2.TokenId Natural)
   | Set_fixed_fee_in_token Natural
-  | Set_voting_period VotingPeriod
   | Transfer_ownership TransferOwnershipParam
   | Unfreeze UnfreezeParam
   | Vote [PermitProtected VoteParam]
@@ -415,11 +419,6 @@ data Parameter
   = XtzAllowed AllowXTZParam
   | XtzForbidden ForbidXTZParam
   deriving stock (Show)
-
-data LastPeriodChange = LastPeriodChange
-  { vhPeriodNum :: Natural
-  , vhChangedOn :: Timestamp
-  } deriving stock (Eq, Show)
 
 data AddressFreezeHistory = AddressFreezeHistory
   { fhCurrentUnstaked :: Natural
@@ -448,10 +447,9 @@ data Storage = Storage
   , sProposals :: BigMap ProposalKey Proposal
   , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKey)
   , sGovernanceToken :: GovernanceToken
-  , sVotingPeriod :: VotingPeriod
   , sTotalSupply :: TotalSupply
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
-  , sLastPeriodChange :: LastPeriodChange
+  , sStartTime :: Timestamp
   , sFixedProposalFeeInToken :: Natural
   }
   deriving stock (Show)
@@ -474,21 +472,17 @@ instance HasAnnotation FullStorage where
 instance HasAnnotation Config where
   annOptions = baseDaoAnnOptions
 
-instance HasAnnotation LastPeriodChange where
-  annOptions = baseDaoAnnOptions
-
 instance HasFieldOfType Storage name field => StoreHasField Storage name field where
   storeFieldOps = storeFieldOpsADT
 
 mkStorage
   :: "admin" :! Address
-  -> "votingPeriod" :? Natural
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
   -> "tokenAddress" :! Address
   -> Storage
-mkStorage admin votingPeriod extra metadata now tokenAddress =
+mkStorage admin extra metadata now tokenAddress =
   Storage
     { sAdmin = arg #admin admin
     , sExtra = arg #extra extra
@@ -503,15 +497,12 @@ mkStorage admin votingPeriod extra metadata now tokenAddress =
         { gtAddress = arg #tokenAddress tokenAddress
         , gtTokenId = FA2.theTokenId
         }
-    , sVotingPeriod = argDef #votingPeriod votingPeriodDef votingPeriod
     , sTotalSupply = M.fromList [(frozenTokenId, 0)]
     , sFreezeHistory = mempty
-    , sLastPeriodChange = LastPeriodChange 0 (arg #now now)
+    , sStartTime = arg #now now
     , sFixedProposalFeeInToken = 0
     , sFrozenTokenId = frozenTokenId
     }
-  where
-    votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
 
 mkMetadataMap
   :: "metadataHostAddress" :! Address
@@ -536,15 +527,14 @@ data Config = Config
   , cMaxVotes :: Natural
 
   , cQuorumThreshold :: QuorumThreshold
-  , cMaxVotingPeriod :: Natural
-  , cMinVotingPeriod :: Natural
+  , cVotingPeriod :: VotingPeriod
 
   , cCustomEntrypoints :: CustomEntrypoints
   }
   deriving stock (Show)
 
-mkConfig :: [CustomEntrypoint] -> QuorumThreshold -> Config
-mkConfig customEps quorumThreshold  = Config
+mkConfig :: [CustomEntrypoint] -> QuorumThreshold -> VotingPeriod -> Config
+mkConfig customEps quorumThreshold votingPeriod  = Config
   { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
@@ -553,16 +543,14 @@ mkConfig customEps quorumThreshold  = Config
       drop; nil
   , cCustomEntrypoints = DynamicRec $ BigMap $ M.fromList customEps
   , cQuorumThreshold = quorumThreshold
-
-  , cMaxVotingPeriod = 60 * 60 * 24 * 30
-  , cMinVotingPeriod = 1
+  , cVotingPeriod = votingPeriod
 
   , cMaxVotes = 1000
   , cMaxProposals = 500
   }
 
 defaultConfig :: Config
-defaultConfig = mkConfig [] (QuorumThreshold 1 100)
+defaultConfig = mkConfig [] (QuorumThreshold 1 100) 10
 
 data FullStorage = FullStorage
   { fsStorage :: Storage
@@ -572,7 +560,7 @@ data FullStorage = FullStorage
 
 mkFullStorage
   :: "admin" :! Address
-  -> "votingPeriod" :? Natural
+  -> "votingPeriod" :? VotingPeriod
   -> "quorumThreshold" :? QuorumThreshold
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
@@ -581,11 +569,13 @@ mkFullStorage
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
 mkFullStorage admin vp qt extra mdt now tokenAddress cEps = FullStorage
-  { fsStorage = mkStorage admin vp extra mdt now tokenAddress
-  , fsConfig  = mkConfig (argDef #customEps [] cEps) (argDef #quorumThreshold quorumThresholdDef qt)
+  { fsStorage = mkStorage admin extra mdt now tokenAddress
+  , fsConfig  = mkConfig (argDef #customEps [] cEps)
+      (argDef #quorumThreshold quorumThresholdDef qt) (argDef #votingPeriod votingPeriodDef vp)
   }
   where
     quorumThresholdDef = QuorumThreshold 1 10 -- 10% of frozen total supply
+    votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
 
 setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
 setExtra key v (s@FullStorage {..}) = s { fsStorage = newStorage }
@@ -620,9 +610,6 @@ instance ParameterHasEntrypoints Parameter where
 
 customGeneric "AddressFreezeHistory" ligoLayout
 deriving anyclass instance IsoValue AddressFreezeHistory
-
-customGeneric "LastPeriodChange" ligoLayout
-deriving anyclass instance IsoValue LastPeriodChange
 
 customGeneric "Storage" ligoLayout
 deriving anyclass instance IsoValue Storage
@@ -722,12 +709,6 @@ instance CustomErrorHasDoc "vOTING_PERIOD_OVER" where
 ------------------------------------------------
 -- Error causes by bounded value
 ------------------------------------------------
-
-type instance ErrorArg "oUT_OF_BOUND_VOTING_PERIOD" = NoErrorArg
-
-instance CustomErrorHasDoc "oUT_OF_BOUND_VOTING_PERIOD" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause = "Trying to set voting period that is out of bound."
 
 type instance ErrorArg "mAX_PROPOSALS_REACHED" = NoErrorArg
 

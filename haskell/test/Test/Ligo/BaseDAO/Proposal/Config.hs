@@ -82,16 +82,15 @@ ConfigDesc a >>- ConfigDesc b = ConfigDesc (ConfigDescChain a b)
 data ConfigConstants = ConfigConstants
   { cmMaxProposals :: Maybe Natural
   , cmMaxVotes :: Maybe Natural
-  , cmMinVotingPeriod :: Maybe DAO.VotingPeriod
-  , cmMaxVotingPeriod :: Maybe DAO.VotingPeriod
   , cmQuorumThreshold :: Maybe DAO.QuorumThreshold
+  , cmVotingPeriod :: Maybe DAO.VotingPeriod
   }
 
 -- | Constructor for config descriptor that overrides config constants.
 --
 -- Example: @configConsts{ cmMinVotingPeriod = 10 }@
 configConsts :: ConfigConstants
-configConsts = ConfigConstants Nothing Nothing Nothing Nothing Nothing
+configConsts = ConfigConstants Nothing Nothing Nothing Nothing
 
 data ProposalFrozenTokensCheck =
   ProposalFrozenTokensCheck (Lambda ("ppFrozenToken" :! Natural) Bool)
@@ -148,7 +147,7 @@ testConfig
 testConfig =
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
   ConfigDesc configConsts
-    { cmMinVotingPeriod = Just 10, cmQuorumThreshold = Just (DAO.QuorumThreshold 1 100) }
+    { cmQuorumThreshold = Just (DAO.QuorumThreshold 1 100) }
 
 -- | Config with longer voting period and bigger quorum threshold
 -- Needed for vote related tests that do not call `flush`
@@ -158,7 +157,7 @@ voteConfig
 voteConfig = ConfigDesc $
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
   ConfigDesc configConsts
-    { cmMinVotingPeriod = Just 120, cmQuorumThreshold = Just (DAO.QuorumThreshold 4 100) }
+    { cmQuorumThreshold = Just (DAO.QuorumThreshold 4 100) }
 
 configWithRejectedProposal
   :: AreConfigDescsExt config '[RejectedProposalReturnValue]
@@ -182,14 +181,18 @@ instance IsConfigDescExt DAO.Config ConfigConstants where
   fillConfig ConfigConstants{..} DAO.Config{..} = DAO.Config
     { cMaxProposals = cmMaxProposals ?: cMaxProposals
     , cMaxVotes = cmMaxVotes ?: cMaxVotes
-    , cMinVotingPeriod = cmMinVotingPeriod ?: cMinVotingPeriod
-    , cMaxVotingPeriod = cmMaxVotingPeriod ?: cMaxVotingPeriod
     , ..
     }
 
 instance IsConfigDescExt DAO.Config DAO.QuorumThreshold where
   fillConfig qt DAO.Config{..} = DAO.Config
     { cQuorumThreshold = qt
+    , ..
+    }
+
+instance IsConfigDescExt DAO.Config DAO.VotingPeriod where
+  fillConfig vp DAO.Config{..} = DAO.Config
+    { cVotingPeriod = vp
     , ..
     }
 

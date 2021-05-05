@@ -32,12 +32,13 @@ voteNonExistingProposal originateFn = do
     call dao (Call @"Freeze") (#amount .! 2)
 
   -- Create sample proposal
-  _ <- createSampleProposal 1 15 owner1 dao
+  _ <- createSampleProposal 1 10 owner1 dao
   let params = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = HashUnsafe "\11\12\13"
         }
+  advanceTime (sec 10)
 
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
     & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dao
@@ -48,13 +49,13 @@ voteMultiProposals
 voteMultiProposals originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
 
-  advanceTime (sec 120)
+  advanceTime (sec 10)
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 20)
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 5)
-  advanceTime (sec 120)
+  advanceTime (sec 10)
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 0 owner1 dao
@@ -72,7 +73,7 @@ voteMultiProposals originateFn = do
             }
         ]
 
-  advanceTime (sec 120)
+  advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
   checkTokenBalance (frozenTokenId) dao owner2 105
   -- TODO [#31]: check storage if the vote update the proposal properly

@@ -63,11 +63,14 @@ validProposal = uncapsNettest $ withFrozenCallStack do
         }
     proposalSize = metadataSize proposalMeta -- 115
 
+  -- Advance one voting period.
+  advanceTime (sec 10)
+
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! proposalSize)
 
   -- Advance one voting period.
-  advanceTime (sec 1.5)
+  advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
@@ -100,8 +103,9 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 20)
 
-  -- Advance one voting period (which is 1).
-  advanceTime (sec 1.5)
+  -- Advance two voting periods so that we are in a
+  -- proposal period.
+  advanceTime (sec 20)
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Propose") proposeParams
@@ -116,9 +120,9 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
         , vProposalKey = key1
         }
 
-  advanceTime (sec 1)
+  advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
-  advanceTime (sec 1)
+  advanceTime (sec 10)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   checkTokenBalance frozenTokenId dao owner1 proposalSize
@@ -140,13 +144,14 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         }
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
+  advanceTime (sec 10)
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta 3))
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 10)
   -- Advance one voting period.
-  advanceTime (sec 1.5)
+  advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $ do
   -- due to smaller than min_xtz_amount
@@ -169,9 +174,9 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         , vProposalKey = key1
         }
 
-  advanceTime (sec 1)
+  advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
-  advanceTime (sec 1)
+  advanceTime (sec 10)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
 --   -- TODO: check xtz balance
@@ -214,4 +219,4 @@ originateTreasuryDaoWithBalance bal =
         & setExtra @Natural [mt|min_xtz_amount|] 2
         & setExtra @Natural [mt|max_xtz_amount|] 5
 
-  in originateLigoDaoWithBalance (sExtra fsStorage) (fsConfig { cQuorumThreshold = QuorumThreshold 1 100 }) bal
+  in originateLigoDaoWithBalance (sExtra fsStorage) (fsConfig { cQuorumThreshold = QuorumThreshold 1 100, cVotingPeriod = 10 }) bal
