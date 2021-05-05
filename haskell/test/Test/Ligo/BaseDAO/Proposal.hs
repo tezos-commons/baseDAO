@@ -140,9 +140,8 @@ test_BaseDAO_Proposal =
  , testGroup "LIGO-specific proposal tests:"
     [ nettestScenarioOnEmulator "can propose a valid proposal with a fixed fee" $
         \_emulated -> uncapsNettest $ do
-          ((proposer, _), _, dao, _, admin) <- originateLigoDao
-          withSender (AddressResolved admin) $
-            call dao (Call @"Set_fixed_fee_in_token") 42
+          ((proposer, _), _, dao, _, _) <-
+            originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 42))
           let params = ProposeParams
                 { ppFrozenToken = 10
                 , ppProposalMetadata = lPackValueRaw @Integer 1
@@ -161,9 +160,8 @@ test_BaseDAO_Proposal =
 
     , nettestScenarioOnEmulator "cannot propose with insufficient tokens to pay the fee" $
         \_emulated -> uncapsNettest $ do
-          ((proposer, _), _, dao, _, admin) <- originateLigoDao
-          withSender (AddressResolved admin) $
-            call dao (Call @"Set_fixed_fee_in_token") 100
+          ((proposer, _), _, dao, _, _) <-
+            originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 100))
 
           withSender (AddressResolved proposer) $
             call dao (Call @"Freeze") (#amount .! 52)
@@ -176,44 +174,10 @@ test_BaseDAO_Proposal =
           withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
             & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
 
-    , nettestScenarioOnEmulator "an owner can change the fee" $
-        \_emulated -> uncapsNettest $ do
-          ((proposer, _), _, dao, _, admin) <- originateLigoDao
-          withSender (AddressResolved admin) $
-            call dao (Call @"Set_fixed_fee_in_token") 1000
-
-          let params = ProposeParams
-                { ppFrozenToken = 0
-                , ppProposalMetadata = lPackValueRaw @Integer 1
-                }
-
-          withSender (AddressResolved proposer) $
-            call dao (Call @"Freeze") (#amount .! 52)
-          advanceTime (sec 20)
-
-          withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
-
-          withSender (AddressResolved admin) $
-            call dao (Call @"Set_fixed_fee_in_token") 10
-
-          withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-          checkTokenBalance frozenTokenId dao proposer 152
-
-    , nettestScenario "a non-owner cannot change the fee" $
-        uncapsNettest $ do
-          ((someone, _), _, dao, _, _) <- originateLigoDao
-
-          withSender (AddressResolved someone) $
-            call dao (Call @"Set_fixed_fee_in_token") 1000
-              & expectCustomErrorNoArg #nOT_ADMIN dao
-
     , nettestScenarioOnEmulator "a proposer is returned a fee after the proposal succeeds" $
         \_emulated -> uncapsNettest $ do
-          ((proposer, _), (voter, _), dao, _, admin) <- originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc $ VotingPeriod 60)
-
-          withSender (AddressResolved admin) $ do
-            call dao (Call @"Set_fixed_fee_in_token") 42
+          ((proposer, _), (voter, _), dao, _, admin) <-
+            originateLigoDaoWithConfigDesc dynRecUnsafe ((ConfigDesc $ VotingPeriod 60) >>- (ConfigDesc (FixedFee 42)))
 
           withSender (AddressResolved voter) $
             call dao (Call @"Freeze") (#amount .! 20)
@@ -288,10 +252,7 @@ burnsFeeOnFailure
   => FailureReason -> m ()
 burnsFeeOnFailure reason = do
   ((proposer, _), (voter, _), dao, _, admin) <-
-      originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc $ VotingPeriod 60)
-
-  withSender (AddressResolved admin) $ do
-    call dao (Call @"Set_fixed_fee_in_token") 42
+      originateLigoDaoWithConfigDesc dynRecUnsafe ((ConfigDesc $ VotingPeriod 60) >>- (ConfigDesc $ FixedFee 42))
 
   withSender (AddressResolved proposer) $
     call dao (Call @"Freeze") (#amount .! 42)
