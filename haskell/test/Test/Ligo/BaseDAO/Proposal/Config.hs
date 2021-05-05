@@ -178,32 +178,32 @@ decisionLambdaConfig target = ConfigDesc $ passProposerOnDecision target
 --------------------------------------------------------------------------------
 --
 instance IsConfigDescExt DAO.Config ConfigConstants where
-  fillConfig ConfigConstants{..} DAO.Config{..} = DAO.Config
+  fillConfig ConfigConstants{..} DAO.Config'{..} = DAO.Config'
     { cMaxProposals = cmMaxProposals ?: cMaxProposals
     , cMaxVotes = cmMaxVotes ?: cMaxVotes
     , ..
     }
 
 instance IsConfigDescExt DAO.Config DAO.QuorumThreshold where
-  fillConfig qt DAO.Config{..} = DAO.Config
+  fillConfig qt DAO.Config'{..} = DAO.Config'
     { cQuorumThreshold = qt
     , ..
     }
 
 instance IsConfigDescExt DAO.Config DAO.VotingPeriod where
-  fillConfig vp DAO.Config{..} = DAO.Config
+  fillConfig vp DAO.Config'{..} = DAO.Config'
     { cVotingPeriod = vp
     , ..
     }
 
 instance IsConfigDescExt DAO.Config DAO.FixedFee where
-  fillConfig ff DAO.Config{..} = DAO.Config
+  fillConfig ff DAO.Config'{..} = DAO.Config'
     { cFixedProposalFee = ff
     , ..
     }
 
 instance IsConfigDescExt DAO.Config ProposalFrozenTokensCheck where
-  fillConfig (ProposalFrozenTokensCheck check) DAO.Config{..} = DAO.Config
+  fillConfig (ProposalFrozenTokensCheck check) DAO.Config'{..} = DAO.Config'
     { cProposalCheck = do
         dip drop
         toFieldNamed #ppFrozenToken
@@ -212,8 +212,8 @@ instance IsConfigDescExt DAO.Config ProposalFrozenTokensCheck where
     }
 
 instance IsConfigDescExt DAO.Config RejectedProposalReturnValue where
-  fillConfig (RejectedProposalReturnValue toReturnValue) DAO.Config{..} =
-    DAO.Config
+  fillConfig (RejectedProposalReturnValue toReturnValue) DAO.Config'{..} =
+    DAO.Config'
     { cRejectedProposalReturnValue = do
         dip drop
         toField #plProposerFrozenToken; toNamed #proposerFrozenToken
@@ -222,8 +222,8 @@ instance IsConfigDescExt DAO.Config RejectedProposalReturnValue where
     }
 
 instance IsConfigDescExt DAO.Config DecisionLambdaAction where
-  fillConfig (DecisionLambdaAction lam) DAO.Config{..} =
-    DAO.Config
+  fillConfig (DecisionLambdaAction lam) DAO.Config'{..} =
+    DAO.Config'
     { cDecisionLambda = do
         getField #plProposerFrozenToken; toNamed #frozen_tokens
         dip $ do toField #plProposer; toNamed #proposer

@@ -12,7 +12,7 @@ import Time (sec)
 
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
-import Morley.Nettest.Tasty (nettestScenario, nettestScenarioOnEmulator)
+import Morley.Nettest.Tasty (nettestScenario, nettestScenarioOnEmulator, nettestScenarioOnEmulatorCaps, nettestScenarioOnNetworkCaps)
 import Test.Tasty (TestTree, testGroup)
 import Util.Named
 
@@ -39,9 +39,9 @@ data FailureReason = QuorumNotMet | Downvoted
 test_BaseDAO_Proposal :: [TestTree]
 test_BaseDAO_Proposal =
   [ testGroup "Proposal creator:"
-      [ nettestScenarioOnEmulator "BaseDAO - can propose a valid proposal" $
-          \_emulated ->
-            uncapsNettest $ validProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      [ nettestScenarioOnEmulatorCaps "BaseDAO - can propose a valid proposal (emulator)" $
+          validProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) getTotalSupplyEmulator
+
       , nettestScenarioOnEmulator "cannot propose an invalid proposal (rejected)" $
           \_emulated ->
             uncapsNettest $ rejectProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
@@ -73,21 +73,22 @@ test_BaseDAO_Proposal =
       \_emulated ->
         uncapsNettest $ insufficientTokenVote (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-  , nettestScenario "cannot propose with insufficient tokens" $
-      uncapsNettest $ insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+  -- Note: When checking storage, we need to split the test into 2 (emulator and network) as demonstrated below:
+  , nettestScenarioOnEmulatorCaps "cannot propose with insufficient tokens (emulator) " $
+      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
+  , nettestScenarioOnNetworkCaps "cannot propose with insufficient tokens (network) " $
+      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorageView addr)
 
   , testGroup "Permit:"
       [ nettestScenarioOnEmulator "can vote from another user behalf" $
           \_emulated ->
             uncapsNettest $ voteWithPermit (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "counter works properly in permits" $
-          \_emulated ->
-            uncapsNettest $ voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulatorCaps "counter works properly in permits" $
+            voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecUnsafe) getVotePermitsCounterEmulator
       ]
   , testGroup "Admin:"
-      [ nettestScenarioOnEmulator "can flush proposals that got accepted" $
-          \_emulated ->
-            uncapsNettest $ flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      [ nettestScenarioOnEmulatorCaps "can flush proposals that got accepted" $
+          flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) getTotalSupplyEmulator
       , nettestScenarioOnEmulator "can flush 2 proposals that got accepted" $
           \_emulated ->
             uncapsNettest $ flushAcceptedProposalsWithAnAmount (originateLigoDaoWithConfigDesc dynRecUnsafe)
@@ -138,25 +139,23 @@ test_BaseDAO_Proposal =
       ]
 
  , testGroup "LIGO-specific proposal tests:"
-    [ nettestScenarioOnEmulator "can propose a valid proposal with a fixed fee" $
-        \_emulated -> uncapsNettest $ do
-          ((proposer, _), _, dao, _, _) <-
-            originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 42))
-          let params = ProposeParams
-                { ppFrozenToken = 10
-                , ppProposalMetadata = lPackValueRaw @Integer 1
-                }
+    [ nettestScenarioOnEmulatorCaps "can propose a valid proposal with a fixed fee" $ do
+        ((proposer, _), _, dao, _, _) <-
+          originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 42))
+        let params = ProposeParams
+              { ppFrozenToken = 10
+              , ppProposalMetadata = lPackValueRaw @Integer 1
+              }
 
-          withSender (AddressResolved proposer) $
-            call dao (Call @"Freeze") (#amount .! 52)
-          advanceTime (sec 20)
+        withSender (AddressResolved proposer) $
+          call dao (Call @"Freeze") (#amount .! 52)
+        advanceTime (sec 20)
 
-          withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
-          checkTokenBalance frozenTokenId dao proposer 152
+        withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
+        checkTokenBalance frozenTokenId dao proposer 152
 
-          withSender (AddressResolved proposer) $
-            call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-              & expectError dao (VoidResult (252 :: Natural)) -- initial = 0
+        totalSupply <- getTotalSupplyEmulator (AddressResolved $ unTAddress dao) frozenTokenId
+        totalSupply @== 252 -- initial = 0
 
     , nettestScenarioOnEmulator "cannot propose with insufficient tokens to pay the fee" $
         \_emulated -> uncapsNettest $ do
@@ -322,8 +321,8 @@ canUnfreezeFromPreviousPeriod originateFn = do
 
 insufficientTokenProposal
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-insufficientTokenProposal originateFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> (AddressOrAlias -> m Int) -> m ()
+insufficientTokenProposal originateFn getProposalAmountFn = do
   ((owner1, _), _, dao, _, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 101
@@ -332,6 +331,8 @@ insufficientTokenProposal originateFn = do
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dao
+  amt <- getProposalAmountFn (AddressResolved $ unTAddress dao)
+  amt @== 0
 
 insufficientTokenVote
   :: (MonadNettest caps base m, HasCallStack)
@@ -388,8 +389,8 @@ voteWithPermit originateFn = do
 
 voteWithPermitNonce
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-voteWithPermitNonce originateFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> GetVotePermitsCounterFn m -> m ()
+voteWithPermitNonce originateFn getVotePermitsCounterFn = do
 
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
 
@@ -436,9 +437,8 @@ voteWithPermitNonce originateFn = do
     call dao (Call @"Vote") [params2]
 
   -- Check counter
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Get_vote_permit_counter") (mkVoid ())
-      & expectError dao (VoidResult (2 :: Natural))
+  (Nonce counter) <- getVotePermitsCounterFn (AddressResolved $ unTAddress dao)
+  counter @== 2
 
 flushNotAffectOngoingProposals
   :: (MonadNettest caps base m, HasCallStack)
@@ -466,9 +466,9 @@ flushNotAffectOngoingProposals originateFn = do
 
 flushAcceptedProposals
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-flushAcceptedProposals originateFn = do
-  -- Use 60s for voting period, since in real network by the time we call
+  => (ConfigDesc Config -> OriginateFn m) -> GetTotalSupplyFn m -> m ()
+flushAcceptedProposals originateFn getTotalSupplyFn = do
+-- Use 60s for voting period, since in real network by the time we call
   -- vote entrypoint 30s is already passed.
   ((owner1, _), (owner2, _), dao, _, admin) <-
     originateFn (testConfig >>- (ConfigDesc $ VotingPeriod 60))
@@ -509,9 +509,8 @@ flushAcceptedProposals originateFn = do
 
   checkTokenBalance (frozenTokenId) dao owner2 103
 
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError dao (VoidResult (213 :: Natural)) -- initial = 0
+  totalSupply <- getTotalSupplyFn (AddressResolved $ unTAddress dao) frozenTokenId
+  totalSupply @== 213 -- initial = 0
 
 flushAcceptedProposalsWithAnAmount
   :: (MonadNettest caps base m, HasCallStack)

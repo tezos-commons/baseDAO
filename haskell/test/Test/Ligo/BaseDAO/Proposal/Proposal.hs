@@ -26,8 +26,8 @@ import Test.Ligo.BaseDAO.Proposal.Config
 
 validProposal
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-validProposal originateFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> GetTotalSupplyFn m -> m ()
+validProposal originateFn getTotalSupplyFn = do
   ((owner1, _), _, dao, tokenContract, _) <- originateFn testConfig
   let params = ProposeParams
         { ppFrozenToken = 10
@@ -47,9 +47,8 @@ validProposal originateFn = do
   checkTokenBalance frozenTokenId dao owner1 110
 
   -- Check total supply
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Get_total_supply") (mkVoid frozenTokenId)
-      & expectError dao (VoidResult (210 :: Natural)) -- initial = 0
+  totalSupply <- getTotalSupplyFn (AddressResolved $ unTAddress dao ) frozenTokenId
+  totalSupply @== 210 -- initial = 0
 
 rejectProposal
   :: (MonadNettest caps base m, HasCallStack)
