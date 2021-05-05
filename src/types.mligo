@@ -126,6 +126,7 @@ type proposal =
 
 // Type `seconds` used with `voting_period`.
 type seconds = nat
+type voting_period = { length : seconds }
 
 // Quorum threshold that a proposal needs to meet in order to be accepted,
 // expressed as a fraction of the total_supply of frozen tokens.
@@ -144,15 +145,6 @@ type permit =
 type metadata_map = (string, bytes) big_map
 type contract_extra = (string, bytes) big_map
 
-// Some information to track changes made to the voting period so that we can
-// calculate the current voting period even after many changes to the period length
-// by doing --((NOW - changed_on) / voting_period) + period_num.
-// We will always update this when ever the voting_period is changed.
-type last_period_change =
-  { changed_on : timestamp
-  ; period_num : nat
-  }
-
 // -- Storage -- //
 
 type governance_token =
@@ -167,7 +159,6 @@ type storage =
   ; admin : address
   ; pending_owner : address
   ; metadata : metadata_map
-  ; voting_period : seconds
   ; extra : contract_extra
   ; proposals : (proposal_key, proposal) big_map
   ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
@@ -176,7 +167,7 @@ type storage =
   ; freeze_history : freeze_history
   ; fixed_proposal_fee_in_token : nat
   ; frozen_token_id : token_id
-  ; last_period_change : last_period_change
+  ; start_time : timestamp
   }
 
 // -- Parameter -- //
@@ -245,7 +236,6 @@ type forbid_xtz_params =
   | Accept_ownership of unit
   | Vote of vote_param_permited list
   | Set_fixed_fee_in_token of nat
-  | Set_voting_period of seconds
   | Flush of nat
   | Get_vote_permit_counter of vote_permit_counter_param
   | Get_total_supply of get_total_supply_param
@@ -282,9 +272,8 @@ type initial_ledger_val = address * token_id * nat
 type ledger_list = (ledger_key * ledger_value) list
 
 type initial_config_data =
-  { max_period : seconds
-  ; min_period : seconds
-  ; quorum_threshold : quorum_threshold
+  { quorum_threshold : quorum_threshold
+  ; voting_period : voting_period
   }
 
 type initial_storage_data =
@@ -293,7 +282,6 @@ type initial_storage_data =
   ; now_val : timestamp
   ; metadata_map : metadata_map
   ; ledger_lst : ledger_list
-  ; voting_period : nat
   }
 
 type initial_data =
@@ -308,9 +296,8 @@ type config =
 
   ; max_proposals : nat
   ; max_votes : nat
-  ; max_voting_period : seconds
-  ; min_voting_period : seconds
   ; quorum_threshold : quorum_threshold
+  ; voting_period : voting_period
 
   ; custom_entrypoints : custom_entrypoints
   }

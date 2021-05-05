@@ -89,11 +89,9 @@ $(OUT)/trivialDAO_storage.tz: src/**
           ; now_val = $(now_val) \
           ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
           ; ledger_lst = $(call escape_double_quote,$(ledger)) \
-          ; voting_period = $(voting_period) \
           } \
         ; config_data = \
-          { max_period = 2592000n \
-          ; min_period = 1n \
+          { voting_period = { length = $(voting_period) } \
           ; quorum_threshold = $(quorum_threshold) \
           } \
         })"
@@ -132,13 +130,12 @@ $(OUT)/registryDAO_storage.tz: src/**
             ; now_val = $(now_val) \
             ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
             ; ledger_lst = $(call escape_double_quote,$(ledger)) \
-            ; voting_period = $(voting_period) \
             } \
           ; config_data = \
-            { max_period = 2592000n \
-            ; min_period = 1n \
-            ; quorum_threshold = $(quorum_threshold) \
-            }} \
+            { quorum_threshold = $(quorum_threshold) \
+            ; voting_period = { length = $(voting_period) } \
+            } \
+          } \
           ; frozen_scale_value = $(frozen_scale_value) \
           ; frozen_extra_value = $(frozen_extra_value) \
           ; max_proposal_size = $(max_proposal_size) \
@@ -182,13 +179,12 @@ $(OUT)/treasuryDAO_storage.tz: src/**
             ; now_val = $(now_val) \
             ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
             ; ledger_lst = $(call escape_double_quote,$(ledger)) \
-            ; voting_period = $(voting_period) \
             } \
           ; config_data = \
-            { max_period = 2592000n \
-            ; min_period = 1n \
-            ; quorum_threshold = $(quorum_threshold) \
-            }} \
+            { quorum_threshold = $(quorum_threshold) \
+            ; voting_period = { length = $(voting_period) } \
+            } \
+          } \
           ; frozen_scale_value = $(frozen_scale_value) \
           ; frozen_extra_value = $(frozen_extra_value) \
           ; max_proposal_size = $(max_proposal_size) \

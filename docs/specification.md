@@ -102,10 +102,11 @@ type config =
   // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   ; max_votes : nat
   // ^ Determine the maximum number of votes associated with a proposal including positive votes
-  ; max_voting_period : nat
-  // ^ Determine the maximum value of voting period that is allowed to be set.
-  ; min_voting_period : nat
-  // ^ Determine the minimum value of voting period that is allowed to be set.
+
+  ; voting_period : voting_period
+  // ^ Determine the voting_period length.
+  ; quorum_threshold : quorum_threshold
+  // ^ Determine the quorum threshold that the proposals need to meet.
 
   ; custom_entrypoints : custom_entrypoints
   // ^ Packed arbitrary lambdas associated to a name for custom execution.
@@ -250,7 +251,6 @@ The list of errors may be inaccurate and incomplete, it will be updated during t
 | `PROPOSAL_NOT_EXIST`            | Throws when trying to vote on a proposal that does not exist                                                |
 | `QUORUM_NOT_MET`                | A proposal is flushed, but there are not enough votes                                                       |
 | `VOTING_PERIOD_OVER`            | Throws when trying to vote on a proposal that is already ended                                              |
-| `OUT_OF_BOUND_VOTING_PERIOD`    | Throws when trying to set voting period that is out of bound from what is specified in the `config`         |
 | `MAX_PROPOSALS_REACHED`         | Throws when trying to propose a proposal when proposals max amount is already reached                       |
 | `MAX_VOTES_REACHED`             | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
 | `FORBIDDEN_XTZ`                 | Throws when some XTZ was received as part of the contract call                                              |
@@ -276,7 +276,6 @@ Full list:
 * [`accept_ownership`](#accept_ownership)
 * [`propose`](#propose)
 * [`set_fixed_fee_in_token`](#set_fixed_fee_in_token)
-* [`set_voting_period`](#set_voting_period)
 * [`vote`](#vote)
 * [`flush`](#flush)
 * [`drop_proposal`](#drop_proposal)
@@ -602,26 +601,6 @@ Parameter (in Michelson):
 - Update the fee that the proposers have to pay to submit a proposal (the fee is returned if the proposal is successful and burnt otherwise)
 - This affects only new proposals; the existing proposals store the fee paid for their submission.
 - Fails with `NOT_ADMIN` if the sender is not the administrator.
-
-### **set_voting_period**
-
-```ocaml
-// Voting period in seconds
-type seconds = nat
-
-Set_voting_period of seconds
-```
-
-Parameter (in Michelson):
-```
-(nat %set_voting_period)
-```
-
-- Update how long the voting period should last.
-- This affects all ongoing and new proposals.
-- Voting period value is measured in seconds.
-- Fails with `NOT_ADMIN` if the sender is not the administrator.
-- Fails with `OUT_OF_BOUND_VOTING_PERIOD` if the voting period value is out of the bound set by the configuration
 
 ### **vote**
 
