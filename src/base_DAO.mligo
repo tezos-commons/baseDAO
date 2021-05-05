@@ -26,12 +26,11 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Accept_ownership -> accept_ownership(store)
     | Vote (p) -> vote(p, config, store)
     | Set_fixed_fee_in_token (p) -> set_fixed_fee_in_token(p, store)
-    | Set_voting_period (p) -> set_voting_period(p, config, store)
     | Flush (p) -> flush (p, config, store)
     | Get_vote_permit_counter (p) -> get_vote_permit_counter(p, store)
     | Get_total_supply (p) -> get_total_supply(p, store)
-    | Freeze p -> freeze(p, store)
-    | Unfreeze p -> unfreeze(p, store)
+    | Freeze p -> freeze(p, config, store)
+    | Unfreeze p -> unfreeze(p, config, store)
 
 
 (*

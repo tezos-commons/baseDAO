@@ -119,5 +119,4 @@ the values above the values above if not specified.
 
 ## Storage generation checks
 The LIGO functions used by the `Makefile` targets above perform some automatic check, specifically:
-If `ledger` is specified, than `total_supply` will be calculated, depending on its value. \
-The same is true for `voting_period`.
+If `ledger` is specified, than `total_supply` will be calculated, depending on its value.

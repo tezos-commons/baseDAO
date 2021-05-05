@@ -201,7 +201,6 @@ originateLigoDaoWithBalance extra config balFunc = do
             ( mkStorage
               ! #extra extra
               ! #admin admin
-              ! #votingPeriod (cMinVotingPeriod config)
               ! #metadata mempty
               ! #tokenAddress (unTAddress tokenContract)
               ! #now now

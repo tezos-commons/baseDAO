@@ -10,22 +10,12 @@ let default_config (data : initial_config_data) : config = {
   decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
 
   quorum_threshold = data.quorum_threshold;
+  voting_period = data.voting_period;
   max_proposals = 500n;
   max_votes = 1000n;
-  max_voting_period = data.max_period;
-  min_voting_period = data.min_period;
 
   custom_entrypoints = (Big_map.empty : custom_entrypoints);
 }
-
-let bound_vp (vp, min_vp, max_vp : seconds * seconds * seconds)
-    : seconds =
-  if vp < min_vp
-  then min_vp
-  else
-    if vp > max_vp
-    then max_vp
-    else vp
 
 let ledger_constructor (ledger, param : ledger * (ledger_key * ledger_value)) : ledger =
   let (key, value) = param in
@@ -47,7 +37,6 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     admin = data.admin;
     pending_owner = data.admin;
     metadata = data.metadata_map;
-    voting_period = bound_vp ( data.voting_period, config_data.min_period, config_data.max_period );
     extra = (Big_map.empty : (string, bytes) big_map);
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     proposal_key_list_sort_by_date = (Set.empty : (timestamp * proposal_key) set);
@@ -59,7 +48,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     );
     fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
-    last_period_change = {changed_on = data.now_val; period_num = 0n}
+    start_time = data.now_val
 }
 
 let default_full_storage (data : initial_data) : full_storage =

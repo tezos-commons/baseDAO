@@ -15,7 +15,6 @@ import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
 import { Get_total_supply } from './generated/Get_total_supply';
 import { Propose } from './generated/Propose';
-import { Set_voting_period } from './generated/Set_voting_period';
 import { Transfer } from './generated/Transfer';
 import { Transfer_contract_tokens } from './generated/Transfer_contract_tokens';
 import { Transfer_ownership } from './generated/Transfer_ownership';
@@ -178,11 +177,6 @@ export class BaseDAOContract {
   propose(arg: Propose): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.propose(arg.frozen_token, arg.proposal_metadata));
-  }
-
-  set_voting_period(arg: Set_voting_period): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.set_voting_period(arg));
   }
 
   transfer(arg: Transfer): Promise<string|void> {

@@ -82,12 +82,10 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Common
       Test.Ligo.BaseDAO.FA2
       Test.Ligo.BaseDAO.Integrational.Common
-      Test.Ligo.BaseDAO.Integrational.Management
       Test.Ligo.BaseDAO.Integrational.Proposal
       Test.Ligo.BaseDAO.Management
       Test.Ligo.BaseDAO.OffChainViews
       Test.Ligo.BaseDAO.Proposal
-      Test.Ligo.BaseDAO.Proposal.Bounds
       Test.Ligo.BaseDAO.Proposal.Config
       Test.Ligo.BaseDAO.Proposal.Proposal
       Test.Ligo.BaseDAO.Proposal.Vote
