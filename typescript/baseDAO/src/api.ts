@@ -13,7 +13,6 @@ import { Accept_ownership } from './generated/Accept_ownership';
 import { Balance_of } from './generated/Balance_of';
 import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
-import { Get_total_supply } from './generated/Get_total_supply';
 import { Propose } from './generated/Propose';
 import { Transfer } from './generated/Transfer';
 import { Transfer_contract_tokens } from './generated/Transfer_contract_tokens';
@@ -22,7 +21,6 @@ import { Update_operators } from './generated/Update_operators';
 import { Vote } from './generated/Vote';
 import { Freeze } from './generated/Freeze';
 import { Unfreeze } from './generated/Unfreeze';
-import { Get_vote_permit_counter } from './generated/Get_vote_permit_counter';
 
 function println(s: string) {
   console.log(s);
@@ -162,16 +160,6 @@ export class BaseDAOContract {
   flush(arg: Flush): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.flush(arg));
-  }
-
-  get_total_supply(arg: Get_total_supply): Promise<string|void> {
-    return this.withContract(
-      contract =>  contract.methods.get_total_supply(arg.voidParam, arg.voidResProxy));
-  }
-
-  get_vote_permit_counter(arg: Get_vote_permit_counter): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.get_vote_permit_counter(arg.voidParam, arg.voidResProxy));
   }
 
   propose(arg: Propose): Promise<string|void> {

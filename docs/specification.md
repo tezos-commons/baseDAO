@@ -277,8 +277,6 @@ Full list:
 * [`vote`](#vote)
 * [`flush`](#flush)
 * [`drop_proposal`](#drop_proposal)
-* [`get_vote_permit_counter`](#get_vote_permit_counter)
-* [`get_total_supply`](#get_total_supply)
 * [`freeze`](#freeze)
 * [`unfreeze`](#unfreeze)
 
@@ -692,55 +690,6 @@ failing decision lambda.
 
 
 [FA2]: https://gitlab.com/tzip/tzip/-/blob/3a6464b1e641008b77a83807a0c102e7602c6af4/proposals/tzip-12/tzip-12.md
-
-## Views
-
-### **Get_vote_permit_counter**
-
-```ocaml
-type vote_permit_counter_param =
-  [@layout:comb]
-  { param : unit
-  ; postprocess : nat -> nat
-  }
-
-Get_vote_permit_counter of vote_permit_counter_param
-```
-
-Parameter (in Michelson):
-```
-(pair %get_vote_permit_counter
-  (unit %param)
-  (lambda %postprocess nat nat)
-)
-```
-
-- A `void` entrypoint as defined in [TZIP-004](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
-- For `vote` entrypoint with permit, returns the current suitable counter for constructing permit signature.
-
-### **get_total_supply**
-
-```ocaml
-type get_total_supply_param =
-  [@layout:comb]
-  { token_id : token_id
-  ; postprocess : nat -> nat
-  }
-
-Get_total_supply of get_total_supply_param
-```
-
-Parameter (in Michelson):
-```
-(pair %get_total_supply
-  (nat %token_id)
-  (lambda %postprocess nat nat)
-)
-```
-
-- A `void` entrypoint as defined in [TZIP-004](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-4/tzip-4.md#void-entrypoints).
-- Return the total number of tokens for the given token id.
-- Fail with `FA2_TOKEN_UNDEFINED` if the token with the given id has not been defined by the DAO.
 
 ## Custom entrypoints
 

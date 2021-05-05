@@ -44,10 +44,6 @@ export class BaseDAOContract {
     // (undocumented)
     flush(arg: Flush): Promise<string | void>;
     // (undocumented)
-    get_total_supply(arg: Get_total_supply): Promise<string | void>;
-    // (undocumented)
-    getVotePermitCounter(arg: GetVotePermitCounter): Promise<string | void>;
-    // (undocumented)
     inspectParameter(): void;
     // (undocumented)
     lastOperationHash: undefined | string;
