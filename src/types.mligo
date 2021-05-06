@@ -266,6 +266,7 @@ type ledger_list = (ledger_key * ledger_value) list
 type initial_config_data =
   { quorum_threshold : quorum_threshold
   ; voting_period : voting_period
+  ; fixed_proposal_fee_in_token: nat
   }
 
 type initial_storage_data =

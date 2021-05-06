@@ -93,6 +93,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
         ; config_data = \
           { voting_period = { length = $(voting_period) } \
           ; quorum_threshold = $(quorum_threshold) \
+          ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
           } \
         })"
 	# ================= Compilation successful ================= #
@@ -134,6 +135,7 @@ $(OUT)/registryDAO_storage.tz: src/**
           ; config_data = \
             { quorum_threshold = $(quorum_threshold) \
             ; voting_period = { length = $(voting_period) } \
+            ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
             } \
           } \
           ; frozen_scale_value = $(frozen_scale_value) \
@@ -183,6 +185,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
           ; config_data = \
             { quorum_threshold = $(quorum_threshold) \
             ; voting_period = { length = $(voting_period) } \
+            ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
             } \
           } \
           ; frozen_scale_value = $(frozen_scale_value) \
