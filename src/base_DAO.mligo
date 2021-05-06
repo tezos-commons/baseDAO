@@ -25,7 +25,6 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Transfer_ownership (p) -> transfer_ownership(p, store)
     | Accept_ownership -> accept_ownership(store)
     | Vote (p) -> vote(p, config, store)
-    | Set_fixed_fee_in_token (p) -> set_fixed_fee_in_token(p, store)
     | Flush (p) -> flush (p, config, store)
     | Get_vote_permit_counter (p) -> get_vote_permit_counter(p, store)
     | Get_total_supply (p) -> get_total_supply(p, store)

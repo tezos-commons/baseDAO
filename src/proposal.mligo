@@ -183,7 +183,6 @@ let add_proposal (propose_params, voting_period, store : propose_params * voting
     ; metadata = propose_params.proposal_metadata
     ; proposer = Tezos.sender
     ; proposer_frozen_token = propose_params.frozen_token
-    ; proposer_fixed_fee_in_token = store.fixed_proposal_fee_in_token
     ; voters = ([] : voter list)
     } in
   { store with
@@ -196,7 +195,7 @@ let add_proposal (propose_params, voting_period, store : propose_params * voting
 let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, store) in
-  let amount_to_freeze = param.frozen_token + store.fixed_proposal_fee_in_token in
+  let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
   let store = stake_tk(amount_to_freeze, Tezos.sender, config.voting_period, store) in
   let store = add_proposal (param, config.voting_period, store) in
   ( ([] : operation list)
@@ -251,15 +250,6 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
 // Admin entrypoints
 // -----------------------------------------------------------------
 
-// Update a fixed fee in the native token for submitting
-// a proposal. The new fee affects only those proposals
-// submitted after the call.
-[@inline]
-let set_fixed_fee_in_token(new_fee, store : nat * storage): return =
-  let store = authorize_admin store in
-  let store = { store with fixed_proposal_fee_in_token = new_fee } in
-  (([] : operation list), store)
-
 [@inline]
 let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
   let (ledger, total_supply) = debit_from(tokens, addr, store.frozen_token_id, store.ledger, store.total_supply)
@@ -290,17 +280,16 @@ let unstake_tk(token_amount, addr, voting_period, store : nat * address * voting
           ("NOT_ENOUGH_STAKED_TOKENS", ()) : storage)
 
 let unfreeze_proposer_and_voter_token
-  (rejected_proposal_return, is_accepted, proposal, voting_period, store :
-    (proposal * contract_extra -> nat) * bool * proposal * voting_period * storage): storage =
+  (rejected_proposal_return, is_accepted, proposal, voting_period, fixed_fee, store :
+    (proposal * contract_extra -> nat) * bool * proposal * voting_period * nat * storage): storage =
   // unfreeze_proposer_token
   let (tokens, store) =
     if is_accepted
-    then (proposal.proposer_frozen_token + proposal.proposer_fixed_fee_in_token, store)
+    then (proposal.proposer_frozen_token + fixed_fee, store)
     else
       let slash_amount = rejected_proposal_return (proposal, store.extra) in
-      let fee = proposal.proposer_fixed_fee_in_token in
-      let frozen_tokens = proposal.proposer_frozen_token + fee in
-      let desired_burn_amount = slash_amount + fee in
+      let frozen_tokens = proposal.proposer_frozen_token + fixed_fee in
+      let desired_burn_amount = slash_amount + fixed_fee in
       let store =
         burn_what_possible
           (desired_burn_amount, frozen_tokens, proposal.proposer, store) in
@@ -363,7 +352,7 @@ let handle_proposal_is_over
                && proposal.upvotes > proposal.downvotes
     in
     let store = unfreeze_proposer_and_voter_token
-          (config.rejected_proposal_return_value, cond, proposal, config.voting_period, store) in
+          (config.rejected_proposal_return_value, cond, proposal, config.voting_period, config.fixed_proposal_fee_in_token, store) in
     let (new_ops, store) =
       if cond
       then
@@ -411,7 +400,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
       && proposal.upvotes > proposal.downvotes
     then
       let store = unfreeze_proposer_and_voter_token
-            (config.rejected_proposal_return_value, true, proposal, config.voting_period, store) in
+            (config.rejected_proposal_return_value, true, proposal, config.voting_period, config.fixed_proposal_fee_in_token, store) in
       let store = delete_proposal (proposal.start_date, proposal_key, store) in
       (([] : operation list), store)
     else
