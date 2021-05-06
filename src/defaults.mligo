@@ -10,6 +10,7 @@ let default_config (data : initial_config_data) : config = {
   decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
 
   quorum_threshold = data.quorum_threshold;
+  fixed_proposal_fee_in_token = data.fixed_proposal_fee_in_token;
   voting_period = data.voting_period;
   max_proposals = 500n;
   max_votes = 1000n;
@@ -46,7 +47,6 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
       [ (frozen_token_id, 0n)
       ]
     );
-    fixed_proposal_fee_in_token = 0n;
     frozen_token_id = frozen_token_id;
     start_time = data.now_val
 }

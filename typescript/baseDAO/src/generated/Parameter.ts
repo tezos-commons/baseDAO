@@ -7,7 +7,6 @@ import {Freeze} from  './Freeze';
 import {Get_total_supply} from  './Get_total_supply';
 import {Get_vote_permit_counter} from  './Get_vote_permit_counter';
 import {Propose} from  './Propose';
-import {Set_fixed_fee_in_token} from  './Set_fixed_fee_in_token';
 import {Transfer} from  './Transfer';
 import {Transfer_contract_tokens} from  './Transfer_contract_tokens';
 import {Transfer_ownership} from  './Transfer_ownership';
@@ -24,7 +23,6 @@ export type Parameter =
   | Get_total_supply
   | Get_vote_permit_counter
   | Propose
-  | Set_fixed_fee_in_token
   | Transfer
   | Transfer_contract_tokens
   | Transfer_ownership

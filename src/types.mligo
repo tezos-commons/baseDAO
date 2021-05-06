@@ -115,12 +115,6 @@ type proposal =
   ; metadata : proposal_metadata
   ; proposer : address
   ; proposer_frozen_token : nat
-
-  // Changing the fixed fee only applies to proposals created after
-  // the change, so we need to track the fee that the proposer
-  // has actually paid
-  ; proposer_fixed_fee_in_token : nat
-
   ; voters : voter list
   }
 
@@ -165,7 +159,6 @@ type storage =
   ; permits_counter : nonce
   ; total_supply : total_supply
   ; freeze_history : freeze_history
-  ; fixed_proposal_fee_in_token : nat
   ; frozen_token_id : token_id
   ; start_time : timestamp
   }
@@ -235,7 +228,6 @@ type forbid_xtz_params =
   | Transfer_ownership of transfer_ownership_param
   | Accept_ownership of unit
   | Vote of vote_param_permited list
-  | Set_fixed_fee_in_token of nat
   | Flush of nat
   | Get_vote_permit_counter of vote_permit_counter_param
   | Get_total_supply of get_total_supply_param
@@ -274,6 +266,7 @@ type ledger_list = (ledger_key * ledger_value) list
 type initial_config_data =
   { quorum_threshold : quorum_threshold
   ; voting_period : voting_period
+  ; fixed_proposal_fee_in_token: nat
   }
 
 type initial_storage_data =
@@ -298,6 +291,7 @@ type config =
   ; max_votes : nat
   ; quorum_threshold : quorum_threshold
   ; voting_period : voting_period
+  ; fixed_proposal_fee_in_token : nat
 
   ; custom_entrypoints : custom_entrypoints
   }

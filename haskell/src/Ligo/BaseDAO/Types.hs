@@ -49,6 +49,7 @@ module Ligo.BaseDAO.Types
   , Parameter
   , Storage (..)
   , Config (..)
+  , FixedFee (..)
   , FullStorage (..)
   , AddressFreezeHistory (..)
   , DynamicRec (..)
@@ -375,7 +376,6 @@ data Proposal = Proposal
 
   , plProposer                :: Address
   , plProposerFrozenToken     :: Natural
-  , plProposerFixedFeeInToken :: Natural
 
   , plVoters                  :: [Voter]
   }
@@ -403,7 +403,6 @@ data ForbidXTZParam
   | Freeze FreezeParam
   | Get_vote_permit_counter (Void_ () Nonce)
   | Get_total_supply (Void_ FA2.TokenId Natural)
-  | Set_fixed_fee_in_token Natural
   | Transfer_ownership TransferOwnershipParam
   | Unfreeze UnfreezeParam
   | Vote [PermitProtected VoteParam]
@@ -450,7 +449,6 @@ data Storage = Storage
   , sTotalSupply :: TotalSupply
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
   , sStartTime :: Timestamp
-  , sFixedProposalFeeInToken :: Natural
   }
   deriving stock (Show)
 
@@ -467,6 +465,9 @@ instance HasAnnotation AddressFreezeHistory where
   annOptions = baseDaoAnnOptions
 
 instance HasAnnotation FullStorage where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation FixedFee where
   annOptions = baseDaoAnnOptions
 
 instance HasAnnotation Config where
@@ -500,7 +501,6 @@ mkStorage admin extra metadata now tokenAddress =
     , sTotalSupply = M.fromList [(frozenTokenId, 0)]
     , sFreezeHistory = mempty
     , sStartTime = arg #now now
-    , sFixedProposalFeeInToken = 0
     , sFrozenTokenId = frozenTokenId
     }
 
@@ -518,6 +518,11 @@ mkMetadataMap hostAddress hostChain key =
       (argF #metadataHostChain hostChain)
       (arg #metadataHostAddress hostAddress)
 
+newtype FixedFee = FixedFee Natural
+  deriving stock (Show, Generic)
+  deriving newtype Num
+  deriving anyclass IsoValue
+
 data Config = Config
   { cProposalCheck :: '[ProposeParams, ContractExtra] :-> '[Bool]
   , cRejectedProposalReturnValue :: '[Proposal, ContractExtra] :-> '["slash_amount" :! Natural]
@@ -527,14 +532,15 @@ data Config = Config
   , cMaxVotes :: Natural
 
   , cQuorumThreshold :: QuorumThreshold
+  , cFixedProposalFee :: FixedFee
   , cVotingPeriod :: VotingPeriod
 
   , cCustomEntrypoints :: CustomEntrypoints
   }
   deriving stock (Show)
 
-mkConfig :: [CustomEntrypoint] -> QuorumThreshold -> VotingPeriod -> Config
-mkConfig customEps quorumThreshold votingPeriod  = Config
+mkConfig :: [CustomEntrypoint] -> QuorumThreshold -> VotingPeriod -> FixedFee -> Config
+mkConfig customEps quorumThreshold votingPeriod fixedProposalFee  = Config
   { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
@@ -543,6 +549,7 @@ mkConfig customEps quorumThreshold votingPeriod  = Config
       drop; nil
   , cCustomEntrypoints = DynamicRec $ BigMap $ M.fromList customEps
   , cQuorumThreshold = quorumThreshold
+  , cFixedProposalFee = fixedProposalFee
   , cVotingPeriod = votingPeriod
 
   , cMaxVotes = 1000
@@ -550,7 +557,7 @@ mkConfig customEps quorumThreshold votingPeriod  = Config
   }
 
 defaultConfig :: Config
-defaultConfig = mkConfig [] (QuorumThreshold 1 100) 10
+defaultConfig = mkConfig [] (QuorumThreshold 1 100) 10 0
 
 data FullStorage = FullStorage
   { fsStorage :: Storage
@@ -571,7 +578,7 @@ mkFullStorage
 mkFullStorage admin vp qt extra mdt now tokenAddress cEps = FullStorage
   { fsStorage = mkStorage admin extra mdt now tokenAddress
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
-      (argDef #quorumThreshold quorumThresholdDef qt) (argDef #votingPeriod votingPeriodDef vp)
+      (argDef #quorumThreshold quorumThresholdDef qt) (argDef #votingPeriod votingPeriodDef vp) 0
   }
   where
     quorumThresholdDef = QuorumThreshold 1 10 -- 10% of frozen total supply

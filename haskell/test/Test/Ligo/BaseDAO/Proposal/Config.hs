@@ -196,6 +196,12 @@ instance IsConfigDescExt DAO.Config DAO.VotingPeriod where
     , ..
     }
 
+instance IsConfigDescExt DAO.Config DAO.FixedFee where
+  fillConfig ff DAO.Config{..} = DAO.Config
+    { cFixedProposalFee = ff
+    , ..
+    }
+
 instance IsConfigDescExt DAO.Config ProposalFrozenTokensCheck where
   fillConfig (ProposalFrozenTokensCheck check) DAO.Config{..} = DAO.Config
     { cProposalCheck = do

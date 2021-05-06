@@ -107,6 +107,8 @@ type config =
   // ^ Determine the voting_period length.
   ; quorum_threshold : quorum_threshold
   // ^ Determine the quorum threshold that the proposals need to meet.
+  ; fixed_proposal_fee_in_token : nat
+  // ^ A base fee paid for submitting a new proposal.
 
   ; custom_entrypoints : custom_entrypoints
   // ^ Packed arbitrary lambdas associated to a name for custom execution.
@@ -132,9 +134,6 @@ type proposal =
   ; metadata : proposal_metadata
   ; proposer : address
   ; proposer_frozen_token : nat
-  ; proposer_fixed_fee_in_token : nat
-  // ^ A fee paid for submitting the proposal.
-  // Needed to refund correctly if the proposal is successful.
   ; voters : (address * nat) list
   // ^ List of voter addresses associated with the vote amount
   // Needed for `flush` entrypoint.
@@ -275,7 +274,6 @@ Full list:
 * [`transfer_ownership`](#transfer_ownership)
 * [`accept_ownership`](#accept_ownership)
 * [`propose`](#propose)
-* [`set_fixed_fee_in_token`](#set_fixed_fee_in_token)
 * [`vote`](#vote)
 * [`flush`](#flush)
 * [`drop_proposal`](#drop_proposal)
@@ -578,7 +576,7 @@ Parameter (in Michelson):
 ```
 
 - The proposal is saved under `BLAKE2b` hash of proposal value and sender.
-- The `Natural` value: `proposalTokenAmount` determines how many sender's frozen tokens will be staked in addition to the [fee](#set_fixed_fee_in_token).
+- The `Natural` value: `proposalTokenAmount` determines how many sender's frozen tokens will be staked in addition to the [fee](#configuration)
 - Sender MUST have enough frozen tokens (i. e. `≥ proposalTokenAmount + fee`) that are not already staked for a proposal or a vote.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the unstaked frozen token balance of the SENDER
   is less than `proposalTokenAmount + fee`.
@@ -587,20 +585,6 @@ Parameter (in Michelson):
 - Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
 - Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
 
-### **set_fixed_fee_in_token**
-
-```ocaml
-Set_fixed_fee_in_token of nat
-```
-
-Parameter (in Michelson):
-```
-(nat %set_fixed_fee_in_token)
-```
-
-- Update the fee that the proposers have to pay to submit a proposal (the fee is returned if the proposal is successful and burnt otherwise)
-- This affects only new proposals; the existing proposals store the fee paid for their submission.
-- Fails with `NOT_ADMIN` if the sender is not the administrator.
 
 ### **vote**
 
