@@ -81,6 +81,10 @@ test_BaseDAO_Management =
     , nettestScenarioCaps "invalidates pending owner if new owner is current admin" $ do
         now <- getNow
         invalidatePendingOwner withOriginated (initialStorage now)
+
+    , nettestScenarioCaps "bypasses accept_entrypoint if new admin address is self" $ do
+        now <- getNow
+        bypassAcceptForSelf withOriginated (initialStorage now)
     ]
     , testGroup "Accept Ownership"
       [ nettestScenarioCaps "authenticates the sender" $ do
@@ -226,6 +230,25 @@ invalidatePendingOwner withOriginatedFn initialStorage =
       -- with 'not pending owner' error
       withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner baseDao
+
+bypassAcceptForSelf
+  :: MonadNettest caps base m
+  => WithOriginateFn m -> WithStorage -> m ()
+bypassAcceptForSelf withOriginatedFn initialStorage =
+  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
+    \[owner, wallet1] baseDao -> do
+      withSender (AddressResolved owner) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! (unTAddress baseDao))
+      -- Same call should return error, because admin has been changed
+      withSender (AddressResolved owner) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! (unTAddress baseDao))
+        & expectNotAdmin baseDao
+      -- But this should work
+      withSender (AddressResolved $ unTAddress baseDao) $ do
+        call baseDao (Call @"Transfer_ownership")
+          (#newOwner .! wallet1)
 
 expectNotAdmin
   :: (MonadNettest caps base m, ToAddress addr)
