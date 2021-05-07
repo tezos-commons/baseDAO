@@ -27,6 +27,9 @@ module Test.Ligo.BaseDAO.Common
   , originateLigoDaoWithBalance
   , originateLigoDaoWithConfigDesc
   , originateLigoDao
+
+  -- * Re-export
+  , module StorageHelper
   ) where
 
 import Universum
@@ -45,6 +48,7 @@ import qualified Data.Set as S
 import Ligo.BaseDAO.Common.Types (TransferType)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
+import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
 type OriginateFn m = m ((Address, Address), (Address, Address), TAddress Parameter, TAddress FA2.Parameter, Address)
@@ -196,7 +200,7 @@ originateLigoDaoWithBalance extra config balFunc = do
   now <- getNow
   tokenContract <- originateSimple "TokenContract" [] dummyFA2Contract
 
-  let fullStorage = FullStorage
+  let fullStorage = FullStorage'
         { fsStorage =
             ( mkStorage
               ! #extra extra

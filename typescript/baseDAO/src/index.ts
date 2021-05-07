@@ -18,8 +18,6 @@ export
   } from  './generated/Update_operators';
 export {Drop_proposal} from  './generated/Drop_proposal';
 export {Flush} from  './generated/Flush';
-export {Get_vote_permit_counter} from  './generated/Get_vote_permit_counter';
-export {Get_total_supply} from  './generated/Get_total_supply';
 export {Propose} from  './generated/Propose';
 export {Transfer_ownership} from  './generated/Transfer_ownership';
 export {Vote, VoteItem, VoteItemPermit} from  './generated/Vote';

@@ -4,8 +4,6 @@ import {CallCustom} from  './CallCustom';
 import {Drop_proposal} from  './Drop_proposal';
 import {Flush} from  './Flush';
 import {Freeze} from  './Freeze';
-import {Get_total_supply} from  './Get_total_supply';
-import {Get_vote_permit_counter} from  './Get_vote_permit_counter';
 import {Propose} from  './Propose';
 import {Transfer} from  './Transfer';
 import {Transfer_contract_tokens} from  './Transfer_contract_tokens';
@@ -20,8 +18,6 @@ export type Parameter =
   | Drop_proposal
   | Flush
   | Freeze
-  | Get_total_supply
-  | Get_vote_permit_counter
   | Propose
   | Transfer
   | Transfer_contract_tokens

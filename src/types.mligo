@@ -206,18 +206,6 @@ type transfer_contract_tokens_param =
   ; params : transfer_params
   }
 
-// TODO: get rid of it once it is possible to execute off-chain-views in tests
-type vote_permit_counter_param =
-  [@layout:comb]
-  { param : unit
-  ; postprocess : nat -> nat
-  }
-
-type get_total_supply_param =
-  [@layout:comb]
-  { token_id : token_id
-  ; postprocess : nat -> nat
-  }
 
 (*
  * Entrypoints that forbids Tz transfers
@@ -229,8 +217,6 @@ type forbid_xtz_params =
   | Accept_ownership of unit
   | Vote of vote_param_permited list
   | Flush of nat
-  | Get_vote_permit_counter of vote_permit_counter_param
-  | Get_total_supply of get_total_supply_param
   | Freeze of freeze_param
   | Unfreeze of unfreeze_param
 
