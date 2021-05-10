@@ -276,7 +276,6 @@ Full list:
 * [`propose`](#propose)
 * [`vote`](#vote)
 * [`flush`](#flush)
-* [`drop_proposal`](#drop_proposal)
 * [`freeze`](#freeze)
 * [`unfreeze`](#unfreeze)
 
@@ -668,28 +667,6 @@ have the same timestamp due to being in the same block, are processed in the ord
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
 - The lost of frozen tokens is due to the fact that the administrator has the right to `transfer` frozen tokens of any proposers or voters.
 - If proposal is accepted, decision lambda is called.
-
-### **drop_proposal**
-
-```ocaml
-type proposal_key = bytes
-
-Drop_proposal of proposal_key
-```
-
-Parameter (in Michelson):
-```
-(bytes %drop_proposal)
-```
-
-- Delete a finished and accepted proposal that is not flushed. Tokens frozen for this
-proposal are returned to the proposer and voters in full. The decision lambda is skipped.
-- This entrypoint should only be used when there is a proposal that is stuck due to having a
-failing decision lambda.
-- Fails with `NOT_ADMIN` if the sender is not the administrator.
-
-
-[FA2]: https://gitlab.com/tzip/tzip/-/blob/3a6464b1e641008b77a83807a0c102e7602c6af4/proposals/tzip-12/tzip-12.md
 
 ## Custom entrypoints
 

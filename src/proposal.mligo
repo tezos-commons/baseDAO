@@ -337,18 +337,26 @@ let delete_proposal
     Set.remove (start_date, proposal_key) store.proposal_key_list_sort_by_date
   }
 
+// if proposal is proposed at 0 period_num, it will be expired at 3 period_num
+[@inline]
+let is_proposal_expired (proposal, voting_period, store : proposal * voting_period * storage): bool =
+  let current_period = get_current_period_num(store.start_time, voting_period) in
+  current_period > proposal.period_num + 2n
+
 [@inline]
 let handle_proposal_is_over
-    (config, start_date, proposal_key, store, ops, counter
-      : config * timestamp * proposal_key * storage * operation list * counter
+    (config, start_date, proposal_key, store, ops
+      : config * timestamp * proposal_key * storage * operation list
     )
-    : (operation list * storage * counter) =
+    : (operation list * storage * bool) =
   let proposal = check_if_proposal_exist (proposal_key, store) in
   if    is_voting_period_over (proposal, config.voting_period, store)
-     && counter.current < counter.total // not finished
   then
-    let counter = { counter with current = counter.current + 1n } in
-    let cond =    do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
+    let cond =
+          if (is_proposal_expired(proposal, config.voting_period, store))
+          then false // always fails when the proposal is expired regardless of actual votes
+          else
+            do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
                && proposal.upvotes > proposal.downvotes
     in
     let store = unfreeze_proposer_and_voter_token
@@ -363,50 +371,79 @@ let handle_proposal_is_over
     let cons = fun (l, e : operation list * operation) -> e :: l in
     let ops = List.fold cons ops new_ops in
     let store = delete_proposal (start_date, proposal_key, store) in
-    (ops, store, counter)
-  else (ops, store, counter)
+    (ops, store, true)
+  else (ops, store, false)
+
+// Elem function for list of `proposal_key`
+[@inline]
+let elem_proposal_key_list (l, ls : proposal_key * proposal_key list) : bool =
+  let check_equal (acc, e : bool * proposal_key) =
+        if e = l then true else false
+  in List.fold check_equal ls false
 
 // Flush all proposals that passed their voting period.
-let flush(n, config, store : nat * config * storage): return =
-  let store =
-    if n = 0n
-      then
-        (failwith("BAD_ENTRYPOINT_PARAMETER") : storage)
-      else store
-    in
+let flush(param, config, store : flush_param * config * storage): return =
+  match param with
+    | Flush_amount n ->
+        let store =
+          if n = 0n
+            then
+              (failwith("BAD_ENTRYPOINT_PARAMETER") : storage)
+            else store
+          in
 
-  let counter : counter =
-    { current = 0n
-    ; total = n
-    } in
-  let flush_one
-      (acc, e: (operation list * storage * counter) * (timestamp * proposal_key)) =
-        let (ops, store, counter) = acc in
-        let (start_date, proposal_key) = e in
-        handle_proposal_is_over (config, start_date, proposal_key, store, ops, counter)
-      in
-  let (ops, store, counter) =
-    Set.fold flush_one store.proposal_key_list_sort_by_date (([] : operation list), store, counter) in
-  (ops, store)
+        let counter : counter =
+          { current = 0n
+          ; total = n
+          } in
+        let flush_one
+            (acc, e: (operation list * storage * counter) * (timestamp * proposal_key)) =
+              let (ops, store, counter) = acc in
+              let (start_date, proposal_key) = e in
+              if (counter.current < counter.total)
+              then
+                let (ops, store, is_flush) = handle_proposal_is_over (config, start_date, proposal_key, store, ops) in
+                if (is_flush = true)
+                then
+                  let updated_counter = { counter with current = counter.current + 1n } in
+                  (ops, store, updated_counter)
+                else
+                  (ops, store, counter)
+              else
+                (ops, store, counter)
 
-// Removes an accepted and finished proposal by key.
-let drop_proposal (proposal_key, config, store : proposal_key * config * storage): return =
-  let store = authorize_admin store in
+            in
+        let (ops, store, counter) =
+          Set.fold flush_one store.proposal_key_list_sort_by_date (([] : operation list), store, counter) in
+        (ops, store)
 
-  let proposal = check_if_proposal_exist (proposal_key, store) in
-  if is_voting_period_over(proposal, config.voting_period, store)
-  then
-    if   do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
-      && proposal.upvotes > proposal.downvotes
-    then
-      let store = unfreeze_proposer_and_voter_token
-            (config.rejected_proposal_return_value, true, proposal, config.voting_period, config.fixed_proposal_fee_in_token, store) in
-      let store = delete_proposal (proposal.start_date, proposal_key, store) in
-      (([] : operation list), store)
-    else
-      (failwith("FAIL_DROP_PROPOSAL_NOT_ACCEPTED") : return)
-  else
-    (failwith("FAIL_DROP_PROPOSAL_NOT_OVER") : return)
+    | Flush_target keys ->
+        let flush_one
+            (acc, e: (operation list * storage) * (timestamp * proposal_key)) =
+              let (ops, store) = acc in
+              let (start_date, proposal_key) = e in
+              if elem_proposal_key_list (proposal_key, keys) = true then
+                let (ops, store, is_flush) = handle_proposal_is_over (config, start_date, proposal_key, store, ops)
+                in (ops, store)
+              else (ops, store)
+            in
+        let (ops, store) =
+          Set.fold flush_one store.proposal_key_list_sort_by_date (([] : operation list), store) in
+        (ops, store)
+
+    | Flush_skip keys ->
+        let flush_one
+            (acc, e: (operation list * storage) * (timestamp * proposal_key)) =
+              let (ops, store) = acc in
+              let (start_date, proposal_key) = e in
+              if elem_proposal_key_list (proposal_key, keys) = false then
+                let (ops, store, is_flush) = handle_proposal_is_over (config, start_date, proposal_key, store, ops)
+                in (ops, store)
+              else (ops, store)
+            in
+        let (ops, store) =
+          Set.fold flush_one store.proposal_key_list_sort_by_date (([] : operation list), store) in
+        (ops, store)
 
 
 let freeze (amt, config, store : freeze_param * config * storage) : return =

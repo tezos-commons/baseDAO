@@ -40,8 +40,6 @@ export class BaseDAOContract {
     // (undocumented)
     debug: boolean;
     // (undocumented)
-    drop_proposal(arg: Drop_proposal): Promise<string | void>;
-    // (undocumented)
     flush(arg: Flush): Promise<string | void>;
     // (undocumented)
     inspectParameter(): void;
@@ -75,9 +73,6 @@ export type CallCustom = [string, string];
 
 // @public (undocumented)
 export type Confirm_migration = {};
-
-// @public (undocumented)
-export type Drop_proposal = string;
 
 // @public (undocumented)
 export type Flush = number;

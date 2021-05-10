@@ -78,7 +78,7 @@ checkFreezeHistoryTracking  = do
 
         rewindTime 20
 
-        tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "flush") (toVal (1 :: Natural))
+        tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "flush") (toVal $ Flush_amount $ (1 :: Natural))
 
         lExpectStorage @FullStorage baseDao $ \storage -> do
             -- We expect all the staked tokens to be unstaked after propoal rejection/accept.

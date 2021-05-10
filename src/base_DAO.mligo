@@ -21,7 +21,6 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
   else
     match param with
     | Call_FA2 (p) -> call_fa2(p, store)
-    | Drop_proposal (p) -> drop_proposal(p, config, store)
     | Transfer_ownership (p) -> transfer_ownership(p, store)
     | Accept_ownership -> accept_ownership(store)
     | Vote (p) -> vote(p, config, store)

@@ -11,7 +11,6 @@ import { Parameter } from './generated/Parameter';
 import { CallCustom } from './generated/CallCustom';
 import { Accept_ownership } from './generated/Accept_ownership';
 import { Balance_of } from './generated/Balance_of';
-import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
 import { Propose } from './generated/Propose';
 import { Transfer } from './generated/Transfer';
@@ -150,11 +149,6 @@ export class BaseDAOContract {
   call_custom(arg: CallCustom): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.callCustom(arg[0], arg[1]));
-  }
-
-  drop_proposal(arg: Drop_proposal): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.drop_proposal(arg));
   }
 
   flush(arg: Flush): Promise<string|void> {

@@ -203,7 +203,7 @@ test_RegistryDAO =
 
               advanceTime (sec 15) -- voting period is 10 secs
               withSender (AddressResolved admin) $
-                call baseDao (Call @"Flush") (1 :: Natural)
+                call baseDao (Call @"Flush") $ Flush_amount (1 :: Natural)
 
               -- Since we have frozen_scale_value = 2, slash_scale_value = 1 and slash_division_value = 2
               -- After the rejection above, we expect that (2 * proposalSize1/2) tokens
@@ -279,7 +279,7 @@ test_RegistryDAO =
 
               advanceTime (sec 11)
               withSender (AddressResolved admin) $
-                call baseDao (Call @"Flush") (1 :: Natural)
+                call baseDao (Call @"Flush") $ Flush_amount (1 :: Natural)
 
               -- Now we expect this to work
               withSender (AddressResolved wallet1) $
@@ -319,7 +319,7 @@ test_RegistryDAO =
 
             advanceTime (sec 12)
             withSender (AddressResolved admin) $
-              call baseDao (Call @"Flush") (1 :: Natural)
+              call baseDao (Call @"Flush") $ Flush_amount (1 :: Natural)
 
             consumer <- originateSimple "consumer" [] (contractConsumer @(MText, (Maybe MText)))
 
@@ -364,7 +364,7 @@ test_RegistryDAO =
             advanceTime (sec 12)
             withSender (AddressResolved wallet2) $ call baseDao (Call @"Vote") [upvote]
             advanceTime (sec 11)
-            withSender (AddressResolved admin) $ call baseDao (Call @"Flush") (1 :: Natural)
+            withSender (AddressResolved admin) $ call baseDao (Call @"Flush") $ Flush_amount (1 :: Natural)
 
             checkTokenBalance frozenTokenId baseDao wallet1 (defaultTokenBalance + proposalSize)
             checkTokenBalance frozenTokenId baseDao wallet2 (defaultTokenBalance + 20)
@@ -446,7 +446,7 @@ test_RegistryDAO =
             advanceTime (sec 11)
             withSender (AddressResolved wallet2) $ call baseDao (Call @"Vote") [upvote]
             advanceTime (sec 10)
-            withSender (AddressResolved admin) $ call baseDao (Call @"Flush") (1 :: Natural)
+            withSender (AddressResolved admin) $ call baseDao (Call @"Flush") $ Flush_amount (1 :: Natural)
     ]
   ]
   where

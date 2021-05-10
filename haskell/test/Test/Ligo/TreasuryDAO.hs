@@ -123,7 +123,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 10)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
   checkTokenBalance frozenTokenId dao owner1 proposalSize
   checkTokenBalance frozenTokenId dao owner2 120
@@ -177,7 +177,7 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
   advanceTime (sec 10)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
 --   -- TODO: check xtz balance
 

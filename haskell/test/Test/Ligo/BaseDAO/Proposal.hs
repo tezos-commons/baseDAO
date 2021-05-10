@@ -111,9 +111,6 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulator "flush and run decision lambda" $
           \_emulated ->
             uncapsNettest $ flushDecisionLambda (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "can drop proposals" $
-          \_emulated ->
-            uncapsNettest $ dropProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
   , testGroup "Bounded Value"
@@ -200,7 +197,7 @@ test_BaseDAO_Proposal =
           checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
           advanceTime (sec 60)
-          withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+          withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
           checkTokenBalance frozenTokenId dao proposer 152
 
@@ -273,7 +270,7 @@ burnsFeeOnFailure reason = do
   checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
   -- Tokens frozen with the proposal are returned as unstaked (but still
   -- frozen), except for the fee and slash amount. The latter is zero in this
@@ -458,7 +455,7 @@ flushNotAffectOngoingProposals originateFn = do
   _key2 <- createSampleProposal 2 0 owner1 dao
   advanceTime (sec 125)
   withSender (AddressResolved admin) $
-    call dao (Call @"Flush") 100
+    call dao (Call @"Flush") $ Flush_amount 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -499,7 +496,7 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
   checkTokenBalance (frozenTokenId) dao owner2 103
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -545,7 +542,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   checkTokenBalance frozenTokenId dao owner1 140
 
   advanceTime (sec 10)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 2
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 2
 
   -- Proposals are flushed
   withSender (AddressResolved owner2) $ do
@@ -592,7 +589,7 @@ flushRejectProposalQuorum originateFn = do
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") votes
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -640,7 +637,7 @@ flushRejectProposalNegativeVotes originateFn = do
   checkTokenBalance frozenTokenId dao owner1 110
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -670,7 +667,7 @@ flushWithBadConfig originateFn = do
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -701,51 +698,11 @@ flushDecisionLambda originateFn = do
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
   advanceTime (sec 60)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
 
   results <- fromVal <$> getStorage (AddressResolved $ toAddress consumer)
   assert (results == (#proposer <.!> [owner1]))
     "Unexpected accepted proposals list"
-
-dropProposal
-  :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-dropProposal originateFn = do
-  ((owner1, _), (owner2, _), dao, _, admin) <-
-    originateFn (badRejectedValueConfig >>- (ConfigDesc (QuorumThreshold 1 50)) >>- (ConfigDesc (VotingPeriod 20)))
-
-  advanceTime (sec 25)
-
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 30)
-
-  withSender (AddressResolved owner2) $
-    call dao (Call @"Freeze") (#amount .! 20)
-  advanceTime (sec 20)
-
-  key1 <- createSampleProposal 1 0 owner1 dao
-  key2 <- createSampleProposal 2 0 owner1 dao
-
-  advanceTime (sec 20)
-  let params key = NoPermit VoteParam
-        { vVoteType = True
-        , vVoteAmount = 20
-        , vProposalKey = key
-        }
-  withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params key1]
-  advanceTime (sec 20)
-
-  key3 <- createSampleProposal 3 0 owner1 dao
-
-  withSender (AddressResolved admin) $ do
-    call dao (Call @"Drop_proposal") key1
-    call dao (Call @"Drop_proposal") key2
-      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED dao
-    call dao (Call @"Drop_proposal") key3
-      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_OVER dao
-
-  -- 30 tokens are frozen in total, but 10 tokens are returned after drop_proposal
-  checkTokenBalance frozenTokenId dao owner1 130
 
 proposalBoundedValue
   :: (MonadNettest caps base m, HasCallStack)

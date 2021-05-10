@@ -16,7 +16,6 @@ export
   , Update_operatorsItemRemove_operator
   , Update_operatorsItemRemove_operatorItem
   } from  './generated/Update_operators';
-export {Drop_proposal} from  './generated/Drop_proposal';
 export {Flush} from  './generated/Flush';
 export {Propose} from  './generated/Propose';
 export {Transfer_ownership} from  './generated/Transfer_ownership';
