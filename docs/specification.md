@@ -645,27 +645,27 @@ Parameter (in Michelson):
 ### **flush**
 
 ```ocaml
-Flush of nat
+type proposal_key = bytes
+
+Flush of [proposal_key]
 ```
 
 Parameter (in Michelson):
 ```
-(nat %flush)
+(bytes list %flush)
 ```
 
-- Finish voting process on an amount of proposals for which the voting period is over.
-- The order of processing proposals are from 'the oldest' to 'the newest'. The proposals which
-have the same timestamp due to being in the same block, are processed in the order of their proposal keys.
+- Finish voting process on proposals that are in the parameters for which the voting period is over.
 - Frozen tokens from voters and proposal submitter associated with those proposals are returned
   in form of tokens in governance token contract:
-  - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
+  - If proposal became expired or got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
     - The return amount for the proposer is equal to or less than the slashed amount based on `rejectedProposalReturnValue`.
     - The paid fee is not returned to the proposer.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
   - If proposal got accepted:
     - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
-- The lost of frozen tokens is due to the fact that the administrator has the right to `transfer` frozen tokens of any proposers or voters.
+- The lost of frozen tokens is due to the fact that there can be proposals that `transfer` frozen tokens of any proposers or voters.
 - If proposal is accepted, decision lambda is called.
 
 ## Custom entrypoints
