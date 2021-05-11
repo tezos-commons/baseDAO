@@ -91,7 +91,7 @@ test_BaseDAO_Proposal =
   , testGroup "Admin:"
       [ nettestScenarioOnEmulatorCaps "can flush proposals that got accepted" $
           flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) getTotalSupplyEmulator
-      , nettestScenarioOnEmulator "can flush 2 proposals that got accepted" $
+      , nettestScenarioOnEmulator "can flush specific proposals that got accepted" $
           \_emulated ->
             uncapsNettest $ flushSpecificAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
@@ -101,9 +101,14 @@ test_BaseDAO_Proposal =
           \_emulated ->
             uncapsNettest $ flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulatorCaps "flush should not affecting ongoing proposals" $
-          flushNotAffectOngoingProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
-      , nettestScenarioOnEmulatorCaps "flush skip certain proposals" $
-          flushTargetProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
+          flushNotAffectOngoingProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) 
+            (\addr -> (sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
+      , nettestScenarioOnEmulatorCaps "flush target certain proposals" $
+          flushTargetProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) 
+            (\addr -> (sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
+      , nettestScenarioOnEmulatorCaps "flush an expired proposal resulting in rejecting it" $
+          flushExpiredProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) 
+            (\addr -> (sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
       , nettestScenarioOnEmulator "flush with bad cRejectedProposalReturnValue" $
           \_emulated ->
             uncapsNettest $ flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecUnsafe)
@@ -660,6 +665,87 @@ flushRejectProposalQuorum originateFn = do
 
   checkTokenBalance frozenTokenId dao owner1 105
   checkTokenBalance frozenTokenId dao owner2 105 -- Since voter tokens are not burned
+
+
+flushExpiredProposals
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> (AddressOrAlias -> m (Set (Timestamp, ProposalKey))) -> m ()
+flushExpiredProposals originateFn getProposalsSortDateFn = withFrozenCallStack $ do
+  ((owner1, _), (owner2, _), dao, _, admin) <-
+    originateFn (configWithRejectedProposal >>- (ConfigDesc $ VotingPeriod 20))
+
+  -- [Period 0] skip
+  advanceTime (sec 20)
+
+  -- [Period 1]
+  -- * The proposer freezes
+  let proposalMeta (num :: Integer) = lPackValueRaw @Integer num
+      proposalSize (num :: Integer) =
+        let s = fromIntegral . BS.length $ proposalMeta num
+            minSize = 10 -- set by config
+        in if (s < minSize) then minSize else s
+      proposeParams (num :: Integer) = ProposeParams (proposalSize num) (proposalMeta num)
+      proposalKey (num :: Integer) = makeProposalKey (proposeParams num) owner1
+
+  withSender (AddressResolved owner1) $ call dao (Call @"Freeze")
+    (#amount .! (proposalSize 1 + proposalSize 2))
+
+  -- * The voter freezes
+  let upvote' key = NoPermit VoteParam
+        { vVoteType = True
+        , vVoteAmount = 2
+        , vProposalKey = key
+        }
+      downvote' key = NoPermit VoteParam
+        { vVoteType = False
+        , vVoteAmount = 1
+        , vProposalKey = key
+        }
+
+  withSender (AddressResolved owner2) $ call dao (Call @"Freeze") (#amount .! 6)
+
+  advanceTime (sec 20)
+
+  -- [Period 2]
+  -- * Proposal 1 is proposed
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") $ proposeParams 1
+
+  advanceTime (sec 20)
+
+  -- [Period 3]
+  -- * Proposal 1 is voted
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote")
+    [upvote' (proposalKey 1), downvote' (proposalKey 1)]
+
+  advanceTime (sec 20)
+
+  -- [Period 4]
+  -- * Proposal 2 is proposed
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") $ proposeParams 2
+
+  advanceTime (sec 20)
+
+  -- [Period 5]
+  -- * Proposal 2 is voted
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote")
+    [upvote' (proposalKey 2), downvote' (proposalKey 2)]
+
+  advanceTime (sec 20)
+
+  advanceTime (sec 20)
+
+  -- [Period 6]
+  -- * Proposal 1 is expired
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [proposalKey 1]
+
+  let expectedToken = 100 + (proposalSize 1 `div` 2) + (proposalSize 2) -- Rejected proposal got slashed by half
+  checkTokenBalance (frozenTokenId) dao owner1 expectedToken
+
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [proposalKey 2]
+  checkTokenBalance (frozenTokenId) dao owner1 expectedToken -- Proposal 2 is not expired, so no tokens are slashed
+
+  ps <- getProposalsSortDateFn (AddressResolved $ unTAddress dao)
+  (snd <$> (Set.toList $ ps)) @== []
 
 flushRejectProposalNegativeVotes
   :: (MonadNettest caps base m, HasCallStack)
