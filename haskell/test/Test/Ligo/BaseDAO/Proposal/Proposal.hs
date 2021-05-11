@@ -34,13 +34,14 @@ validProposal originateFn getTotalSupplyFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  advanceTime (sec 10)
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 10)
   -- Check the token contract got a transfer call from
   -- baseDAO
   checkStorage (AddressResolved $ unTAddress tokenContract)
     (toVal [[FA2.TransferItem { tiFrom = owner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]])
+
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
@@ -55,7 +56,6 @@ rejectProposal
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 rejectProposal originateFn = do
   ((owner1, _), _, dao, _, _) <- originateFn testConfig
-  advanceTime (sec 10)
   let params = ProposeParams
         { ppFrozenToken = 9
         , ppProposalMetadata = lPackValueRaw @Integer 1
@@ -63,6 +63,8 @@ rejectProposal originateFn = do
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
@@ -73,9 +75,14 @@ nonUniqueProposal
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 nonUniqueProposal originateFn = do
   ((owner1, _), _, dao, _, _) <- originateFn testConfig
+
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 20)
+
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
-  _ <- createSampleProposal 1 10 owner1 dao
-  createSampleProposal 1 10 owner1 dao
+  _ <- createSampleProposal 1 owner1 dao
+  createSampleProposal 1 owner1 dao
     & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dao
 
 voteValidProposal
@@ -83,19 +90,25 @@ voteValidProposal
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteValidProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
-  advanceTime (sec 10)
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 2)
 
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 10)
+
   -- Create sample proposal (first proposal has id = 0)
-  key1 <- createSampleProposal 1 10 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
   let params = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
         }
 
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dao owner2 102

@@ -62,20 +62,22 @@ checkFreezeHistoryTracking  = do
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "freeze") (toVal requiredFrozen)
 
-        rewindTime 21
+        -- Advance one voting period to a proposing stage.
+        rewindTime 11
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "propose") (toVal (ProposeParams requiredFrozen proposalMeta1))
 
         lExpectStorage @FullStorage baseDao $ \storage -> do
             let fh = Map.lookup wallet1 (unBigMap $ sFreezeHistory $ fsStorage storage)
             let expected = AddressFreezeHistory
-                  { fhCurrentPeriodNum = 2
+                  { fhCurrentPeriodNum = 1
                   , fhCurrentUnstaked = 0
                   , fhStaked = requiredFrozen
                   , fhPastUnstaked = 0
                   }
             when (fh /= (Just expected)) $ Left $ CustomTestError "BaseDAO contract did not stake tokens as expected"
 
+        -- Advance two voting periods to another proposing stage.
         rewindTime 20
 
         tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "flush") (toVal (1 :: Natural))
@@ -84,7 +86,7 @@ checkFreezeHistoryTracking  = do
             -- We expect all the staked tokens to be unstaked after propoal rejection/accept.
             let fh = Map.lookup wallet1 (unBigMap $ sFreezeHistory $ fsStorage storage)
             let expected = AddressFreezeHistory
-                  { fhCurrentPeriodNum = 4
+                  { fhCurrentPeriodNum = 3
                   , fhCurrentUnstaked = 0
                   , fhStaked = 0
                   , fhPastUnstaked = requiredFrozen
