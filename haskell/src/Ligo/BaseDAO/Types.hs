@@ -42,7 +42,6 @@ module Ligo.BaseDAO.Types
 
     -- * Storage/Parameter
   , TransferOwnershipParam
-  , FlushParam (..)
   , ProposalMetadata
   , ContractExtra
   , CustomEntrypoints
@@ -417,13 +416,6 @@ type CustomEntrypoint = (MText, ByteString)
 type FreezeParam = ("amount" :! Natural)
 type UnfreezeParam = ("amount" :! Natural)
 
-data FlushParam
-  = Flush_amount Natural
-  | Flush_target [ProposalKey]
-  | Flush_skip [ProposalKey]
-  deriving stock (Show)
-
-
 -- NOTE: Constructors of the parameter types should remain sorted for the
 --'ligoLayout' custom derivation to work.
 --
@@ -432,7 +424,7 @@ data FlushParam
 data ForbidXTZParam
   = Accept_ownership ()
   | Call_FA2 FA2.Parameter
-  | Flush FlushParam
+  | Flush [ProposalKey]
   | Freeze FreezeParam
   | Transfer_ownership TransferOwnershipParam
   | Unfreeze UnfreezeParam
@@ -676,11 +668,6 @@ customGeneric "AllowXTZParam" ligoLayout
 deriving anyclass instance IsoValue AllowXTZParam
 instance ParameterHasEntrypoints AllowXTZParam where
   type ParameterEntrypointsDerivation AllowXTZParam = EpdDelegate
-
-customGeneric "FlushParam" ligoLayout
-deriving anyclass instance IsoValue FlushParam
-instance ParameterHasEntrypoints FlushParam where
-  type ParameterEntrypointsDerivation FlushParam = EpdDelegate
 
 customGeneric "Parameter" ligoLayout
 deriving anyclass instance IsoValue Parameter

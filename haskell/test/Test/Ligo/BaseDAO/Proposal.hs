@@ -8,6 +8,8 @@ module Test.Ligo.BaseDAO.Proposal
 import Lorentz hiding (assert, (>>))
 import Universum
 
+import qualified Data.ByteString as BS
+import qualified Data.Set as Set
 import Time (sec)
 
 import Lorentz.Test (contractConsumer)
@@ -91,17 +93,17 @@ test_BaseDAO_Proposal =
           flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) getTotalSupplyEmulator
       , nettestScenarioOnEmulator "can flush 2 proposals that got accepted" $
           \_emulated ->
-            uncapsNettest $ flushAcceptedProposalsWithAnAmount (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            uncapsNettest $ flushSpecificAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
           \_emulated ->
             uncapsNettest $ flushRejectProposalQuorum (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
           \_emulated ->
             uncapsNettest $ flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "flush should not affecting ongoing proposals" $
-          \_emulated ->
-            uncapsNettest $ flushNotAffectOngoingProposals
-            (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulatorCaps "flush should not affecting ongoing proposals" $
+          flushNotAffectOngoingProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
+      , nettestScenarioOnEmulatorCaps "flush skip certain proposals" $
+          flushTargetProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
       , nettestScenarioOnEmulator "flush with bad cRejectedProposalReturnValue" $
           \_emulated ->
             uncapsNettest $ flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecUnsafe)
@@ -197,7 +199,7 @@ test_BaseDAO_Proposal =
           checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
           advanceTime (sec 60)
-          withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
+          withSender (AddressResolved admin) $ call dao (Call @"Flush") [key1]
 
           checkTokenBalance frozenTokenId dao proposer 152
 
@@ -270,7 +272,7 @@ burnsFeeOnFailure reason = do
   checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [key1]
 
   -- Tokens frozen with the proposal are returned as unstaked (but still
   -- frozen), except for the fee and slash amount. The latter is zero in this
@@ -439,8 +441,8 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
 
 flushNotAffectOngoingProposals
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-flushNotAffectOngoingProposals originateFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> (AddressOrAlias -> m (Set (Timestamp, ProposalKey))) -> m ()
+flushNotAffectOngoingProposals originateFn getProposalsSortDateFn = do
   ((owner1, _), _, dao, _, admin) <-
     originateFn (testConfig >>- (ConfigDesc $ VotingPeriod (2 *60)))
 
@@ -451,15 +453,76 @@ flushNotAffectOngoingProposals originateFn = do
 
   advanceTime (sec 125)
 
-  _key1 <- createSampleProposal 1 0 owner1 dao
-  _key2 <- createSampleProposal 2 0 owner1 dao
+  key1 <- createSampleProposal 1 0 owner1 dao
+  key2 <- createSampleProposal 2 0 owner1 dao
   advanceTime (sec 125)
   withSender (AddressResolved admin) $
-    call dao (Call @"Flush") $ Flush_amount 100
+    call dao (Call @"Flush") [key1]
 
-  -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dao
-  -- checkIfAProposalExist (key2 :: ByteString) dao
+  ps <- getProposalsSortDateFn (AddressResolved $ unTAddress dao)
+  (snd <$> (Set.toList $ ps)) @== [key2, key1]
+
+flushTargetProposals
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> (AddressOrAlias -> m (Set (Timestamp, ProposalKey))) -> m ()
+flushTargetProposals originateFn getProposalsSortDateFn = withFrozenCallStack $ do
+  ((owner1, _), (owner2, _), dao, _, admin) <-
+    originateFn (testConfig >>- (ConfigDesc $ VotingPeriod 20))
+
+  -- [Period 0] skip
+  advanceTime (sec 20)
+
+  -- [Period 1]
+  -- * The proposer freezes
+  let proposalMeta (num :: Integer) = lPackValueRaw @Integer num
+      proposalSize (num :: Integer) =
+        let s = fromIntegral . BS.length $ proposalMeta num
+            minSize = 10 -- set by config
+        in if (s < minSize) then minSize else s
+      proposeParams (num :: Integer) = ProposeParams (proposalSize num) (proposalMeta num)
+      proposalKey (num :: Integer) = makeProposalKey (proposeParams num) owner1
+
+  withSender (AddressResolved owner1) $ call dao (Call @"Freeze")
+    (#amount .! (proposalSize 1 + proposalSize 2))
+
+  -- * The voter freezes
+  let upvote' key = NoPermit VoteParam
+        { vVoteType = True
+        , vVoteAmount = 2
+        , vProposalKey = key
+        }
+      downvote' key = NoPermit VoteParam
+        { vVoteType = False
+        , vVoteAmount = 1
+        , vProposalKey = key
+        }
+
+  withSender (AddressResolved owner2) $ call dao (Call @"Freeze") (#amount .! 6)
+
+  advanceTime (sec 20)
+
+  -- [Period 2]
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") $ proposeParams 1
+  withSender (AddressResolved owner1) $ call dao (Call @"Propose") $ proposeParams 2
+
+  advanceTime (sec 20)
+
+  -- [Period 3]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote")
+    [upvote' (proposalKey 1), downvote' (proposalKey 1)]
+  withSender (AddressResolved owner2) $ call dao (Call @"Vote")
+    [upvote' (proposalKey 2), downvote' (proposalKey 2)]
+
+  checkTokenBalance (frozenTokenId) dao owner1 (100 + (proposalSize 1 + proposalSize 2))
+  checkTokenBalance (frozenTokenId) dao owner2 (100 + 6) -- each uses 3 votes
+
+  advanceTime (sec 20)
+
+  -- [Period 4]
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [proposalKey 2]
+
+  ps <- getProposalsSortDateFn (AddressResolved $ unTAddress dao)
+  (snd <$> (Set.toList $ ps)) @== [proposalKey 1]
 
 flushAcceptedProposals
   :: (MonadNettest caps base m, HasCallStack)
@@ -496,7 +559,7 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
   checkTokenBalance (frozenTokenId) dao owner2 103
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [key1]
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -509,10 +572,10 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
   totalSupply <- getTotalSupplyFn (AddressResolved $ unTAddress dao) frozenTokenId
   totalSupply @== 213 -- initial = 0
 
-flushAcceptedProposalsWithAnAmount
+flushSpecificAcceptedProposals
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
-flushAcceptedProposalsWithAnAmount originateFn = do
+flushSpecificAcceptedProposals originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <- originateFn testConfig
 
   advanceTime (sec 10)
@@ -542,7 +605,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   checkTokenBalance frozenTokenId dao owner1 140
 
   advanceTime (sec 10)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 2
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [key1, key2]
 
   -- Proposals are flushed
   withSender (AddressResolved owner2) $ do
@@ -589,7 +652,7 @@ flushRejectProposalQuorum originateFn = do
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") votes
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [key1]
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -637,7 +700,7 @@ flushRejectProposalNegativeVotes originateFn = do
   checkTokenBalance frozenTokenId dao owner1 110
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [key1]
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -667,7 +730,7 @@ flushWithBadConfig originateFn = do
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
   advanceTime (sec 61)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [key1]
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -698,7 +761,7 @@ flushDecisionLambda originateFn = do
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
   advanceTime (sec 60)
-  withSender (AddressResolved admin) $ call dao (Call @"Flush") $ Flush_amount 100
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") [key1]
 
   results <- fromVal <$> getStorage (AddressResolved $ toAddress consumer)
   assert (results == (#proposer <.!> [owner1]))

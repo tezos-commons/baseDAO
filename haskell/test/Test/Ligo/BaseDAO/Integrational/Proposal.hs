@@ -21,7 +21,7 @@ import Test.Tasty.HUnit (testCase)
 import Ligo.BaseDAO.Types
 import Michelson.Test.Integrational
 import Michelson.Untyped (unsafeBuildEpName)
-import Test.Ligo.BaseDAO.Common (dummyFA2Contract)
+import Test.Ligo.BaseDAO.Common (dummyFA2Contract, makeProposalKey)
 import Test.Ligo.BaseDAO.Integrational.Common
 import Util.Named
 
@@ -78,7 +78,8 @@ checkFreezeHistoryTracking  = do
 
         rewindTime 20
 
-        tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "flush") (toVal $ Flush_amount $ (1 :: Natural))
+        let key = makeProposalKey (ProposeParams requiredFrozen proposalMeta1) wallet1
+        tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "flush") (toVal [key])
 
         lExpectStorage @FullStorage baseDao $ \storage -> do
             -- We expect all the staked tokens to be unstaked after propoal rejection/accept.

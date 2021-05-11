@@ -206,10 +206,6 @@ type transfer_contract_tokens_param =
   ; params : transfer_params
   }
 
-type flush_param =
-    Flush_amount of nat // old behavior
-  | Flush_target of proposal_key list // target specific proposals
-  | Flush_skip of proposal_key list // skip specific proposals
 (*
  * Entrypoints that forbids Tz transfers
  *)
@@ -218,7 +214,7 @@ type forbid_xtz_params =
   | Transfer_ownership of transfer_ownership_param
   | Accept_ownership of unit
   | Vote of vote_param_permited list
-  | Flush of flush_param
+  | Flush of proposal_key list
   | Freeze of freeze_param
   | Unfreeze of unfreeze_param
 
