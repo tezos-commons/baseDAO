@@ -96,12 +96,16 @@ withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
   tokenContract <- originateSimple "token_contract" [] dummyFA2Contract
   let storageInitial = storageFn addresses
+  now_time <- getNow
   let storage = storageInitial
-        { fsStorage = (fsStorage storageInitial) { sGovernanceToken = GovernanceToken
+        { fsStorage = (fsStorage storageInitial)
+          { sGovernanceToken = GovernanceToken
             { gtAddress = unTAddress tokenContract
             , gtTokenId = FA2.theTokenId
             }
-        } }
+          , sStartTime = now_time
+          }
+        }
 
   baseDao <- originateLargeUntyped $ UntypedOriginateData
     { uodName = "BaseDAO - RegistryDAO Test Contract"
@@ -124,7 +128,7 @@ test_RegistryDAO =
             withSender (AddressResolved wallet1) $
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
 
-            -- Advance one voting period, which is currently set as 10 secs.
+            -- Advance one voting period to a proposing stage.
             advanceTime (sec $ 11)
 
             withSender (AddressResolved wallet1) $ call baseDao (Call @"Propose")
@@ -190,18 +194,19 @@ test_RegistryDAO =
             proposalSize1 = metadataSize proposalMeta1
 
             in do
-              advanceTime (sec 10) -- voting period is 10 secs
               let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
 
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Freeze") (#amount .! requiredFrozen)
 
-              advanceTime (sec 10) -- voting period is 10 secs
+              -- Advance one voting period to a proposing stage.
+              advanceTime (sec 11)
 
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
 
-              advanceTime (sec 15) -- voting period is 10 secs
+              -- Advance two voting periods to another proposing stage.
+              advanceTime (sec 22)
               withSender (AddressResolved admin) $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -240,7 +245,6 @@ test_RegistryDAO =
             largeProposalSize = metadataSize largeProposalMeta -- 341
 
             in do
-              advanceTime (sec 10) -- voting period is 10 secs
               let requiredFrozen = largeProposalSize * frozen_scale_value + frozen_extra_value
 
               withSender (AddressResolved wallet1) $
@@ -249,7 +253,8 @@ test_RegistryDAO =
               withSender (AddressResolved voter1) $
                 call baseDao (Call @"Freeze") (#amount .! 100)
 
-              advanceTime (sec 11) -- voting period is 10 secs
+              -- Advance one voting period to a proposing stage.
+              advanceTime (sec 11)
 
               -- We expect this to fail because max_proposal_size is 200 and proposal size is 341.
               withSender (AddressResolved wallet1) $
@@ -271,12 +276,14 @@ test_RegistryDAO =
               withSender (AddressResolved wallet1) $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1)
 
-              advanceTime (sec 10) -- voting period is 10 secs
+              -- Advance one voting period to a voting stage.
+              advanceTime (sec 11)
               -- Then we send 60 upvotes for the proposal (as min quorum is 1% of 500)
               let proposalKey = makeProposalKey (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
               withSender (AddressResolved voter1) $
                 call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 60) Nothing]
 
+              -- Advance one voting period to a proposing stage.
               advanceTime (sec 11)
               withSender (AddressResolved admin) $
                 call baseDao (Call @"Flush") (1 :: Natural)
@@ -303,7 +310,8 @@ test_RegistryDAO =
 
             withSender (AddressResolved voter1) $
               call baseDao (Call @"Freeze") (#amount .! 50)
-            advanceTime (sec 13) -- voting period is 10 secs
+            -- Advance one voting period to a proposing stage.
+            advanceTime (sec 13)
 
             let requiredFrozen = proposalSize -- since frozen_scale_value and frozen_scale_value are 1 and 0.
 
@@ -311,12 +319,14 @@ test_RegistryDAO =
             withSender (AddressResolved wallet1) $
               call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta)
 
+            -- Advance one voting period to a voting stage.
             advanceTime (sec 12)
             -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
             let proposalKey = makeProposalKey (ProposeParams requiredFrozen proposalMeta) wallet1
             withSender (AddressResolved voter1) $
               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50) Nothing]
 
+            -- Advance one voting period to a proposing stage.
             advanceTime (sec 12)
             withSender (AddressResolved admin) $
               call baseDao (Call @"Flush") (1 :: Natural)
@@ -346,6 +356,7 @@ test_RegistryDAO =
             withSender (AddressResolved wallet2) $
               call baseDao (Call @"Freeze") (#amount .! 20)
 
+            -- Advance one voting period to a proposing stage.
             advanceTime (sec 13)
 
             withSender (AddressResolved wallet1) $
@@ -361,8 +372,10 @@ test_RegistryDAO =
                   , vProposalKey = key1
                   }
 
+            -- Advance one voting period to a voting stage.
             advanceTime (sec 12)
             withSender (AddressResolved wallet2) $ call baseDao (Call @"Vote") [upvote]
+            -- Advance one voting period to a proposing stage.
             advanceTime (sec 11)
             withSender (AddressResolved admin) $ call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -392,6 +405,7 @@ test_RegistryDAO =
             withSender (AddressResolved wallet) $
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
 
+            -- Advance one voting period to a proposing stage.
             advanceTime (sec 10)
 
             -- Fails because 10 >= max_xtz_amount
@@ -402,6 +416,7 @@ test_RegistryDAO =
             withSender (AddressResolved wallet) $
               call baseDao (Call @"Freeze") (#amount .! proposalSize2)
 
+            -- Advance one voting period to a voting stage.
             advanceTime (sec 10)
 
             withSender (AddressResolved wallet) $
@@ -428,6 +443,7 @@ test_RegistryDAO =
             withSender (AddressResolved wallet2) $
               call baseDao (Call @"Freeze") (#amount .! 10)
 
+            -- Advance one voting period to a proposing stage.
             advanceTime (sec 11)
 
             withSender (AddressResolved wallet1) $
@@ -443,8 +459,10 @@ test_RegistryDAO =
                 , vProposalKey = key1
                 }
 
+            -- Advance one voting period to a voting stage.
             advanceTime (sec 11)
             withSender (AddressResolved wallet2) $ call baseDao (Call @"Vote") [upvote]
+            -- Advance one voting period to a proposing stage.
             advanceTime (sec 10)
             withSender (AddressResolved admin) $ call baseDao (Call @"Flush") (1 :: Natural)
     ]

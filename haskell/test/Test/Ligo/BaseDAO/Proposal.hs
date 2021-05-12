@@ -149,7 +149,8 @@ test_BaseDAO_Proposal =
 
         withSender (AddressResolved proposer) $
           call dao (Call @"Freeze") (#amount .! 52)
-        advanceTime (sec 20)
+        -- Advance one voting period to a proposing stage.
+        advanceTime (sec 10)
 
         withSender (AddressResolved proposer) $ call dao (Call @"Propose") params
         checkTokenBalance frozenTokenId dao proposer 152
@@ -164,6 +165,7 @@ test_BaseDAO_Proposal =
 
           withSender (AddressResolved proposer) $
             call dao (Call @"Freeze") (#amount .! 52)
+          -- Advance one voting period to a proposing stage.
           advanceTime (sec 10)
 
           let params = ProposeParams
@@ -184,8 +186,13 @@ test_BaseDAO_Proposal =
           withSender (AddressResolved proposer) $
             call dao (Call @"Freeze") (#amount .! 42)
 
-          advanceTime (sec 61)
-          key1 <- createSampleProposal 1 60 proposer dao
+          withSender (AddressResolved proposer) $
+            call dao (Call @"Freeze") (#amount .! 10)
+
+          -- Advance one voting period to a proposing stage.
+          advanceTime (sec 60)
+          key1 <- createSampleProposal 1 proposer dao
+          -- Advance one voting period to a voting stage.
           advanceTime (sec 60)
           let vote_ =
                 NoPermit VoteParam
@@ -196,9 +203,10 @@ test_BaseDAO_Proposal =
           withSender (AddressResolved voter) $
             call dao (Call @"Vote") [vote_]
 
-          let expectedFrozen = 100 + 42 + 10 -- 'createSampleProposal' freezes 10 tokens
+          let expectedFrozen = 100 + 42 + 10
           checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
+          -- Advance one voting period to a proposing stage.
           advanceTime (sec 60)
           withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -221,7 +229,8 @@ nonProposalPeriodProposal originateFn = do
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 10)
 
-  advanceTime (sec 10)
+  -- Advance two voting periods to another voting stage.
+  advanceTime (sec 20)
 
   let params = ProposeParams
         { ppFrozenToken = 10
@@ -259,9 +268,14 @@ burnsFeeOnFailure reason = do
   withSender (AddressResolved voter) $
     call dao (Call @"Freeze") (#amount .! 1)
 
-  advanceTime (sec 61)
-  key1 <- createSampleProposal 1 60 proposer dao
+  withSender (AddressResolved proposer) $
+    call dao (Call @"Freeze") (#amount .! 10)
 
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 61)
+  key1 <- createSampleProposal 1 proposer dao
+
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 60)
   case reason of
     Downvoted -> do
@@ -269,9 +283,10 @@ burnsFeeOnFailure reason = do
         call dao (Call @"Vote") [downvote key1]
     QuorumNotMet -> return ()
 
-  let expectedFrozen = 100 + 42 + 10 -- 'createSampleProposal' freezes 10 tokens
+  let expectedFrozen = 100 + 42 + 10
   checkTokenBalance frozenTokenId dao proposer expectedFrozen
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -303,6 +318,7 @@ canUnfreezeFromPreviousPeriod originateFn = do
   withSender (AddressResolved owner1) $ call dao (Call @"Freeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dao owner1 110
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 15)
 
   withSender (AddressResolved owner1) $ call dao (Call @"Unfreeze") (#amount .! 10)
@@ -339,13 +355,17 @@ insufficientTokenVote
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 insufficientTokenVote originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
-  advanceTime (sec 10)
-
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 100)
 
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 10)
+
   -- Create sample proposal
-  key1 <- createSampleProposal 1 10 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
   let params = fmap NoPermit
         [ VoteParam
             { vVoteType = True
@@ -358,6 +378,7 @@ insufficientTokenVote originateFn = do
             , vProposalKey = key1
             }
         ]
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
 
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") params
@@ -368,13 +389,14 @@ voteWithPermit
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteWithPermit originateFn = do
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 12)
+
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 2)
-
   -- Create sample proposal
-  key1 <- createSampleProposal 1 10 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
 
   params <- permitProtect (AddressResolved owner1) =<< addDataToSign dao (Nonce 0)
         VoteParam
@@ -383,7 +405,9 @@ voteWithPermit originateFn = do
         , vProposalKey = key1
         }
 
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
+
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dao owner1 112
 
@@ -394,16 +418,17 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
 
   ((owner1, _), (owner2, _), dao, _, _) <- originateFn voteConfig
 
-  advanceTime (sec 10)
-
   withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 50)
+    call dao (Call @"Freeze") (#amount .! 60)
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 50)
 
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 10)
+
   -- Create sample proposal
-  key1 <- createSampleProposal 1 10 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
 
   let voteParam = VoteParam
         { vVoteType = True
@@ -411,6 +436,7 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
         , vProposalKey = key1
         }
 
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
   -- Going to try calls with different nonces
   signed1@(_          , _) <- addDataToSign dao (Nonce 0) voteParam
@@ -445,18 +471,18 @@ flushNotAffectOngoingProposals
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushNotAffectOngoingProposals originateFn = do
   ((owner1, _), _, dao, _, admin) <-
-    originateFn (testConfig >>- (ConfigDesc $ VotingPeriod (2 *60)))
-
-  advanceTime (sec 120)
+    originateFn (testConfig >>- (ConfigDesc $ VotingPeriod 120))
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 20)
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 125)
 
-  _key1 <- createSampleProposal 1 0 owner1 dao
-  _key2 <- createSampleProposal 2 0 owner1 dao
-  advanceTime (sec 125)
+  _key1 <- createSampleProposal 1 owner1 dao
+  _key2 <- createSampleProposal 2 owner1 dao
+  -- Advance two voting period to another proposing stage.
+  advanceTime (sec 245)
   withSender (AddressResolved admin) $
     call dao (Call @"Flush") 100
 
@@ -473,12 +499,18 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <-
     originateFn (testConfig >>- (ConfigDesc $ VotingPeriod 60))
 
-  advanceTime (sec 60)
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 3)
 
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 60)
+
   -- Accepted Proposals
-  key1 <- createSampleProposal 1 65 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 65)
 
   let upvote' = NoPermit VoteParam
@@ -498,6 +530,7 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
   checkTokenBalance (frozenTokenId) dao owner1 110
   checkTokenBalance (frozenTokenId) dao owner2 103
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -518,7 +551,6 @@ flushAcceptedProposalsWithAnAmount
 flushAcceptedProposalsWithAnAmount originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <- originateFn testConfig
 
-  advanceTime (sec 10)
   -- Accepted Proposals
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 40)
@@ -526,11 +558,12 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 2)
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 15)
-  key1 <- createSampleProposal 1 0 owner1 dao
-  key2 <- createSampleProposal 2 0 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
+  key2 <- createSampleProposal 2 owner1 dao
   advanceTime (sec 1)
-  key3 <- createSampleProposal 3 0 owner1 dao
+  key3 <- createSampleProposal 3 owner1 dao
 
   let vote' key = NoPermit VoteParam
         { vVoteType = True
@@ -538,12 +571,14 @@ flushAcceptedProposalsWithAnAmount originateFn = do
         , vProposalKey = key
         }
 
+  -- Advance two voting period to another proposing stage.
   advanceTime (sec 21)
 
-  key4 <- createSampleProposal 4 0 owner1 dao
+  key4 <- createSampleProposal 4 owner1 dao
 
   checkTokenBalance frozenTokenId dao owner1 140
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 2
 
@@ -573,13 +608,17 @@ flushRejectProposalQuorum originateFn = do
         >>- (ConfigDesc (QuorumThreshold 3 5))
         >>- (ConfigDesc $ VotingPeriod 60))
 
-  advanceTime (sec 60)
-
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 5)
 
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 60)
+
   -- Rejected Proposal
-  key1 <- createSampleProposal 1 65 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
 
   let votes = fmap NoPermit
         [ VoteParam
@@ -588,9 +627,11 @@ flushRejectProposalQuorum originateFn = do
           , vProposalKey = key1
           }
         ]
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") votes
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -608,13 +649,17 @@ flushRejectProposalNegativeVotes originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin)
     <- originateFn (configWithRejectedProposal >>- (ConfigDesc (QuorumThreshold 3 100)) >>- (ConfigDesc (VotingPeriod 60)))
 
-  advanceTime (sec 60)
-
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 3)
 
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 60)
+
   -- Rejected Proposal
-  key1 <- createSampleProposal 1 65 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
 
   let votes = fmap NoPermit
         [ VoteParam
@@ -633,12 +678,14 @@ flushRejectProposalNegativeVotes originateFn = do
           , vProposalKey = key1
           }
         ]
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") votes
 
   -- Check proposer balance
   checkTokenBalance frozenTokenId dao owner1 110
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -656,19 +703,26 @@ flushWithBadConfig originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <-
     originateFn (badRejectedValueConfig >>- (ConfigDesc (QuorumThreshold 1 2)) >>- (ConfigDesc (VotingPeriod 60)))
 
-  advanceTime (sec 60)
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 3)
-  key1 <- createSampleProposal 1 65 owner1 dao
+
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 60)
+  key1 <- createSampleProposal 1 owner1 dao
 
   let upvote' = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 1
         , vProposalKey = key1
         }
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -689,17 +743,23 @@ flushDecisionLambda originateFn = do
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 10)
-  advanceTime (sec 65)
-  key1 <- createSampleProposal 1 60 owner1 dao
+  withSender (AddressResolved owner1) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 60)
+  key1 <- createSampleProposal 1 owner1 dao
 
   let upvote' = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 10
         , vProposalKey = key1
         }
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 60)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 60)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -714,18 +774,19 @@ dropProposal originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <-
     originateFn (badRejectedValueConfig >>- (ConfigDesc (QuorumThreshold 1 50)) >>- (ConfigDesc (VotingPeriod 20)))
 
-  advanceTime (sec 25)
-
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 30)
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 20)
+
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 20)
 
-  key1 <- createSampleProposal 1 0 owner1 dao
-  key2 <- createSampleProposal 2 0 owner1 dao
+  key1 <- createSampleProposal 1 owner1 dao
+  key2 <- createSampleProposal 2 owner1 dao
 
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 20)
   let params key = NoPermit VoteParam
         { vVoteType = True
@@ -733,9 +794,10 @@ dropProposal originateFn = do
         , vProposalKey = key
         }
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [params key1]
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 20)
 
-  key3 <- createSampleProposal 3 0 owner1 dao
+  key3 <- createSampleProposal 3 owner1 dao
 
   withSender (AddressResolved admin) $ do
     call dao (Call @"Drop_proposal") key1
@@ -755,11 +817,11 @@ proposalBoundedValue originateFn = do
     ( testConfig >>-
       ConfigDesc configConsts{ cmMaxProposals = Just 1 }
     )
-  advanceTime (sec 11)
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 20)
 
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
   let params = ProposeParams
@@ -780,11 +842,15 @@ votesBoundedValue originateFn = do
     ( voteConfig >>-
       ConfigDesc configConsts{ cmMaxVotes = Just 1 }
     )
-  advanceTime (sec 10)
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 2)
 
-  key1 <- createSampleProposal 1 10 owner2 dao
+  withSender (AddressResolved owner2) $
+    call dao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 10)
+  key1 <- createSampleProposal 1 owner2 dao
   let upvote' = NoPermit VoteParam
         { vVoteType = False
         , vVoteAmount = 1
@@ -795,6 +861,7 @@ votesBoundedValue originateFn = do
         , vVoteAmount = 1
         , vProposalKey = key1
         }
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
   withSender (AddressResolved owner1) $ do
     call dao (Call @"Vote") [downvote']

@@ -40,7 +40,6 @@ import Lorentz.Test (contractConsumer)
 import Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Nettest
 import Named ((!))
-import Time (sec)
 import Util.Named
 
 import qualified Data.Map as M
@@ -258,17 +257,12 @@ originateLigoDao =
 
 createSampleProposal
   :: (MonadNettest caps base m, HasCallStack)
-  => Int -> Int -> Address -> TAddress Parameter -> m ProposalKey
-createSampleProposal counter vp owner1 dao = do
+  => Int -> Address -> TAddress Parameter -> m ProposalKey
+createSampleProposal counter owner1 dao = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer $ fromIntegral counter
         }
-
-  when (vp > 0) $ do
-    withSender (AddressResolved owner1) $
-      call dao (Call @"Freeze") (#amount .! 10)
-    advanceTime (sec (fromIntegral vp))
 
   withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params owner1)

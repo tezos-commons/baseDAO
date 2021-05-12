@@ -43,7 +43,7 @@ let ensure_proposal_voting_period (proposal, voting_period, store : proposal * v
 // Only odd period numbers are proposing periods, in which a proposal can be
 // submitted.
 let ensure_proposing_period(period_num, store : nat * storage): storage =
-  if (period_num mod 2n) = 0n
+  if (period_num mod 2n) = 1n
   then store
   else (failwith("NOT_PROPOSING_PERIOD") : storage)
 

@@ -182,8 +182,14 @@ The contract constantly cycles between two stages, a proposing stage and a votin
 Both have the same same length, `voting_period` and alternate between each other,
 starting from "voting" for period number `0`.
 
+The voting period is specified for the whole smart contract and never changes.
+
 Tokens can be frozen in any period, but they can only be used for voting, proposing
 and unfreezing starting from the following one and onwards.
+
+For this reason the contract starts from a `voting` stage, because even tho there
+are no proposals to vote on yet, this allows token to be frozen in it and be
+usable in the first `proposing` stage, number `1`.
 
 For freezing, the address should have corresponding amount of tokens of proper
 token type (token_id of storage.governance_token.token_id) in the governance
@@ -216,7 +222,7 @@ One frozen token is required for one vote.
 A vote can only be cast in a voting stage period, meaning one that's even-numbered.
 Moreover the proposal to vote on must have been submitted in the proposing period immediately preceding
 and the voter must have frozen his tokens in one of the preceding periods.
-Voting period is specified for the whole smart contract and can be updated by the administrator; on update, the existing proposals are also affected.
+
 It's possible to vote positively or negatively.
 After the voting ends, the contract is "flushed" by calling a dedicated entrypoint.
 
@@ -666,7 +672,6 @@ have the same timestamp due to being in the same block, are processed in the ord
   - If proposal got accepted:
     - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
-- The lost of frozen tokens is due to the fact that the administrator has the right to `transfer` frozen tokens of any proposers or voters.
 - If proposal is accepted, decision lambda is called.
 
 ### **drop_proposal**

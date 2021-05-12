@@ -63,13 +63,11 @@ validProposal = uncapsNettest $ withFrozenCallStack do
         }
     proposalSize = metadataSize proposalMeta -- 115
 
-  -- Advance one voting period.
-  advanceTime (sec 10)
-
+  -- Freeze in voting stage.
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! proposalSize)
 
-  -- Advance one voting period.
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $
@@ -103,9 +101,8 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 20)
 
-  -- Advance two voting periods so that we are in a
-  -- proposal period.
-  advanceTime (sec 20)
+  -- Advance one voting periods to a proposing stage.
+  advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Propose") proposeParams
@@ -120,8 +117,10 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
         , vProposalKey = key1
         }
 
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
@@ -144,13 +143,13 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         }
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
-  advanceTime (sec 10)
+  -- Freeze in initial voting stage.
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta 3))
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 10)
-  -- Advance one voting period.
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
   withSender (AddressResolved owner1) $ do
@@ -174,8 +173,10 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         , vProposalKey = key1
         }
 
+  -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote]
+  -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
