@@ -151,6 +151,7 @@ type storage =
   ; operators : operators
   ; governance_token : governance_token
   ; admin : address
+  ; guardian : address // A special role that can drop any proposals at anytime
   ; pending_owner : address
   ; metadata : metadata_map
   ; extra : contract_extra
@@ -252,11 +253,14 @@ type ledger_list = (ledger_key * ledger_value) list
 type initial_config_data =
   { quorum_threshold : quorum_threshold
   ; voting_period : voting_period
+  ; proposal_flush_time: seconds
+  ; proposal_expired_time: seconds
   ; fixed_proposal_fee_in_token: nat
   }
 
 type initial_storage_data =
   { admin : address
+  ; guardian : address
   ; governance_token : governance_token
   ; now_val : timestamp
   ; metadata_map : metadata_map
@@ -278,6 +282,8 @@ type config =
   ; quorum_threshold : quorum_threshold
   ; voting_period : voting_period
   ; fixed_proposal_fee_in_token : nat
+  ; proposal_flush_time: seconds // Number of seconds until a proposal can be flushed
+  ; proposal_expired_time: seconds // Number of seconds until a proposal is expired
 
   ; custom_entrypoints : custom_entrypoints
   }

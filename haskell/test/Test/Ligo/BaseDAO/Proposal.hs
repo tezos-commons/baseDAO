@@ -98,9 +98,9 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
           \_emulated ->
             uncapsNettest $ flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "flush should not affecting ongoing proposals" $
+      , nettestScenarioOnEmulator "flush should not affecting proposals that cannot be flushed yet" $
           \_emulated ->
-            uncapsNettest $ flushNotAffectOngoingProposals
+            uncapsNettest $ flushProposalFlushTimeNotReach
             (originateLigoDaoWithConfigDesc dynRecUnsafe)
       , nettestScenarioOnEmulator "flush with bad cRejectedProposalReturnValue" $
           \_emulated ->
@@ -178,7 +178,12 @@ test_BaseDAO_Proposal =
     , nettestScenarioOnEmulator "a proposer is returned a fee after the proposal succeeds" $
         \_emulated -> uncapsNettest $ do
           ((proposer, _), (voter, _), dao, _, admin) <-
-            originateLigoDaoWithConfigDesc dynRecUnsafe ((ConfigDesc $ VotingPeriod 60) >>- (ConfigDesc (FixedFee 42)))
+            originateLigoDaoWithConfigDesc dynRecUnsafe
+              (   (ConfigDesc $ VotingPeriod 60)
+              >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
+              >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
+              >>- (ConfigDesc (FixedFee 42))
+              )
 
           withSender (AddressResolved voter) $
             call dao (Call @"Freeze") (#amount .! 20)
@@ -260,7 +265,12 @@ burnsFeeOnFailure
   => FailureReason -> m ()
 burnsFeeOnFailure reason = do
   ((proposer, _), (voter, _), dao, _, admin) <-
-      originateLigoDaoWithConfigDesc dynRecUnsafe ((ConfigDesc $ VotingPeriod 60) >>- (ConfigDesc $ FixedFee 42))
+      originateLigoDaoWithConfigDesc dynRecUnsafe
+        (   (ConfigDesc $ VotingPeriod 60)
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
+        >>- (ConfigDesc $ FixedFee 42)
+        )
 
   withSender (AddressResolved proposer) $
     call dao (Call @"Freeze") (#amount .! 42)
@@ -466,25 +476,32 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
   (Nonce counter) <- getVotePermitsCounterFn (AddressResolved $ unTAddress dao)
   counter @== 2
 
-flushNotAffectOngoingProposals
+flushProposalFlushTimeNotReach
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
-flushNotAffectOngoingProposals originateFn = do
+flushProposalFlushTimeNotReach originateFn = do
   ((owner1, _), _, dao, _, admin) <-
-    originateFn (testConfig >>- (ConfigDesc $ VotingPeriod 120))
+    originateFn (configWithRejectedProposal
+        >>- (ConfigDesc $ VotingPeriod 20)
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+        )
 
   withSender (AddressResolved owner1) $
-    call dao (Call @"Freeze") (#amount .! 20)
+    call dao (Call @"Freeze") (#amount .! 30)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 125)
+  advanceTime (sec 20)
 
   _key1 <- createSampleProposal 1 owner1 dao
   _key2 <- createSampleProposal 2 owner1 dao
   -- Advance two voting period to another proposing stage.
-  advanceTime (sec 245)
-  withSender (AddressResolved admin) $
-    call dao (Call @"Flush") 100
+  advanceTime (sec 20) -- skip voting period
+  advanceTime (sec 21)
+  _key3 <- createSampleProposal 3 owner1 dao
+
+  withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+  checkTokenBalance (frozenTokenId) dao owner1 (100 + 5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dao
@@ -496,8 +513,11 @@ flushAcceptedProposals
 flushAcceptedProposals originateFn getTotalSupplyFn = do
 -- Use 60s for voting period, since in real network by the time we call
   -- vote entrypoint 30s is already passed.
-  ((owner1, _), (owner2, _), dao, _, admin) <-
-    originateFn (testConfig >>- (ConfigDesc $ VotingPeriod 60))
+  ((owner1, _), (owner2, _), dao, _, admin) <- originateFn (testConfig
+      >>- (ConfigDesc $ VotingPeriod 60)
+      >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
+      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
+      )
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 3)
@@ -647,7 +667,12 @@ flushRejectProposalNegativeVotes
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushRejectProposalNegativeVotes originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin)
-    <- originateFn (configWithRejectedProposal >>- (ConfigDesc (QuorumThreshold 3 100)) >>- (ConfigDesc (VotingPeriod 60)))
+    <- originateFn (configWithRejectedProposal
+          >>- (ConfigDesc (QuorumThreshold 3 100))
+          >>- (ConfigDesc (VotingPeriod 20))
+          >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+          >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+          )
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 3)
@@ -656,7 +681,7 @@ flushRejectProposalNegativeVotes originateFn = do
     call dao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 60)
+  advanceTime (sec 20)
 
   -- Rejected Proposal
   key1 <- createSampleProposal 1 owner1 dao
@@ -679,14 +704,14 @@ flushRejectProposalNegativeVotes originateFn = do
           }
         ]
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 60)
+  advanceTime (sec 20)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") votes
 
   -- Check proposer balance
   checkTokenBalance frozenTokenId dao owner1 110
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 61)
+  advanceTime (sec 21)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -701,7 +726,12 @@ flushWithBadConfig
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushWithBadConfig originateFn = do
   ((owner1, _), (owner2, _), dao, _, admin) <-
-    originateFn (badRejectedValueConfig >>- (ConfigDesc (QuorumThreshold 1 2)) >>- (ConfigDesc (VotingPeriod 60)))
+    originateFn (badRejectedValueConfig
+      >>- (ConfigDesc (QuorumThreshold 1 2))
+      >>- (ConfigDesc (VotingPeriod 20))
+      >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+      )
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 3)
@@ -710,7 +740,7 @@ flushWithBadConfig originateFn = do
     call dao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 60)
+  advanceTime (sec 20)
   key1 <- createSampleProposal 1 owner1 dao
 
   let upvote' = NoPermit VoteParam
@@ -719,11 +749,11 @@ flushWithBadConfig originateFn = do
         , vProposalKey = key1
         }
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 60)
+  advanceTime (sec 20)
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 61)
+  advanceTime (sec 21)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -739,7 +769,11 @@ flushDecisionLambda
 flushDecisionLambda originateFn = do
   consumer <- originateSimple "consumer" [] (contractConsumer)
   ((owner1, _), (owner2, _), dao, _, admin) <-
-    originateFn ((decisionLambdaConfig consumer) >>- (ConfigDesc $ VotingPeriod 60))
+    originateFn ((decisionLambdaConfig consumer)
+      >>- (ConfigDesc $ VotingPeriod 60)
+      >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
+      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
+      )
 
   withSender (AddressResolved owner2) $
     call dao (Call @"Freeze") (#amount .! 10)
@@ -760,7 +794,7 @@ flushDecisionLambda originateFn = do
   withSender (AddressResolved owner2) $ call dao (Call @"Vote") [upvote']
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 60)
+  advanceTime (sec 61)
   withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
 
   results <- fromVal <$> getStorage (AddressResolved $ toAddress consumer)
@@ -770,9 +804,15 @@ flushDecisionLambda originateFn = do
 dropProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
-dropProposal originateFn = do
-  ((owner1, _), (owner2, _), dao, _, admin) <-
-    originateFn (badRejectedValueConfig >>- (ConfigDesc (QuorumThreshold 1 50)) >>- (ConfigDesc (VotingPeriod 20)))
+dropProposal originateFn = withFrozenCallStack $ do
+  ((owner1, _), (owner2, _), dao, _, _admin) <-
+    originateFn
+     (configWithRejectedProposal
+       >>- (ConfigDesc (QuorumThreshold 1 50))
+       >>- (ConfigDesc (VotingPeriod 20))
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+      )
 
   withSender (AddressResolved owner1) $
     call dao (Call @"Freeze") (#amount .! 30)
@@ -799,15 +839,31 @@ dropProposal originateFn = do
 
   key3 <- createSampleProposal 3 owner1 dao
 
-  withSender (AddressResolved admin) $ do
+  -- -- TODO: Change to `guardian`, but currently it is not working may be due to sender <> source
+  withSender (AddressResolved owner1) $ do
     call dao (Call @"Drop_proposal") key1
-    call dao (Call @"Drop_proposal") key2
-      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_ACCEPTED dao
-    call dao (Call @"Drop_proposal") key3
-      & expectCustomErrorNoArg #fAIL_DROP_PROPOSAL_NOT_OVER dao
 
-  -- 30 tokens are frozen in total, but 10 tokens are returned after drop_proposal
-  checkTokenBalance frozenTokenId dao owner1 130
+  -- `key2` is not yet expired since it has to be more than 60 seconds
+  withSender (AddressResolved owner2) $ do
+    call dao (Call @"Drop_proposal") key2
+      & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET dao
+
+  advanceTime (sec 21)
+  -- `key2` is expired, so it is possible to `drop_proposal`
+  withSender (AddressResolved owner2) $ do
+    call dao (Call @"Drop_proposal") key2
+
+  -- `key3` is not yet expired
+  withSender (AddressResolved owner2) $ do
+    call dao (Call @"Drop_proposal") key3
+      & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET dao
+
+  -- proposers can delete their proposal
+  withSender (AddressResolved owner1) $ do
+    call dao (Call @"Drop_proposal") key3
+
+  -- 30 tokens are frozen in total, but only 15 tokens are returned after drop_proposal
+  checkTokenBalance frozenTokenId dao owner1 115
 
 proposalBoundedValue
   :: (MonadNettest caps base m, HasCallStack)

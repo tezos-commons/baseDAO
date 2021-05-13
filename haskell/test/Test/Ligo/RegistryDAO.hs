@@ -206,7 +206,7 @@ test_RegistryDAO =
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
 
               -- Advance two voting periods to another proposing stage.
-              advanceTime (sec 22)
+              advanceTime (sec $ 22 + 1) -- 22 is `proposal_flush_time`
               withSender (AddressResolved admin) $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -284,7 +284,7 @@ test_RegistryDAO =
                 call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 60) Nothing]
 
               -- Advance one voting period to a proposing stage.
-              advanceTime (sec 11)
+              advanceTime (sec $ 11 + 1)
               withSender (AddressResolved admin) $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -493,7 +493,13 @@ test_RegistryDAO =
         , sLedger = ledger
         , sTotalSupply = totalSupplyFromLedger ledger
         }
-      in fs { fsStorage = newStorage, fsConfig = oldConfig { cVotingPeriod = 11} }
+      in fs { fsStorage = newStorage
+            , fsConfig = oldConfig
+                { cVotingPeriod = 11
+                , cProposalFlushTime = 22
+                , cProposalExpiredTime = 33
+                }
+            }
 
     initialStorageWithExplictRegistryDAOConfig :: Address -> [Address] -> FullStorage
     initialStorageWithExplictRegistryDAOConfig admin wallets =

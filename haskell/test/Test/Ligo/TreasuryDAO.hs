@@ -220,4 +220,11 @@ originateTreasuryDaoWithBalance bal =
         & setExtra @Natural [mt|min_xtz_amount|] 2
         & setExtra @Natural [mt|max_xtz_amount|] 5
 
-  in originateLigoDaoWithBalance (sExtra fsStorage) (fsConfig { cQuorumThreshold = QuorumThreshold 1 100, cVotingPeriod = 10 }) bal
+  in originateLigoDaoWithBalance (sExtra fsStorage)
+      (fsConfig
+        { cQuorumThreshold = QuorumThreshold 1 100
+        , cVotingPeriod = 10
+        , cProposalFlushTime = 20
+        , cProposalExpiredTime = 30
+        }
+      ) bal

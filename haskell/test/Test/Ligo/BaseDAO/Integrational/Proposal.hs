@@ -78,7 +78,7 @@ checkFreezeHistoryTracking  = do
             when (fh /= (Just expected)) $ Left $ CustomTestError "BaseDAO contract did not stake tokens as expected"
 
         -- Advance two voting periods to another proposing stage.
-        rewindTime 20
+        rewindTime 21
 
         tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "flush") (toVal (1 :: Natural))
 

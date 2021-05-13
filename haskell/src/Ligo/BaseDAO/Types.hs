@@ -460,6 +460,7 @@ deriving anyclass instance IsoValue GovernanceToken
 
 data Storage' big_map = Storage'
   { sAdmin :: Address
+  , sGuardian :: Address
   , sExtra :: ContractExtra' big_map
   , sFrozenTokenId :: FA2.TokenId
   , sLedger :: Ledger' big_map
@@ -513,6 +514,7 @@ mkStorage
 mkStorage admin extra metadata now tokenAddress =
   Storage'
     { sAdmin = arg #admin admin
+    , sGuardian = arg #admin admin
     , sExtra = arg #extra extra
     , sLedger = mempty
     , sMetadata = arg #metadata metadata
@@ -563,6 +565,8 @@ data Config' big_map = Config'
   , cQuorumThreshold :: QuorumThreshold
   , cFixedProposalFee :: FixedFee
   , cVotingPeriod :: VotingPeriod
+  , cProposalFlushTime :: Natural
+  , cProposalExpiredTime :: Natural
 
   , cCustomEntrypoints :: CustomEntrypoints' big_map
   }
@@ -581,7 +585,7 @@ deriving anyclass instance IsoValue ConfigView
 
 
 mkConfig :: [CustomEntrypoint] -> QuorumThreshold -> VotingPeriod -> FixedFee -> Config
-mkConfig customEps quorumThreshold votingPeriod fixedProposalFee  = Config'
+mkConfig customEps quorumThreshold (VotingPeriod votingPeriod) fixedProposalFee  = Config'
   { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
@@ -591,7 +595,9 @@ mkConfig customEps quorumThreshold votingPeriod fixedProposalFee  = Config'
   , cCustomEntrypoints = DynamicRec' $ BigMap $ M.fromList customEps
   , cQuorumThreshold = quorumThreshold
   , cFixedProposalFee = fixedProposalFee
-  , cVotingPeriod = votingPeriod
+  , cVotingPeriod = VotingPeriod votingPeriod
+  , cProposalFlushTime = votingPeriod * 2
+  , cProposalExpiredTime = votingPeriod * 3
 
   , cMaxVotes = 1000
   , cMaxProposals = 500
@@ -811,19 +817,12 @@ instance CustomErrorHasDoc "bAD_ENTRYPOINT_PARAMETER" where
   customErrClass = ErrClassBadArgument
   customErrDocMdCause = "Value passed to the entrypoint is not valid"
 
-type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_OVER" = NoErrorArg
+type instance ErrorArg "dROP_PROPOSAL_CONDITION_NOT_MET" = NoErrorArg
 
-instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_OVER" where
+instance CustomErrorHasDoc "dROP_PROPOSAL_CONDITION_NOT_MET" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
-    "An error occurred when trying to drop a proposal due to the proposal's voting period is not over"
-
-type instance ErrorArg "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" = NoErrorArg
-
-instance CustomErrorHasDoc "fAIL_DROP_PROPOSAL_NOT_ACCEPTED" where
-  customErrClass = ErrClassActionException
-  customErrDocMdCause =
-    "An error occurred when trying to drop a proposal due to the proposal is not an accepted proposal"
+    "Throw when trying to call `drop_proposal` when the sender is not proposer or guardian or proposal is not expired."
 
 type instance ErrorArg "nEGATIVE_TOTAL_SUPPLY" = ()
 

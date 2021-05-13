@@ -45,6 +45,7 @@ This storage is the one based on the [default storage values](../src/defaults.ml
 ```sh
 make out/trivialDAO_storage.tz \
   admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  guardian_address = "KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh" \
   governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
   governance_token_id=0n \
   now_val = `date +"%s"` \
@@ -53,6 +54,8 @@ make out/trivialDAO_storage.tz \
   ledger=([] : ledger_list) \
   quorum_threshold={numerator=1n; denominator=10n} \
   voting_period=950400n \
+  proposal_flush_time = 1900801n \
+  proposal_expired_time = 2851200n \
   metadata_map=(Big_map.empty : metadata_map) \
 ```
 
@@ -69,6 +72,7 @@ compiled with `make`, as usual:
 ```sh
 make out/registryDAO_storage.tz \
   admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  guardian_address = "KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh" \
   governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
   governance_token_id=0n \
   max_proposal_size=100n \
@@ -83,7 +87,9 @@ make out/registryDAO_storage.tz \
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
   quorum_threshold={numerator=1n; denominator=10n} \
-  voting_period=950400n
+  voting_period=950400n \
+  proposal_flush_time = 1900801n \
+  proposal_expired_time = 2851200n
 ```
 
 All its arguments are optional and will be equal to the values above if not
@@ -96,6 +102,7 @@ can be compiled once again with `make`:
 ```sh
 make out/treasuryDAO_storage.tz \
   admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
+  guardian_address = "KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh" \
   governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
   governance_token_id=0n \
   max_proposal_size=12n \
@@ -111,6 +118,8 @@ make out/treasuryDAO_storage.tz \
   ledger=([] : ledger_list) \
   quorum_threshold={numerator=1n; denominator=10n} \
   voting_period=950400n \
+  proposal_flush_time = 1900801n \
+  proposal_expired_time = 2851200n \
   metadata_map=(Big_map.empty : metadata_map) \
 ```
 
