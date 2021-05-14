@@ -47,7 +47,7 @@ make out/trivialDAO_storage.tz \
   admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
   governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
   governance_token_id=0n \
-  now_val=Tezos.now \
+  now_val = `date +"%s"` \
   metadata_map=(Big_map.empty : metadata_map)
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
@@ -78,7 +78,7 @@ make out/registryDAO_storage.tz \
   slash_division_value=-n \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
-  now_val=Tezos.now \
+  now_val = `date +"%s"` \
   metadata_map=(Big_map.empty : metadata_map) \
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
@@ -105,7 +105,7 @@ make out/treasuryDAO_storage.tz \
   slash_division_value=1n \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
-  now_val=Tezos.now \
+  now_val = `date +"%s"` \
   metadata_map=(Big_map.empty : metadata_map)
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \

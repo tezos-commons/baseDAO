@@ -69,7 +69,7 @@ endif
 $(OUT)/trivialDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
 $(OUT)/trivialDAO_storage.tz : governance_token_address = KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5
 $(OUT)/trivialDAO_storage.tz : governance_token_id = 0n
-$(OUT)/trivialDAO_storage.tz : now_val = Tezos.now
+$(OUT)/trivialDAO_storage.tz : now_val = `date +"%s"`
 $(OUT)/trivialDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/trivialDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/trivialDAO_storage.tz : ledger = ([] : ledger_list)
@@ -86,7 +86,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
             { address = (\"$(governance_token_address)\" : address) \
             ; token_id = $(governance_token_id) \
             } \
-          ; now_val = $(now_val) \
+          ; now_val = ($(now_val) : timestamp)  \
           ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
           ; ledger_lst = $(call escape_double_quote,$(ledger)) \
           } \
@@ -110,7 +110,7 @@ $(OUT)/registryDAO_storage.tz : slash_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/registryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/registryDAO_storage.tz : max_xtz_amount = 100mutez
-$(OUT)/registryDAO_storage.tz : now_val = Tezos.now
+$(OUT)/registryDAO_storage.tz : now_val = `date +"%s"`
 $(OUT)/registryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/registryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/registryDAO_storage.tz : ledger = ([] : ledger_list)
@@ -128,7 +128,7 @@ $(OUT)/registryDAO_storage.tz: src/**
               { address = (\"$(governance_token_address)\" : address) \
               ; token_id = $(governance_token_id) \
               } \
-            ; now_val = $(now_val) \
+            ; now_val = ($(now_val) : timestamp)  \
             ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
             ; ledger_lst = $(call escape_double_quote,$(ledger)) \
             } \
@@ -160,7 +160,7 @@ $(OUT)/treasuryDAO_storage.tz : slash_scale_value = 0n
 $(OUT)/treasuryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/treasuryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/treasuryDAO_storage.tz : max_xtz_amount = 100mutez
-$(OUT)/treasuryDAO_storage.tz : now_val = Tezos.now
+$(OUT)/treasuryDAO_storage.tz : now_val = `date +"%s"`
 $(OUT)/treasuryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/treasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/treasuryDAO_storage.tz : ledger = ([] : ledger_list)
@@ -178,7 +178,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
               { address = (\"$(governance_token_address)\" : address) \
               ; token_id =  $(governance_token_id) \
               } \
-            ; now_val = $(now_val) \
+            ; now_val = ($(now_val) : timestamp)  \
             ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
             ; ledger_lst = $(call escape_double_quote,$(ledger)) \
             } \
