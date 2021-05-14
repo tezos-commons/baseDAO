@@ -33,7 +33,7 @@ module Test.Ligo.BaseDAO.Common
   , module StorageHelper
   ) where
 
-import Universum
+import Universum hiding (drop, swap)
 
 import Lorentz hiding (now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
@@ -51,10 +51,7 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
--- type m DaoOriginateData = m ((Address, Address), (Address, Address), TAddress Parameter, TAddress FA2.Parameter, Address)
 type OriginateFn m = m DaoOriginateData
-
-  -- pure ((dodOwner1, operator1), (dodOwner2, operator2), dodDao, dodTokenContract, admin)
 
 data DaoOriginateData = DaoOriginateData
   { dodOwner1 :: Address
@@ -64,6 +61,7 @@ data DaoOriginateData = DaoOriginateData
   , dodDao :: TAddress Parameter
   , dodTokenContract :: TAddress FA2.Parameter
   , dodAdmin :: Address
+  , dodGuardian :: TAddress (Address, ProposalKey)
   }
 
 -- | Shared Proposal type used in Registry DAO and Treasury DAO
@@ -89,6 +87,20 @@ dummyFA2Contract = defaultContract $
       , #cTransfer /-> cons
       , #cUpdate_operators /-> Lorentz.drop
       )) # nil # pair
+
+-- | A dummy contract that act as guardian contract for BaseDAO
+dummyGuardianContract :: Contract (Address, ProposalKey) ()
+dummyGuardianContract = defaultContract $
+  unpair # unpair #
+  stackType @'[Address, ProposalKey, ()] #
+  contractCalling @Parameter (Call @"Drop_proposal") #
+  ifSome (
+      swap #
+      push zeroMutez # swap #
+      transferTokens # nil # swap # cons
+    ) (drop # nil) #
+  stackType @'[[Operation], ()] #
+  pair
 
 totalSupplyFromLedger :: Ledger -> TotalSupply
 totalSupplyFromLedger (BigMap ledger) =
@@ -212,6 +224,7 @@ originateLigoDaoWithBalance extra config balFunc = do
 
   now <- getNow
   tokenContract <- originateSimple "TokenContract" [] dummyFA2Contract
+  guardianContract <- originateSimple "guardian" () dummyGuardianContract
 
   let fullStorage = FullStorage'
         { fsStorage =
@@ -225,6 +238,7 @@ originateLigoDaoWithBalance extra config balFunc = do
             { sLedger = bal
             , sOperators = operators
             , sTotalSupply = totalSupplyFromLedger bal
+            , sGuardian = unTAddress guardianContract
             }
         , fsConfig = config
         }
@@ -240,7 +254,7 @@ originateLigoDaoWithBalance extra config balFunc = do
 
   let dao = TAddress @Parameter daoUntyped
 
-  pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract admin
+  pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract admin guardianContract
 
 originateLigoDaoWithConfig
  :: MonadNettest caps base m

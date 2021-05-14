@@ -822,7 +822,14 @@ type instance ErrorArg "dROP_PROPOSAL_CONDITION_NOT_MET" = NoErrorArg
 instance CustomErrorHasDoc "dROP_PROPOSAL_CONDITION_NOT_MET" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
-    "Throw when trying to call `drop_proposal` when the sender is not proposer or guardian or proposal is not expired."
+    "Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired."
+
+type instance ErrorArg "eXPIRED_PROPOSAL" = NoErrorArg
+
+instance CustomErrorHasDoc "eXPIRED_PROPOSAL" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "Throw when trying to `flush` expired proposals."
 
 type instance ErrorArg "nEGATIVE_TOTAL_SUPPLY" = ()
 

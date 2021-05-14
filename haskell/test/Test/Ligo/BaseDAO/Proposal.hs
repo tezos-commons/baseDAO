@@ -12,7 +12,7 @@ import Time (sec)
 
 import Lorentz.Test (contractConsumer)
 import Morley.Nettest
-import Morley.Nettest.Tasty (nettestScenario, nettestScenarioOnEmulator, nettestScenarioOnEmulatorCaps, nettestScenarioOnNetworkCaps)
+import Morley.Nettest.Tasty (nettestScenario, nettestScenarioOnEmulatorCaps, nettestScenarioOnNetworkCaps)
 import Test.Tasty (TestTree, testGroup)
 import Util.Named
 
@@ -42,100 +42,104 @@ test_BaseDAO_Proposal =
       [ nettestScenarioOnEmulatorCaps "BaseDAO - can propose a valid proposal (emulator)" $
           validProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) getTotalSupplyEmulator
 
-      , nettestScenarioOnEmulator "cannot propose an invalid proposal (rejected)" $
-          \_emulated ->
-            uncapsNettest $ rejectProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "cannot propose a non-unique proposal" $
-          \_emulated ->
-            uncapsNettest $ nonUniqueProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "cannot propose in a non-proposal period" $
-          \_emulated ->
-            uncapsNettest $ nonProposalPeriodProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulatorCaps "cannot propose an invalid proposal (rejected)" $
+          rejectProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "cannot propose a non-unique proposal" $
+          nonUniqueProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "cannot propose in a non-proposal period" $
+          nonProposalPeriodProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       ]
 
   , testGroup "Voter:"
-      [ nettestScenarioOnEmulator "can vote on a valid proposal" $
-          \_emulated ->
-            uncapsNettest $ voteValidProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "cannot vote non-existing proposal" $
-          \_emulated ->
-            uncapsNettest $ voteNonExistingProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "can vote on multiple proposals" $
-          \_emulated ->
-            uncapsNettest $ voteMultiProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "cannot vote on outdated proposal" $
-          \_emulated ->
-            uncapsNettest $ voteOutdatedProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      [ nettestScenarioOnEmulatorCaps "can vote on a valid proposal" $
+          voteValidProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "cannot vote non-existing proposal" $
+          voteNonExistingProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "can vote on multiple proposals" $
+          voteMultiProposals (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "cannot vote on outdated proposal" $
+          voteOutdatedProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       ]
 
 
-  , nettestScenarioOnEmulator "cannot vote if the vote amounts exceeds token balance" $
-      \_emulated ->
-        uncapsNettest $ insufficientTokenVote (originateLigoDaoWithConfigDesc dynRecUnsafe)
+  , nettestScenarioOnEmulatorCaps "cannot vote if the vote amounts exceeds token balance" $
+      insufficientTokenVote (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
   -- Note: When checking storage, we need to split the test into 2 (emulator and network) as demonstrated below:
   , nettestScenarioOnEmulatorCaps "cannot propose with insufficient tokens (emulator) " $
       insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
+
   , nettestScenarioOnNetworkCaps "cannot propose with insufficient tokens (network) " $
       insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorageView addr)
 
   , testGroup "Permit:"
-      [ nettestScenarioOnEmulator "can vote from another user behalf" $
-          \_emulated ->
-            uncapsNettest $ voteWithPermit (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      [ nettestScenarioOnEmulatorCaps "can vote from another user behalf" $
+          voteWithPermit (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       , nettestScenarioOnEmulatorCaps "counter works properly in permits" $
-            voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecUnsafe) getVotePermitsCounterEmulator
+          voteWithPermitNonce (originateLigoDaoWithConfigDesc dynRecUnsafe) getVotePermitsCounterEmulator
+
       ]
   , testGroup "Admin:"
       [ nettestScenarioOnEmulatorCaps "can flush proposals that got accepted" $
           flushAcceptedProposals (originateLigoDaoWithConfigDesc dynRecUnsafe) getTotalSupplyEmulator
-      , nettestScenarioOnEmulator "can flush 2 proposals that got accepted" $
-          \_emulated ->
-            uncapsNettest $ flushAcceptedProposalsWithAnAmount (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "can flush proposals that got rejected due to not meeting quorum_threshold" $
-          \_emulated ->
-            uncapsNettest $ flushRejectProposalQuorum (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "can flush proposals that got rejected due to negative votes" $
-          \_emulated ->
-            uncapsNettest $ flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "flush should not affecting proposals that cannot be flushed yet" $
-          \_emulated ->
-            uncapsNettest $ flushProposalFlushTimeNotReach
-            (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "flush with bad cRejectedProposalReturnValue" $
-          \_emulated ->
-            uncapsNettest $ flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "can flush 2 proposals that got accepted" $
+          flushAcceptedProposalsWithAnAmount (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "can flush proposals that got rejected due to not meeting quorum_threshold" $
+          flushRejectProposalQuorum (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "can flush proposals that got rejected due to negative votes" $
+          flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "flush should not affect proposals that cannot be flushed yet" $
+          flushProposalFlushTimeNotReach (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "flush should fail on expired proposals" $
+          flushFailOnExpiredProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "flush with bad cRejectedProposalReturnValue" $
+          flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       -- TODO [#15]: dodAdmin burn proposer token and test "flush"
 
       -- TODO [#38]: Improve this when contract size is smaller
-      , nettestScenarioOnEmulator "flush and run decision lambda" $
-          \_emulated ->
-            uncapsNettest $ flushDecisionLambda (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "can drop proposals" $
-          \_emulated ->
-            uncapsNettest $ dropProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulatorCaps "flush and run decision lambda" $
+          flushDecisionLambda (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "can drop proposals, only when allowed" $
+          dropProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       ]
 
   , testGroup "Bounded Value"
-      [ nettestScenarioOnEmulator "bounded value on proposals" $
-          \_emulated ->
-            uncapsNettest $ proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
-      , nettestScenarioOnEmulator "bounded value on votes" $
-          \_emulated ->
-            uncapsNettest $ votesBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      [ nettestScenarioOnEmulatorCaps "bounded value on proposals" $
+          proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "bounded value on votes" $
+          votesBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       ]
 
   , testGroup "Freeze-Unfreeze"
       [ nettestScenario "can freeze tokens" $
           uncapsNettest $ freezeTokens (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      , nettestScenarioOnEmulator "cannot unfreeze tokens from the same period" $
-          \_emulated ->
-            uncapsNettest $ cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioOnEmulatorCaps "cannot unfreeze tokens from the same period" $
+          cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      , nettestScenarioOnEmulator "can unfreeze tokens from the previous period" $
-          \_emulated ->
-            uncapsNettest $ canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , nettestScenarioOnEmulatorCaps "can unfreeze tokens from the previous period" $
+          canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       ]
 
  , testGroup "LIGO-specific proposal tests:"
@@ -159,26 +163,24 @@ test_BaseDAO_Proposal =
         totalSupply <- getTotalSupplyEmulator (AddressResolved $ unTAddress dodDao) frozenTokenId
         totalSupply @== 252 -- initial = 0
 
-    , nettestScenarioOnEmulator "cannot propose with insufficient tokens to pay the fee" $
-        \_emulated -> uncapsNettest $ do
-          DaoOriginateData{..} <-
-            originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 100))
-          let proposer = dodOwner1
+    , nettestScenarioOnEmulatorCaps "cannot propose with insufficient tokens to pay the fee" $ do
+        DaoOriginateData{..} <-
+          originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 100))
+        let proposer = dodOwner1
 
-          withSender (AddressResolved proposer) $
-            call dodDao (Call @"Freeze") (#amount .! 52)
-          -- Advance one voting period to a proposing stage.
-          advanceTime (sec 10)
+        withSender (AddressResolved proposer) $
+          call dodDao (Call @"Freeze") (#amount .! 52)
+        -- Advance one voting period to a proposing stage.
+        advanceTime (sec 10)
 
-          let params = ProposeParams
-                { ppFrozenToken = 1
-                , ppProposalMetadata = lPackValueRaw @Integer 1
-                }
-          withSender (AddressResolved proposer) $ call dodDao (Call @"Propose") params
-            & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
+        let params = ProposeParams
+              { ppFrozenToken = 1
+              , ppProposalMetadata = lPackValueRaw @Integer 1
+              }
+        withSender (AddressResolved proposer) $ call dodDao (Call @"Propose") params
+          & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
 
-    , nettestScenarioOnEmulator "a proposer is returned a fee after the proposal succeeds" $
-        \_emulated -> uncapsNettest $ do
+    , nettestScenarioOnEmulatorCaps "a proposer is returned a fee after the proposal succeeds" $ do
           DaoOriginateData{..} <-
             originateLigoDaoWithConfigDesc dynRecUnsafe
               (   (ConfigDesc $ VotingPeriod 60)
@@ -221,11 +223,10 @@ test_BaseDAO_Proposal =
 
           checkTokenBalance frozenTokenId dodDao proposer 152
 
-    , nettestScenarioOnEmulator "the fee is burned if the proposal fails" $
-        \_emulated -> uncapsNettest $ burnsFeeOnFailure Downvoted
-
-    , nettestScenarioOnEmulator "the fee is burned if the proposal doesn't meet the quorum" $
-        \_emulated -> uncapsNettest $ burnsFeeOnFailure QuorumNotMet
+    , nettestScenarioOnEmulatorCaps "the fee is burned if the proposal fails" $
+        burnsFeeOnFailure Downvoted
+    , nettestScenarioOnEmulatorCaps "the fee is burned if the proposal doesn't meet the quorum" $
+        burnsFeeOnFailure QuorumNotMet
     ]
   ]
 
@@ -575,55 +576,54 @@ flushAcceptedProposalsWithAnAmount
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushAcceptedProposalsWithAnAmount originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig
+  DaoOriginateData{..}
+    <- originateFn (configWithRejectedProposal
+        >>- (ConfigDesc $ VotingPeriod 20)
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+        )
 
-  -- Accepted Proposals
+  -- [Voting]
   withSender (AddressResolved dodOwner1) $
-    call dodDao (Call @"Freeze") (#amount .! 40)
+    call dodDao (Call @"Freeze") (#amount .! 30)
 
   withSender (AddressResolved dodOwner2) $
-    call dodDao (Call @"Freeze") (#amount .! 2)
+    call dodDao (Call @"Freeze") (#amount .! 6)
 
-  -- Advance one voting period to a proposing stage.
-  advanceTime (sec 15)
+  advanceTime (sec 20)
+
+  -- [Proposing]
   key1 <- createSampleProposal 1 dodOwner1 dodDao
   key2 <- createSampleProposal 2 dodOwner1 dodDao
   advanceTime (sec 1)
-  key3 <- createSampleProposal 3 dodOwner1 dodDao
+  _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   let vote' key = NoPermit VoteParam
         { vVoteType = True
-        , vVoteAmount = 2
+        , vVoteAmount = 3
         , vProposalKey = key
         }
 
-  -- Advance two voting period to another proposing stage.
-  advanceTime (sec 21)
+  advanceTime (sec 20)
 
-  key4 <- createSampleProposal 4 dodOwner1 dodDao
-
-  checkTokenBalance frozenTokenId dodDao dodOwner1 140
-
-  -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 2
-
-  -- Proposals are flushed
+  -- [Voting]
   withSender (AddressResolved dodOwner2) $ do
     call dodDao (Call @"Vote") [vote' key1]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dodDao
     call dodDao (Call @"Vote") [vote' key2]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dodDao
 
-    -- Proposal is over but not affected
-    call dodDao (Call @"Vote") [vote' key3]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dodDao
+  advanceTime (sec 22)
 
-    -- Proposal is not yet over
-    call dodDao (Call @"Vote") [vote' key4]
+  -- [Proposing]
+  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 2
 
-  -- Only 2 proposals are flush, so only 20 tokens are unfrozen back.
-  checkTokenBalance frozenTokenId dodDao dodOwner1 140
+  -- key1 and key2 are flushed. (Tokens remain the same, because they are all passed)
+  checkTokenBalance frozenTokenId dodDao dodOwner1 130
+
+  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 1
+
+  -- key3 is rejected
+  checkTokenBalance frozenTokenId dodDao dodOwner1 125
+
 
 flushRejectProposalQuorum
   :: (MonadNettest caps base m, HasCallStack)
@@ -632,7 +632,10 @@ flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
     <- originateFn (configWithRejectedProposal
         >>- (ConfigDesc (QuorumThreshold 3 5))
-        >>- (ConfigDesc $ VotingPeriod 60))
+        >>- (ConfigDesc $ VotingPeriod 20)
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+        )
 
   withSender (AddressResolved dodOwner2) $
     call dodDao (Call @"Freeze") (#amount .! 5)
@@ -641,7 +644,7 @@ flushRejectProposalQuorum originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 60)
+  advanceTime (sec 20)
 
   -- Rejected Proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -654,11 +657,11 @@ flushRejectProposalQuorum originateFn = do
           }
         ]
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 60)
+  advanceTime (sec 20)
   withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") votes
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 61)
+  advanceTime (sec 21)
   withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -807,6 +810,54 @@ flushDecisionLambda originateFn = do
   assert (results == (#proposer <.!> [dodOwner1]))
     "Unexpected accepted proposals list"
 
+flushFailOnExpiredProposal
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
+  DaoOriginateData{..} <-
+    originateFn
+     (configWithRejectedProposal
+       >>- (ConfigDesc (QuorumThreshold 1 50))
+       >>- (ConfigDesc (VotingPeriod 20))
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+      )
+
+  withSender (AddressResolved dodOwner1) $
+    call dodDao (Call @"Freeze") (#amount .! 20)
+
+  withSender (AddressResolved dodOwner2) $
+    call dodDao (Call @"Freeze") (#amount .! 20)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 20)
+  key1 <- createSampleProposal 1 dodOwner1 dodDao
+
+  -- Advance one voting period to a voting stage.
+  advanceTime (sec 20)
+  let params key = NoPermit VoteParam
+        { vVoteType = True
+        , vVoteAmount = 20
+        , vProposalKey = key
+        }
+  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [params key1]
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 20)
+  _key2 <- createSampleProposal 2 dodOwner1 dodDao
+
+  advanceTime (sec 41)
+  -- `key1` is now expired, and `key2` is not yet expired.
+  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 2
+    & expectCustomErrorNoArg #eXPIRED_PROPOSAL dodDao
+
+  -- `key1` is expired, so it is possible to `drop_proposal`
+  withSender (AddressResolved dodOwner2) $ do
+    call dodDao (Call @"Drop_proposal") key1
+
+  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 1
+  checkTokenBalance frozenTokenId dodDao dodOwner1 110
+
+
 dropProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
@@ -845,9 +896,9 @@ dropProposal originateFn = withFrozenCallStack $ do
 
   key3 <- createSampleProposal 3 dodOwner1 dodDao
 
-  -- -- TODO: Change to `guardian`, but currently it is not working may be due to sender <> source
-  withSender (AddressResolved dodOwner1) $ do
-    call dodDao (Call @"Drop_proposal") key1
+  -- `guardian` contract can drop any proposal.
+  withSender (AddressResolved dodOwner2) $ do
+    call dodGuardian CallDefault (unTAddress dodDao, key1)
 
   -- `key2` is not yet expired since it has to be more than 60 seconds
   withSender (AddressResolved dodOwner2) $ do

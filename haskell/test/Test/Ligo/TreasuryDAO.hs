@@ -20,7 +20,7 @@ import Util.Named
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
-import Test.Ligo.BaseDAO.Common 
+import Test.Ligo.BaseDAO.Common
   ( DaoOriginateData(..), OriginateFn, TransferProposal(..)
   , checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz )
 
