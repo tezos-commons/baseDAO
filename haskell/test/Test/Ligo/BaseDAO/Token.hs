@@ -29,7 +29,7 @@ transferContractTokensScenario
   :: MonadNettest caps base m
   => OriginateFn m -> m ()
 transferContractTokensScenario originateFn = do
-  ((owner1, _), _, dao, fa2Contract, admin) <- originateFn
+  DaoOriginateData{..} <- originateFn
   let target_owner1 = genesisAddress1
   let target_owner2 = genesisAddress2
 
@@ -42,18 +42,18 @@ transferContractTokensScenario originateFn = do
                 } ]
             } ]
       param = TransferContractTokensParam
-        { tcContractAddress = toAddress fa2Contract
+        { tcContractAddress = toAddress dodTokenContract
         , tcParams = transferParams
         }
 
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Transfer_contract_tokens") param
-    & expectCustomErrorNoArg #nOT_ADMIN dao
+  withSender (AddressResolved dodOwner1) $
+    call dodDao (Call @"Transfer_contract_tokens") param
+    & expectCustomErrorNoArg #nOT_ADMIN dodDao
 
-  withSender (AddressResolved admin) $
-    call dao (Call @"Transfer_contract_tokens") param
+  withSender (AddressResolved dodAdmin) $
+    call dodDao (Call @"Transfer_contract_tokens") param
 
-  checkStorage (AddressResolved $ unTAddress fa2Contract)
+  checkStorage (AddressResolved $ unTAddress dodTokenContract)
     (toVal
       [ [ FA2.TransferItem { tiFrom = target_owner1, tiTxs = [FA2.TransferDestination { tdTo = target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
       ])

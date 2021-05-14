@@ -94,13 +94,13 @@ withOriginated
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
-  tokenContract <- originateSimple "token_contract" [] dummyFA2Contract
+  dodTokenContract <- originateSimple "token_contract" [] dummyFA2Contract
   let storageInitial = storageFn addresses
   now_time <- getNow
   let storage = storageInitial
         { fsStorage = (fsStorage storageInitial)
           { sGovernanceToken = GovernanceToken
-            { gtAddress = unTAddress tokenContract
+            { gtAddress = unTAddress dodTokenContract
             , gtTokenId = FA2.theTokenId
             }
           , sStartTime = now_time
@@ -113,7 +113,7 @@ withOriginated addrCount storageFn tests = do
     , uodStorage = untypeValue $ toVal storage
     , uodContract = convertContract baseDAOContractLigo
     }
-  tests addresses storage (TAddress baseDao) tokenContract
+  tests addresses storage (TAddress baseDao) dodTokenContract
 
 -- | We test non-token entrypoints of the BaseDAO contract here
 test_RegistryDAO :: [TestTree]
@@ -343,11 +343,11 @@ test_RegistryDAO =
           (\(admin : wallets) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin wallets) $
-          \[admin, wallet1, wallet2] _ baseDao tokenContract -> do
+          \[admin, wallet1, wallet2] _ baseDao dodTokenContract -> do
 
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $ Transfer_proposal $ TransferProposal 1
-                [ tokenTransferType (toAddress tokenContract) wallet2 wallet1]
+                [ tokenTransferType (toAddress dodTokenContract) wallet2 wallet1]
               proposalSize = metadataSize proposalMeta
               proposeParams = ProposeParams proposalSize proposalMeta
 
@@ -381,7 +381,7 @@ test_RegistryDAO =
 
             checkTokenBalance frozenTokenId baseDao wallet1 (defaultTokenBalance + proposalSize)
             checkTokenBalance frozenTokenId baseDao wallet2 (defaultTokenBalance + 20)
-            checkStorage (AddressResolved $ unTAddress tokenContract)
+            checkStorage (AddressResolved $ unTAddress dodTokenContract)
               (toVal
                 [ [ FA2.TransferItem { tiFrom = wallet2, tiTxs = [FA2.TransferDestination { tdTo = wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
                 , [ FA2.TransferItem { tiFrom = wallet2, tiTxs = [FA2.TransferDestination { tdTo = unTAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = 20 }] } ] -- Wallet2 freezes 20 tokens

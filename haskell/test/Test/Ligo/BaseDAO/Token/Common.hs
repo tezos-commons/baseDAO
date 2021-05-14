@@ -8,6 +8,7 @@ module Test.Ligo.BaseDAO.Token.Common
   , assertBalanceOf
 
   -- * Re-exports
+  , DaoOriginateData(..)
   , frozenTokens
   , unfrozenTokens
   , unfrozenTokens1
@@ -27,12 +28,12 @@ import Test.Ligo.BaseDAO.Common
 originateWithCustomToken :: MonadNettest caps base m => OriginateFn m
 originateWithCustomToken =
   originateLigoDaoWithBalance dynRecUnsafe defaultConfig
-      (\owner1 owner2 ->
-          [ ((owner1, frozenTokens), 100)
-          , ((owner2, frozenTokens), 100)
-          , ((owner1, unfrozenTokens), 1000)
-          , ((owner2, unfrozenTokens), 1000)
-          , ((owner1, unfrozenTokens1), 1000)
+      (\dodOwner1 dodOwner2 ->
+          [ ((dodOwner1, frozenTokens), 100)
+          , ((dodOwner2, frozenTokens), 100)
+          , ((dodOwner1, unfrozenTokens), 1000)
+          , ((dodOwner2, unfrozenTokens), 1000)
+          , ((dodOwner1, unfrozenTokens1), 1000)
           ]
       )
 

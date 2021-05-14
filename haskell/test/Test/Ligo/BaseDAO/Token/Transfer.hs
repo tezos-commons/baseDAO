@@ -20,124 +20,124 @@ transferTests :: TestTree
 transferTests = testGroup "Transfer:"
   [ testGroup "Transfers by operators:"
       [ nettestScenarioCaps "allows valid transfer and check balance" $ do
-          ((owner1, op1), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved op1) $
-            transfer 10 unfrozenTokens owner1 owner2 dao
+          withSender (AddressResolved dodOperator1) $
+            transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
           -- 1000 initially + 10 received
-          assertBalanceOf owner2 1010 unfrozenTokens dao
+          assertBalanceOf dodOwner2 1010 unfrozenTokens dodDao
 
       , nettestScenarioCaps "aborts if there is a failure (due to low balance)" $ do
-          ((owner1, op1), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved op1) $
-            transfer 1001 unfrozenTokens owner1 owner2 dao
+          withSender (AddressResolved dodOperator1) $
+            transfer 1001 unfrozenTokens dodOwner1 dodOwner2 dodDao
               & expectCustomError
-                  #fA2_INSUFFICIENT_BALANCE dao
+                  #fA2_INSUFFICIENT_BALANCE dodDao
                   (#required .! 1001, #present .! 1000)
 
       , nettestScenarioCaps "aborts if there is a failure (due to bad operator)" $ do
           op3 :: Address <- newAddress "operator3"
-          ((owner1, op1), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved op1) $
-            transfer 10 unfrozenTokens owner2 owner1 dao
-              & expectCustomError_ #fA2_NOT_OPERATOR dao
+          withSender (AddressResolved dodOperator1) $
+            transfer 10 unfrozenTokens dodOwner2 dodOwner1 dodDao
+              & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
           withSender (AddressResolved op3) $
-            transfer 10 unfrozenTokens owner2 owner1 dao
-              & expectCustomError_ #fA2_NOT_OPERATOR dao
+            transfer 10 unfrozenTokens dodOwner2 dodOwner1 dodDao
+              & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
       , nettestScenarioCaps "cannot transfer frozen tokens" $ do
-          ((owner1, op1), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved op1) $
-            transfer 10 frozenTokens owner1 owner2 dao
-              & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
+          withSender (AddressResolved dodOperator1) $
+            transfer 10 frozenTokens dodOwner1 dodOwner2 dodDao
+              & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dodDao
 
       , nettestScenarioCaps "fails if trying to transfer unknown tokens" $ do
-          ((owner1, op1), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved op1) $
-            transfer 0 unknownTokens owner1 owner2 dao
-              & expectCustomError_ #fA2_NOT_OPERATOR dao
+          withSender (AddressResolved dodOperator1) $
+            transfer 0 unknownTokens dodOwner1 dodOwner2 dodDao
+              & expectCustomError_ #fA2_NOT_OPERATOR dodDao
       ]
 
   , testGroup "Transfers by token owners:"
       [ nettestScenarioCaps "accepts an empty list of transfers" $ do
           someone :: Address <- newAddress "someone"
-          (_, _, dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
           withSender (AddressResolved someone) $
-            call dao (Call @"Transfer") []
+            call dodDao (Call @"Transfer") []
 
       , nettestScenarioCaps "allows zero transfer from non-existent owner" $ do
           nonexistent :: Address <- newAddress "nonexistent"
-          ((owner1, _), _, dao, _,  _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
           withSender (AddressResolved nonexistent) $
-            transfer 0 unfrozenTokens nonexistent owner1 dao
+            transfer 0 unfrozenTokens nonexistent dodOwner1 dodDao
 
       , nettestScenarioCaps "allows valid transfer and check balance" $ do
-            ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+            DaoOriginateData{..} <- originateWithCustomToken
 
-            withSender (AddressResolved owner1) $
-              transfer 10 unfrozenTokens owner1 owner2 dao
+            withSender (AddressResolved dodOwner1) $
+              transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
             -- 1000 initially + 10 received
-            assertBalanceOf owner2 1010 unfrozenTokens dao
+            assertBalanceOf dodOwner2 1010 unfrozenTokens dodDao
 
       , nettestScenarioCaps "aborts if there is a failure (due to low balance)" $ do
-          ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved owner1) $
-            transfer 1001 unfrozenTokens owner1 owner2 dao
+          withSender (AddressResolved dodOwner1) $
+            transfer 1001 unfrozenTokens dodOwner1 dodOwner2 dodDao
               & expectCustomError
-                  #fA2_INSUFFICIENT_BALANCE dao
+                  #fA2_INSUFFICIENT_BALANCE dodDao
                   (#required .! 1001, #present .! 1000)
 
       , nettestScenarioCaps "cannot transfer someone else's money" $ do
-          ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved owner1) $
-            transfer 10 unfrozenTokens owner2 owner1 dao
-              & expectCustomError_ #fA2_NOT_OPERATOR dao
+          withSender (AddressResolved dodOwner1) $
+            transfer 10 unfrozenTokens dodOwner2 dodOwner1 dodDao
+              & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
       , nettestScenarioCaps "aborts if there is a failure (due to non existent source account)" $ do
           nonexistent :: Address <- newAddress "nonexistent"
-          ((owner1, _), _, dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
           -- Failed with 'fA2_INSUFFICIENT_BALANCE' due to nonexistent account is treated
           -- as an existing account with 0 balance.
           withSender (AddressResolved nonexistent) $
-            transfer 1 unfrozenTokens nonexistent owner1 dao
-              & expectCustomError #fA2_INSUFFICIENT_BALANCE dao (#required .! 1, #present .! 0)
+            transfer 1 unfrozenTokens nonexistent dodOwner1 dodDao
+              & expectCustomError #fA2_INSUFFICIENT_BALANCE dodDao (#required .! 1, #present .! 0)
 
       , nettestScenarioCaps "cannot transfer frozen tokens" $ do
-          ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved owner1) $
-            transfer 10 frozenTokens owner1 owner2 dao
-              & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
+          withSender (AddressResolved dodOwner1) $
+            transfer 10 frozenTokens dodOwner1 dodOwner2 dodDao
+              & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dodDao
 
       , nettestScenarioCaps "fails if trying to transfer unknown tokens" $ do
-          ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved owner1) $
-            transfer 0 unknownTokens owner1 owner2 dao
-              & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
+          withSender (AddressResolved dodOwner1) $
+            transfer 0 unknownTokens dodOwner1 dodOwner2 dodDao
+              & expectCustomError_ #fA2_TOKEN_UNDEFINED dodDao
       ]
 
   , testGroup "Transfers by the administrator"
       [ nettestScenarioCaps "admin cannot transfer unfrozen tokens that don't belong to them" $ do
-          ((owner1, _), (owner2, _), dao, _, admin) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved admin) $
-            transfer 10 unfrozenTokens owner2 owner1 dao
-              & expectCustomError_ #fA2_NOT_OPERATOR dao
+          withSender (AddressResolved dodAdmin) $
+            transfer 10 unfrozenTokens dodOwner2 dodOwner1 dodDao
+              & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
       , nettestScenarioCaps "admin cannot transfer frozen tokens from any address to any address" $ do
-          ((owner1, _), (owner2, _), dao, _, admin) <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken
 
-          withSender (AddressResolved admin) $
-            transfer 10 frozenTokens owner1 owner2 dao
-              & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dao
+          withSender (AddressResolved dodAdmin) $
+            transfer 10 frozenTokens dodOwner1 dodOwner2 dodDao
+              & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dodDao
       ]
   ]

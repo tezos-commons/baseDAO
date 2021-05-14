@@ -35,94 +35,94 @@ updateOperatorsTests =
 addOperator :: MonadNettest caps base m => m ()
 addOperator = do
   operator :: Address <- newAddress "operator"
-  ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken
   let params = FA2.OperatorParam
-        { opOwner = owner1
+        { opOwner = dodOwner1
         , opOperator = operator
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Update_operators") [FA2.AddOperator params]
+  withSender (AddressResolved dodOwner1) $
+    call dodDao (Call @"Update_operators") [FA2.AddOperator params]
   withSender (AddressResolved operator) $
-    transfer 10 unfrozenTokens owner1 owner2 dao
+    transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
 
 addOperatorSingleToken :: MonadNettest caps base m => m ()
 addOperatorSingleToken = do
   operator :: Address <- newAddress "operator"
-  ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken
   let params = FA2.OperatorParam
-        { opOwner = owner1
+        { opOwner = dodOwner1
         , opOperator = operator
         , opTokenId = unfrozenTokens1
         }
 
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Update_operators") [FA2.AddOperator params]
+  withSender (AddressResolved dodOwner1) $
+    call dodDao (Call @"Update_operators") [FA2.AddOperator params]
   withSender (AddressResolved operator) $
-    transfer 10 unfrozenTokens owner1 owner2 dao
-      & expectCustomError_ #fA2_NOT_OPERATOR dao
+    transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
+      & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
 removeOperator :: MonadNettest caps base m => m ()
 removeOperator = do
-  ((owner1, op1), (owner2, _), dao, _, _) <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken
   let params = FA2.OperatorParam
-        { opOwner = owner1
-        , opOperator = op1
+        { opOwner = dodOwner1
+        , opOperator = dodOperator1
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Update_operators") [FA2.RemoveOperator params]
-  withSender (AddressResolved op1) $
-    transfer 10 unfrozenTokens owner1 owner2 dao
-      & expectCustomError_ #fA2_NOT_OPERATOR dao
+  withSender (AddressResolved dodOwner1) $
+    call dodDao (Call @"Update_operators") [FA2.RemoveOperator params]
+  withSender (AddressResolved dodOperator1) $
+    transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
+      & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
 notOwnerUpdatesOperator :: MonadNettest caps base m => m ()
 notOwnerUpdatesOperator = do
-  ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken
   let notOwnerParams = FA2.OperatorParam
-        { opOwner = owner2
-        , opOperator = owner1
+        { opOwner = dodOwner2
+        , opOperator = dodOwner1
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved owner1) $ do
-    call dao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
-      & expectCustomErrorNoArg #nOT_OWNER dao
-    call dao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
-      & expectCustomErrorNoArg #nOT_OWNER dao
+  withSender (AddressResolved dodOwner1) $ do
+    call dodDao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
+      & expectCustomErrorNoArg #nOT_OWNER dodDao
+    call dodDao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
+      & expectCustomErrorNoArg #nOT_OWNER dodDao
 
 adminUnfrozenOperator :: MonadNettest caps base m => m ()
 adminUnfrozenOperator = do
-  ((owner1, _), (owner2, _), dao, _, admin) <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken
   let params = FA2.OperatorParam
-        { opOwner = owner1
-        , opOperator = admin
+        { opOwner = dodOwner1
+        , opOperator = dodAdmin
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved owner1) $ do
-    call dao (Call @"Update_operators") [FA2.AddOperator params]
-    transfer 10 unfrozenTokens owner1 owner2 dao
+  withSender (AddressResolved dodOwner1) $ do
+    call dodDao (Call @"Update_operators") [FA2.AddOperator params]
+    transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
 
 frozenOperator :: MonadNettest caps base m => m ()
 frozenOperator = do
-  ((owner1, _), (owner2, _), dao, _, admin) <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken
   let params op = FA2.OperatorParam
-        { opOwner = owner1
+        { opOwner = dodOwner1
         , opOperator = op
         , opTokenId = frozenTokens
         }
 
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Update_operators") [FA2.AddOperator (params admin)]
-      & expectCustomErrorNoArg #oPERATION_PROHIBITED dao
+  withSender (AddressResolved dodOwner1) $
+    call dodDao (Call @"Update_operators") [FA2.AddOperator (params dodAdmin)]
+      & expectCustomErrorNoArg #oPERATION_PROHIBITED dodDao
 
-  withSender (AddressResolved owner1) $
-    call dao (Call @"Update_operators") [FA2.AddOperator (params owner2)]
-      & expectCustomErrorNoArg #oPERATION_PROHIBITED dao
+  withSender (AddressResolved dodOwner1) $
+    call dodDao (Call @"Update_operators") [FA2.AddOperator (params dodOwner2)]
+      & expectCustomErrorNoArg #oPERATION_PROHIBITED dodDao
 
-  withSender (AddressResolved admin) $
-    call dao (Call @"Update_operators") [FA2.AddOperator (params admin)]
-      & expectCustomErrorNoArg #oPERATION_PROHIBITED dao
+  withSender (AddressResolved dodAdmin) $
+    call dodDao (Call @"Update_operators") [FA2.AddOperator (params dodAdmin)]
+      & expectCustomErrorNoArg #oPERATION_PROHIBITED dodDao

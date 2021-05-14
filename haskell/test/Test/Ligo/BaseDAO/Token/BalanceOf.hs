@@ -20,29 +20,29 @@ import Test.Ligo.BaseDAO.Token.Common
 balanceOfTests :: TestTree
 balanceOfTests = testGroup "Balance_of:" $
   [ nettestScenarioCaps "returns an empty response on empty request" $ do
-      (_, _, dao, _, _) <- originateWithCustomToken
-      consumer <- callBalanceOf [] dao
+      DaoOriginateData{..} <- originateWithCustomToken
+      consumer <- callBalanceOf [] dodDao
       checkStorage (AddressResolved $ toAddress consumer)
         (toVal [[] :: [FA2.BalanceResponseItem]])
 
   , nettestScenarioCaps "correctly returns the balance of tokens" $ do
-      ((owner1, _), _, dao, _, _) <- originateWithCustomToken
-      consumer <- callBalanceOf [(owner1, unfrozenTokens)] dao
+      DaoOriginateData{..} <- originateWithCustomToken
+      consumer <- callBalanceOf [(dodOwner1, unfrozenTokens)] dodDao
       checkStorage (AddressResolved $ toAddress consumer)
-        (toVal [[((owner1, unfrozenTokens), 1000 :: Natural)]])
+        (toVal [[((dodOwner1, unfrozenTokens), 1000 :: Natural)]])
 
   , nettestScenarioCaps "correctly handles several request items" $ do
-      ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
+      DaoOriginateData{..} <- originateWithCustomToken
       consumer <- callBalanceOf
-          [(owner1, frozenTokens), (owner2, unfrozenTokens)] dao
+          [(dodOwner1, frozenTokens), (dodOwner2, unfrozenTokens)] dodDao
       checkStorage (AddressResolved $ toAddress consumer)
-        (toVal [[ ((owner1, frozenTokens), 100 :: Natural)
-                , ((owner2, unfrozenTokens), 1000 :: Natural)]])
+        (toVal [[ ((dodOwner1, frozenTokens), 100 :: Natural)
+                , ((dodOwner2, unfrozenTokens), 1000 :: Natural)]])
 
   , nettestScenarioCaps "fails if requested for an undefined token" $ do
-      ((owner1, _), (owner2, _), dao, _, _) <- originateWithCustomToken
-      callBalanceOf [(owner1, frozenTokens), (owner2, unknownTokens)] dao
-        & expectCustomError_ #fA2_TOKEN_UNDEFINED dao
+      DaoOriginateData{..} <- originateWithCustomToken
+      callBalanceOf [(dodOwner1, frozenTokens), (dodOwner2, unknownTokens)] dodDao
+        & expectCustomError_ #fA2_TOKEN_UNDEFINED dodDao
   ]
 
 
@@ -51,9 +51,9 @@ callBalanceOf
   => [(Address, FA2.TokenId)]
   -> TAddress Parameter
   -> m (TAddress [FA2.BalanceResponseItem])
-callBalanceOf items dao = do
+callBalanceOf items dodDao = do
   consumer :: TAddress [FA2.BalanceResponseItem]
       <- originateSimple "consumer" [] contractConsumer
-  call dao (Call @"Balance_of") $
+  call dodDao (Call @"Balance_of") $
     FA2.mkFA2View (map (uncurry FA2.BalanceRequestItem) items) consumer
   return consumer
