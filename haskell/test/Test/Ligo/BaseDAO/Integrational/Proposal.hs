@@ -43,7 +43,7 @@ checkFreezeHistoryTracking  = do
   now <- use isNow
 
   withOriginated 2 (\(admin:_) -> do
-    tokenContract <- lOriginate dummyFA2Contract "TokenContract" [] (toMutez 0)
+    dodTokenContract <- lOriginate dummyFA2Contract "TokenContract" [] (toMutez 0)
     pure $ mkFullStorage
       ! #admin admin
       ! #votingPeriod 10
@@ -51,7 +51,7 @@ checkFreezeHistoryTracking  = do
       ! #extra dynRecUnsafe
       ! #metadata mempty
       ! #now now
-      ! #tokenAddress (unTAddress tokenContract)
+      ! #tokenAddress (unTAddress dodTokenContract)
       ! #customEps mempty
     ) $ \(admin:wallet1:_) baseDao -> let
       proposalMeta1 = ""
@@ -78,7 +78,7 @@ checkFreezeHistoryTracking  = do
             when (fh /= (Just expected)) $ Left $ CustomTestError "BaseDAO contract did not stake tokens as expected"
 
         -- Advance two voting periods to another proposing stage.
-        rewindTime 20
+        rewindTime 21
 
         tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "flush") (toVal (1 :: Natural))
 

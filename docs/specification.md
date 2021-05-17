@@ -85,6 +85,9 @@ for more information on its content and usage.
 DAO configuration value parameters are captured by the `config` type:
 
 ```ocaml
+
+type seconds = nat
+
 type config =
   { proposal_check : propose_params * storage -> bool
   // ^ A lambda used to verify whether a proposal can be submitted.
@@ -105,6 +108,15 @@ type config =
 
   ; voting_period : voting_period
   // ^ Determine the voting_period length.
+
+  ; proposal_flush_time : seconds
+  // ^ Determine the minimum amount of seconds after the proposal is proposed to be able to be `flushed`.
+  // Have to be bigger than `voting_period * 2`
+
+  ; proposal_expired_time : seconds
+  // ^ Determine the minimum amount of seconds after the proposal is proposed to be considered as expired.
+  // Have to be bigger than `proposal_flush_time`
+
   ; quorum_threshold : quorum_threshold
   // ^ Determine the quorum threshold that the proposals need to meet.
   ; fixed_proposal_fee_in_token : nat
@@ -146,11 +158,19 @@ Some configuration values are specified in runtime and can be changed during the
 They must be provided on origination to construct the contract's initial storage.
 These values are:
 1. `admin : address` is the address that can perform administrative actions.
-2. `governance_token` is the FA2 contract address/token id pair that will be used as the governance token.
-3. `voting_period : nat` specifies how long the voting period lasts in seconds.
-4. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
+2. `guardian : address` is the address of a contract that have permission to call `drop_proposal` on any proposals.
+    - `guardian` contract cannot initiate the transaction that results in a call to `drop_proposal`
+3. `governance_token` is the FA2 contract address/token id pair that will be used as the governance token.
+4. `voting_period : nat` specifies how long the voting period lasts in seconds.
+5. `proposal_flush_time : nat`
+    - Specifies in seconds how long after the proposal is proposed it can be flushed.
+    - IMPORTANT: Must be bigger than `voting_period * 2`.
+6. `proposal_expired_time : nat`
+    - Specifies in seconds how long after the proposal is proposed it is considered expired.
+    - IMPORTANT: Must be bigger than `proposal_flush_time`.
+7. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
    tokens total supply of total votes are required for a successful proposal.
-5. `fixed_proposal_fee_in_token : nat` specifies the fee for submitting a proposal (in native DAO token).
+8. `fixed_proposal_fee_in_token : nat` specifies the fee for submitting a proposal (in native DAO token).
 
 # Contract logic
 
@@ -246,29 +266,31 @@ We start with standard FA2 errors which are part of the FA2 specification.
 The next group consists of the errors that are not part of the FA2 specification.
 The list of errors may be inaccurate and incomplete, it will be updated during the implementation.
 
-| Error                           | Description                                                                                                 |
-|---------------------------------|-------------------------------------------------------------------------------------------------------------|
-| `NOT_ADMIN`                     | The sender is not the administrator                                                                         |
-| `NOT_PENDING_ADMIN`             | Authorized sender is not the current pending administrator                                                  |
-| `NOT_TOKEN_OWNER`               | Trying to configure operators for a different wallet which sender does not own                              |
-| `FAIL_PROPOSAL_CHECK`           | Throws when trying to propose a proposal that does not pass `proposalCheck`                                 |
-| `FROZEN_TOKEN_NOT_TRANSFERABLE` | Transfer entrypoint is called for frozen token                                                              |
-| `PROPOSAL_NOT_EXIST`            | Throws when trying to vote on a proposal that does not exist                                                |
-| `QUORUM_NOT_MET`                | A proposal is flushed, but there are not enough votes                                                       |
-| `VOTING_PERIOD_OVER`            | Throws when trying to vote on a proposal that is already ended                                              |
-| `MAX_PROPOSALS_REACHED`         | Throws when trying to propose a proposal when proposals max amount is already reached                       |
-| `MAX_VOTES_REACHED`             | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
-| `FORBIDDEN_XTZ`                 | Throws when some XTZ was received as part of the contract call                                              |
-| `PROPOSER_NOT_EXIST_IN_LEDGER`  | Expect a proposer address to exist in Ledger but it is not found                                            |
-| `PROPOSAL_NOT_UNIQUE`           | Trying to propose a proposal that is already existed in the Storage.                                        |
-| `MISSIGNED`                     | Parameter signature does not match the expected one - for permits.                                          |
-| `ENTRYPOINT_NOT_FOUND`          | Throw when `CallCustom` is called with a non-existing entrypoint                                            |
-| `UNPACKING_FAILED`              | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.               |
-| `MISSING_VALUE`                 | Throw when trying to unpack a field that does not exist.                                                    |
-| `NOT_PROPOSING_PERIOD`          | Throw when `propose` call is made on a non-proposing period.                                                |
-| `NOT_ENOUGH_FROZEN_TOKENS`      | Throw when there is not enough frozen tokens for the operation.                                             |
-| `NOT_ENOUGH_STAKED_TOKENS`      | Throw when there is not enough staked tokens for the operation.                                             |
-| `BAD_TOKEN_CONTRACT`            | Throw when the token contract is not of expected type.
+| Error                            | Description                                                                                                      |
+|----------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `NOT_ADMIN`                      | The sender is not the administrator                                                                              |
+| `NOT_PENDING_ADMIN`              | Authorized sender is not the current pending administrator                                                       |
+| `NOT_TOKEN_OWNER`                | Trying to configure operators for a different wallet which sender does not own                                   |
+| `FAIL_PROPOSAL_CHECK`            | Throws when trying to propose a proposal that does not pass `proposalCheck`                                      |
+| `FROZEN_TOKEN_NOT_TRANSFERABLE`  | Transfer entrypoint is called for frozen token                                                                   |
+| `PROPOSAL_NOT_EXIST`             | Throws when trying to vote on a proposal that does not exist                                                     |
+| `QUORUM_NOT_MET`                 | A proposal is flushed, but there are not enough votes                                                            |
+| `VOTING_PERIOD_OVER`             | Throws when trying to vote on a proposal that is already ended                                                   |
+| `MAX_PROPOSALS_REACHED`          | Throws when trying to propose a proposal when proposals max amount is already reached                            |
+| `MAX_VOTES_REACHED`              | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached           |
+| `FORBIDDEN_XTZ`                  | Throws when some XTZ was received as part of the contract call                                                   |
+| `PROPOSER_NOT_EXIST_IN_LEDGER`   | Expect a proposer address to exist in Ledger but it is not found                                                 |
+| `PROPOSAL_NOT_UNIQUE`            | Trying to propose a proposal that is already existed in the Storage.                                             |
+| `MISSIGNED`                      | Parameter signature does not match the expected one - for permits.                                               |
+| `ENTRYPOINT_NOT_FOUND`           | Throw when `CallCustom` is called with a non-existing entrypoint                                                 |
+| `UNPACKING_FAILED`               | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.                    |
+| `MISSING_VALUE`                  | Throw when trying to unpack a field that does not exist.                                                         |
+| `NOT_PROPOSING_PERIOD`           | Throw when `propose` call is made on a non-proposing period.                                                     |
+| `NOT_ENOUGH_FROZEN_TOKENS`       | Throw when there is not enough frozen tokens for the operation.                                                  |
+| `NOT_ENOUGH_STAKED_TOKENS`       | Throw when there is not enough staked tokens for the operation.                                                  |
+| `BAD_TOKEN_CONTRACT`             | Throw when the token contract is not of expected type.                                                           |
+| `DROP_PROPOSAL_CONDITION_NOT_MET`| Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired.      |
+| `EXPIRED_PROPOSAL`               | Throw when trying to `flush` expired proposals.                                                                  |
 
 # Entrypoints
 
@@ -660,7 +682,7 @@ Parameter (in Michelson):
 (nat %flush)
 ```
 
-- Finish voting process on an amount of proposals for which the voting period is over.
+- Finish voting process on an amount of proposals for which their `proposal_flush_time` was reached, but their `proposal_expire_time` wasn't yet.
 - The order of processing proposals are from 'the oldest' to 'the newest'. The proposals which
 have the same timestamp due to being in the same block, are processed in the order of their proposal keys.
 - Frozen tokens from voters and proposal submitter associated with those proposals are returned
@@ -687,12 +709,11 @@ Parameter (in Michelson):
 (bytes %drop_proposal)
 ```
 
-- Delete a finished and accepted proposal that is not flushed. Tokens frozen for this
-proposal are returned to the proposer and voters in full. The decision lambda is skipped.
-- This entrypoint should only be used when there is a proposal that is stuck due to having a
-failing decision lambda.
-- Fails with `NOT_ADMIN` if the sender is not the administrator.
-
+- Delete a proposal when its `proposal_expired_time` is reached.
+- The proposer can call this entrypoint to delete his/her own proposal regardless of `proposal_expired_time`.
+- The `guardian` can call this entrypoint to delete any proposals at anytime regardless of `proposal_expired_time`.
+- Fails with `DROP_PROPOSAL_CONDITION_NOT_MET` when none of the conditions above are met.
+- Tokens that are frozen for this proposal are returned to the proposer and voters as if the proposal is rejected regardless of the actual votes.
 
 [FA2]: https://gitlab.com/tzip/tzip/-/blob/3a6464b1e641008b77a83807a0c102e7602c6af4/proposals/tzip-12/tzip-12.md
 

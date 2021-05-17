@@ -84,13 +84,15 @@ data ConfigConstants = ConfigConstants
   , cmMaxVotes :: Maybe Natural
   , cmQuorumThreshold :: Maybe DAO.QuorumThreshold
   , cmVotingPeriod :: Maybe DAO.VotingPeriod
+  , cmProposalFlushTime :: Maybe Natural
+  , cmProposalExpiredTime :: Maybe Natural
   }
 
 -- | Constructor for config descriptor that overrides config constants.
 --
 -- Example: @configConsts{ cmMinVotingPeriod = 10 }@
 configConsts :: ConfigConstants
-configConsts = ConfigConstants Nothing Nothing Nothing Nothing
+configConsts = ConfigConstants Nothing Nothing Nothing Nothing Nothing Nothing
 
 data ProposalFrozenTokensCheck =
   ProposalFrozenTokensCheck (Lambda ("ppFrozenToken" :! Natural) Bool)
@@ -181,6 +183,8 @@ instance IsConfigDescExt DAO.Config ConfigConstants where
   fillConfig ConfigConstants{..} DAO.Config'{..} = DAO.Config'
     { cMaxProposals = cmMaxProposals ?: cMaxProposals
     , cMaxVotes = cmMaxVotes ?: cMaxVotes
+    , cProposalFlushTime = cmProposalFlushTime ?: cProposalFlushTime
+    , cProposalExpiredTime = cmProposalExpiredTime ?: cProposalExpiredTime
     , ..
     }
 

@@ -6,7 +6,8 @@
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 module Test.Ligo.BaseDAO.Common
-  ( OriginateFn
+  ( DaoOriginateData(..)
+  , OriginateFn
   , TransferProposal(..)
   , totalSupplyFromLedger
 
@@ -32,7 +33,7 @@ module Test.Ligo.BaseDAO.Common
   , module StorageHelper
   ) where
 
-import Universum
+import Universum hiding (drop, swap)
 
 import Lorentz hiding (now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
@@ -50,7 +51,18 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
-type OriginateFn m = m ((Address, Address), (Address, Address), TAddress Parameter, TAddress FA2.Parameter, Address)
+type OriginateFn m = m DaoOriginateData
+
+data DaoOriginateData = DaoOriginateData
+  { dodOwner1 :: Address
+  , dodOperator1 :: Address
+  , dodOwner2 :: Address
+  , dodOperator2 :: Address
+  , dodDao :: TAddress Parameter
+  , dodTokenContract :: TAddress FA2.Parameter
+  , dodAdmin :: Address
+  , dodGuardian :: TAddress (Address, ProposalKey)
+  }
 
 -- | Shared Proposal type used in Registry DAO and Treasury DAO
 data TransferProposal = TransferProposal
@@ -75,6 +87,20 @@ dummyFA2Contract = defaultContract $
       , #cTransfer /-> cons
       , #cUpdate_operators /-> Lorentz.drop
       )) # nil # pair
+
+-- | A dummy contract that act as guardian contract for BaseDAO
+dummyGuardianContract :: Contract (Address, ProposalKey) ()
+dummyGuardianContract = defaultContract $
+  unpair # unpair #
+  stackType @'[Address, ProposalKey, ()] #
+  contractCalling @Parameter (Call @"Drop_proposal") #
+  ifSome (
+      swap #
+      push zeroMutez # swap #
+      transferTokens # nil # swap # cons
+    ) (drop # nil) #
+  stackType @'[[Operation], ()] #
+  pair
 
 totalSupplyFromLedger :: Ledger -> TotalSupply
 totalSupplyFromLedger (BigMap ledger) =
@@ -110,10 +136,10 @@ checkTokenBalance
   => FA2.TokenId -> TAddress Parameter
   -> Address -> Natural
   -> m ()
-checkTokenBalance tokenId dao addr expectedValue = withFrozenCallStack $ do
+checkTokenBalance tokenId dodDao addr expectedValue = withFrozenCallStack $ do
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  withSender (AddressResolved addr) $ call dao (Call @"Balance_of")
+  withSender (AddressResolved addr) $ call dodDao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = addr
       , briTokenId = tokenId
@@ -165,11 +191,11 @@ sendXtz addr epName pm = withFrozenCallStack $ do
 -- checkIfAProposalExist
 --   :: MonadNettest caps base m
 --   => ProposalKey -> TAddress (Parameter TestProposalMetadata) -> m ()
--- checkIfAProposalExist proposalKey dao = do
+-- checkIfAProposalExist proposalKey dodDao = do
 --   owner :: Address <- newAddress "owner"
 --   consumer <- originateSimple "consumer" [] contractConsumer
 --   -- | If the proposal exists, there should be no error
---   callFrom (AddressResolved owner) dao (Call @"Proposal_metadata") (mkView proposalKey consumer)
+--   callFrom (AddressResolved owner) dodDao (Call @"Proposal_metadata") (mkView proposalKey consumer)
 
 -- TODO [#31]: See this ISSUES: https://gitlab.com/morley-framework/morley/-/issues/415#note_435327096
 -- Check if certain field in storage
@@ -198,6 +224,7 @@ originateLigoDaoWithBalance extra config balFunc = do
 
   now <- getNow
   tokenContract <- originateSimple "TokenContract" [] dummyFA2Contract
+  guardianContract <- originateSimple "guardian" () dummyGuardianContract
 
   let fullStorage = FullStorage'
         { fsStorage =
@@ -211,6 +238,7 @@ originateLigoDaoWithBalance extra config balFunc = do
             { sLedger = bal
             , sOperators = operators
             , sTotalSupply = totalSupplyFromLedger bal
+            , sGuardian = unTAddress guardianContract
             }
         , fsConfig = config
         }
@@ -223,9 +251,10 @@ originateLigoDaoWithBalance extra config balFunc = do
       }
 
   daoUntyped <- originateLargeUntyped originateData
+
   let dao = TAddress @Parameter daoUntyped
 
-  pure ((owner1, operator1), (owner2, operator2), dao, tokenContract, admin)
+  pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract admin guardianContract
 
 originateLigoDaoWithConfig
  :: MonadNettest caps base m
@@ -258,11 +287,11 @@ originateLigoDao =
 createSampleProposal
   :: (MonadNettest caps base m, HasCallStack)
   => Int -> Address -> TAddress Parameter -> m ProposalKey
-createSampleProposal counter owner1 dao = do
+createSampleProposal counter dodOwner1 dao = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer $ fromIntegral counter
         }
 
-  withSender (AddressResolved owner1) $ call dao (Call @"Propose") params
-  pure $ (makeProposalKey params owner1)
+  withSender (AddressResolved dodOwner1) $ call dao (Call @"Propose") params
+  pure $ (makeProposalKey params dodOwner1)

@@ -316,6 +316,10 @@ let is_voting_period_over (proposal, voting_period, store : proposal * voting_pe
   current_period > proposal.period_num + 1n
 
 [@inline]
+let is_time_reached (proposal, sec : proposal * seconds): bool =
+  Tezos.now > proposal.start_date + int(sec)
+
+[@inline]
 let do_total_vote_meet_quorum_threshold (proposal, store, quorum_threshold : proposal * storage * quorum_threshold): bool =
   let votes_placed = proposal.upvotes + proposal.downvotes in
   let total_supply =
@@ -344,27 +348,32 @@ let handle_proposal_is_over
     )
     : (operation list * storage * counter) =
   let proposal = check_if_proposal_exist (proposal_key, store) in
-  if    is_voting_period_over (proposal, config.voting_period, store)
-     && counter.current < counter.total // not finished
-  then
-    let counter = { counter with current = counter.current + 1n } in
-    let cond =    do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
-               && proposal.upvotes > proposal.downvotes
-    in
-    let store = unfreeze_proposer_and_voter_token
-          (config.rejected_proposal_return_value, cond, proposal, config.voting_period, config.fixed_proposal_fee_in_token, store) in
-    let (new_ops, store) =
-      if cond
-      then
-        let (ops, new_extra) = config.decision_lambda (proposal, store.extra)
-        in (ops, { store with extra = new_extra })
-      else (([] : operation list), store)
-    in
-    let cons = fun (l, e : operation list * operation) -> e :: l in
-    let ops = List.fold cons ops new_ops in
-    let store = delete_proposal (start_date, proposal_key, store) in
-    (ops, store, counter)
-  else (ops, store, counter)
+
+  if is_time_reached (proposal, config.proposal_expired_time)
+    then (failwith("EXPIRED_PROPOSAL") : (operation list * storage * counter))
+  else (
+    if is_time_reached (proposal, config.proposal_flush_time)
+      && counter.current < counter.total // not finished
+    then
+      let counter = { counter with current = counter.current + 1n } in
+      let cond =    do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
+                && proposal.upvotes > proposal.downvotes
+      in
+      let store = unfreeze_proposer_and_voter_token
+            (config.rejected_proposal_return_value, cond, proposal, config.voting_period, config.fixed_proposal_fee_in_token, store) in
+      let (new_ops, store) =
+        if cond
+        then
+          let (ops, new_extra) = config.decision_lambda (proposal, store.extra)
+          in (ops, { store with extra = new_extra })
+        else (([] : operation list), store)
+      in
+      let cons = fun (l, e : operation list * operation) -> e :: l in
+      let ops = List.fold cons ops new_ops in
+      let store = delete_proposal (start_date, proposal_key, store) in
+      (ops, store, counter)
+    else (ops, store, counter)
+    )
 
 // Flush all proposals that passed their voting period.
 let flush(n, config, store : nat * config * storage): return =
@@ -391,22 +400,23 @@ let flush(n, config, store : nat * config * storage): return =
 
 // Removes an accepted and finished proposal by key.
 let drop_proposal (proposal_key, config, store : proposal_key * config * storage): return =
-  let store = authorize_admin store in
-
   let proposal = check_if_proposal_exist (proposal_key, store) in
-  if is_voting_period_over(proposal, config.voting_period, store)
+  let proposal_is_expired = is_time_reached (proposal, config.proposal_expired_time) in
+
+  if   (sender = proposal.proposer)
+    || (sender = store.guardian && sender <> source) // Guardian cannot be equal to SOURCE
+    || proposal_is_expired
   then
-    if   do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
-      && proposal.upvotes > proposal.downvotes
-    then
-      let store = unfreeze_proposer_and_voter_token
-            (config.rejected_proposal_return_value, true, proposal, config.voting_period, config.fixed_proposal_fee_in_token, store) in
-      let store = delete_proposal (proposal.start_date, proposal_key, store) in
-      (([] : operation list), store)
-    else
-      (failwith("FAIL_DROP_PROPOSAL_NOT_ACCEPTED") : return)
+    let store = unfreeze_proposer_and_voter_token
+          ( config.rejected_proposal_return_value
+          , false // A dropped proposal is treated as rejected regardless of its actual votes
+          , proposal, config.voting_period
+          , config.fixed_proposal_fee_in_token, store
+          ) in
+    let store = delete_proposal (proposal.start_date, proposal_key, store) in
+    (([] : operation list), store)
   else
-    (failwith("FAIL_DROP_PROPOSAL_NOT_OVER") : return)
+    (failwith("DROP_PROPOSAL_CONDITION_NOT_MET") : return)
 
 
 let freeze (amt, config, store : freeze_param * config * storage) : return =
