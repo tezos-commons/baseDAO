@@ -34,21 +34,21 @@ validProposal originateFn getTotalSupplyFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
   -- Check the token contract got a transfer call from
   -- baseDAO
-  checkStorage (AddressResolved $ unTAddress dodTokenContract)
+  checkStorage (unTAddress dodTokenContract)
     (toVal [[FA2.TransferItem { tiFrom = dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]])
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Propose") params
+  withSender dodOwner1 $ call dodDao (Call @"Propose") params
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
 
   -- Check total supply
-  totalSupply <- getTotalSupplyFn (AddressResolved $ unTAddress dodDao ) frozenTokenId
+  totalSupply <- getTotalSupplyFn (unTAddress dodDao ) frozenTokenId
   totalSupply @== 210 -- initial = 0
 
 rejectProposal
@@ -61,13 +61,13 @@ rejectProposal originateFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Propose") params
+  withSender dodOwner1 $ call dodDao (Call @"Propose") params
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
 
 nonUniqueProposal
@@ -76,7 +76,7 @@ nonUniqueProposal
 nonUniqueProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
@@ -91,10 +91,10 @@ voteValidProposal
 voteValidProposal originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -110,6 +110,6 @@ voteValidProposal originateFn = do
 
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [params]
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dodDao dodOwner2 102
   -- TODO [#31]: check if the vote is updated properly

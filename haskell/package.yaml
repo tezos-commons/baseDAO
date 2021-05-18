@@ -94,6 +94,7 @@ library:
   dependencies:
     - cleveland
     - containers
+    - data-default
     - directory
     - filepath
     - text

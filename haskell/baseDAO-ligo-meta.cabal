@@ -39,6 +39,7 @@ library
       base-noprelude >=4.7 && <5
     , cleveland
     , containers
+    , data-default
     , directory
     , filepath
     , fmt

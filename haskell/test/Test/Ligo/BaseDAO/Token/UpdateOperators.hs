@@ -42,9 +42,9 @@ addOperator = do
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Update_operators") [FA2.AddOperator params]
-  withSender (AddressResolved operator) $
+  withSender operator $
     transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
 
 addOperatorSingleToken :: MonadNettest caps base m => m ()
@@ -57,9 +57,9 @@ addOperatorSingleToken = do
         , opTokenId = unfrozenTokens1
         }
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Update_operators") [FA2.AddOperator params]
-  withSender (AddressResolved operator) $
+  withSender operator $
     transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
       & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
@@ -72,9 +72,9 @@ removeOperator = do
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Update_operators") [FA2.RemoveOperator params]
-  withSender (AddressResolved dodOperator1) $
+  withSender dodOperator1 $
     transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
       & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
@@ -87,7 +87,7 @@ notOwnerUpdatesOperator = do
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved dodOwner1) $ do
+  withSender dodOwner1 $ do
     call dodDao (Call @"Update_operators") ([FA2.AddOperator notOwnerParams])
       & expectCustomErrorNoArg #nOT_OWNER dodDao
     call dodDao (Call @"Update_operators") [FA2.RemoveOperator notOwnerParams]
@@ -102,7 +102,7 @@ adminUnfrozenOperator = do
         , opTokenId = unfrozenTokens
         }
 
-  withSender (AddressResolved dodOwner1) $ do
+  withSender dodOwner1 $ do
     call dodDao (Call @"Update_operators") [FA2.AddOperator params]
     transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
 
@@ -115,14 +115,14 @@ frozenOperator = do
         , opTokenId = frozenTokens
         }
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Update_operators") [FA2.AddOperator (params dodAdmin)]
       & expectCustomErrorNoArg #oPERATION_PROHIBITED dodDao
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Update_operators") [FA2.AddOperator (params dodOwner2)]
       & expectCustomErrorNoArg #oPERATION_PROHIBITED dodDao
 
-  withSender (AddressResolved dodAdmin) $
+  withSender dodAdmin $
     call dodDao (Call @"Update_operators") [FA2.AddOperator (params dodAdmin)]
       & expectCustomErrorNoArg #oPERATION_PROHIBITED dodDao

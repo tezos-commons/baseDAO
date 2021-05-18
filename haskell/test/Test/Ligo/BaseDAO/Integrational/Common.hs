@@ -7,7 +7,7 @@ module Test.Ligo.BaseDAO.Integrational.Common
 
 import Universum
 
-import Lorentz
+import Lorentz hiding (take)
 import Lorentz.Test
 
 import Data.List.NonEmpty as NE (toList)

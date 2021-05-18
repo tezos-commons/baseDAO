@@ -49,7 +49,7 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
 metadataSize :: ByteString -> Natural
 metadataSize md = fromIntegral $ BS.length md
 
-validProposal :: (Monad m, HasCallStack) => NettestImpl m -> m ()
+validProposal :: HasCallStack => NettestScenario m
 validProposal = uncapsNettest $ withFrozenCallStack do
   DaoOriginateData{..} <-
     originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
@@ -65,22 +65,22 @@ validProposal = uncapsNettest $ withFrozenCallStack do
     proposalSize = metadataSize proposalMeta -- 115
 
   -- Freeze in voting stage.
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
 
-  checkTokenBalance frozenTokenId dodDao dodOwner1 315
+  checkTokenBalance frozenTokenId dodDao dodOwner1 (200 + proposalSize)
 
-flushTokenTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
+flushTokenTransfer :: HasCallStack => NettestScenario m
 flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateTreasuryDaoWithBalance $ \_ owner2_ ->
@@ -96,20 +96,19 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
     proposalSize = metadataSize proposalMeta
     proposeParams = ProposeParams proposalSize proposalMeta
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting periods to a proposing stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner1) $
-    call dodDao (Call @"Propose") proposeParams
+  withSender dodOwner1 $ call dodDao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams dodOwner1
 
-  checkTokenBalance frozenTokenId dodDao dodOwner1 115
+  checkTokenBalance frozenTokenId dodDao dodOwner1 proposalSize
 
   let
     upvote = NoPermit VoteParam
@@ -120,15 +119,15 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
 
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [upvote]
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   checkTokenBalance frozenTokenId dodDao dodOwner1 proposalSize
   checkTokenBalance frozenTokenId dodDao dodOwner2 120
 
-flushXtzTransfer :: (Monad m, HasCallStack) => NettestImpl m -> m ()
+flushXtzTransfer :: HasCallStack => NettestScenario m
 flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateTreasuryDaoWithBalance $ \_ _ ->
@@ -145,15 +144,15 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
     proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
   -- Freeze in initial voting stage.
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta 3))
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner1) $ do
+  withSender dodOwner1 $ do
   -- due to smaller than min_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 1)
       & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
@@ -176,10 +175,10 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
 
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [upvote]
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 10)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
 --   -- TODO: check xtz balance
 

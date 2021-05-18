@@ -139,13 +139,13 @@ checkTokenBalance
 checkTokenBalance tokenId dodDao addr expectedValue = withFrozenCallStack $ do
   consumer <- originateSimple "consumer" [] contractConsumer
 
-  withSender (AddressResolved addr) $ call dodDao (Call @"Balance_of")
+  withSender addr $ call dodDao (Call @"Balance_of")
     (mkFA2View [ FA2.BalanceRequestItem
       { briOwner = addr
       , briTokenId = tokenId
       } ] consumer)
 
-  checkStorage (AddressResolved $ toAddress consumer)
+  checkStorage (toAddress consumer)
     (toVal [[((addr, tokenId), expectedValue)]] )
 
 makeProposalKey :: ProposeParams -> Address -> ProposalKey
@@ -164,11 +164,10 @@ addDataToSign (toAddress -> dsContract) dsNonce dsData = do
 -- | Add a permit from given user.
 permitProtect
   :: (MonadNettest caps base m, NicePackedValue a)
-  => AddressOrAlias -> (DataToSign a, a) -> m (PermitProtected a)
+  => Address -> (DataToSign a, a) -> m (PermitProtected a)
 permitProtect author (toSign, a) = do
-  authorAlias <- getAlias author
   pKey <- getPublicKey author
-  pSignature <- signBinary (lPackValue toSign) authorAlias
+  pSignature <- signBinary (lPackValue toSign) author
   return PermitProtected
     { ppArgument = a
     , ppPermit = Just Permit{..}
@@ -179,7 +178,7 @@ sendXtz
   => Address -> EpName -> pm -> m ()
 sendXtz addr epName pm = withFrozenCallStack $ do
   let transferData = TransferData
-        { tdTo = AddressResolved addr
+        { tdTo = addr
         , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
         , tdEntrypoint = epName
         , tdParameter = pm
@@ -195,7 +194,7 @@ sendXtz addr epName pm = withFrozenCallStack $ do
 --   owner :: Address <- newAddress "owner"
 --   consumer <- originateSimple "consumer" [] contractConsumer
 --   -- | If the proposal exists, there should be no error
---   callFrom (AddressResolved owner) dodDao (Call @"Proposal_metadata") (mkView proposalKey consumer)
+--   callFrom owner dodDao (Call @"Proposal_metadata") (mkView proposalKey consumer)
 
 -- TODO [#31]: See this ISSUES: https://gitlab.com/morley-framework/morley/-/issues/415#note_435327096
 -- Check if certain field in storage
@@ -294,5 +293,5 @@ createSampleProposal counter dodOwner1 dao = do
         , ppProposalMetadata = lPackValueRaw @Integer $ fromIntegral counter
         }
 
-  withSender (AddressResolved dodOwner1) $ call dao (Call @"Propose") params
+  withSender dodOwner1 $ call dao (Call @"Propose") params
   pure $ (makeProposalKey params dodOwner1)

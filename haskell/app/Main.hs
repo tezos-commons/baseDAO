@@ -63,15 +63,6 @@ programInfo = Opt.info (Opt.helper <*> versionOption <*> cmdArgsParser) $
     versionOption = Opt.infoOption ("baseDAO-ligo-meta-" <> showVersion version)
       (Opt.long "version" <> Opt.help "Show version.")
 
--- TODO morley/569: remove this.
-mkCommandParser
-  :: String
-  -> Opt.Parser a
-  -> String
-  -> Opt.Mod Opt.CommandFields a
-mkCommandParser commandName parser desc =
-  Opt.command commandName $ Opt.info parser $ Opt.progDesc desc
-
 -- | Parse metadata for token with given name and given default values.
 tokenMetadataParser
   :: String

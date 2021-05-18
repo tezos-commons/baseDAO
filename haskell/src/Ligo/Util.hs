@@ -10,6 +10,7 @@ module Ligo.Util
 
 import Universum
 
+import Data.Default (def)
 import Fmt (pretty)
 import qualified Language.Haskell.TH as TH
 import Language.Haskell.TH.Syntax (qAddDependentFile)
@@ -20,6 +21,7 @@ import System.FilePath ((</>))
 
 import Michelson.Parser
 import Michelson.Test.Import -- TODO morley/565: remove cleveland dependency
+import Michelson.TypeCheck (typeCheckingWith)
 import Michelson.TypeCheck.Instr
 import Michelson.Typed
 
@@ -100,4 +102,4 @@ resolveSourcePath defaultPath envKey =
 readTypedValue_ :: forall st. (KnownT st) => Text -> Either Text (Value st)
 readTypedValue_ valueLiteral = do
   uValue <- first pretty $ parseExpandValue valueLiteral
-  first pretty $ typeVerifyStorage @st uValue
+  first pretty . typeCheckingWith def $ typeVerifyStorage @st uValue

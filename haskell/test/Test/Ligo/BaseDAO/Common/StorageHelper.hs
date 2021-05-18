@@ -23,11 +23,11 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 import Ligo.BaseDAO.Types
 
-getFullStorage :: AddressOrAlias -> EmulatedT PureM FullStorage
+getFullStorage :: Address -> EmulatedT PureM FullStorage
 getFullStorage addr =
   fromVal @FullStorage <$> getStorage' @(ToT FullStorage) addr
 
-getFullStorageView :: (Monad m) => AddressOrAlias -> NettestT m FullStorageView
+getFullStorageView :: (Monad m) => Address -> NettestT m FullStorageView
 getFullStorageView addr =
   fromVal @FullStorageView <$> getStorage @(ToT FullStorageView) addr
 
@@ -35,9 +35,9 @@ getFullStorageView addr =
 -- GetTotalSupply
 ------------------------------------------------------------------------
 
-type GetTotalSupplyFn m = AddressOrAlias -> FA2.TokenId -> m Natural
+type GetTotalSupplyFn m = Address -> FA2.TokenId -> m Natural
 
-getTotalSupplyEmulator :: AddressOrAlias -> FA2.TokenId -> EmulatedT PureM Natural
+getTotalSupplyEmulator :: Address -> FA2.TokenId -> EmulatedT PureM Natural
 getTotalSupplyEmulator addr tokenId = do
   fs <- getFullStorage addr
   let result = case M.lookup tokenId $ sTotalSupply (fsStorage fs) of
@@ -48,7 +48,7 @@ getTotalSupplyEmulator addr tokenId = do
 -- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
 -- anyway. Commented due to weeder.
 
--- getTotalSupplyNetwork :: (Monad m) => AddressOrAlias -> FA2.TokenId -> NettestT m Natural
+-- getTotalSupplyNetwork :: (Monad m) => Address -> FA2.TokenId -> NettestT m Natural
 -- getTotalSupplyNetwork addr tokenId = do
 --   fs <- getFullStorageView addr
 --   let result = case M.lookup tokenId $ sTotalSupply (fsStorage fs) of
@@ -60,9 +60,9 @@ getTotalSupplyEmulator addr tokenId = do
 -- GetVotePermitsCounter
 ------------------------------------------------------------------------
 
-type GetVotePermitsCounterFn m = AddressOrAlias -> m Nonce
+type GetVotePermitsCounterFn m = Address -> m Nonce
 
-getVotePermitsCounterEmulator :: AddressOrAlias -> EmulatedT PureM Nonce
+getVotePermitsCounterEmulator :: Address -> EmulatedT PureM Nonce
 getVotePermitsCounterEmulator addr = do
   fs <- getFullStorage addr
   pure $ sPermitsCounter (fsStorage fs)
@@ -70,7 +70,7 @@ getVotePermitsCounterEmulator addr = do
 -- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
 -- anyway. Commented due to weeder.
 
--- getVotePermitsCounterNetwork :: (Monad m) => AddressOrAlias -> NettestT m Nonce
+-- getVotePermitsCounterNetwork :: (Monad m) => Address -> NettestT m Nonce
 -- getVotePermitsCounterNetwork addr = do
 --   fs <- getFullStorageView addr
 --   pure $ sPermitsCounter (fsStorage fs)
