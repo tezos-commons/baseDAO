@@ -173,7 +173,6 @@ let period_to_cycle (p: nat): nat = (p + 1n) / 2n
 
 let stake_tk(token_amount, addr, voting_period, store : nat * address * voting_period * storage): storage =
   let current_period = get_current_period_num(store.start_time, voting_period) in
-  let current_cycle = period_to_cycle(current_period) in
   let new_cycle_staked = store.quorum_threshold_at_cycle.staked + token_amount in
   let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
@@ -474,7 +473,7 @@ let flush(n, config, store : nat * config * storage): return =
         let (start_date, proposal_key) = e in
         handle_proposal_is_over (config, start_date, proposal_key, store, ops, counter)
       in
-  let (ops, store, counter) =
+  let (ops, store, _) =
     Set.fold flush_one store.proposal_key_list_sort_by_date (([] : operation list), store, counter) in
   (ops, store)
 

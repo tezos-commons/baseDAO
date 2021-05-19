@@ -31,7 +31,7 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
 
     let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
       match transfer_type with
-      | Token_transfer_type tt -> is_valid
+      | Token_transfer_type _tt -> is_valid
       | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
     in
       List.fold is_all_transfers_valid pm.transfers true
@@ -45,10 +45,6 @@ let treasury_DAO_rejected_proposal_return_value (params, extras : proposal * con
 
 let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     : operation list * contract_extra =
-  let propose_param : propose_params = {
-    frozen_token = proposal.proposer_frozen_token;
-    proposal_metadata = proposal.metadata
-    } in
   let pm = unpack_proposal_metadata(proposal.metadata) in
   let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
       let (is_valid, extras, ops) = acc in
@@ -84,7 +80,7 @@ let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.
-let receive_xtz_entrypoint (params, full_store : bytes * full_storage) : return =
+let receive_xtz_entrypoint (_params, full_store : bytes * full_storage) : return =
   (([]: operation list), full_store.0)
 
 // -------------------------------------

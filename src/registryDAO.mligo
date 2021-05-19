@@ -70,13 +70,13 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
         let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
         let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
           match transfer_type with
-          | Token_transfer_type tt -> is_valid
+          | Token_transfer_type _tt -> is_valid
           | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
         in
         List.fold is_all_transfers_valid tp.transfers has_correct_token_lock
-    | Normal_proposal diff_ -> has_correct_token_lock
-    | Update_receivers_proposal urp_ -> has_correct_token_lock
-    | Configuration_proposal cp_ -> has_correct_token_lock
+    | Normal_proposal _diff -> has_correct_token_lock
+    | Update_receivers_proposal _urp -> has_correct_token_lock
+    | Configuration_proposal _cp -> has_correct_token_lock
 
   else
     false
@@ -198,7 +198,7 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.
-let receive_xtz_entrypoint (params, full_store : bytes * full_storage) : return =
+let receive_xtz_entrypoint (_params, full_store : bytes * full_storage) : return =
   (([]: operation list), full_store.0)
 
 // A custom entrypoint to fetch values from Registry
