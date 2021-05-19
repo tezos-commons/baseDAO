@@ -11,7 +11,7 @@ in particular its CameLIGO dialect.
 To generate the contract code, or the storage for one of the provided examples,
 you will need the [ligo executable](https://ligolang.org/docs/intro/installation) installed.
 
-The latest working version tested is [0.10.0](https://gitlab.com/ligolang/ligo/-/releases/0.10.0).
+The latest working version tested is [0.16.1](https://gitlab.com/ligolang/ligo/-/releases/0.16.1).
 
 ## Generating the contract code
 
