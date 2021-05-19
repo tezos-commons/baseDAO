@@ -16,11 +16,15 @@ let default_config (data : initial_config_data) : config =
     proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
     rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
     decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
-    quorum_threshold = data.quorum_threshold;
     fixed_proposal_fee_in_token = data.fixed_proposal_fee_in_token;
     voting_period = data.voting_period;
     max_proposals = 500n;
     max_votes = 1000n;
+    max_quorum_threshold = data.max_quorum;
+    min_quorum_threshold = data.min_quorum;
+    max_quorum_change = data.max_quorum_change;
+    quorum_change = data.quorum_change;
+    governance_total_supply = data.governance_total_supply;
     proposal_flush_time = data.proposal_flush_time;
     proposal_expired_time = data.proposal_expired_time;
     custom_entrypoints = (Big_map.empty : custom_entrypoints);
@@ -38,6 +42,11 @@ let total_supply_constructor (total_supply, param : total_supply * (ledger_key *
     | Some v -> Map.add token_id (v + value) total_supply
 
 let default_storage (data, config_data : initial_storage_data * initial_config_data ) : storage =
+  let quorum_threshold =
+        bound_qt
+          (  to_signed(config_data.quorum_threshold)
+          ,  to_signed(config_data.min_quorum)
+          ,  to_signed(config_data.max_quorum) ) in
   let frozen_token_id: nat = 0n in
   {
     ledger = List.fold ledger_constructor data.ledger_lst (Big_map.empty : ledger);
@@ -57,8 +66,15 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
       ]
     );
     frozen_token_id = frozen_token_id;
-    start_time = data.now_val
-}
+    start_time = data.now_val;
+    quorum_threshold_at_cycle =
+      { last_updated_cycle = 1n
+      // We use 1 here so that the initial quorum will be used for proposals raised in period 1
+      // as there is no meaningful participation before that.
+      ; quorum_threshold = to_unsigned(quorum_threshold)
+      ; staked = 0n
+      };
+  }
 
 let default_full_storage (data : initial_data) : full_storage =
   ( default_storage (data.storage_data, data.config_data), default_config (data.config_data) )

@@ -54,24 +54,48 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
     then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
     else proposal_key
 
-// Utility function for quorum_threshold comparison.
-// Returns two nats, which can be compared to check for the desired condition.
-// e.g. nat_1 > nat_2 implies that qt_1 > qt_2
-let cmp_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): (nat * nat) =
-  // Calculated this way because there is no support for floating point operations
-  (qt_1.numerator * qt_2.denominator, qt_1.denominator * qt_2.numerator)
+let quorum_denominator_int = int(quorum_denominator)
+  // Hopefuly this will be optimized by the compiler and does not actually
+  // call `int` for every access to this value
+
+// Multiply two quorum_fractions
+//
+// We store fractions by storing only the numerator and denominator is always
+// assumed to be quorum_denominator. So here qt_1, actually represents the
+// value qt_1.numerator/ quorum_denominator and qt_2 represents the value
+// qt_2.numerator/ quorum_denominator. So the product of the two is
+// qt_1.numerator * qt_2.numerator / (quorum_denominator *
+// quorum_denominator).  But since we store x as x * quorum_denominator,
+// the result here would be qt_1.numerator * qt_2.numerator /
+// quorum_denominator. This will also retain the required precision of
+// 1/quorum_denominator.
+[@inline]
+let fmul(qt_1, qt_2 : quorum_fraction * quorum_fraction): quorum_fraction =
+   { numerator = (qt_1.numerator * qt_2.numerator) / quorum_denominator_int }
+
+// Divide the first fraction by the second Here qt_1, actually represents the
+// value qt_1.numerator/ quorum_denominator and qt_2 represents the value
+// qt_2.numerator/ quorum_denominator. So the division can be expressed as
+// (qt_1.numerator * quorum_denominator) / (quorum_denominator *
+// qt_2.numerator) But since we store x as x * quorum_denominator, the result
+// here would be (qt_1.numerator * quorum_denominator_int) / qt_2.numerator
+[@inline]
+let fdiv(qt_1, qt_2 : quorum_fraction * quorum_fraction): quorum_fraction =
+  { numerator = (qt_1.numerator * quorum_denominator_int) / qt_2.numerator }
 
 [@inline]
-// Returns true iff the first quorum_threshold is strictly bigger than the second.
-let is_gt_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): bool =
-  let (nat_1, nat_2) = cmp_qt (qt_1, qt_2) in
-  nat_1 > nat_2
+let fadd(qt_1, qt_2 : quorum_fraction * quorum_fraction): quorum_fraction =
+  {numerator = qt_1.numerator + qt_2.numerator }
 
 [@inline]
-// Returns true iff the first quorum_threshold is bigger or equal than the second.
-let is_ge_qt(qt_1, qt_2 : quorum_threshold * quorum_threshold): bool =
-  let (nat_1, nat_2) = cmp_qt (qt_1, qt_2) in
-  nat_1 >= nat_2
+let fsub(qt_1, qt_2 : quorum_fraction * quorum_fraction): quorum_fraction =
+  { numerator = qt_1.numerator - qt_2.numerator }
+
+[@inline]
+let bound_qt (qt, min_qt, max_qt : quorum_fraction * quorum_fraction * quorum_fraction)
+    : quorum_fraction =
+  if (qt.numerator > max_qt.numerator) then max_qt else
+    if (qt.numerator < min_qt.numerator) then min_qt else qt
 
 // -----------------------------------------------------------------
 // Freeze history operations
@@ -101,7 +125,7 @@ let unstake_frozen_fh (amt, fh : nat * address_freeze_history)
       ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
         ("NOT_ENOUGH_STAKED_TOKENS", ()) : address_freeze_history)
   | Some new_amt ->
-      // Adding to past_unstaked should be fine since as of now, the staked tokens have to be from
+     // Adding to past_unstaked should be fine since as of now, the staked tokens have to be from
       // past periods.
       { fh with staked = new_amt; past_unstaked = fh.past_unstaked + amt }
 
@@ -144,8 +168,13 @@ let freeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, gover
   let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
   (operation, ledger, total_supply)
 
+[@inline]
+let period_to_cycle (p: nat): nat = (p + 1n) / 2n
+
 let stake_tk(token_amount, addr, voting_period, store : nat * address * voting_period * storage): storage =
   let current_period = get_current_period_num(store.start_time, voting_period) in
+  let current_cycle = period_to_cycle(current_period) in
+  let new_cycle_staked = store.quorum_threshold_at_cycle.staked + token_amount in
   let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
         let fh = update_fh(current_period, fh) in
@@ -156,7 +185,7 @@ let stake_tk(token_amount, addr, voting_period, store : nat * address * voting_p
       then store.freeze_history
       else ([%Michelson ({| { FAILWITH } |} : (string * unit) -> freeze_history)]
               ("NOT_ENOUGH_FROZEN_TOKENS", ()) : freeze_history)
-  in { store with freeze_history = new_freeze_history }
+  in { store with freeze_history = new_freeze_history; quorum_threshold_at_cycle = {store.quorum_threshold_at_cycle with staked = new_cycle_staked } }
 
 [@inline]
 let unfreeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, governance_token : nat * address * ledger * total_supply * token_id * governance_token): (operation * ledger * total_supply) =
@@ -184,6 +213,7 @@ let add_proposal (propose_params, voting_period, store : propose_params * voting
     ; proposer = Tezos.sender
     ; proposer_frozen_token = propose_params.frozen_token
     ; voters = ([] : voter list)
+    ; quorum_threshold = store.quorum_threshold_at_cycle.quorum_threshold
     } in
   { store with
     proposals =
@@ -191,16 +221,6 @@ let add_proposal (propose_params, voting_period, store : propose_params * voting
   ; proposal_key_list_sort_by_date =
       Set.add (timestamp, proposal_key) store.proposal_key_list_sort_by_date
   }
-
-let propose (param, config, store : propose_params * config * storage): return =
-  let store = check_is_proposal_valid (config, param, store) in
-  let store = check_proposal_limit_reached (config, store) in
-  let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
-  let store = stake_tk(amount_to_freeze, Tezos.sender, config.voting_period, store) in
-  let store = add_proposal (param, config.voting_period, store) in
-  ( ([] : operation list)
-  , store
-  )
 
 // -----------------------------------------------------------------
 // Vote
@@ -320,18 +340,20 @@ let is_time_reached (proposal, sec : proposal * seconds): bool =
   Tezos.now > proposal.start_date + int(sec)
 
 [@inline]
-let do_total_vote_meet_quorum_threshold (proposal, store, quorum_threshold : proposal * storage * quorum_threshold): bool =
+let frozen_total_supply(store : storage): nat =
+    match Map.find_opt store.frozen_token_id store.total_supply with
+    | Some v -> v
+    | None -> ((failwith "BAD_STATE") : nat)
+
+[@inline]
+let do_total_vote_meet_quorum_threshold (proposal, store : proposal * storage): bool =
   let votes_placed = proposal.upvotes + proposal.downvotes in
-  let total_supply =
-        match Map.find_opt store.frozen_token_id store.total_supply with
-        | Some v -> v
-        | None -> 0n
-  in
+  let total_supply = frozen_total_supply(store) in
   // Note: this is equivalent to checking that the number of votes placed is
   // bigger or equal than the total supply of frozen tokens multiplied by the
   // quorum_threshold proportion.
-  let reached_quorum = {numerator = votes_placed; denominator = total_supply} in
-  is_ge_qt(reached_quorum, quorum_threshold)
+  let reached_quorum = (votes_placed * quorum_denominator) / total_supply in
+  (reached_quorum >= proposal.quorum_threshold.numerator)
 
 // Delete a proposal from 'sProposalKeyListSortByDate'
 [@inline]
@@ -340,6 +362,64 @@ let delete_proposal
   { store with proposal_key_list_sort_by_date =
     Set.remove (start_date, proposal_key) store.proposal_key_list_sort_by_date
   }
+
+[@inline]
+let fraction_to_quorum_fraction(n, d : nat * nat): unsigned_quorum_fraction
+  = { numerator = (n * quorum_denominator) / d }
+
+[@inline]
+let to_signed(n : unsigned_quorum_fraction): quorum_fraction
+  = { numerator = int(n.numerator) }
+
+[@inline]
+let to_unsigned(n : quorum_fraction): unsigned_quorum_fraction
+  = { numerator = match is_nat(n.numerator) with
+              | Some n -> n
+              | None -> (failwith("BAD_UNSIGNED_CONVERSION"):nat)
+    }
+
+let update_quorum(store, config : storage * config): storage =
+  let current_period = get_current_period_num(store.start_time, config.voting_period) in
+  let current_cycle = period_to_cycle(current_period) in
+  if store.quorum_threshold_at_cycle.last_updated_cycle = current_cycle
+    then store // Quorum has been updated in this period, so no change is required.
+    else
+      if current_cycle > store.quorum_threshold_at_cycle.last_updated_cycle
+          then
+              let previous_staked = store.quorum_threshold_at_cycle.staked in
+              let previous_participation = to_signed(fraction_to_quorum_fraction(previous_staked, config.governance_total_supply)) in
+              let old_quorum = to_signed(store.quorum_threshold_at_cycle.quorum_threshold) in
+              let quorum_change = to_signed(config.quorum_change) in
+              let possible_new_quorum =
+                // old_quorum + (previous_participation - old_quorum) * quorum_change
+                fadd(old_quorum, fmul(quorum_change, fsub(previous_participation, old_quorum))) in
+              let one_plus_max_change_percent = to_signed({ numerator = config.max_quorum_change.numerator + quorum_denominator }) in
+              let min_new_quorum =
+                fdiv(old_quorum, one_plus_max_change_percent) in
+              let max_new_quorum =
+                fmul(old_quorum, one_plus_max_change_percent) in
+
+              let config_min_qt = to_signed(config.min_quorum_threshold) in
+              let config_max_qt = to_signed(config.max_quorum_threshold) in
+              let new_quorum = bound_qt(bound_qt(possible_new_quorum, min_new_quorum, max_new_quorum), config_min_qt, config_max_qt)
+              in { store with quorum_threshold_at_cycle =
+                   { quorum_threshold = to_unsigned(new_quorum)
+                   ; last_updated_cycle = current_cycle
+                   ; staked = 0n;
+                   }
+                 }
+            else store
+
+let propose (param, config, store : propose_params * config * storage): return =
+  let store = check_is_proposal_valid (config, param, store) in
+  let store = check_proposal_limit_reached (config, store) in
+  let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
+  let store = update_quorum(store, config) in
+  let store = stake_tk(amount_to_freeze, Tezos.sender, config.voting_period, store) in
+  let store = add_proposal (param, config.voting_period, store) in
+  ( ([] : operation list)
+  , store
+  )
 
 [@inline]
 let handle_proposal_is_over
@@ -356,7 +436,7 @@ let handle_proposal_is_over
       && counter.current < counter.total // not finished
     then
       let counter = { counter with current = counter.current + 1n } in
-      let cond =    do_total_vote_meet_quorum_threshold(proposal, store, config.quorum_threshold)
+      let cond =    do_total_vote_meet_quorum_threshold(proposal, store)
                 && proposal.upvotes > proposal.downvotes
       in
       let store = unfreeze_proposer_and_voter_token
@@ -417,7 +497,6 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
     (([] : operation list), store)
   else
     (failwith("DROP_PROPOSAL_CONDITION_NOT_MET") : return)
-
 
 let freeze (amt, config, store : freeze_param * config * storage) : return =
   let addr = Tezos.sender in
