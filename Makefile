@@ -7,9 +7,6 @@ LIGO ?= ligo
 # Morley executable used for contract optimization
 MORLEY ?= morley
 
-# Morley tool executable for the origination of large contracts
-LARGE_ORIGINATOR ?= morley-large-originator
-
 # Env variable to determine whether the resulting contract should
 # be optimized via morley
 OPTIMIZE ?= false
@@ -22,12 +19,6 @@ BUILD_STORAGE = $(LIGO) compile-storage --syntax cameligo
 
 # Compile parameter
 BUILD_PARAMETER = $(LIGO) compile-parameter --syntax cameligo
-
-# Originate large contract (morley-client based)
-ORIGINATE ?= $(LARGE_ORIGINATOR) originate
-
-# Originate steps to build a large contract by other means
-ORIGINATE_STEPS ?= $(LARGE_ORIGINATOR) steps
 
 # Utility function to escape single quotes
 escape_quote = $(subst ','\'',$(1))
@@ -246,28 +237,6 @@ $(OUT)/treasuryDAO_storage.tz: src/**
 
 	# ============== Compilation successful ============== #
 	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
-	#
-
-originate : storage = $(OUT)/trivialDAO_storage.tz
-originate : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-originate : contract_name = baseDAO
-originate: $(OUT)/baseDAO.tz
-	# ============== Originating DAO with $(storage) ============== #
-	@$(ORIGINATE) --contract $(OUT)/baseDAO.tz --from "$(admin_address)" \
-								--initial-storage '$(call escape_quote,$(shell cat $(storage)))' \
-								 --contract-name "$(contract_name)"
-	# =================== Origination completed =================== #
-	#
-
-originate-steps : storage = $(OUT)/trivialDAO_storage.tz
-originate-steps : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-originate-steps : destination = $(OUT)/steps
-originate-steps: $(OUT)/baseDAO.tz
-	# ============== Originating DAO steps with $(storage) ============== #
-	@$(ORIGINATE_STEPS) --contract $(OUT)/baseDAO.tz --from "$(admin_address)" \
-								--initial-storage '$(call escape_quote,$(shell cat $(storage)))' \
-								 --destination "$(destination)"
-	# ================== Steps saved in $(destination) ================== #
 	#
 
 test: all

@@ -43,12 +43,13 @@ how to spend its XTZ and tokens.
 
 ## Deploying/Originating
 
-This contract is too large to fit inside the current Tezos origination limit.
+The contract can be originated with `tezos-client`:
 
-To overcome this limitation we advice to use the [morley-large-originator](https://gitlab.com/morley-framework/morley/-/tree/master/code/morley-large-originator)
-tool or the workaround that is described there.
+```sh
+tezos-client originate contract baseDAO transferring 0 from alice running BaseDAO.tz --init "$(<storage)" --burn-cap 17.0
+```
 
-For more information about this follow the [origination guide](docs/originating.md).
+Instructions on how to install `tezos-client` can be found at official [Tezos installation page](http://tezos.gitlab.io/introduction/howtoget.html) or in [our `tezos-packaging` repository](https://github.com/serokell/tezos-packaging).
 
 ## Typescript API
 

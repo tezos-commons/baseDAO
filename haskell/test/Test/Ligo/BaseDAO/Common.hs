@@ -250,7 +250,7 @@ originateLigoDaoWithBalance extra config balFunc = do
       , uodContract = convertContract baseDAOContractLigo
       }
 
-  daoUntyped <- originateLargeUntyped originateData
+  daoUntyped <- originateUntyped originateData
 
   let dao = TAddress @Parameter daoUntyped
 
