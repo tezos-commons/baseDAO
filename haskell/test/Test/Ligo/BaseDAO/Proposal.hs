@@ -152,15 +152,15 @@ test_BaseDAO_Proposal =
               }
         let proposer = dodOwner1
 
-        withSender (AddressResolved proposer) $
+        withSender proposer $
           call dodDao (Call @"Freeze") (#amount .! 52)
         -- Advance one voting period to a proposing stage.
         advanceTime (sec 10)
 
-        withSender (AddressResolved proposer) $ call dodDao (Call @"Propose") params
+        withSender proposer $ call dodDao (Call @"Propose") params
         checkTokenBalance frozenTokenId dodDao proposer 152
 
-        totalSupply <- getTotalSupplyEmulator (AddressResolved $ unTAddress dodDao) frozenTokenId
+        totalSupply <- getTotalSupplyEmulator (unTAddress dodDao) frozenTokenId
         totalSupply @== 252 -- initial = 0
 
     , nettestScenarioOnEmulatorCaps "cannot propose with insufficient tokens to pay the fee" $ do
@@ -168,7 +168,7 @@ test_BaseDAO_Proposal =
           originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 100))
         let proposer = dodOwner1
 
-        withSender (AddressResolved proposer) $
+        withSender proposer $
           call dodDao (Call @"Freeze") (#amount .! 52)
         -- Advance one voting period to a proposing stage.
         advanceTime (sec 10)
@@ -177,7 +177,7 @@ test_BaseDAO_Proposal =
               { ppFrozenToken = 1
               , ppProposalMetadata = lPackValueRaw @Integer 1
               }
-        withSender (AddressResolved proposer) $ call dodDao (Call @"Propose") params
+        withSender proposer $ call dodDao (Call @"Propose") params
           & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
 
     , nettestScenarioOnEmulatorCaps "a proposer is returned a fee after the proposal succeeds" $ do
@@ -191,13 +191,13 @@ test_BaseDAO_Proposal =
           let proposer = dodOwner1
           let voter = dodOwner2
 
-          withSender (AddressResolved voter) $
+          withSender voter $
             call dodDao (Call @"Freeze") (#amount .! 20)
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dodDao (Call @"Freeze") (#amount .! 42)
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dodDao (Call @"Freeze") (#amount .! 10)
 
           -- Advance one voting period to a proposing stage.
@@ -211,7 +211,7 @@ test_BaseDAO_Proposal =
                   , vVoteAmount = 10
                   , vProposalKey = key1
                   }
-          withSender (AddressResolved voter) $
+          withSender voter $
             call dodDao (Call @"Vote") [vote_]
 
           let expectedFrozen = 100 + 42 + 10
@@ -219,7 +219,7 @@ test_BaseDAO_Proposal =
 
           -- Advance one voting period to a proposing stage.
           advanceTime (sec 60)
-          withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+          withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
           checkTokenBalance frozenTokenId dodDao proposer 152
 
@@ -236,13 +236,13 @@ test_BaseDAO_Proposal =
           let dao = dodDao
           let admin = dodAdmin
 
-          withSender (AddressResolved voter) $
+          withSender voter $
             call dao (Call @"Freeze") (#amount .! 28)
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Freeze") (#amount .! 42)
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Freeze") (#amount .! 10)
 
           -- Advance one voting period to a proposing stage.
@@ -257,7 +257,7 @@ test_BaseDAO_Proposal =
                     -- The minimum votes that is required to pass is 280 * 1/20  = 14.
                   , vProposalKey = key1
                   }
-          withSender (AddressResolved voter) $
+          withSender voter $
             call dao (Call @"Vote") [vote_]
 
           let expectedFrozen = 100 + 42 + 10
@@ -265,7 +265,7 @@ test_BaseDAO_Proposal =
 
           -- Advance one voting period to a proposing stage.
           advanceTime (sec 60)
-          withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+          withSender admin $ call dao (Call @"Flush") 100
 
           checkTokenBalance frozenTokenId dao proposer 110 -- We expect 42 tokens to have burned
 
@@ -282,13 +282,13 @@ test_BaseDAO_Proposal =
           let dao = dodDao
           let admin = dodAdmin
 
-          withSender (AddressResolved voter) $
+          withSender voter $
             call dao (Call @"Freeze") (#amount .! 28)
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Freeze") (#amount .! 42)
 
-          withSender (AddressResolved proposer) $
+          withSender proposer $
             call dao (Call @"Freeze") (#amount .! 10)
 
           -- Advance one voting period to a proposing stage.
@@ -303,7 +303,7 @@ test_BaseDAO_Proposal =
                     -- The minimum votes that is required to pass is 280 * 1/20  = 14.
                   , vProposalKey = key1
                   }
-          withSender (AddressResolved voter) $
+          withSender voter $
             call dao (Call @"Vote") [vote_]
 
           let expectedFrozen = 100 + 42 + 10
@@ -311,7 +311,7 @@ test_BaseDAO_Proposal =
 
           -- Advance one voting period to a proposing stage.
           advanceTime (sec 60)
-          withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+          withSender admin $ call dao (Call @"Flush") 100
 
           checkTokenBalance frozenTokenId dao proposer 152
 
@@ -328,7 +328,7 @@ nonProposalPeriodProposal
 nonProposalPeriodProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance two voting periods to another voting stage.
@@ -339,7 +339,7 @@ nonProposalPeriodProposal originateFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Propose") params
+  withSender dodOwner1 $ call dodDao (Call @"Propose") params
     & expectCustomErrorNoArg #nOT_PROPOSING_PERIOD dodDao
 
 freezeTokens
@@ -348,10 +348,10 @@ freezeTokens
 freezeTokens originateFn = do
   DaoOriginateData{..} <- originateFn testConfig
 
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Freeze") (#amount .! 10)
+  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
   -- Check that the FA2 token got a transfer call as expected.
-  checkStorage (AddressResolved $ unTAddress dodTokenContract)
+  checkStorage (unTAddress dodTokenContract)
     (toVal [[FA2.TransferItem
       { tiFrom = dodOwner1
       , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
@@ -371,13 +371,13 @@ burnsFeeOnFailure reason = do
   let proposer = dodOwner1
   let voter = dodOwner2
 
-  withSender (AddressResolved proposer) $
+  withSender proposer $
     call dodDao (Call @"Freeze") (#amount .! 42)
 
-  withSender (AddressResolved voter) $
+  withSender voter $
     call dodDao (Call @"Freeze") (#amount .! 1)
 
-  withSender (AddressResolved proposer) $
+  withSender proposer $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -388,7 +388,7 @@ burnsFeeOnFailure reason = do
   advanceTime (sec 60)
   case reason of
     Downvoted -> do
-      withSender (AddressResolved voter) $
+      withSender voter $
         call dodDao (Call @"Vote") [downvote key1]
     QuorumNotMet -> return ()
 
@@ -397,7 +397,7 @@ burnsFeeOnFailure reason = do
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 61)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- Tokens frozen with the proposal are returned as unstaked (but still
   -- frozen), except for the fee and slash amount. The latter is zero in this
@@ -411,11 +411,11 @@ cannotUnfreezeFromSamePeriod
 cannotUnfreezeFromSamePeriod originateFn = do
   DaoOriginateData{..} <- originateFn testConfig
 
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Freeze") (#amount .! 10)
+  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
 
   -- Cannot unfreeze in the same period
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Unfreeze") (#amount .! 10)
+  withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 10)
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
 
 canUnfreezeFromPreviousPeriod
@@ -424,16 +424,16 @@ canUnfreezeFromPreviousPeriod
 canUnfreezeFromPreviousPeriod originateFn = do
   DaoOriginateData{..} <- originateFn testConfig
 
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Freeze") (#amount .! 10)
+  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 15)
 
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Unfreeze") (#amount .! 10)
+  withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dodDao dodOwner1 100
   -- Check that the FA2 token got a transfer call as expected.
-  checkStorage (AddressResolved $ unTAddress dodTokenContract)
+  checkStorage (unTAddress dodTokenContract)
     (toVal
       [ [ FA2.TransferItem
         { tiFrom = unTAddress dodDao
@@ -446,7 +446,7 @@ canUnfreezeFromPreviousPeriod originateFn = do
 
 insufficientTokenProposal
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> (AddressOrAlias -> m Int) -> m ()
+  => (ConfigDesc Config -> OriginateFn m) -> (Address -> m Int) -> m ()
 insufficientTokenProposal originateFn getProposalAmountFn = do
   DaoOriginateData{..} <- originateFn testConfig
   let params = ProposeParams
@@ -454,9 +454,9 @@ insufficientTokenProposal originateFn getProposalAmountFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved dodOwner1) $ call dodDao (Call @"Propose") params
+  withSender dodOwner1 $ call dodDao (Call @"Propose") params
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
-  amt <- getProposalAmountFn (AddressResolved $ unTAddress dodDao)
+  amt <- getProposalAmountFn (unTAddress dodDao)
   amt @== 0
 
 insufficientTokenVote
@@ -464,10 +464,10 @@ insufficientTokenVote
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 insufficientTokenVote originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 100)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -490,7 +490,7 @@ insufficientTokenVote originateFn = do
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") params
+  withSender dodOwner2 $ call dodDao (Call @"Vote") params
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
 
 voteWithPermit
@@ -498,7 +498,7 @@ voteWithPermit
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteWithPermit originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 12)
 
   -- Advance one voting period to a proposing stage.
@@ -507,7 +507,7 @@ voteWithPermit originateFn = do
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
-  params <- permitProtect (AddressResolved dodOwner1) =<< addDataToSign dodDao (Nonce 0)
+  params <- permitProtect dodOwner1 =<< addDataToSign dodDao (Nonce 0)
         VoteParam
         { vVoteType = True
         , vVoteAmount = 2
@@ -517,7 +517,7 @@ voteWithPermit originateFn = do
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [params]
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dodDao dodOwner1 112
 
 voteWithPermitNonce
@@ -527,10 +527,10 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
 
   DaoOriginateData{..} <- originateFn voteConfig
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 60)
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 50)
 
   -- Advance one voting period to a proposing stage.
@@ -552,11 +552,11 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
   signed2@(dataToSign2, _) <- addDataToSign dodDao (Nonce 1) voteParam
   signed3@(_          , _) <- addDataToSign dodDao (Nonce 2) voteParam
 
-  params1 <- permitProtect (AddressResolved dodOwner1) signed1
-  params2 <- permitProtect (AddressResolved dodOwner1) signed2
-  params3 <- permitProtect (AddressResolved dodOwner1) signed3
+  params1 <- permitProtect dodOwner1 signed1
+  params2 <- permitProtect dodOwner1 signed2
+  params3 <- permitProtect dodOwner1 signed3
 
-  withSender (AddressResolved dodOwner2) $ do
+  withSender dodOwner2 $ do
     -- Good nonce
     call dodDao (Call @"Vote") [params1]
 
@@ -572,7 +572,7 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
     call dodDao (Call @"Vote") [params2]
 
   -- Check counter
-  (Nonce counter) <- getVotePermitsCounterFn (AddressResolved $ unTAddress dodDao)
+  (Nonce counter) <- getVotePermitsCounterFn (unTAddress dodDao)
   counter @== 2
 
 flushProposalFlushTimeNotReach
@@ -586,7 +586,7 @@ flushProposalFlushTimeNotReach originateFn = do
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         )
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 30)
 
   -- Advance one voting period to a proposing stage.
@@ -599,7 +599,7 @@ flushProposalFlushTimeNotReach originateFn = do
   advanceTime (sec 21)
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
   checkTokenBalance (frozenTokenId) dodDao dodOwner1 (100 + 5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
 
   -- TODO: [#31]
@@ -618,10 +618,10 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
       )
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 3)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -642,7 +642,7 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
         , vVoteAmount = 1
         , vProposalKey = key1
         }
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Vote") [upvote', downvote']
 
   -- Checking balance of proposer and voters
@@ -651,7 +651,7 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 61)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
@@ -661,7 +661,7 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
 
   checkTokenBalance (frozenTokenId) dodDao dodOwner2 103
 
-  totalSupply <- getTotalSupplyFn (AddressResolved $ unTAddress dodDao) frozenTokenId
+  totalSupply <- getTotalSupplyFn (unTAddress dodDao) frozenTokenId
   totalSupply @== 213 -- initial = 0
 
 flushAcceptedProposalsWithAnAmount
@@ -676,10 +676,10 @@ flushAcceptedProposalsWithAnAmount originateFn = do
         )
 
   -- [Voting]
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 30)
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 6)
 
   advanceTime (sec 20)
@@ -699,19 +699,19 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   advanceTime (sec 20)
 
   -- [Voting]
-  withSender (AddressResolved dodOwner2) $ do
+  withSender dodOwner2 $ do
     call dodDao (Call @"Vote") [vote' key1]
     call dodDao (Call @"Vote") [vote' key2]
 
   advanceTime (sec 22)
 
   -- [Proposing]
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 2
+  withSender dodAdmin $ call dodDao (Call @"Flush") 2
 
   -- key1 and key2 are flushed. (Tokens remain the same, because they are all passed)
   checkTokenBalance frozenTokenId dodDao dodOwner1 130
 
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 1
+  withSender dodAdmin $ call dodDao (Call @"Flush") 1
 
   -- key3 is rejected
   checkTokenBalance frozenTokenId dodDao dodOwner1 125
@@ -729,10 +729,10 @@ flushRejectProposalQuorum originateFn = do
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         )
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 5)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -750,11 +750,11 @@ flushRejectProposalQuorum originateFn = do
         ]
   -- Advance one voting period to a voting stage.
   advanceTime (sec 20)
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") votes
+  withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 21)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
@@ -776,10 +776,10 @@ flushRejectProposalNegativeVotes originateFn = do
           >>- (ConfigDesc (mkQuorumThreshold 3 100))
           )
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 3)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -807,14 +807,14 @@ flushRejectProposalNegativeVotes originateFn = do
         ]
   -- Advance one voting period to a voting stage.
   advanceTime (sec 20)
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") votes
+  withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Check proposer balance
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 21)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
@@ -836,10 +836,10 @@ flushWithBadConfig originateFn = do
       >>- (ConfigDesc (mkQuorumThreshold 1 2))
       )
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 3)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -853,11 +853,11 @@ flushWithBadConfig originateFn = do
         }
   -- Advance one voting period to a voting stage.
   advanceTime (sec 20)
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [upvote']
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote']
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 21)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
@@ -878,9 +878,9 @@ flushDecisionLambda originateFn = do
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
       )
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -894,13 +894,13 @@ flushDecisionLambda originateFn = do
         }
   -- Advance one voting period to a voting stage.
   advanceTime (sec 60)
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [upvote']
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote']
 
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 61)
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  results <- fromVal <$> getStorage (AddressResolved $ toAddress consumer)
+  results <- fromVal <$> getStorage (toAddress consumer)
   assert (results == (#proposer <.!> [dodOwner1]))
     "Unexpected accepted proposals list"
 
@@ -917,10 +917,10 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
       )
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
@@ -934,21 +934,21 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
         , vVoteAmount = 20
         , vProposalKey = key
         }
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [params key1]
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 20)
   _key2 <- createSampleProposal 2 dodOwner1 dodDao
 
   advanceTime (sec 41)
   -- `key1` is now expired, and `key2` is not yet expired.
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 2
+  withSender dodAdmin $ call dodDao (Call @"Flush") 2
     & expectCustomErrorNoArg #eXPIRED_PROPOSAL dodDao
 
   -- `key1` is expired, so it is possible to `drop_proposal`
-  withSender (AddressResolved dodOwner2) $ do
+  withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key1
 
-  withSender (AddressResolved dodAdmin) $ call dodDao (Call @"Flush") 1
+  withSender dodAdmin $ call dodDao (Call @"Flush") 1
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
 
 
@@ -966,10 +966,10 @@ dropProposal originateFn = withFrozenCallStack $ do
        >>- (ConfigDesc (VotingPeriod 20))
       )
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 30)
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
@@ -985,33 +985,33 @@ dropProposal originateFn = withFrozenCallStack $ do
         , vVoteAmount = 20
         , vProposalKey = key
         }
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [params key1]
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
   advanceTime (sec 20)
 
   key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   -- `guardian` contract can drop any proposal.
-  withSender (AddressResolved dodOwner2) $ do
+  withSender dodOwner2 $ do
     call dodGuardian CallDefault (unTAddress dodDao, key1)
 
   -- `key2` is not yet expired since it has to be more than 60 seconds
-  withSender (AddressResolved dodOwner2) $ do
+  withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key2
       & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET dodDao
 
   advanceTime (sec 21)
   -- `key2` is expired, so it is possible to `drop_proposal`
-  withSender (AddressResolved dodOwner2) $ do
+  withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key2
 
   -- `key3` is not yet expired
-  withSender (AddressResolved dodOwner2) $ do
+  withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key3
       & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET dodDao
 
   -- proposers can delete their proposal
-  withSender (AddressResolved dodOwner1) $ do
+  withSender dodOwner1 $ do
     call dodDao (Call @"Drop_proposal") key3
 
   -- 30 tokens are frozen in total, but only 15 tokens are returned after drop_proposal
@@ -1026,7 +1026,7 @@ proposalBoundedValue originateFn = do
       ConfigDesc configConsts{ cmMaxProposals = Just 1 }
     )
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
@@ -1037,7 +1037,7 @@ proposalBoundedValue originateFn = do
         , ppProposalMetadata = lPackValueRaw @Integer 1
         }
 
-  withSender (AddressResolved dodOwner1) $ do
+  withSender dodOwner1 $ do
     call dodDao (Call @"Propose") params
     call dodDao (Call @"Propose") params
       & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED dodDao
@@ -1050,10 +1050,10 @@ votesBoundedValue originateFn = do
     ( voteConfig >>-
       ConfigDesc configConsts{ cmMaxVotes = Just 1 }
     )
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 2)
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -1071,7 +1071,7 @@ votesBoundedValue originateFn = do
         }
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
-  withSender (AddressResolved dodOwner1) $ do
+  withSender dodOwner1 $ do
     call dodDao (Call @"Vote") [downvote']
     call dodDao (Call @"Vote") [upvote']
       & expectCustomErrorNoArg #mAX_VOTES_REACHED dodDao

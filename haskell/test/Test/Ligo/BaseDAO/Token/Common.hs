@@ -63,5 +63,5 @@ assertBalanceOf tokenOwner expectedBalance tokenId dao = do
       , briTokenId = tokenId
       } ] consumer)
 
-  checkStorage (AddressResolved $ toAddress consumer)
+  checkStorage (toAddress consumer)
     (toVal [[((tokenOwner, tokenId), expectedBalance :: Natural)]] )

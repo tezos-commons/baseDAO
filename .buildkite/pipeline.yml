@@ -67,18 +67,8 @@ steps:
     - nix run -f ci.nix
           tezos-client
           pkgs.bats
-          packages.baseDAO.exes.baseDAO
           packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
         -c bats ./scripts/test.bats
-
-  - label: lorentz-test
-    if: *not_scheduled
-    depends_on: build-haskell
-    commands:
-      - nix-build ci.nix -A packages.baseDAO.tests.baseDAO-test
-      - ./result/bin/baseDAO-test --nettest-no-run-network
-  # NOTE (#169): the lorentz version is deprecated, so we only run its tests in
-  # an emulated environment to save time.
 
   - label: ligo-test
     key: ligo-test
@@ -137,9 +127,6 @@ steps:
     depends_on: build-haskell
     commands:
     - nix-build ci.nix -A weeder-script
-      # weeder needs .cabal file:
-      # (most of them are committed, but the one in `template` is not)
-    - nix run -f ci.nix pkgs.haskellPackages.hpack -c hpack lorentz/template
     - ./result
 
   - label: haddock
@@ -160,32 +147,6 @@ steps:
   #   retry:
   #     automatic:
   #       limit: 1
-
-# Autodoc
-  - label: contract doc development
-    key: contract-doc-dev
-    if: &development-only
-     build.branch != "autodoc/master" && build.branch != "master" && build.source != "schedule"
-    depends_on: build-haskell
-    commands:
-    - nix-build ci.nix -A contracts-doc --arg release false
-    - ln -s ./result/*.md .
-    artifact_paths:
-      - TrivialDAO.md
-      - GameDAO.md
-      - RegistryDAO.md
-      - TreasuryDAO.md
-
-  - label: xrefcheck generated doc
-    soft_fail: true
-    if: *development-only
-    depends_on: contract-doc-dev
-    commands:
-    - mkdir tmp
-    - buildkite-agent artifact download "*.md" tmp/
-        --step "contract doc development"
-    - nix run -f ci.nix xrefcheck -c xrefcheck
-        --mode local-only --root tmp
 
   - label: create auto prerelease
     if: build.branch == "master" && build.source != "schedule"

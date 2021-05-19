@@ -54,8 +54,8 @@ test_BaseDAO_Management =
     [ nettestScenarioCaps "Contract forbids XTZ transfer" $ do
         now <- getNow
         withOriginated 2 (\(owner:_) -> initialStorage now owner) $ \[owner, wallet1] baseDao ->
-          withSender (AddressResolved owner) $ transfer TransferData
-            { tdTo = AddressResolved $ unTAddress baseDao
+          withSender owner $ transfer TransferData
+            { tdTo = unTAddress baseDao
             , tdAmount = unsafeMkMutez 1
             , tdEntrypoint = unsafeBuildEpName "transfer_ownership"
             , tdParameter = (#newOwner .! wallet1)
@@ -139,7 +139,7 @@ transferOwnership
   => WithOriginateFn m -> WithStorage -> m ()
 transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
-    withSender (AddressResolved wallet1) $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
+    withSender wallet1 $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
       & expectNotAdmin baseDao
 
 authenticateSender
@@ -148,9 +148,9 @@ authenticateSender
 authenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
-      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
+      withSender owner $ call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
-      withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
+      withSender wallet2 $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner baseDao
 
 changeToPendingAdmin
@@ -159,9 +159,9 @@ changeToPendingAdmin
 changeToPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      withSender (AddressResolved owner) $ call baseDao (Call @"Transfer_ownership")
+      withSender owner $ call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
-      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
+      withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
 
 noPendingAdmin
   :: MonadNettest caps base m
@@ -169,7 +169,7 @@ noPendingAdmin
 noPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[_, wallet1] baseDao -> do
-      withSender (AddressResolved wallet1) $
+      withSender wallet1 $
         call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner baseDao
 
@@ -178,7 +178,7 @@ pendingOwnerNotTheSame
   => WithOriginateFn m -> WithStorage -> m ()
 pendingOwnerNotTheSame withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, wallet1] baseDao -> withSender (AddressResolved owner) $ do
+    \[owner, wallet1] baseDao -> withSender owner $ do
       call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       call baseDao (Call @"Accept_ownership") ()
@@ -190,7 +190,7 @@ notSetAdmin
 notSetAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      withSender (AddressResolved owner) $ do
+      withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
         -- Make the call once again to make sure the admin still retains admin
@@ -204,16 +204,16 @@ rewritePendingOwner
 rewritePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
-      withSender (AddressResolved owner) $ do
+      withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet2)
       -- Make the accept ownership call from wallet1 and see that it fails
-      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
+      withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner baseDao
       -- Make the accept ownership call from wallet1 and see that it works
-      withSender (AddressResolved wallet2) $ call baseDao (Call @"Accept_ownership") ()
+      withSender wallet2 $ call baseDao (Call @"Accept_ownership") ()
 
 invalidatePendingOwner
   :: MonadNettest caps base m
@@ -221,14 +221,14 @@ invalidatePendingOwner
 invalidatePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      withSender (AddressResolved owner) $ do
+      withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! owner)
       -- Make the accept ownership call from wallet1 and see that it fails
       -- with 'not pending owner' error
-      withSender (AddressResolved wallet1) $ call baseDao (Call @"Accept_ownership") ()
+      withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner baseDao
 
 bypassAcceptForSelf
@@ -237,16 +237,16 @@ bypassAcceptForSelf
 bypassAcceptForSelf withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      withSender (AddressResolved owner) $ do
+      withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! (unTAddress baseDao))
       -- Same call should return error, because admin has been changed
-      withSender (AddressResolved owner) $ do
+      withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! (unTAddress baseDao))
         & expectNotAdmin baseDao
       -- But this should work
-      withSender (AddressResolved $ unTAddress baseDao) $ do
+      withSender (unTAddress baseDao) $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
 

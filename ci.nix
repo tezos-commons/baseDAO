@@ -22,9 +22,7 @@ rec {
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
   local-packages = [
-    { name = "baseDAO"; subdirectory = "./lorentz"; }
     { name = "baseDAO-ligo-meta"; subdirectory = "./haskell"; }
-    { name = "templateDAO"; subdirectory = "./lorentz/template"; }
   ];
 
   # names of all local packages

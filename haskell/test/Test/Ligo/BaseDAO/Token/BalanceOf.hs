@@ -22,20 +22,20 @@ balanceOfTests = testGroup "Balance_of:" $
   [ nettestScenarioCaps "returns an empty response on empty request" $ do
       DaoOriginateData{..} <- originateWithCustomToken
       consumer <- callBalanceOf [] dodDao
-      checkStorage (AddressResolved $ toAddress consumer)
+      checkStorage (toAddress consumer)
         (toVal [[] :: [FA2.BalanceResponseItem]])
 
   , nettestScenarioCaps "correctly returns the balance of tokens" $ do
       DaoOriginateData{..} <- originateWithCustomToken
       consumer <- callBalanceOf [(dodOwner1, unfrozenTokens)] dodDao
-      checkStorage (AddressResolved $ toAddress consumer)
+      checkStorage (toAddress consumer)
         (toVal [[((dodOwner1, unfrozenTokens), 1000 :: Natural)]])
 
   , nettestScenarioCaps "correctly handles several request items" $ do
       DaoOriginateData{..} <- originateWithCustomToken
       consumer <- callBalanceOf
           [(dodOwner1, frozenTokens), (dodOwner2, unfrozenTokens)] dodDao
-      checkStorage (AddressResolved $ toAddress consumer)
+      checkStorage (toAddress consumer)
         (toVal [[ ((dodOwner1, frozenTokens), 100 :: Natural)
                 , ((dodOwner2, unfrozenTokens), 1000 :: Natural)]])
 

@@ -27,10 +27,10 @@ voteNonExistingProposal
 voteNonExistingProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -40,12 +40,12 @@ voteNonExistingProposal originateFn = do
   let params = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 2
-        , vProposalKey = HashUnsafe "\11\12\13"
+        , vProposalKey = UnsafeHash "\11\12\13"
         }
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") [params]
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
     & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
 
 voteMultiProposals
@@ -54,10 +54,10 @@ voteMultiProposals
 voteMultiProposals originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 5)
 
   -- Advance one voting period to a proposing stage.
@@ -81,7 +81,7 @@ voteMultiProposals originateFn = do
 
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
-  withSender (AddressResolved dodOwner2) $ call dodDao (Call @"Vote") params
+  withSender dodOwner2 $ call dodDao (Call @"Vote") params
   checkTokenBalance (frozenTokenId) dodDao dodOwner2 105
   -- TODO [#31]: check storage if the vote update the proposal properly
 
@@ -91,10 +91,10 @@ voteOutdatedProposal
 voteOutdatedProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig
 
-  withSender (AddressResolved dodOwner2) $
+  withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
 
-  withSender (AddressResolved dodOwner1) $
+  withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
@@ -112,7 +112,7 @@ voteOutdatedProposal originateFn = do
   -- Advance one voting period to a voting stage.
   advanceTime (sec 10)
 
-  withSender (AddressResolved dodOwner2) $ do
+  withSender dodOwner2 $ do
     call dodDao (Call @"Vote") [params]
     -- Advance two voting period to another voting stage.
     advanceTime (sec 25)

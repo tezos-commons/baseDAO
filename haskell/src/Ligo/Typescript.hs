@@ -70,6 +70,7 @@ nToType (NTBls12381Fr _) = toType U.TBls12381Fr
 nToType (NTBls12381G1 _) = toType U.TBls12381G1
 nToType (NTBls12381G2 _) = toType U.TBls12381G2
 nToType (NTNever _) = toType U.TNever
+nToType (NTTicket _ a) = toType $ U.TTicket (nToType a)
 
 -- looks up the entrypoints in the 'Notes t' for the whole parameter.
 lookupEntryPointsAndTypes :: Notes t -> [Entrypoint]
@@ -315,6 +316,10 @@ mkTypesFor typename epType = case U.unwrapT epType of
   U.TBls12381G1 -> [TsType typename (TsAlias TsString)]
   U.TBls12381G2 -> [TsType typename (TsAlias TsString)]
   U.TNever -> [TsType typename (TsAlias TsVoid)]
+  U.TTicket a -> let
+    ticketFields = [("ticketer", toType U.TAddress), ("value", a), ("amount", toType U.TNat)]
+    tDecls = map (mkTypesForField False) ticketFields
+    in (TsType typename $ TsInterface (map fst tDecls)) : (concatMap snd tDecls)
 
   where
 
