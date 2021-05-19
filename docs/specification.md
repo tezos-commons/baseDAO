@@ -619,6 +619,8 @@ Parameter (in Michelson):
 
 - When pending administrator is not set, it is considered equal to the current owner, thus administrator can accept ownership of its own contract without a prior `transfer_ownership` call.
 
+- If the new owner is the BaseDAO contract itself, the admin is set right away, without the need for a call to 'accept_ownership' entrypoint.
+
 ## Proposal entrypoints
 
 ### **propose**
