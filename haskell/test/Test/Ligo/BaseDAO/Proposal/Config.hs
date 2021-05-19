@@ -149,7 +149,7 @@ testConfig
 testConfig =
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
   ConfigDesc configConsts
-    { cmQuorumThreshold = Just (DAO.QuorumThreshold 1 100) }
+    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100) }
 
 -- | Config with longer voting period and bigger quorum threshold
 -- Needed for vote related tests that do not call `flush`
@@ -159,7 +159,7 @@ voteConfig
 voteConfig = ConfigDesc $
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
   ConfigDesc configConsts
-    { cmQuorumThreshold = Just (DAO.QuorumThreshold 4 100) }
+    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 4 100) }
 
 configWithRejectedProposal
   :: AreConfigDescsExt config '[RejectedProposalReturnValue]
@@ -190,7 +190,9 @@ instance IsConfigDescExt DAO.Config ConfigConstants where
 
 instance IsConfigDescExt DAO.Config DAO.QuorumThreshold where
   fillConfig qt DAO.Config'{..} = DAO.Config'
-    { cQuorumThreshold = qt
+    -- We set min quorum threshold since we use it to initialize
+    -- the quorumThreshold in storage in tests.
+    { cMinQuorumThreshold = qt
     , ..
     }
 

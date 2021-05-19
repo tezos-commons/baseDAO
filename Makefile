@@ -74,8 +74,13 @@ $(OUT)/trivialDAO_storage.tz : now_val = `date +"%s"`
 $(OUT)/trivialDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/trivialDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/trivialDAO_storage.tz : ledger = ([] : ledger_list)
-$(OUT)/trivialDAO_storage.tz : quorum_threshold = {numerator = 1n; denominator = 10n}
+$(OUT)/trivialDAO_storage.tz : quorum_threshold = 10n
+$(OUT)/trivialDAO_storage.tz : min_quorum = 1n
+$(OUT)/trivialDAO_storage.tz : max_quorum = 99n
 $(OUT)/trivialDAO_storage.tz : voting_period = 950400n # 11 days
+$(OUT)/trivialDAO_storage.tz : quorum_change = 5n
+$(OUT)/trivialDAO_storage.tz : max_quorum_change = 19n
+$(OUT)/trivialDAO_storage.tz : governance_total_supply = 100n
 $(OUT)/trivialDAO_storage.tz : proposal_flush_time = 1900801n # 22 days 1 seconds
 $(OUT)/trivialDAO_storage.tz : proposal_expired_time = 2851200n # 33 days
 $(OUT)/trivialDAO_storage.tz: src/**
@@ -95,11 +100,16 @@ $(OUT)/trivialDAO_storage.tz: src/**
           ; ledger_lst = $(call escape_double_quote,$(ledger)) \
           } \
         ; config_data = \
-          { voting_period = { length = $(voting_period) } \
+          { max_quorum = { numerator = ($(max_quorum) * quorum_denominator)/100n } \
+          ; min_quorum = { numerator = ($(min_quorum) * quorum_denominator)/100n } \
+          ; voting_period = { length = $(voting_period) } \
           ; proposal_flush_time = $(proposal_flush_time) \
           ; proposal_expired_time = $(proposal_expired_time) \
-          ; quorum_threshold = $(quorum_threshold) \
+          ; quorum_threshold = { numerator = ($(quorum_threshold) * quorum_denominator)/100n } \
           ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
+          ; quorum_change = { numerator = ($(quorum_change) * quorum_denominator)/100n } \
+          ; max_quorum_change = { numerator = ($(max_quorum_change) * quorum_denominator)/100n } \
+          ; governance_total_supply = $(governance_total_supply) \
           } \
         })"
 	# ================= Compilation successful ================= #
@@ -121,10 +131,16 @@ $(OUT)/registryDAO_storage.tz : now_val = `date +"%s"`
 $(OUT)/registryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/registryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/registryDAO_storage.tz : ledger = ([] : ledger_list)
-$(OUT)/registryDAO_storage.tz : quorum_threshold = {numerator = 1n; denominator = 10n}
+$(OUT)/registryDAO_storage.tz : quorum_threshold = 10n
+$(OUT)/registryDAO_storage.tz : min_quorum = 1n
+$(OUT)/registryDAO_storage.tz : max_quorum = 99n
+
 $(OUT)/registryDAO_storage.tz : voting_period = 950400n # 11 days
+$(OUT)/registryDAO_storage.tz : quorum_change = 5n
+$(OUT)/registryDAO_storage.tz : max_quorum_change = 19n
 $(OUT)/registryDAO_storage.tz : proposal_flush_time = 1900801n # 22 days 1 seconds
 $(OUT)/registryDAO_storage.tz : proposal_expired_time = 2851200n # 33 days
+$(OUT)/registryDAO_storage.tz : governance_total_supply = 100n
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
 	mkdir -p $(OUT)
@@ -143,13 +159,17 @@ $(OUT)/registryDAO_storage.tz: src/**
             ; ledger_lst = $(call escape_double_quote,$(ledger)) \
             } \
           ; config_data = \
-            { quorum_threshold = $(quorum_threshold) \
+            { max_quorum = { numerator = ($(max_quorum) * quorum_denominator)/100n } \
+            ; min_quorum = { numerator = ($(min_quorum) * quorum_denominator)/100n } \
             ; voting_period = { length = $(voting_period) } \
             ; proposal_flush_time = $(proposal_flush_time) \
             ; proposal_expired_time = $(proposal_expired_time) \
             ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
-            } \
-          } \
+            ; quorum_threshold = { numerator = ($(quorum_threshold) * quorum_denominator)/100n } \
+            ; quorum_change = { numerator = ($(quorum_change) * quorum_denominator)/100n } \
+            ; max_quorum_change = { numerator = ($(max_quorum_change) * quorum_denominator)/100n } \
+            ; governance_total_supply = $(governance_total_supply) \
+            }} \
           ; frozen_scale_value = $(frozen_scale_value) \
           ; frozen_extra_value = $(frozen_extra_value) \
           ; max_proposal_size = $(max_proposal_size) \
@@ -177,10 +197,15 @@ $(OUT)/treasuryDAO_storage.tz : now_val = `date +"%s"`
 $(OUT)/treasuryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
 $(OUT)/treasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/treasuryDAO_storage.tz : ledger = ([] : ledger_list)
-$(OUT)/treasuryDAO_storage.tz : quorum_threshold = {numerator = 1n; denominator = 10n}
+$(OUT)/treasuryDAO_storage.tz : quorum_threshold = 10n
+$(OUT)/treasuryDAO_storage.tz : min_quorum = 1n
+$(OUT)/treasuryDAO_storage.tz : max_quorum = 99n
 $(OUT)/treasuryDAO_storage.tz : voting_period = 950400n # 11 days
+$(OUT)/treasuryDAO_storage.tz : quorum_change = 5n
+$(OUT)/treasuryDAO_storage.tz : max_quorum_change = 19n
 $(OUT)/treasuryDAO_storage.tz : proposal_flush_time = 1900801n # 22 days 1 seconds
 $(OUT)/treasuryDAO_storage.tz : proposal_expired_time = 2851200n # 33 days
+$(OUT)/treasuryDAO_storage.tz : governance_total_supply = 100n
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
 	mkdir -p $(OUT)
@@ -199,13 +224,17 @@ $(OUT)/treasuryDAO_storage.tz: src/**
             ; ledger_lst = $(call escape_double_quote,$(ledger)) \
             } \
           ; config_data = \
-            { quorum_threshold = $(quorum_threshold) \
+            { max_quorum = { numerator = ($(max_quorum) * quorum_denominator)/100n } \
+            ; min_quorum = { numerator = ($(min_quorum) * quorum_denominator)/100n } \
             ; voting_period = { length = $(voting_period) } \
             ; proposal_flush_time = $(proposal_flush_time) \
             ; proposal_expired_time = $(proposal_expired_time) \
             ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
-            } \
-          } \
+            ; quorum_threshold = { numerator = ($(quorum_threshold) * quorum_denominator)/100n } \
+            ; quorum_change = { numerator = ($(quorum_change) * quorum_denominator)/100n } \
+            ; max_quorum_change = { numerator = ($(max_quorum_change) * quorum_denominator)/100n } \
+            ; governance_total_supply = $(governance_total_supply) \
+            }} \
           ; frozen_scale_value = $(frozen_scale_value) \
           ; frozen_extra_value = $(frozen_extra_value) \
           ; max_proposal_size = $(max_proposal_size) \

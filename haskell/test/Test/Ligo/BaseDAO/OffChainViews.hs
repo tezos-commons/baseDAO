@@ -37,6 +37,7 @@ offChainViewStorage =
   ! #metadata mempty
   ! #now (timestampFromSeconds 0)
   ! #tokenAddress genesisAddress
+  ! #quorumThreshold (mkQuorumThreshold 1 100)
   ! defaults
   ) { sLedger = bal
     , sTotalSupply = totalSupplyFromLedger bal

@@ -105,6 +105,25 @@ type voter =
   ; vote_type : vote_type
   }
 
+// Type `seconds` used with `voting_period`.
+type seconds = nat
+type voting_period = { length : seconds }
+
+// For efficiency, we only keep a `nat` for the numerator, whereas the
+// denominator is not stored and has a fixed value of `1000000`.
+type quorum_fraction = { numerator : int }
+let quorum_denominator = 1000000n
+
+// For safety, this is a version of quorum_fraction type
+// that does not allow negative values.
+type unsigned_quorum_fraction = { numerator : nat }
+
+// Quorum threshold that a proposal needs to meet in order to be accepted,
+// expressed as a fraction of the total_supply of frozen tokens, only
+// storing the numerator while denominator is assumed to be
+// fraction_denominator.
+type quorum_threshold = unsigned_quorum_fraction
+
 type proposal_key = bytes
 type proposal_metadata = bytes
 type proposal =
@@ -116,19 +135,7 @@ type proposal =
   ; proposer : address
   ; proposer_frozen_token : nat
   ; voters : voter list
-  }
-
-// Type `seconds` used with `voting_period`.
-type seconds = nat
-type voting_period = { length : seconds }
-
-// Quorum threshold that a proposal needs to meet in order to be accepted,
-// expressed as a fraction of the total_supply of frozen tokens.
-// Invariant: numerator < denominator
-type quorum_threshold =
-  [@layout:comb]
-  { numerator : nat
-  ; denominator : nat
+  ; quorum_threshold: quorum_threshold // quorum threshold at the cycle in which proposal was raised.
   }
 
 type permit =
@@ -144,6 +151,20 @@ type contract_extra = (string, bytes) big_map
 type governance_token =
   { address : address
   ; token_id : token_id
+  }
+
+// The way the staked token tracking work is as follows. The procedure to
+// update quorum_threshold_at_cycle will reset the staked count to zero. And
+// since this procedure is called from a `propose` call, which starts the
+// staking of tokens for the cycle, and we increment `staked` count at each
+// 'propose' or 'vote' call, the `staked` field will contain the tokens staked
+// in that particular cycle. And the very first `propose` call in a cycle will
+// see the staked tokens from the past cycle, and thus can use it to update the
+// quorum threshold for the current cycle.
+type quorum_threshold_at_cycle =
+  { quorum_threshold : quorum_threshold
+  ; last_updated_cycle : nat
+  ; staked : nat
   }
 
 type storage =
@@ -162,6 +183,7 @@ type storage =
   ; freeze_history : freeze_history
   ; frozen_token_id : token_id
   ; start_time : timestamp
+  ; quorum_threshold_at_cycle : quorum_threshold_at_cycle
   }
 
 // -- Parameter -- //
@@ -251,11 +273,16 @@ type initial_ledger_val = address * token_id * nat
 type ledger_list = (ledger_key * ledger_value) list
 
 type initial_config_data =
-  { quorum_threshold : quorum_threshold
+  { max_quorum : quorum_threshold
+  ; min_quorum : quorum_threshold
+  ; quorum_threshold : quorum_threshold
   ; voting_period : voting_period
   ; proposal_flush_time: seconds
   ; proposal_expired_time: seconds
   ; fixed_proposal_fee_in_token: nat
+  ; max_quorum_change : unsigned_quorum_fraction
+  ; quorum_change : unsigned_quorum_fraction
+  ; governance_total_supply : nat
   }
 
 type initial_storage_data =
@@ -279,9 +306,13 @@ type config =
 
   ; max_proposals : nat
   ; max_votes : nat
-  ; quorum_threshold : quorum_threshold
+  ; max_quorum_threshold : quorum_threshold
+  ; min_quorum_threshold : quorum_threshold
   ; voting_period : voting_period
   ; fixed_proposal_fee_in_token : nat
+  ; max_quorum_change : unsigned_quorum_fraction
+  ; quorum_change : unsigned_quorum_fraction
+  ; governance_total_supply : nat
   ; proposal_flush_time: seconds // Number of seconds until a proposal can be flushed
   ; proposal_expired_time: seconds // Number of seconds until a proposal is expired
 

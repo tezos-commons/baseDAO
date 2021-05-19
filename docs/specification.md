@@ -105,6 +105,10 @@ type config =
   // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   ; max_votes : nat
   // ^ Determine the maximum number of votes associated with a proposal including positive votes
+  ; max_quorum_threshold : quorum_threshold
+  // ^ Determine the maximum value of quorum threshold that is allowed.
+  ; min_quorum_threshold : quorum_threshold
+  // ^ Determine the minimum value of quorum threshold that is allowed.
 
   ; voting_period : voting_period
   // ^ Determine the voting_period length.
@@ -121,6 +125,16 @@ type config =
   // ^ Determine the quorum threshold that the proposals need to meet.
   ; fixed_proposal_fee_in_token : nat
   // ^ A base fee paid for submitting a new proposal.
+
+  ; max_quorum_change : quorum_fraction
+  // ^ A percentage value that limits the quorum_threshold change during
+  // every update of the same.
+  ; quorum_change : quorum_fraction
+  // ^ A percentage value that is used in the computation of new quorum
+  // threshold value.
+  ; governance_total_supply : int
+  // ^ The total supply of governance tokens used in the computation of
+  // of new quorum threshold value at each stage.
 
   ; custom_entrypoints : custom_entrypoints
   // ^ Packed arbitrary lambdas associated to a name for custom execution.
@@ -149,6 +163,8 @@ type proposal =
   ; voters : (address * nat) list
   // ^ List of voter addresses associated with the vote amount
   // Needed for `flush` entrypoint.
+  ; quorum_threshold: quorum_threshold
+  // quorum threshold at the cycle in which proposal was raised.
   }
 ```
 
@@ -200,7 +216,7 @@ Each address can have any number of operators and be an operator of any number o
 
 The contract constantly cycles between two stages, a proposing stage and a voting stage.
 Both have the same same length, `voting_period` and alternate between each other,
-starting from "voting" for period number `0`.
+starting from "voting" for period number `0`. A proposal/voting period pair is called a cycle.
 
 The voting period is specified for the whole smart contract and never changes.
 
@@ -221,6 +237,30 @@ Unfreezing does it reverse, that is, the contract makes the FA2 transfer on gove
 contract to transfer tokens from its own address to the address that is doing unfreezing.
 It then burns the corresponding amount of tokens. Only frozen tokens that are not currently
 staked in a vote or proposal can be unfreezed.
+
+The quorum threshold is updated at every cycle change, based on previous participation using
+the formula:
+
+```
+previous participation = number_of_staked_tokens_last_cycle / config.governance_total_supply.
+
+possible_new_quorum =
+  old_quorum * (1 - config.quorum_change) + participation * quorum_change
+
+min_new_quorum =
+  old_quorum / (1 + config.max_quorum_change)
+
+max_new_quorum =
+  old_quorum * (1 + config.max_quorum_change)
+
+new_quorum =
+  max min_new_quorum
+  (min max_new_quorum
+       possible_new_quorum)
+```
+
+This will use the configuration values provided at origination, and the new quorum will be still
+bound by the max/min quorum threshold values provided in the config.
 
 ### Proposals
 
@@ -291,6 +331,7 @@ The list of errors may be inaccurate and incomplete, it will be updated during t
 | `BAD_TOKEN_CONTRACT`             | Throw when the token contract is not of expected type.                                                           |
 | `DROP_PROPOSAL_CONDITION_NOT_MET`| Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired.      |
 | `EXPIRED_PROPOSAL`               | Throw when trying to `flush` expired proposals.                                                                  |
+| `BAD_STATE`                     | Throw when storage is in an unexpected state, indicating a contract error.                                  |
 
 # Entrypoints
 
@@ -695,6 +736,9 @@ have the same timestamp due to being in the same block, are processed in the ord
     - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
 - If proposal is accepted, decision lambda is called.
+- The quorum_threshold at the cycle in which the proposal was raised will be stored in the proposal, and this
+  threshold will be used to check if the votes meet the quorum threshold. So any dynamic update to the quorum threshold shall not affect
+  the proposal.
 
 ### **drop_proposal**
 
@@ -769,6 +813,7 @@ Parameter (in Michelson):
 
 - Author MUST have tokens equal to `freeze_param` or more, in the governance contract, with token id
   'governance-token.token_id`.
+
 
 ### **unfreeze**
 

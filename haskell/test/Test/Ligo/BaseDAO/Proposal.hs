@@ -223,6 +223,98 @@ test_BaseDAO_Proposal =
 
           checkTokenBalance frozenTokenId dodDao proposer 152
 
+    , nettestScenarioOnEmulatorCaps "a proposal is rejected if upvotes > downvotes and quorum threshold is not met" $ do
+          DaoOriginateData{..} <-
+            originateLigoDaoWithConfigDesc dynRecUnsafe
+              ((  ConfigDesc $ mkQuorumThreshold 1 20)
+              >>- (ConfigDesc $ VotingPeriod 60)
+              >>- (ConfigDesc (FixedFee 42))
+              >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 1800 })
+              )
+          let proposer = dodOwner1
+          let voter = dodOwner2
+          let dao = dodDao
+          let admin = dodAdmin
+
+          withSender (AddressResolved voter) $
+            call dao (Call @"Freeze") (#amount .! 28)
+
+          withSender (AddressResolved proposer) $
+            call dao (Call @"Freeze") (#amount .! 42)
+
+          withSender (AddressResolved proposer) $
+            call dao (Call @"Freeze") (#amount .! 10)
+
+          -- Advance one voting period to a proposing stage.
+          advanceTime (sec 60)
+          key1 <- createSampleProposal 1 proposer dao
+          -- Advance one voting period to a voting stage.
+          advanceTime (sec 60)
+          let vote_ =
+                NoPermit VoteParam
+                  { vVoteType = True
+                  , vVoteAmount = 13
+                    -- The minimum votes that is required to pass is 280 * 1/20  = 14.
+                  , vProposalKey = key1
+                  }
+          withSender (AddressResolved voter) $
+            call dao (Call @"Vote") [vote_]
+
+          let expectedFrozen = 100 + 42 + 10
+          checkTokenBalance frozenTokenId dao proposer expectedFrozen
+
+          -- Advance one voting period to a proposing stage.
+          advanceTime (sec 60)
+          withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+
+          checkTokenBalance frozenTokenId dao proposer 110 -- We expect 42 tokens to have burned
+
+    , nettestScenarioOnEmulatorCaps "a proposal succeeds if upvotes > downvotes and quorum threshold is met" $ do
+          DaoOriginateData{..} <-
+            originateLigoDaoWithConfigDesc dynRecUnsafe
+              ((  ConfigDesc $ mkQuorumThreshold 1 20)
+              >>- (ConfigDesc $ VotingPeriod 60)
+              >>- (ConfigDesc (FixedFee 42))
+              >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 1800 })
+              )
+          let proposer = dodOwner1
+          let voter = dodOwner2
+          let dao = dodDao
+          let admin = dodAdmin
+
+          withSender (AddressResolved voter) $
+            call dao (Call @"Freeze") (#amount .! 28)
+
+          withSender (AddressResolved proposer) $
+            call dao (Call @"Freeze") (#amount .! 42)
+
+          withSender (AddressResolved proposer) $
+            call dao (Call @"Freeze") (#amount .! 10)
+
+          -- Advance one voting period to a proposing stage.
+          advanceTime (sec 60)
+          key1 <- createSampleProposal 1 proposer dao
+          -- Advance one voting period to a voting stage.
+          advanceTime (sec 60)
+          let vote_ =
+                NoPermit VoteParam
+                  { vVoteType = True
+                  , vVoteAmount = 14
+                    -- The minimum votes that is required to pass is 280 * 1/20  = 14.
+                  , vProposalKey = key1
+                  }
+          withSender (AddressResolved voter) $
+            call dao (Call @"Vote") [vote_]
+
+          let expectedFrozen = 100 + 42 + 10
+          checkTokenBalance frozenTokenId dao proposer expectedFrozen
+
+          -- Advance one voting period to a proposing stage.
+          advanceTime (sec 60)
+          withSender (AddressResolved admin) $ call dao (Call @"Flush") 100
+
+          checkTokenBalance frozenTokenId dao proposer 152
+
     , nettestScenarioOnEmulatorCaps "the fee is burned if the proposal fails" $
         burnsFeeOnFailure Downvoted
     , nettestScenarioOnEmulatorCaps "the fee is burned if the proposal doesn't meet the quorum" $
@@ -631,7 +723,7 @@ flushRejectProposalQuorum
 flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
     <- originateFn (configWithRejectedProposal
-        >>- (ConfigDesc (QuorumThreshold 3 5))
+        >>- (ConfigDesc (mkQuorumThreshold 3 5))
         >>- (ConfigDesc $ VotingPeriod 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
@@ -677,10 +769,11 @@ flushRejectProposalNegativeVotes
 flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
     <- originateFn (configWithRejectedProposal
-          >>- (ConfigDesc (QuorumThreshold 3 100))
+          >>- (ConfigDesc (mkQuorumThreshold 3 100))
           >>- (ConfigDesc (VotingPeriod 20))
           >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
           >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+          >>- (ConfigDesc (mkQuorumThreshold 3 100))
           )
 
   withSender (AddressResolved dodOwner2) $
@@ -736,10 +829,11 @@ flushWithBadConfig
 flushWithBadConfig originateFn = do
   DaoOriginateData{..} <-
     originateFn (badRejectedValueConfig
-      >>- (ConfigDesc (QuorumThreshold 1 2))
+      >>- (ConfigDesc (mkQuorumThreshold 1 2))
       >>- (ConfigDesc (VotingPeriod 20))
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+      >>- (ConfigDesc (mkQuorumThreshold 1 2))
       )
 
   withSender (AddressResolved dodOwner2) $
@@ -817,7 +911,7 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (configWithRejectedProposal
-       >>- (ConfigDesc (QuorumThreshold 1 50))
+       >>- (ConfigDesc (mkQuorumThreshold 1 50))
        >>- (ConfigDesc (VotingPeriod 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
@@ -865,10 +959,11 @@ dropProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (configWithRejectedProposal
-       >>- (ConfigDesc (QuorumThreshold 1 50))
        >>- (ConfigDesc (VotingPeriod 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+       >>- (ConfigDesc (mkQuorumThreshold 1 50))
+       >>- (ConfigDesc (VotingPeriod 20))
       )
 
   withSender (AddressResolved dodOwner1) $
