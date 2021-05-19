@@ -26,9 +26,16 @@ module Ligo.BaseDAO.Types
 
     -- * Voting
   , QuorumThreshold (..)
+  , QuorumThresholdAtCycle (..)
   , VotingPeriod (..)
   , VoteParam (..)
   , Voter (..)
+  , MaxChangePercent (..)
+  , ChangePercent (..)
+  , GovernanceTotalSupply (..)
+  , mkQuorumThreshold
+  , fractionDenominator
+  , percentageToFractionNumerator
 
     -- * Non FA2
   , TransferContractTokensParam (..)
@@ -69,7 +76,7 @@ module Ligo.BaseDAO.Types
   , sOperatorsLens
   ) where
 
-import Universum (Num, One(..), maybe, (*))
+import Universum (Num, One(..), div, maybe, (*))
 
 import Control.Lens (makeLensesFor)
 import qualified Data.Map as M
@@ -173,22 +180,56 @@ type ProposalKey = Hash Blake2b $ Packed (ProposeParams, Address)
 -- A proposal will be accepted only if:
 -- (quorum_threshold * total_supply >= upvote + downvote) && (upvote > downvote)
 data QuorumThreshold = QuorumThreshold
-  { qtNumerator   :: Natural
-  , qtDenominator :: Natural
+  { qtNumerator :: Natural
   }
-  deriving stock (Generic, Show)
+  deriving stock (Eq, Generic, Show)
   deriving anyclass IsoValue
+
+fractionDenominator :: Integer
+fractionDenominator = 1000000
+
+percentageToFractionNumerator :: Num p => p -> p
+percentageToFractionNumerator p = p * (fromInteger $ div fractionDenominator 100)
+
+mkQuorumThreshold :: Integer -> Integer -> QuorumThreshold
+mkQuorumThreshold n d = QuorumThreshold $ fromInteger $ div (n * fractionDenominator) d
 
 instance HasAnnotation QuorumThreshold where
   annOptions = baseDaoAnnOptions
 
 -- | Voting period in seconds
-newtype VotingPeriod = VotingPeriod Natural
+newtype VotingPeriod = VotingPeriod { unVotingPeriod :: Natural}
   deriving stock (Generic, Show)
   deriving newtype Num
   deriving anyclass IsoValue
 
 instance HasAnnotation VotingPeriod where
+  annOptions = baseDaoAnnOptions
+
+newtype MaxChangePercent = MaxChangePercent Natural
+  deriving stock (Generic, Show)
+  deriving newtype Num
+  deriving anyclass IsoValue
+
+instance HasAnnotation MaxChangePercent where
+  annOptions = baseDaoAnnOptions
+
+-- | Voting period in seconds
+newtype ChangePercent = ChangePercent Natural
+  deriving stock (Generic, Show)
+  deriving newtype Num
+  deriving anyclass IsoValue
+
+instance HasAnnotation ChangePercent where
+  annOptions = baseDaoAnnOptions
+
+-- | Voting period in seconds
+newtype GovernanceTotalSupply = GovernanceTotalSupply Natural
+  deriving stock (Generic, Show)
+  deriving newtype Num
+  deriving anyclass IsoValue
+
+instance HasAnnotation GovernanceTotalSupply where
   annOptions = baseDaoAnnOptions
 
 -- | Represents whether a voter has voted against (False) or for (True) a given proposal.
@@ -404,6 +445,7 @@ data Proposal = Proposal
   , plProposerFrozenToken     :: Natural
 
   , plVoters                  :: [Voter]
+  , plQuorumThreshold         :: QuorumThreshold
   }
   deriving stock (Show)
 
@@ -458,6 +500,18 @@ data GovernanceToken = GovernanceToken
 customGeneric "GovernanceToken" ligoLayout
 deriving anyclass instance IsoValue GovernanceToken
 
+data QuorumThresholdAtCycle = QuorumThresholdAtCycle
+  { qaLastUpdatedCycle :: Natural
+  , qaQuorumThreshold :: QuorumThreshold
+  , qaStaked :: Natural
+  } deriving stock (Eq, Show)
+
+customGeneric "QuorumThresholdAtCycle" ligoLayout
+deriving anyclass instance IsoValue QuorumThresholdAtCycle
+
+instance HasAnnotation QuorumThresholdAtCycle where
+  annOptions = baseDaoAnnOptions
+
 data Storage' big_map = Storage'
   { sAdmin :: Address
   , sGuardian :: Address
@@ -474,6 +528,7 @@ data Storage' big_map = Storage'
   , sTotalSupply :: TotalSupply
   , sFreezeHistory :: big_map Address AddressFreezeHistory
   , sStartTime :: Timestamp
+  , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
   }
 
 customGeneric "Storage'" ligoLayout
@@ -510,8 +565,9 @@ mkStorage
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
   -> "tokenAddress" :! Address
+  -> "quorumThreshold" :! QuorumThreshold
   -> Storage
-mkStorage admin extra metadata now tokenAddress =
+mkStorage admin extra metadata now tokenAddress qt =
   Storage'
     { sAdmin = arg #admin admin
     , sGuardian = arg #admin admin
@@ -531,6 +587,7 @@ mkStorage admin extra metadata now tokenAddress =
     , sFreezeHistory = mempty
     , sStartTime = arg #now now
     , sFrozenTokenId = frozenTokenId
+    , sQuorumThresholdAtCycle = QuorumThresholdAtCycle 1 (arg #quorumThreshold qt) 0
     }
 
 mkMetadataMap
@@ -561,10 +618,14 @@ data Config' big_map = Config'
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural
+  , cMaxQuorumThreshold :: QuorumThreshold
+  , cMinQuorumThreshold :: QuorumThreshold
 
-  , cQuorumThreshold :: QuorumThreshold
   , cFixedProposalFee :: FixedFee
   , cVotingPeriod :: VotingPeriod
+  , cMaxQuorumChange :: MaxChangePercent
+  , cQuorumChange :: ChangePercent
+  , cGovernanceTotalSupply :: GovernanceTotalSupply
   , cProposalFlushTime :: Natural
   , cProposalExpiredTime :: Natural
 
@@ -583,9 +644,15 @@ type ConfigView = Config' BigMapId
 deriving stock instance Show ConfigView
 deriving anyclass instance IsoValue ConfigView
 
-
-mkConfig :: [CustomEntrypoint] -> QuorumThreshold -> VotingPeriod -> FixedFee -> Config
-mkConfig customEps quorumThreshold (VotingPeriod votingPeriod) fixedProposalFee  = Config'
+mkConfig
+  :: [CustomEntrypoint]
+  -> VotingPeriod
+  -> FixedFee
+  -> MaxChangePercent
+  -> ChangePercent
+  -> GovernanceTotalSupply
+  -> Config
+mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent governanceTotalSupply = Config'
   { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
@@ -593,18 +660,22 @@ mkConfig customEps quorumThreshold (VotingPeriod votingPeriod) fixedProposalFee 
   , cDecisionLambda = do
       drop; nil
   , cCustomEntrypoints = DynamicRec' $ BigMap $ M.fromList customEps
-  , cQuorumThreshold = quorumThreshold
   , cFixedProposalFee = fixedProposalFee
-  , cVotingPeriod = VotingPeriod votingPeriod
-  , cProposalFlushTime = votingPeriod * 2
-  , cProposalExpiredTime = votingPeriod * 3
+  , cVotingPeriod = votingPeriod
+  , cProposalFlushTime = (unVotingPeriod votingPeriod) * 2
+  , cProposalExpiredTime = (unVotingPeriod votingPeriod) * 3
+  , cMaxQuorumChange = percentageToFractionNumerator maxChangePercent
+  , cQuorumChange = percentageToFractionNumerator changePercent
+  , cGovernanceTotalSupply = governanceTotalSupply
+  , cMaxQuorumThreshold = mkQuorumThreshold 99 100 -- 99%
+  , cMinQuorumThreshold = mkQuorumThreshold 1 100 -- 1%
 
   , cMaxVotes = 1000
   , cMaxProposals = 500
   }
 
 defaultConfig :: Config
-defaultConfig = mkConfig [] (QuorumThreshold 1 100) 10 0
+defaultConfig = mkConfig [] 10 0 19 5 500
 
 data FullStorage' big_map = FullStorage'
   { fsStorage :: Storage' big_map
@@ -635,19 +706,22 @@ mkFullStorage
   :: "admin" :! Address
   -> "votingPeriod" :? VotingPeriod
   -> "quorumThreshold" :? QuorumThreshold
+  -> "maxChangePercent" :? MaxChangePercent
+  -> "changePercent" :? ChangePercent
+  -> "governanceTotalSupply" :? GovernanceTotalSupply
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "now" :! Timestamp
   -> "tokenAddress" :! Address
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
-mkFullStorage admin vp qt extra mdt now tokenAddress cEps = FullStorage'
-  { fsStorage = mkStorage admin extra mdt now tokenAddress
+mkFullStorage admin vp qt mcp cp gts extra mdt now tokenAddress cEps = FullStorage'
+  { fsStorage = mkStorage admin extra mdt now tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
-      (argDef #quorumThreshold quorumThresholdDef qt) (argDef #votingPeriod votingPeriodDef vp) 0
+      (argDef #votingPeriod votingPeriodDef vp) 0 (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply 100 gts)
   }
   where
-    quorumThresholdDef = QuorumThreshold 1 10 -- 10% of frozen total supply
+    quorumThresholdDef = mkQuorumThreshold 1 10 -- 10% of frozen total supply
     votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
 
 setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
