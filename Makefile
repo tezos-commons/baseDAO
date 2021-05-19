@@ -271,13 +271,13 @@ originate-steps: $(OUT)/baseDAO.tz
 	#
 
 test: all
-	$(MAKE) -C lorentz test PACKAGE=baseDAO-ligo-meta \
+	$(MAKE) -C haskell test PACKAGE=baseDAO-ligo-meta \
 	BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
 	REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
 	TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
 
 typescript: all
-	$(MAKE) -C lorentz build PACKAGE=baseDAO-ligo-meta \
+	$(MAKE) -C haskell build PACKAGE=baseDAO-ligo-meta \
 		STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn" \
 	BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
 	REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \

@@ -3,9 +3,7 @@
 with-compiler: ghc-8.10.4
 
 packages:
-    lorentz/
-  , lorentz/template/
-  , haskell/
+    haskell/
 
 source-repository-package
     type: git

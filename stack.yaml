@@ -1,11 +1,9 @@
 # SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-resolver: lorentz/template/snapshot.yaml
+resolver: haskell/snapshot.yaml
 
 packages:
-  - lorentz
-  - lorentz/template
   - haskell
 
-# See extra-deps in template/snapshot.yaml
+# See extra-deps in haskell/snapshot.yaml
