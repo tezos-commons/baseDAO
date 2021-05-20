@@ -35,7 +35,7 @@ let get_current_period_num(start_time, vp_length : timestamp * voting_period) : 
 [@inline]
 let ensure_proposal_voting_period (proposal, voting_period, store : proposal * voting_period * storage): storage =
   let current_period = get_current_period_num(store.start_time, voting_period) in
-  if current_period = (proposal.period_num + 1n)
+  if current_period = proposal.voting_stage_num
   then store
   else (failwith("VOTING_PERIOD_OVER") : storage)
 
@@ -207,7 +207,7 @@ let add_proposal (propose_params, voting_period, store : propose_params * voting
     { upvotes = 0n
     ; downvotes = 0n
     ; start_date = timestamp
-    ; period_num = current_period
+    ; voting_stage_num = current_period + 1n
     ; metadata = propose_params.proposal_metadata
     ; proposer = Tezos.sender
     ; proposer_frozen_token = propose_params.frozen_token
@@ -332,7 +332,7 @@ let unfreeze_proposer_and_voter_token
 [@inline]
 let is_voting_period_over (proposal, voting_period, store : proposal * voting_period * storage): bool =
   let current_period = get_current_period_num(store.start_time, voting_period) in
-  current_period > proposal.period_num + 1n
+  current_period > proposal.voting_stage_num
 
 [@inline]
 let is_time_reached (proposal, sec : proposal * seconds): bool =
