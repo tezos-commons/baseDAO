@@ -301,25 +301,26 @@ type initial_ledger_val = address * token_id * nat
 type ledger_list = (ledger_key * ledger_value) list
 
 type initial_config_data =
-  { max_quorum : quorum_threshold
-  ; min_quorum : quorum_threshold
-  ; quorum_threshold : quorum_threshold
-  ; voting_period : voting_period
-  ; proposal_flush_time: seconds
-  ; proposal_expired_time: seconds
-  ; fixed_proposal_fee_in_token: nat
-  ; max_quorum_change : unsigned_quorum_fraction
-  ; quorum_change : unsigned_quorum_fraction
-  ; governance_total_supply : nat
+  { max_quorum : nat option
+  ; min_quorum : nat option
+  ; quorum_threshold : nat option
+  ; voting_period : nat option
+  ; proposal_flush_time: nat option
+  ; proposal_expired_time: nat option
+  ; fixed_proposal_fee_in_token: nat option
+  ; max_quorum_change : nat option
+  ; quorum_change : nat option
+  ; governance_total_supply : nat option
   }
 
 type initial_storage_data =
-  { admin : address
-  ; guardian : address
-  ; governance_token : governance_token
-  ; now_val : timestamp
-  ; metadata_map : metadata_map
-  ; ledger_lst : ledger_list
+  { admin : address option
+  ; guardian : address option
+  ; governance_token_address : address option
+  ; governance_token_id : nat option
+  ; now_val : timestamp option
+  ; metadata_map : metadata_map option
+  ; ledger_lst : ledger_list option
   }
 
 type initial_data =
