@@ -23,28 +23,28 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
   | Some p -> p
   | None -> (failwith("PROPOSAL_NOT_EXIST") : proposal)
 
-// Gets the current period counting how many `voting_period` s have passed since
-// the 'started_on` timestamp. The periods start from zero index.
-let get_current_period_num(start_time, vp_length : timestamp * voting_period) : nat =
+// Gets the current stage counting how many `period` s have passed since
+// the 'started_on` timestamp. The stages are zero-indexed.
+let get_current_stage_num(start_time, period : timestamp * period) : nat =
   match is_nat((Tezos.now - start_time) : int) with
-  | Some (elapsed_time) -> elapsed_time/vp_length.length
+  | Some (elapsed_time) -> elapsed_time/period.length
   | None -> ([%Michelson ({| { FAILWITH } |} : string * unit -> nat)]
-      ("STARTED_ON_IN_FUTURE", ()))
+      ("BAD_STATE", ()))
 
 [@inline]
-let ensure_proposal_voting_period (proposal, voting_period, store : proposal * voting_period * storage): storage =
-  let current_period = get_current_period_num(store.start_time, voting_period) in
-  if current_period = proposal.voting_stage_num
+let ensure_proposal_stage (proposal, period, store : proposal * period * storage): storage =
+  let current_stage = get_current_stage_num(store.start_time, period) in
+  if current_stage = proposal.voting_stage_num
   then store
-  else (failwith("VOTING_PERIOD_OVER") : storage)
+  else (failwith("VOTING_STAGE_OVER") : storage)
 
-// Checks that a given period number is a proposing period
-// Only odd period numbers are proposing periods, in which a proposal can be
+// Checks that a given stage number is a proposing stage
+// Only odd stage numbers are proposing stages, in which a proposal can be
 // submitted.
-let ensure_proposing_period(period_num, store : nat * storage): storage =
-  if (period_num mod 2n) = 1n
+let ensure_proposing_stage(stage_num, store : nat * storage): storage =
+  if (stage_num mod 2n) = 1n
   then store
-  else (failwith("NOT_PROPOSING_PERIOD") : storage)
+  else (failwith("NOT_PROPOSING_STAGE") : storage)
 
 [@inline]
 let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
@@ -81,12 +81,12 @@ let freeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, gover
   let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
   (operation, ledger, total_supply)
 
-let stake_tk(token_amount, addr, voting_period, store : nat * address * voting_period * storage): storage =
-  let current_period = get_current_period_num(store.start_time, voting_period) in
+let stake_tk(token_amount, addr, period, store : nat * address * period * storage): storage =
+  let current_stage = get_current_stage_num(store.start_time, period) in
   let new_cycle_staked = store.quorum_threshold_at_cycle.staked + token_amount in
   let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
-        let fh = update_fh(current_period, fh) in
+        let fh = update_fh(current_stage, fh) in
         let fh = stake_frozen_fh(token_amount, fh) in
         Big_map.update addr (Some(fh)) store.freeze_history
     | None ->
@@ -108,16 +108,16 @@ let unfreeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, gov
   let (ledger, total_supply) = debit_from (tokens, addr, frozen_token_id, ledger, total_supply) in
   (operation, ledger, total_supply)
 
-let add_proposal (propose_params, voting_period, store : propose_params * voting_period * storage): storage =
+let add_proposal (propose_params, period, store : propose_params * period * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
-  let current_period = get_current_period_num(store.start_time, voting_period) in
-  let store = ensure_proposing_period(current_period, store) in
+  let current_stage = get_current_stage_num(store.start_time, period) in
+  let store = ensure_proposing_stage(current_stage, store) in
   let timestamp = Tezos.now in
   let proposal : proposal =
     { upvotes = 0n
     ; downvotes = 0n
     ; start_date = timestamp
-    ; voting_stage_num = current_period + 1n
+    ; voting_stage_num = current_stage + 1n
     ; metadata = propose_params.proposal_metadata
     ; proposer = Tezos.sender
     ; proposer_frozen_token = propose_params.frozen_token
@@ -135,7 +135,7 @@ let add_proposal (propose_params, voting_period, store : propose_params * voting
 // Vote
 // -----------------------------------------------------------------
 
-let submit_vote (proposal, vote_param, author, voting_period, store : proposal * vote_param * address * voting_period * storage): storage =
+let submit_vote (proposal, vote_param, author, period, store : proposal * vote_param * address * period * storage): storage =
   let proposal_key = vote_param.proposal_key in
 
   let proposal =
@@ -152,7 +152,7 @@ let submit_vote (proposal, vote_param, author, voting_period, store : proposal *
     { proposal with
       voters = voter :: proposal.voters
     } in
-  let store = stake_tk(vote_param.vote_amount, author, voting_period, store) in
+  let store = stake_tk(vote_param.vote_amount, author, period, store) in
   { store with proposals = Map.add proposal_key proposal store.proposals }
 
 [@inline]
@@ -167,8 +167,8 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
     let (param, author, store) = verify_permit_protected_vote (pp, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
     let vote_param = check_vote_limit_reached (config, proposal, param) in
-    let store = ensure_proposal_voting_period (proposal, config.voting_period, store) in
-    let store = submit_vote (proposal, vote_param, author, config.voting_period, store) in
+    let store = ensure_proposal_stage (proposal, config.period, store) in
+    let store = submit_vote (proposal, vote_param, author, config.period, store) in
     store
   in
   (nil_op, List.fold accept_vote votes store)
@@ -179,11 +179,11 @@ let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
   let (ledger, total_supply) = debit_from(tokens, addr, store.frozen_token_id, store.ledger, store.total_supply)
   in { store with ledger = ledger; total_supply = total_supply }
 
-let unstake_tk(token_amount, addr, voting_period, store : nat * address * voting_period * storage): storage =
-  let current_period = get_current_period_num(store.start_time, voting_period) in
+let unstake_tk(token_amount, addr, period, store : nat * address * period * storage): storage =
+  let current_stage = get_current_stage_num(store.start_time, period) in
   match Big_map.find_opt addr store.freeze_history with
     | Some(fh) ->
-        let fh = update_fh(current_period, fh) in
+        let fh = update_fh(current_stage, fh) in
         let fh = unstake_frozen_fh(token_amount, fh) in
         let new_freze_history = Big_map.update addr (Some(fh)) store.freeze_history in
         { store with freeze_history = new_freze_history }
@@ -191,8 +191,8 @@ let unstake_tk(token_amount, addr, voting_period, store : nat * address * voting
           ("NOT_ENOUGH_STAKED_TOKENS", ()) : storage)
 
 let unfreeze_proposer_and_voter_token
-  (rejected_proposal_return, is_accepted, proposal, voting_period, fixed_fee, store :
-    (proposal * contract_extra -> nat) * bool * proposal * voting_period * nat * storage): storage =
+  (rejected_proposal_return, is_accepted, proposal, period, fixed_fee, store :
+    (proposal * contract_extra -> nat) * bool * proposal * period * nat * storage): storage =
   // unfreeze_proposer_token
   let (tokens, store) =
     if is_accepted
@@ -209,13 +209,13 @@ let unfreeze_proposer_and_voter_token
             in
       (tokens, store)
     in
-  let store = unstake_tk(tokens, proposal.proposer, voting_period, store) in
+  let store = unstake_tk(tokens, proposal.proposer, period, store) in
 
   // unfreeze_voter_token
   let do_unfreeze = fun
         ( store, voter
         : storage * voter
-        ) -> unstake_tk(voter.vote_amount, voter.voter_address, voting_period, store) in
+        ) -> unstake_tk(voter.vote_amount, voter.voter_address, period, store) in
 
   List.fold do_unfreeze proposal.voters store
 
@@ -252,10 +252,10 @@ let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, store) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
-  let current_period = get_current_period_num(store.start_time, config.voting_period) in
-  let store = update_quorum(current_period, store, config) in
-  let store = stake_tk(amount_to_freeze, Tezos.sender, config.voting_period, store) in
-  let store = add_proposal (param, config.voting_period, store) in
+  let current_stage = get_current_stage_num(store.start_time, config.period) in
+  let store = update_quorum(current_stage, store, config) in
+  let store = stake_tk(amount_to_freeze, Tezos.sender, config.period, store) in
+  let store = add_proposal (param, config.period, store) in
   (nil_op, store)
 
 [@inline]
@@ -276,7 +276,7 @@ let handle_proposal_is_over
               && proposal.upvotes > proposal.downvotes
     in
     let store = unfreeze_proposer_and_voter_token
-          (config.rejected_proposal_return_value, cond, proposal, config.voting_period, config.fixed_proposal_fee_in_token, store) in
+          (config.rejected_proposal_return_value, cond, proposal, config.period, config.fixed_proposal_fee_in_token, store) in
     let (new_ops, store) =
       if cond
       then
@@ -290,7 +290,7 @@ let handle_proposal_is_over
     (ops, store, counter)
   else (ops, store, counter)
 
-// Flush all proposals that passed their voting period.
+// Flush all proposals that passed their voting stage.
 let flush(n, config, store : nat * config * storage): return =
   if n = 0n
   then (failwith("BAD_ENTRYPOINT_PARAMETER") : return)
@@ -319,7 +319,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
           ( config.rejected_proposal_return_value
           , false // A dropped proposal is treated as rejected regardless of its actual votes
           , proposal
-          , config.voting_period
+          , config.period
           , config.fixed_proposal_fee_in_token
           , store
           ) in
@@ -332,13 +332,13 @@ let freeze (amt, config, store : freeze_param * config * storage) : return =
   let addr = Tezos.sender in
   let (operation, ledger, total_supply) = freeze_on_ledger (amt, addr, store.ledger, store.total_supply, store.frozen_token_id, store.governance_token) in
 
-  // Add the `amt` to the current period frozen token count of the freeze-history.
-  let current_period = get_current_period_num(store.start_time, config.voting_period) in
+  // Add the `amt` to the current stage frozen token count of the freeze-history.
+  let current_stage = get_current_stage_num(store.start_time, config.period) in
   let new_freeze_history_for_address = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
-        let fh = update_fh(current_period, fh) in
+        let fh = update_fh(current_stage, fh) in
         add_frozen_fh(amt, fh)
-    | None -> { current_period_num = current_period; staked = 0n; current_unstaked = amt; past_unstaked = 0n;}
+    | None -> { current_stage_num = current_stage; staked = 0n; current_unstaked = amt; past_unstaked = 0n;}
   in
   (([operation] : operation list), { store with
       ledger = ledger
@@ -348,12 +348,12 @@ let freeze (amt, config, store : freeze_param * config * storage) : return =
 
 let unfreeze (amt, config, store : unfreeze_param * config * storage) : return =
   let addr = Tezos.sender in
-  let current_period = get_current_period_num(store.start_time, config.voting_period) in
+  let current_stage = get_current_stage_num(store.start_time, config.period) in
 
   let new_freeze_history =
     match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
-        let fh = update_fh(current_period, fh) in
+        let fh = update_fh(current_stage, fh) in
         let fh = sub_frozen_fh(amt, fh) in
         Big_map.update addr (Some(fh)) store.freeze_history
     | None ->

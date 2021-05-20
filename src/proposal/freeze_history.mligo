@@ -21,18 +21,18 @@ let stake_frozen_fh (amt, fh : nat * address_freeze_history): address_freeze_his
 let unstake_frozen_fh (amt, fh : nat * address_freeze_history): address_freeze_history =
   match is_nat(fh.staked - amt) with
   | Some new_amt ->
-      // Adding to past_unstaked should be fine since as of now, the staked tokens have to be from
-      // past periods.
+      // Adding to past_unstaked should be fine since as of now, the staked
+      // tokens have to be from past stages.
       { fh with staked = new_amt; past_unstaked = fh.past_unstaked + amt }
   | None ->
       ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
         ("NOT_ENOUGH_STAKED_TOKENS", ()) : address_freeze_history)
 
-// Update a possibly outdated freeze_history for the current period
-let update_fh (current_period, freeze_history : nat * address_freeze_history): address_freeze_history =
-  if freeze_history.current_period_num < current_period
+// Update a possibly outdated freeze_history for the current stage
+let update_fh (current_stage, freeze_history : nat * address_freeze_history): address_freeze_history =
+  if freeze_history.current_stage_num < current_stage
   then
-    { current_period_num = current_period
+    { current_stage_num = current_stage
     ; staked = freeze_history.staked
     ; current_unstaked = 0n
     ; past_unstaked = freeze_history.current_unstaked + freeze_history.past_unstaked

@@ -27,7 +27,7 @@ module Ligo.BaseDAO.Types
     -- * Voting
   , QuorumThreshold (..)
   , QuorumThresholdAtCycle (..)
-  , VotingPeriod (..)
+  , Period (..)
   , VoteParam (..)
   , Voter (..)
   , QuorumFraction (..)
@@ -197,13 +197,13 @@ mkQuorumThreshold n d = QuorumThreshold $ fromInteger $ div (n * fractionDenomin
 instance HasAnnotation QuorumThreshold where
   annOptions = baseDaoAnnOptions
 
--- | Voting period in seconds
-newtype VotingPeriod = VotingPeriod { unVotingPeriod :: Natural}
+-- | Stages length, in seconds
+newtype Period = Period { unPeriod :: Natural}
   deriving stock (Generic, Show)
   deriving newtype Num
   deriving anyclass IsoValue
 
-instance HasAnnotation VotingPeriod where
+instance HasAnnotation Period where
   annOptions = baseDaoAnnOptions
 
 newtype QuorumFraction = QuorumFraction Integer
@@ -479,7 +479,7 @@ data Parameter
 data AddressFreezeHistory = AddressFreezeHistory
   { fhCurrentUnstaked :: Natural
   , fhPastUnstaked :: Natural
-  , fhCurrentPeriodNum :: Natural
+  , fhCurrentStageNum :: Natural
   , fhStaked :: Natural
   } deriving stock (Eq, Show)
 
@@ -613,7 +613,7 @@ data Config' big_map = Config'
   , cMinQuorumThreshold :: QuorumFraction
 
   , cFixedProposalFee :: FixedFee
-  , cVotingPeriod :: VotingPeriod
+  , cPeriod :: Period
   , cMaxQuorumChange :: QuorumFraction
   , cQuorumChange :: QuorumFraction
   , cGovernanceTotalSupply :: GovernanceTotalSupply
@@ -637,7 +637,7 @@ deriving anyclass instance IsoValue ConfigView
 
 mkConfig
   :: [CustomEntrypoint]
-  -> VotingPeriod
+  -> Period
   -> FixedFee
   -> QuorumFraction
   -> QuorumFraction
@@ -652,9 +652,9 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
       drop; nil
   , cCustomEntrypoints = DynamicRec' $ BigMap $ M.fromList customEps
   , cFixedProposalFee = fixedProposalFee
-  , cVotingPeriod = votingPeriod
-  , cProposalFlushTime = (unVotingPeriod votingPeriod) * 2
-  , cProposalExpiredTime = (unVotingPeriod votingPeriod) * 3
+  , cPeriod = votingPeriod
+  , cProposalFlushTime = (unPeriod votingPeriod) * 2
+  , cProposalExpiredTime = (unPeriod votingPeriod) * 3
   , cMaxQuorumChange = percentageToFractionNumerator maxChangePercent
   , cQuorumChange = percentageToFractionNumerator changePercent
   , cGovernanceTotalSupply = governanceTotalSupply
@@ -695,7 +695,7 @@ deriving anyclass instance IsoValue FullStorageView
 
 mkFullStorage
   :: "admin" :! Address
-  -> "votingPeriod" :? VotingPeriod
+  -> "votingPeriod" :? Period
   -> "quorumThreshold" :? QuorumThreshold
   -> "maxChangePercent" :? QuorumFraction
   -> "changePercent" :? QuorumFraction
@@ -796,9 +796,9 @@ instance CustomErrorHasDoc "nOT_ENOUGH_FROZEN_TOKENS" where
   customErrDocMdCause =
     "There were not enough frozen tokens for the operation"
 
-type instance ErrorArg "nOT_PROPOSING_PERIOD" = NoErrorArg
+type instance ErrorArg "nOT_PROPOSING_STAGE" = NoErrorArg
 
-instance CustomErrorHasDoc "nOT_PROPOSING_PERIOD" where
+instance CustomErrorHasDoc "nOT_PROPOSING_STAGE" where
   customErrClass = ErrClassActionException
   customErrDocMdCause =
     "Proposal creation attempted in non-proposal period"
@@ -830,9 +830,9 @@ instance CustomErrorHasDoc "pROPOSAL_NOT_EXIST" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to vote on a proposal that does not exist"
 
-type instance ErrorArg "vOTING_PERIOD_OVER" = NoErrorArg
+type instance ErrorArg "vOTING_STAGE_OVER" = NoErrorArg
 
-instance CustomErrorHasDoc "vOTING_PERIOD_OVER" where
+instance CustomErrorHasDoc "vOTING_STAGE_OVER" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to vote on a proposal that is already ended"
 

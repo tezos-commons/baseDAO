@@ -26,12 +26,12 @@ type ledger_value = nat
 type ledger = (ledger_key, ledger_value) big_map
 
 // Frozen token history for an address.
-// This track the period number in which it was last updated and differentiates between
-// tokens that were frozen during that period and the ones frozen in any other before.
+// This track the stage number in which it was last updated and differentiates between
+// tokens that were frozen during that stage and the ones frozen in any other before.
 // It does so because only tokens that were frozen in the past can be staked, which is
 // also why it tracks staked tokens in a single field.
 type address_freeze_history =
-  { current_period_num : nat
+  { current_stage_num : nat
   ; staked : nat
   ; current_unstaked : nat
   ; past_unstaked : nat
@@ -120,7 +120,7 @@ type voter =
 type seconds = nat
 
 // Length of a 'stage'
-type voting_period = { length : seconds }
+type period = { length : seconds }
 
 // For efficiency, we only keep a `nat` for the numerator, whereas the
 // denominator is not stored and has a fixed value of `1000000`.
@@ -304,7 +304,7 @@ type initial_config_data =
   { max_quorum : quorum_threshold
   ; min_quorum : quorum_threshold
   ; quorum_threshold : quorum_threshold
-  ; voting_period : voting_period
+  ; period : period
   ; proposal_flush_time: seconds
   ; proposal_expired_time: seconds
   ; fixed_proposal_fee_in_token: nat
@@ -329,22 +329,53 @@ type initial_data =
 
 type config =
   { proposal_check : propose_params * contract_extra -> bool
+  // ^ A lambda used to verify whether a proposal can be submitted.
+  // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
+  // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
   ; rejected_proposal_return_value : proposal * contract_extra -> nat
+  // ^ When a proposal is rejected, the value that voters get back can be slashed.
+  // This lambda returns the amount to be slashed.
   ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
+  // ^ The decision lambda is executed based on a successful proposal.
+  // It has access to the proposal, can modify `contractExtra` and perform arbitrary
+  // operations.
 
   ; max_proposals : nat
+  // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   ; max_votes : nat
+  // ^ Determine the maximum number of votes associated with a proposal.
   ; max_quorum_threshold : quorum_fraction
+  // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction
-  ; voting_period : voting_period
+  // ^ Determine the minimum value of quorum threshold that is allowed.
+
+  ; period : period
+  // ^ Determines the stages length.
+
   ; fixed_proposal_fee_in_token : nat
+  // ^ A base fee paid for submitting a new proposal.
+
   ; max_quorum_change : quorum_fraction
+  // ^ A percentage value that limits the quorum_threshold change during
+  // every update of the same.
   ; quorum_change : quorum_fraction
+  // ^ A percentage value that is used in the computation of new quorum
+  // threshold value.
   ; governance_total_supply : nat
-  ; proposal_flush_time: seconds // Number of seconds until a proposal can be flushed
-  ; proposal_expired_time: seconds // Number of seconds until a proposal is expired
+  // ^ The total supply of governance tokens used in the computation of
+  // of new quorum threshold value at each stage.
+
+  ; proposal_flush_time : seconds
+  // ^ Determine the minimum amount of seconds after the proposal is proposed
+  // to allow it to be `flushed`.
+  // Has to be bigger than `period * 2`
+  ; proposal_expired_time : seconds
+  // ^ Determine the minimum amount of seconds after the proposal is proposed
+  // to be considered as expired.
+  // Has to be bigger than `proposal_flush_time`
 
   ; custom_entrypoints : custom_entrypoints
+  // ^ Packed arbitrary lambdas associated to a name for custom execution.
   }
 
 type full_storage = storage * config
