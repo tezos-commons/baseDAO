@@ -8,8 +8,10 @@
 #if !TYPES_H
 #define TYPES_H
 
+// ID of an FA2 token
 type token_id = nat
 
+// FA2 token operator
 type operator =
   [@layout:comb]
   { owner : address
@@ -18,6 +20,7 @@ type operator =
   }
 type operators = (operator, unit) big_map
 
+// Types for FA2 tokens' ledger
 type ledger_key = address * token_id
 type ledger_value = nat
 type ledger = (ledger_key, ledger_value) big_map
@@ -34,10 +37,13 @@ type address_freeze_history =
   ; past_unstaked : nat
   }
 
+// Frozen token history for all addresses
 type freeze_history = (address, address_freeze_history) big_map
 
+// Total supply of all FA2 tokens
 type total_supply = (token_id, nat) map
 
+// FA2 transfer types
 type transfer_destination =
   [@layout:comb]
   { to_ : address
@@ -51,6 +57,7 @@ type transfer_item =
   }
 type transfer_params = transfer_item list
 
+// FA2 balance entrypoint types
 type balance_request_item =
   [@layout:comb]
   { owner : address
@@ -67,6 +74,7 @@ type balance_request_params =
   ; callback : balance_response_item list contract
   }
 
+// FA2 operator entrypoints types
 type operator_param =
   [@layout:comb]
   { owner : address
@@ -79,6 +87,7 @@ type update_operator =
   | Remove_operator of operator_param
 type update_operators_param = update_operator list
 
+// Full FA2 compliance parameter
 type fa2_parameter =
   [@layout:comb]
     Transfer of transfer_params
@@ -87,6 +96,7 @@ type fa2_parameter =
 
 // -- Helpers -- //
 
+// Internal helper to fold up to a number
 type counter =
   { current : nat
   ; total : nat
@@ -99,14 +109,17 @@ type nonce = nat
 // Represents whether a voter has voted against (false) or for (true) a given proposal.
 type vote_type = bool
 
+// Voter info for a proposal
 type voter =
   { voter_address : address
   ; vote_amount : nat
   ; vote_type : vote_type
   }
 
-// Type `seconds` used with `voting_period`.
+// Amount of `seconds` used for lengths of time
 type seconds = nat
+
+// Length of a 'stage'
 type voting_period = { length : seconds }
 
 // For efficiency, we only keep a `nat` for the numerator, whereas the
@@ -124,31 +137,45 @@ type unsigned_quorum_fraction = { numerator : nat }
 // fraction_denominator.
 type quorum_threshold = unsigned_quorum_fraction
 
+// Types to store info of a proposal
 type proposal_key = bytes
 type proposal_metadata = bytes
 type proposal =
   { upvotes : nat
+  // ^ total amount of votes in favor
   ; downvotes : nat
+  // ^ total amount of votes against
   ; start_date : timestamp
+  // ^ time of submission, used to order proposals
   ; voting_stage_num : nat
   // ^ stage number in which it is possible to vote on this proposal
   ; metadata : proposal_metadata
+  // ^ instantiation-specific additional data
   ; proposer : address
+  // ^ address of the proposer
   ; proposer_frozen_token : nat
+  // ^ amount of frozen tokens used by the proposer, exluding the fixed fee
   ; voters : voter list
-  ; quorum_threshold: quorum_threshold // quorum threshold at the cycle in which proposal was raised.
+  // ^ voter data
+  ; quorum_threshold: quorum_threshold
+  // ^ quorum threshold at the cycle in which proposal was raised
   }
 
+// TZIP-17 permit data
 type permit =
   { key : key
   ; signature : signature
   }
 
+// TZIP-16 metadata map
 type metadata_map = (string, bytes) big_map
+
+// Instantiation-specific stored data
 type contract_extra = (string, bytes) big_map
 
 // -- Storage -- //
 
+// External FA2 token used for governance
 type governance_token =
   { address : address
   ; token_id : token_id
@@ -235,7 +262,7 @@ type transfer_contract_tokens_param =
  * Entrypoints that forbids Tz transfers
  *)
 type forbid_xtz_params =
-    Call_FA2 of fa2_parameter
+  | Call_FA2 of fa2_parameter
   | Drop_proposal of proposal_key
   | Transfer_ownership of transfer_ownership_param
   | Accept_ownership of unit
