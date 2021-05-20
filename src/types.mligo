@@ -130,7 +130,8 @@ type proposal =
   { upvotes : nat
   ; downvotes : nat
   ; start_date : timestamp
-  ; period_num : nat
+  ; voting_stage_num : nat
+  // ^ stage number in which it is possible to vote on this proposal
   ; metadata : proposal_metadata
   ; proposer : address
   ; proposer_frozen_token : nat
