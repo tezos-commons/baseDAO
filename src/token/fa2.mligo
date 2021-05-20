@@ -51,7 +51,7 @@ let debit_from (amt, from_, token_id, ledger, total_supply: nat * address * toke
   let new_total_supply =
     match Michelson.is_nat (current_total_supply - amt) with
       Some new_total_supply -> new_total_supply
-    | None -> (failwith("NEGATIVE_TOTAL_SUPPLY") : nat)
+    | None -> (failwith("BAD_STATE") : nat)
     in
   let ledger = Big_map.update (from_, token_id) (Some new_balance) ledger in
   let total_supply = Map.update token_id (Some new_total_supply) total_supply in

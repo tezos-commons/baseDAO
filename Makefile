@@ -125,7 +125,6 @@ $(OUT)/registryDAO_storage.tz : ledger = ([] : ledger_list)
 $(OUT)/registryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/registryDAO_storage.tz : min_quorum = 1n
 $(OUT)/registryDAO_storage.tz : max_quorum = 99n
-
 $(OUT)/registryDAO_storage.tz : period = 950400n # 11 days
 $(OUT)/registryDAO_storage.tz : quorum_change = 5n
 $(OUT)/registryDAO_storage.tz : max_quorum_change = 19n

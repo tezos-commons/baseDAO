@@ -29,7 +29,7 @@ let get_current_stage_num(start_time, period : timestamp * period) : nat =
   match is_nat((Tezos.now - start_time) : int) with
   | Some (elapsed_time) -> elapsed_time/period.length
   | None -> ([%Michelson ({| { FAILWITH } |} : string * unit -> nat)]
-      ("STARTED_ON_IN_FUTURE", ()))
+      ("BAD_STATE", ()))
 
 [@inline]
 let ensure_proposal_stage (proposal, period, store : proposal * period * storage): storage =

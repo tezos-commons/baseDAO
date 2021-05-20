@@ -32,7 +32,7 @@ However, an existing separate FA2 contract is used for governance.
 - The contract may store tokens with other token identifiers.
 
 - The contract must store a 'governance token'. This consist of the address of
-  an FA2 contract and a token id in that contract. The 'governance token'  is
+  an FA2 contract and a `token_id` in that contract. The 'governance token'  is
   used as part of the freeze/unfreeze process by making FA2 transfers on it.
 
 - The storage of the contract must have annotations for all fields
@@ -51,11 +51,12 @@ In order to do so the contract has types that can contain arbitary data:
 
 The former contains fields that are required to submit a proposal.
 
-The latter keeps global information like information about accepted proposals.
+The latter keeps global information, for example about accepted proposals.
 In this case, we associate a `string` "name" to the `pack`ed representation of
 the data, that can then be `unpack`ed by the contract code.
 
-For example, the `proposal_metadata` in a "treasury" style DAO would be the packed version of the type `transfer_proposal` :
+For example, the `proposal_metadata` in a "treasury" style DAO would be the
+packed version of the type `treasury_dao_proposal_metadata` :
 ```ocaml
 type xtz_transfer =
   { amount : tez
@@ -71,7 +72,7 @@ type transfer_type =
   | Xtz_transfer_type of xtz_transfer
   | Token_transfer_type of token_transfer
 
-type transfer_proposal =
+type treasury_dao_proposal_metadata =
   { agora_post_id : nat
   ; transfers : transfer_type list
   }
@@ -85,18 +86,15 @@ for more information on its content and usage.
 DAO configuration value parameters are captured by the `config` type:
 
 ```ocaml
-
-type seconds = nat
-
 type config =
-  { proposal_check : propose_params * storage -> bool
+  { proposal_check : propose_params * contract_extra -> bool
   // ^ A lambda used to verify whether a proposal can be submitted.
   // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
-  ; rejected_proposal_return_value : proposal * storage -> nat
+  ; rejected_proposal_return_value : proposal * contract_extra -> nat
   // ^ When a proposal is rejected, the value that voters get back can be slashed.
   // This lambda returns the amount to be slashed.
-  ; decision_lambda : proposal * storage -> operation list * storage
+  ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
   // ^ The decision lambda is executed based on a successful proposal.
   // It has access to the proposal, can modify `contractExtra` and perform arbitrary
   // operations.
@@ -104,25 +102,15 @@ type config =
   ; max_proposals : nat
   // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   ; max_votes : nat
-  // ^ Determine the maximum number of votes associated with a proposal including positive votes
-  ; max_quorum_threshold : quorum_threshold
+  // ^ Determine the maximum number of votes associated with a proposal.
+  ; max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
-  ; min_quorum_threshold : quorum_threshold
+  ; min_quorum_threshold : quorum_fraction
   // ^ Determine the minimum value of quorum threshold that is allowed.
 
   ; period : period
   // ^ Determines the stages length.
 
-  ; proposal_flush_time : seconds
-  // ^ Determine the minimum amount of seconds after the proposal is proposed to be able to be `flushed`.
-  // Have to be bigger than `period * 2`
-
-  ; proposal_expired_time : seconds
-  // ^ Determine the minimum amount of seconds after the proposal is proposed to be considered as expired.
-  // Have to be bigger than `proposal_flush_time`
-
-  ; quorum_threshold : quorum_threshold
-  // ^ Determine the quorum threshold that the proposals need to meet.
   ; fixed_proposal_fee_in_token : nat
   // ^ A base fee paid for submitting a new proposal.
 
@@ -132,51 +120,67 @@ type config =
   ; quorum_change : quorum_fraction
   // ^ A percentage value that is used in the computation of new quorum
   // threshold value.
-  ; governance_total_supply : int
+  ; governance_total_supply : nat
   // ^ The total supply of governance tokens used in the computation of
   // of new quorum threshold value at each stage.
 
+  ; proposal_flush_time : seconds
+  // ^ Determine the minimum amount of seconds after the proposal is proposed
+  // to allow it to be `flushed`.
+  // Has to be bigger than `period * 2`
+  ; proposal_expired_time : seconds
+  // ^ Determine the minimum amount of seconds after the proposal is proposed
+  // to be considered as expired.
+  // Has to be bigger than `proposal_flush_time`
+
   ; custom_entrypoints : custom_entrypoints
   // ^ Packed arbitrary lambdas associated to a name for custom execution.
+  }
 ```
 
 Note:
-- the `token_metadata` type matches the one defined in FA2.
-- the `proposal` type is defined below.
-- the `quorum_threshold` is expressed as a `nat/nat` fraction of the total supply
-  of frozen tokens.
+- see the [ligo source](../src/types.mligo) for more info about the types involved.
 - `storage` is the storage type of the contract without the configuration.
 - `full_storage` is instead the full storage of the contract, including its configuration,
 which is to say: `type full_storage = storage * config`.
-
 
 ```ocaml
 type proposal_key = bytes
 
 type proposal =
   { upvotes : nat
+  // ^ total amount of votes in favor
   ; downvotes : nat
+  // ^ total amount of votes against
   ; start_date : timestamp
+  // ^ time of submission, used to order proposals
+  ; voting_stage_num : nat
+  // ^ stage number in which it is possible to vote on this proposal
   ; metadata : proposal_metadata
+  // ^ instantiation-specific additional data
   ; proposer : address
+  // ^ address of the proposer
   ; proposer_frozen_token : nat
-  ; voters : (address * nat) list
-  // ^ List of voter addresses associated with the vote amount
-  // Needed for `flush` entrypoint.
+  // ^ amount of frozen tokens used by the proposer, exluding the fixed fee
+  ; voters : voter list
+  // ^ voter data
   ; quorum_threshold: quorum_threshold
-  // quorum threshold at the cycle in which proposal was raised.
+  // ^ quorum threshold at the cycle in which proposal was raised
   }
 ```
 
-## Runtime configuration
+## Storage configuration
 
-Some configuration values are specified in runtime and can be changed during the contract lifetime.
-They must be provided on origination to construct the contract's initial storage.
+Part of the configuration is specified inside the `storage` and is fixed during
+the contract lifetime after being set at origination.
 These values are:
 1. `admin : address` is the address that can perform administrative actions.
-2. `guardian : address` is the address of a contract that have permission to call `drop_proposal` on any proposals.
-    - `guardian` contract cannot initiate the transaction that results in a call to `drop_proposal`
-3. `governance_token` is the FA2 contract address/token id pair that will be used as the governance token.
+2. `guardian : address` is the address of a contract that has permission to call
+   `drop_proposal` on any proposals.
+   Note: the `guardian` contract cannot initiate the transaction that results
+   in a call to `drop_proposal`
+3. `governance_token` is the FA2 contract address/token_id pair that will be
+   used as the governance token.
 4. `period : nat` specifies how long the stages lasts in seconds.
 5. `proposal_flush_time : nat`
     - Specifies in seconds how long after the proposal is proposed it can be flushed.
@@ -186,27 +190,36 @@ These values are:
     - IMPORTANT: Must be bigger than `proposal_flush_time`.
 7. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
    tokens total supply of total votes are required for a successful proposal.
-8. `fixed_proposal_fee_in_token : nat` specifies the fee for submitting a proposal (in native DAO token).
+8. `fixed_proposal_fee_in_token : nat` specifies the fee to be paid for submitting
+   a proposal (in frozen tokens).
 
 # Contract logic
 
 This chapter provides a high-level overview of the contract's logic.
 
 - The contract maintains a ledger of address and its balance (frozen tokens and optionally others).
-- The contract maintains the address of an a FA2 contract and a token id, to use in the governance process.
-- The contract manages a special role called "Administrator".
-- The contract stores a list of proposals that can be in one of the states: "ongoing", "rejected", or "accepted".
-- The contract forbids transferring XTZ to the contract, because they will be locked forever.
+- The contract maintains the address of an a FA2 contract and a `token_id`,
+  to use in the governance process.
+- The contract manages two special roles, the `admin` and `guardian`.
+- The contract stores a list of proposals that can be in one of the states:
+  "ongoing", "rejected", "accepted" or "expired".
+- The contract forbids transferring XTZ to the contract,
+  because they might be locked forever.
 
 ## Roles
 
-The token supports one "global" user role: `Administrator`. This role applies to the
-whole contract (hence "global"):
+The token supports two "global" user role: `admin` and `guardian`.
+These roles apply to the whole contract (hence "global"):
 
-* **administrator**
-  - Can re-assign this role to a new address.
+* **admin**
+  - Can re-assign this role to a new address or to the DAO itself.
   - Can perform administrative operations.
-  - There always must be exactly one administrator.
+  - There always must be exactly one `admin`.
+* **guardian**
+  - Can drop any proposal at any time.
+  - Cannot be an implicit address, in other words it must be a contract.
+  - There always must be exactly one `guardian`.
+
 
 Additionally, the contract inherits the **operator** role from FA2.
 This role is "local" to a particular address.
@@ -228,19 +241,19 @@ For this reason the contract starts from a voting `stage`, because even tho ther
 are no proposals to vote on yet, this allows token to be frozen in it and be
 usable in the first proposing `stage`, number `1`.
 
-For freezing, the address should have corresponding amount of tokens of proper
-token type (token_id of storage.governance_token.token_id) in the governance
-FA2 contract. During 'Freeze' operation the BaseDAO contracts makes an FA2
-transfer on the governance contract to transfer tokens to its own address from
-the address who is freezing the tokens. Then it mints frozen tokens for the address.
+To `freeze`, the address should have the corresponding amount of tokens of the
+proper `token_id` in the governance FA2 contract.
+During the `freeze` operation the DAO contract performs an FA2 `transfer` call
+on the governance contract to transfer tokens to its own address from
+the address who is freezing the tokens and then mints frozen tokens for the address.
 
-Unfreezing does it reverse, that is, the contract makes the FA2 transfer on governance
-contract to transfer tokens from its own address to the address that is doing unfreezing.
-It then burns the corresponding amount of tokens. Only frozen tokens that are not currently
-staked in a vote or proposal can be unfreezed.
+Unfreezing does the opposite, that is, the contract makes the FA2 `transfer` call
+on the governance contract to transfer tokens from its own address to the address
+that is doing the unfreezing and burns the corresponding amount of frozen tokens.
+Only frozen tokens that are not currently staked in a vote or proposal can be unfrozen.
 
-The quorum threshold is updated at every `cycle` change, based on previous participation using
-the formula:
+The quorum threshold is updated at every `cycle` change, based on the previous
+cycle participation using the formula:
 
 ```
 previous participation = number_of_staked_tokens_last_cycle / config.governance_total_supply.
@@ -260,25 +273,26 @@ new_quorum =
        possible_new_quorum)
 ```
 
-This will use the configuration values provided at origination, and the new quorum will be still
-bound by the max/min quorum threshold values provided in the config.
+This will use the configuration values provided at origination, and the new
+quorum will be still bound by the max/min quorum threshold values provided there.
 
 ### Proposals
 
-Everyone can make a new proposal, however, you have to freeze some tokens for that.
-The proposer specifies how many frozen tokens they want to stake and this value is checked by
-the contract according to its compile-time configuration.
+Everyone can make a new proposal, however, one has to `freeze` some tokens for that.
+The proposer specifies how many frozen tokens they want to stake and this value
+is checked by the contract according to its configuration.
 
-Proposing can only be performed in a proposing `stage`, meaning one that's odd-numbered and
-the proposer must have frozen his tokens in one of the preceding `stage`s.
+Proposing can only be performed in a proposing `stage`, meaning one that's
+odd-numbered and the proposer must have frozen his tokens in one of the preceding
+`stage`s.
 
-Proposals are identified by a key which is a `bytes` value computed via Blake2B hashing function of a
-pair of propose entrypoint params and the proposer address.
+Proposals are identified by a key which is a `bytes` value computed via the Blake2B
+hashing function of a pair of propose entrypoint params and the proposer address.
 
 ### Voting
 
-Once a proposal is submitted, everyone can vote on it as long as they have enough frozen tokens to stake.
-One frozen token is required for one vote.
+Once a proposal is submitted, everyone can vote on it as long as they have enough
+frozen tokens to stake. One frozen token is required for each vote.
 
 A vote can only be cast in a voting `stage`, meaning one that's even-numbered.
 Moreover the proposal to vote on must have been submitted in the proposing `stage`
@@ -290,12 +304,14 @@ After the voting ends, the contract is "flushed" by calling a dedicated entrypoi
 
 ## Ledger
 
-Every address that is stored in ledger is associated with its balance associated with the frozen
-token id.
+Every address that is stored in the ledger is associated with its balance
+associated with the frozen token id as well as to any other custom tokens.
 
 # Errors
 
-In error scenarios the baseDAO contract fails with a string or a pair where the first item is a string.
+In error scenarios the contract fails with a string or a pair where the first
+item is a string.
+
 Here is a summary of all the strings used as error messages.
 We start with standard FA2 errors which are part of the FA2 specification.
 
@@ -308,32 +324,34 @@ We start with standard FA2 errors which are part of the FA2 specification.
 The next group consists of the errors that are not part of the FA2 specification.
 The list of errors may be inaccurate and incomplete, it will be updated during the implementation.
 
-| Error                            | Description                                                                                                 |
-|----------------------------------|-------------------------------------------------------------------------------------------------------------|
-| `NOT_ADMIN`                      | The sender is not the administrator                                                                         |
-| `NOT_PENDING_ADMIN`              | Authorized sender is not the current pending administrator                                                  |
-| `NOT_TOKEN_OWNER`                | Trying to configure operators for a different wallet which sender does not own                              |
-| `FAIL_PROPOSAL_CHECK`            | Throws when trying to propose a proposal that does not pass `proposalCheck`                                 |
-| `FROZEN_TOKEN_NOT_TRANSFERABLE`  | Transfer entrypoint is called for frozen token                                                              |
-| `PROPOSAL_NOT_EXIST`             | Throws when trying to vote on a proposal that does not exist                                                |
-| `QUORUM_NOT_MET`                 | A proposal is flushed, but there are not enough votes                                                       |
-| `VOTING_STAGE_OVER`              | Throws when trying to vote on a proposal that is already ended                                              |
-| `MAX_PROPOSALS_REACHED`          | Throws when trying to propose a proposal when proposals max amount is already reached                       |
-| `MAX_VOTES_REACHED`              | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
-| `FORBIDDEN_XTZ`                  | Throws when some XTZ was received as part of the contract call                                              |
-| `PROPOSER_NOT_EXIST_IN_LEDGER`   | Expect a proposer address to exist in Ledger but it is not found                                            |
-| `PROPOSAL_NOT_UNIQUE`            | Trying to propose a proposal that is already existed in the Storage.                                        |
-| `MISSIGNED`                      | Parameter signature does not match the expected one - for permits.                                          |
-| `ENTRYPOINT_NOT_FOUND`           | Throw when `CallCustom` is called with a non-existing entrypoint                                            |
-| `UNPACKING_FAILED`               | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.               |
-| `MISSING_VALUE`                  | Throw when trying to unpack a field that does not exist.                                                    |
-| `NOT_PROPOSING_STAGE`            | Throw when `propose` call is made on a non-proposing period.                                                |
-| `NOT_ENOUGH_FROZEN_TOKENS`       | Throw when there is not enough frozen tokens for the operation.                                             |
-| `NOT_ENOUGH_STAKED_TOKENS`       | Throw when there is not enough staked tokens for the operation.                                             |
-| `BAD_TOKEN_CONTRACT`             | Throw when the token contract is not of expected type.                                                      |
-| `DROP_PROPOSAL_CONDITION_NOT_MET`| Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired. |
-| `EXPIRED_PROPOSAL`               | Throw when trying to `flush` expired proposals.                                                             |
-| `BAD_STATE`                      | Throw when storage is in an unexpected state, indicating a contract error.                                  |
+| Error                                | Description                                                                                                 |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `NOT_ADMIN`                          | The sender is not the administrator                                                                         |
+| `NOT_PENDING_ADMIN`                  | Authorized sender is not the current pending administrator                                                  |
+| `NOT_TOKEN_OWNER`                    | Trying to configure operators for a different wallet which sender does not own                              |
+| `FAIL_PROPOSAL_CHECK`                | Throws when trying to propose a proposal that does not pass `proposal_check`                                |
+| `FROZEN_TOKEN_NOT_TRANSFERABLE`      | Transfer entrypoint is called for frozen token                                                              |
+| `PROPOSAL_NOT_EXIST`                 | Throws when trying to vote on a proposal that does not exist                                                |
+| `QUORUM_NOT_MET`                     | A proposal is flushed, but there are not enough votes                                                       |
+| `VOTING_STAGE_OVER`                  | Throws when trying to vote on a proposal that is already ended                                              |
+| `MAX_PROPOSALS_REACHED`              | Throws when trying to propose a proposal when proposals max amount is already reached                       |
+| `MAX_VOTES_REACHED`                  | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
+| `FORBIDDEN_XTZ`                      | Throws when some XTZ was received as part of the contract call                                              |
+| `PROPOSER_NOT_EXIST_IN_LEDGER`       | Expect a proposer address to exist in Ledger but it is not found                                            |
+| `PROPOSAL_NOT_UNIQUE`                | Trying to propose a proposal that is already existed in the Storage.                                        |
+| `MISSIGNED`                          | Parameter signature does not match the expected one - for permits.                                          |
+| `ENTRYPOINT_NOT_FOUND`               | Throw when `CallCustom` is called with a non-existing entrypoint                                            |
+| `UNPACKING_FAILED`                   | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.               |
+| `UNPACKING_PROPOSAL_METADATA_FAILED` | Throw when unpacking of a proposal metadata fails.                                                          |
+| `MISSING_VALUE`                      | Throw when trying to unpack a field that does not exist.                                                    |
+| `NOT_PROPOSING_STAGE`                | Throw when `propose` call is made on a non-proposing period.                                                |
+| `NOT_ENOUGH_FROZEN_TOKENS`           | Throw when there is not enough frozen tokens for the operation.                                             |
+| `NOT_ENOUGH_STAKED_TOKENS`           | Throw when there is not enough staked tokens for the operation.                                             |
+| `BAD_TOKEN_CONTRACT`                 | Throw when the token contract is not of expected type.                                                      |
+| `BAD_VIEW_CONTRACT`                  | Throw when the contract for a view entrypoint is not of the expected type.                                  |
+| `DROP_PROPOSAL_CONDITION_NOT_MET`    | Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired. |
+| `EXPIRED_PROPOSAL`                   | Throw when trying to `flush` expired proposals.                                                             |
+| `BAD_STATE`                          | Throw when storage is in an unexpected state, indicating a contract error.                                  |
 
 # Entrypoints
 
@@ -604,6 +622,9 @@ Parameter (in Michelson):
   the new one. Note, that if proposed administrator is the same as the current
   one, then the pending administrator is simply invalidated.
 
+- If the new owner is the BaseDAO contract itself, the admin is set right away,
+  without the need for a call to 'accept_ownership' entrypoint.
+
 ### **accept_ownership**
 
 ```ocaml
@@ -617,11 +638,11 @@ Parameter (in Michelson):
 
 - Accept the administrator privilege.
 
-- Fails with `NOT_PENDING_ADMIN` if the sender is not the current pending administrator, this also includes the case when pending administrator was not set.
+- Fails with `NOT_PENDING_ADMIN` if the sender is not the current pending
+  administrator, this also includes the case when pending administrator was not set.
 
-- When pending administrator is not set, it is considered equal to the current owner, thus administrator can accept ownership of its own contract without a prior `transfer_ownership` call.
-
-- If the new owner is the BaseDAO contract itself, the admin is set right away, without the need for a call to 'accept_ownership' entrypoint.
+- When pending administrator is not set, it is considered equal to the current owner,
+  thus administrator can accept ownership of its own contract without a prior `transfer_ownership` call.
 
 ## Proposal entrypoints
 
@@ -647,12 +668,15 @@ Parameter (in Michelson):
 ```
 
 - The proposal is saved under `BLAKE2b` hash of proposal value and sender.
-- The `Natural` value: `proposalTokenAmount` determines how many sender's frozen tokens will be staked in addition to the [fee](#configuration)
-- Sender MUST have enough frozen tokens (i. e. `≥ proposalTokenAmount + fee`) that are not already staked for a proposal or a vote.
+- The `Natural` value: `proposalTokenAmount` determines how many sender's frozen
+  tokens will be staked in addition to the [fee](#configuration)
+- Sender MUST have enough frozen tokens (i. e. `≥ proposalTokenAmount + fee`) that
+  are not already staked for a proposal or a vote.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the unstaked frozen token balance of the SENDER
   is less than `proposalTokenAmount + fee`.
 - Fails with `NOT_PROPOSING_STAGE` if the current stage is not a proposing one.
-- Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposalCheck` from the configuration.
+- Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposal_check`
+  from the configuration.
 - Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
 - Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
 
@@ -705,16 +729,20 @@ Parameter (in Michelson):
 )
 ```
 
-- This implements permits mechanism similar to the one in [TZIP-017](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-17/tzip-17.md) but injected directly to the entrypoint.
+- This implements permits mechanism similar to the one in [TZIP-017](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-17/tzip-17.md)
+  but injected directly to the entrypoint.
 - Vote author is identified by permit information, or if it is absent - `sender` is taken.
-- Author MUST have frozen tokens equal to `voteAmount` or more (1 unstaked frozen token is needed for 1 vote) from past `stage`s.
-- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author from past stages that is not staked
-  is less than specified `voteAmount` .
+- Author MUST have frozen tokens equal to `vote_amount` or more
+  (1 unstaked frozen token is needed for 1 vote) from past `stage`s.
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author
+  from past stages that is not staked is less than specified `vote_amount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
 - Fails with `VOTING_STAGE_OVER` if the voting `stage` for the proposal has already ended.
-- Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal is already at the max value set by the configuration.
+- Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal
+  is already at the max value set by the configuration.
 - Fails with `MISSIGNED` if permit is incorrect with respect to the provided vote parameter and contract state.
-- The entrypoint accepts a list of vote params. As a result, it is possible to `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
+- The entrypoint accepts a list of vote params. As a result, it is possible to
+  `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
 
 ### **flush**
 
@@ -727,11 +755,13 @@ Parameter (in Michelson):
 (nat %flush)
 ```
 
-- Finish voting process on an amount of proposals for which their `proposal_flush_time` was reached, but their `proposal_expire_time` wasn't yet.
-- The order of processing proposals are from 'the oldest' to 'the newest'. The proposals which
-have the same timestamp due to being in the same block, are processed in the order of their proposal keys.
-- Frozen tokens from voters and proposal submitter associated with those proposals are returned
-  in form of tokens in governance token contract:
+- Finish voting process on an amount of proposals for which their `proposal_flush_time`
+  was reached, but their `proposal_expire_time` wasn't yet.
+- The order of processing proposals are from 'the oldest' to 'the newest'.
+  The proposals which have the same timestamp due to being in the same block,
+  are processed in the order of their proposal keys.
+- Frozen tokens from voters and proposal submitter associated with those proposals
+  are returned in the  form of tokens in governance token contract:
   - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
     - The return amount for the proposer is equal to or less than the slashed amount based on `rejectedProposalReturnValue`.
     - The paid fee is not returned to the proposer.
@@ -740,9 +770,10 @@ have the same timestamp due to being in the same block, are processed in the ord
     - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
 - If proposal is accepted, decision lambda is called.
-- The quorum_threshold at the cycle in which the proposal was raised will be stored in the proposal, and this
-  threshold will be used to check if the votes meet the quorum threshold. So any dynamic update to the quorum threshold shall not affect
-  the proposal.
+- The quorum_threshold at the cycle in which the proposal was raised will be
+  stored in the proposal, and this threshold will be used to check if the votes
+  meet the quorum threshold.
+  So any dynamic update to the quorum threshold shall not affect the proposal.
 
 ### **drop_proposal**
 
@@ -761,41 +792,10 @@ Parameter (in Michelson):
 - The proposer can call this entrypoint to delete his/her own proposal regardless of `proposal_expired_time`.
 - The `guardian` can call this entrypoint to delete any proposals at anytime regardless of `proposal_expired_time`.
 - Fails with `DROP_PROPOSAL_CONDITION_NOT_MET` when none of the conditions above are met.
-- Tokens that are frozen for this proposal are returned to the proposer and voters as if the proposal is rejected regardless of the actual votes.
+- Tokens that are frozen for this proposal are returned to the proposer and voters
+  as if the proposal was rejected, regardless of the actual votes.
 
 [FA2]: https://gitlab.com/tzip/tzip/-/blob/3a6464b1e641008b77a83807a0c102e7602c6af4/proposals/tzip-12/tzip-12.md
-
-## Custom entrypoints
-
-BaseDAO allows DAOs to define their own additional entrypoints.
-
-```ocaml
-bytes * full_storage -> operation list * storage
-```
-
-where the bytes is the packed parameter of the custom entrypoint.
-
-To call one of these "custom entrypoints" the contract `parameter` has:
-
-### **CallCustom**
-
-```ocaml
-type custom_ep_param = (string * bytes)
-
-CallCustom of custom_ep_param
-```
-
-Parameter (in Michelson):
-```
-(pair %callCustom
-  string
-  bytes
-)
-```
-
-`CallCustom` receives:
-- a `string`: the custom entrypoint name stored inside `custom_entrypoints` to execute
-- a `bytes`: the `packed` representation of the `<ep_param>` to execute it with
 
 ### **freeze**
 
@@ -835,6 +835,38 @@ Parameter (in Michelson):
 - Burns the specified amount of tokens from the tokens frozen in previous `stage`s, after making an FA2 transfer
   on the governance contract from the address of the baseDAO contract to the address of the sender.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the author does not have enough tokens that can be burned.
+
+## Custom entrypoints
+
+BaseDAO allows DAOs to define their own additional entrypoints.
+
+```ocaml
+bytes * full_storage -> operation list * storage
+```
+
+where the bytes is the packed parameter of the custom entrypoint.
+
+To call one of these "custom entrypoints" the contract `parameter` has:
+
+### **CallCustom**
+
+```ocaml
+type custom_ep_param = (string * bytes)
+
+CallCustom of custom_ep_param
+```
+
+Parameter (in Michelson):
+```
+(pair %callCustom
+  string
+  bytes
+)
+```
+
+`CallCustom` receives:
+- a `string`: the custom entrypoint name stored inside `custom_entrypoints` to execute
+- a `bytes`: the `packed` representation of the `<ep_param>` to execute it with
 
 # TZIP-016 metadata
 

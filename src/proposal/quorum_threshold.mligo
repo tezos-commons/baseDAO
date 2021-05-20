@@ -64,7 +64,7 @@ let to_unsigned(n : quorum_fraction): unsigned_quorum_fraction =
   { numerator =
       match is_nat(n.numerator) with
       | Some n -> n
-      | None   -> (failwith("BAD_UNSIGNED_CONVERSION") : nat)
+      | None   -> (failwith("BAD_STATE") : nat)
   }
 
 let update_quorum(current_period, store, config : nat * storage * config): storage =

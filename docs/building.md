@@ -44,24 +44,23 @@ provided in this codebase, see the [README](../README.md).
 This storage is the one based on the [default storage values](../src/defaults.mligo).
 ```sh
 make out/trivialDAO_storage.tz \
-  admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
-  guardian_address = "KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh" \
-  governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+  guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+  governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
   governance_token_id=0n \
-  now_val = `date +"%s"` \
-  metadata_map=(Big_map.empty : metadata_map)
+  now_val=`date +"%s"` \
+  metadata_map=(Big_map.empty : metadata_map) \
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
-  quorum_threshold = 10n \
-  min_quorum = 1 \
-  max_quorum = 99 \
-  change_percent = 5n \
-  max_change_percent = 19n \
-  governance_total_supply = 100n \
+  quorum_threshold=10n \
+  min_quorum=1n \
+  max_quorum=99n \
   period=950400n \
-  proposal_flush_time = 1900801n \
-  proposal_expired_time = 2851200n \
-  metadata_map=(Big_map.empty : metadata_map) \
+  quorum_change=5n \
+  max_quorum_change=19n \
+  governance_total_supply=100n \
+  proposal_flush_time=1900801n \
+  proposal_expired_time=2851200n
 ```
 
 All its arguments are optional and will be equal to the values above if not
@@ -76,30 +75,30 @@ This storage is defined in [src/registryDAO.mligo](../src/registryDAO.mligo), ca
 compiled with `make`, as usual:
 ```sh
 make out/registryDAO_storage.tz \
-  admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
-  guardian_address = "KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh" \
-  governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+  guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+  governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
   governance_token_id=0n \
-  max_proposal_size=100n \
   frozen_scale_value=1n \
   frozen_extra_value=0n \
+  max_proposal_size=100n \
   slash_scale_value=1n \
-  slash_division_value=-n \
+  slash_division_value=0n \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
-  now_val = `date +"%s"` \
+  now_val=`date +"%s"` \
   metadata_map=(Big_map.empty : metadata_map) \
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
-  quorum_threshold = 10n \
-  min_quorum = 1n \
-  max_quorum = 99n
-  change_percent = 5n \
-  max_change_percent = 19n \
-  governance_total_supply = 100n \
+  quorum_threshold=10n \
+  min_quorum=1n \
+  max_quorum=99n \
   period=950400n \
-  proposal_flush_time = 1900801n \
-  proposal_expired_time = 2851200n
+  quorum_change=5n \
+  max_quorum_change=19n \
+  proposal_flush_time=1900801n \
+  proposal_expired_time=2851200n \
+  governance_total_supply=100n
 ```
 
 All its arguments are optional and will be equal to the values above if not
@@ -111,31 +110,30 @@ This storage is defined in [src/treasuryDAO.mligo](../src/treasuryDAO.mligo) and
 can be compiled once again with `make`:
 ```sh
 make out/treasuryDAO_storage.tz \
-  admin_address="tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af" \
-  guardian_address = "KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh" \
-  governance_token_address="KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5" \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+  guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+  governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
   governance_token_id=0n \
-  max_proposal_size=12n \
-  frozen_scale_value=1n \
+  frozen_scale_value=0n \
   frozen_extra_value=0n \
-  slash_scale_value=1n \
-  slash_division_value=1n \
+  max_proposal_size=0n \
+  slash_scale_value=0n \
+  slash_division_value=0n \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
-  now_val = `date +"%s"` \
-  metadata_map=(Big_map.empty : metadata_map)
+  now_val=`date +"%s"` \
+  metadata_map=(Big_map.empty : metadata_map) \
   fixed_proposal_fee_in_token=0n \
   ledger=([] : ledger_list) \
-  quorum_threshold = 10n \
-  min_quorum = 1n \
-  max_quorum = 99n \
-  change_percent = 5n \
-  max_change_percent = 19n \
-  governance_total_supply = 100n \
+  quorum_threshold=10n \
+  min_quorum=1n \
+  max_quorum=99n \
   period=950400n \
-  proposal_flush_time = 1900801n \
-  proposal_expired_time = 2851200n \
-  metadata_map=(Big_map.empty : metadata_map) \
+  quorum_change=5n \
+  max_quorum_change=19n \
+  proposal_flush_time=1900801n \
+  proposal_expired_time=2851200n \
+  governance_total_supply=100n
 ```
 
 As for the other examples, all the arguments are optional and will be equal to
