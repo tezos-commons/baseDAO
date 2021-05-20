@@ -1,16 +1,10 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-// Corresponds to Permit.hs module
-
 // Complete parameter with common signature data and pack them into bytes that
 // will be signed in permit.
-//
-// This slightly differs from the Haskell version in that it already
-// returns packed data; LIGO does not let us return polymorphic DataToSign.
 [@inline]
-let vote_param_to_signed_data (param, store : vote_param * storage)
-    : bytes * storage =
+let vote_param_to_signed_data (param, store : vote_param * storage) : bytes * storage =
   ( Bytes.pack
     ( (Tezos.chain_id, Tezos.self_address)
     , (store.permits_counter, param)
@@ -43,5 +37,5 @@ let verify_permit_protected_vote
   (permited, store : vote_param_permited * storage)
     : vote_param * address * storage =
   match permited.permit with
-    None -> (permited.argument, Tezos.sender, store)
+  | None -> (permited.argument, Tezos.sender, store)
   | Some permit -> verify_permit_vote (permit, permited.argument, store)

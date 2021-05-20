@@ -121,7 +121,7 @@ divideOnRejectionBy divisor = RejectedProposalReturnValue $ do
 
 doNonsenseOnRejection :: RejectedProposalReturnValue
 doNonsenseOnRejection = RejectedProposalReturnValue $ do
-  drop; push (9999 :: Natural)
+  drop; push (10 :: Natural)
   toNamed #slash_amount
 
 data DecisionLambdaAction =

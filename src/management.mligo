@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-// Corresponds to Management.hs module
-
 #include "types.mligo"
 #include "common.mligo"
 
@@ -10,15 +8,14 @@
  * Auth checks for admin and store the address in parameter to the
  * 'pending_owner' field in storage.
  *)
-let transfer_ownership
-    (param, store : transfer_ownership_param * storage) : return =
-      let store = authorize_admin(store) in
-      let store =
-        if Tezos.self_address = param
-          then { store with admin = param ; } // If new admin is address of baseDAO,
-                                              // set as admin right away.
-          else { store with pending_owner = param ; }
-      in (([] : operation list), store)
+let transfer_ownership (param, store : transfer_ownership_param * storage) : return =
+  let store = authorize_admin(store) in
+  let store =
+    if Tezos.self_address = param
+    // If new admin is address of baseDAO, set as admin right away.
+    then { store with admin = param ; }
+    else { store with pending_owner = param ; }
+  in (nil_op, store)
 
 (*
  * Auth check for pending admin and copies the value in 'pending_owner' field
@@ -27,9 +24,8 @@ let transfer_ownership
  *)
 let accept_ownership(store : storage) : return =
   if store.pending_owner = Tezos.sender
-    then (([] : operation list), { store with admin = Tezos.sender })
-    else
-      (failwith("NOT_PENDING_ADMIN") : return)
+  then (nil_op, { store with admin = Tezos.sender })
+  else (failwith("NOT_PENDING_ADMIN") : return)
 
 (*
  * Call a custom entrypoint.

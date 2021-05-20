@@ -91,7 +91,7 @@ let transfer_item (store, ti : storage * transfer_item): storage =
 
 let transfer (params, store : transfer_params * storage): return =
   let store = List.fold transfer_item params store in
-  (([] : operation list), store)
+  (nil_op, store)
 
 
 // -----------------------------------------------------------------
@@ -141,6 +141,5 @@ let update_one (store, param: storage * update_operator): storage =
     (failwith("NOT_OWNER") : storage)
 
 let update_operators (params, store : update_operators_param * storage):return =
-  let store = List.fold update_one params store in
-  (([] : operation list), store)
+  (nil_op, List.fold update_one params store)
 

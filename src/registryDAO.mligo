@@ -17,13 +17,13 @@
 let apply_diff_registry (diff, registry : registry_diff * registry) : registry =
   let
     foldFn (registry, update: registry * (registry_key * registry_value option)) : registry =
-      let registry_key = update.0 in
-      let registry_value = update.1 in
+      let (registry_key, registry_value) = update in
       Map.update registry_key registry_value registry
   in List.fold foldFn diff registry
 
-let apply_diff_registry_affected (proposal_key, diff, registry_affected : proposal_key
-        * registry_diff * registry_affected) : registry_affected =
+let apply_diff_registry_affected
+  (proposal_key, diff, registry_affected : proposal_key * registry_diff * registry_affected)
+    : registry_affected =
   let
     foldFn (registry_affected, update: registry_affected * (registry_key *
       registry_value option)) : registry_affected =
@@ -36,8 +36,9 @@ let apply_diff (diff, ce : registry_diff * contract_extra) : contract_extra =
   let new_registry : registry = apply_diff_registry (diff, registry) in
   Map.update "registry" (Some (Bytes.pack new_registry)) ce
 
-let apply_diff_affected (proposal_key, diff, ce : proposal_key *
-    registry_diff * contract_extra) : contract_extra =
+let apply_diff_affected
+  (proposal_key, diff, ce : proposal_key * registry_diff * contract_extra)
+    : contract_extra =
   let registry_af = unpack_registry_affected(find_big_map("registry_affected", ce)) in
   let new_registry_af : registry_affected = apply_diff_registry_affected (proposal_key, diff, registry_af)
   in Map.update "registry_affected" (Some (Bytes.pack new_registry_af)) ce
@@ -90,12 +91,29 @@ let registry_DAO_rejected_proposal_return_value (params, extras : proposal * con
   let slash_division_value = unpack_nat(find_big_map ("slash_division_value", extras))
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
-type update_fn = (address * address set) -> proposal_receivers
+type update_fn = (address set * address) -> proposal_receivers
 
-let update_receivers(current_set, updates, update_fn : proposal_receivers * address list * update_fn) : proposal_receivers =
-  let
-    foldFn (existing, item : proposal_receivers * address) : proposal_receivers = update_fn (item, existing)
-  in List.fold foldFn updates current_set
+let update_receivers(current_set, updates, update_fn : proposal_receivers * address list * update_fn)
+    : proposal_receivers =
+  List.fold update_fn updates current_set
+
+let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (operation list) =
+  match transfer_type with
+  | Token_transfer_type tt ->
+    begin
+      match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
+          : transfer_params contract option) with
+      | Some contract ->
+          (Tezos.transaction tt.transfer_list 0mutez contract) :: ops
+      | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
+    end
+  | Xtz_transfer_type xt ->
+    begin
+      match (Tezos.get_contract_opt xt.recipient : unit contract option) with
+      | Some contract ->
+          (Tezos.transaction unit xt.amount contract) :: ops
+      | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
+    end
 
 (*
  * Uses the keys in the proposal metadata to differentiate between configuration
@@ -124,14 +142,12 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
   match unpack_proposal_metadata(proposal.metadata) with
   | Update_receivers_proposal urp ->
       let current_set = unpack_proposal_receivers(find_big_map("proposal_receivers", extras)) in
-      begin
-        let new_set = match urp with
-          | Add_receivers receivers ->
-              update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.add i c))
-          | Remove_receivers receivers ->
-              update_receivers(current_set, receivers, (fun (i, c : address * address set) -> Set.remove i c))
-        in (ops, Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras)
-      end
+      let new_set = match urp with
+        | Add_receivers receivers ->
+            update_receivers(current_set, receivers, (fun (c, i : address set * address) -> Set.add i c))
+        | Remove_receivers receivers ->
+            update_receivers(current_set, receivers, (fun (c, i : address set * address) -> Set.remove i c))
+      in (ops, Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras)
   | Configuration_proposal cp ->
       let new_ce = match cp.frozen_scale_value with
         | Some (frozen_scale_value) ->
@@ -166,35 +182,8 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
 
       // handle transfers
       let transfers = tp.transfers in
-      let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
-        let (is_valid, extras, ops) = acc in
-        if is_valid then
-          match transfer_type with
-          | Token_transfer_type tt ->
-            begin
-              match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
-                  : transfer_params contract option) with
-              | Some contract ->
-                  let token_transfer_operation = Tezos.transaction tt.transfer_list 0mutez contract
-                  in (true, extras, token_transfer_operation :: ops)
-              | None -> (false, extras, ops)
-            end
-          | Xtz_transfer_type xt ->
-            begin
-              match (Tezos.get_contract_opt xt.recipient : unit contract option) with
-              | Some contract ->
-                  let xtz_transfer_operation = Tezos.transaction unit xt.amount contract
-                  in (true, extras, xtz_transfer_operation :: ops)
-              | None -> (false, extras, ops)
-            end
-        else
-          (false, extras, ops)
-      in
-      let (is_valid, extras, ops) = List.fold handle_transfer transfers (true, extras, ops) in
-      if is_valid then
-        (ops, extras)
-      else
-        (failwith("FAIL_DECISION_LAMBDA") : operation list * contract_extra)
+      let ops = List.fold handle_transfer transfers ops in
+      (ops, extras)
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.
@@ -212,23 +201,23 @@ let lookup_registry (bytes_param, full_store : bytes * full_storage) : operation
   let registry : registry = unpack_registry(find_big_map("registry", contract_extra)) in
   let value_at_key : registry_value option = Big_map.find_opt param.key registry in
   let operation : operation = Tezos.transaction (param.key, value_at_key) 0mutez view_contract
-  in ((operation :: ([]: operation list)), full_store.0)
+  in ((operation :: nil_op), full_store.0)
 
 let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : full_storage =
   let (store, config) = default_full_storage (data.base_data) in
   let new_storage = { store with
     extra = Big_map.literal [
-          ("registry" , Bytes.pack (Map.empty : registry));
-          ("registry_affected" , Bytes.pack (Map.empty : registry_affected));
-          ("proposal_receivers" , Bytes.pack (Set.empty : proposal_receivers));
-          ("frozen_scale_value" , Bytes.pack data.frozen_scale_value);
-          ("frozen_extra_value" , Bytes.pack data.frozen_extra_value);
-          ("max_proposal_size" , Bytes.pack data.max_proposal_size);
-          ("slash_scale_value" , Bytes.pack data.slash_scale_value);
-          ("slash_division_value" , Bytes.pack data.slash_division_value);
-          ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
-          ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
-          ];
+      ("registry" , Bytes.pack (Map.empty : registry));
+      ("registry_affected" , Bytes.pack (Map.empty : registry_affected));
+      ("proposal_receivers" , Bytes.pack (Set.empty : proposal_receivers));
+      ("frozen_scale_value" , Bytes.pack data.frozen_scale_value);
+      ("frozen_extra_value" , Bytes.pack data.frozen_extra_value);
+      ("max_proposal_size" , Bytes.pack data.max_proposal_size);
+      ("slash_scale_value" , Bytes.pack data.slash_scale_value);
+      ("slash_division_value" , Bytes.pack data.slash_division_value);
+      ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
+      ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
+      ];
   } in
   let new_config = { config with
     proposal_check = registry_DAO_proposal_check;
@@ -245,10 +234,10 @@ let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : ful
 // soon.
 let successful_proposal_receiver_view (full_storage : full_storage): proposal_receivers =
   match ((Big_map.find_opt "proposal_receivers" full_storage.0.extra) : bytes option) with
-    | Some (packed_b) ->
-        begin
-          match (Bytes.unpack packed_b : proposal_receivers option) with
-          | Some r -> r
-          | None -> ((failwith "Unpacking failed") : proposal_receivers)
-        end
-    | None -> (failwith "'proposal_receivers' key not found" : proposal_receivers)
+  | Some (packed_b) ->
+      begin
+        match (Bytes.unpack packed_b : proposal_receivers option) with
+        | Some r -> r
+        | None -> ((failwith "Unpacking failed") : proposal_receivers)
+      end
+  | None -> (failwith "'proposal_receivers' key not found" : proposal_receivers)
