@@ -218,7 +218,7 @@ originateLigoDaoWithBalance extra config balFunc = do
               ! #metadata mempty
               ! #tokenAddress (unTAddress tokenContract)
               ! #now now
-              ! #quorumThreshold (cMinQuorumThreshold config)
+              ! #quorumThreshold (fromIntegral $ cMinQuorumThreshold config)
             )
             { sLedger = bal
             , sOperators = operators

@@ -23,7 +23,7 @@ module Test.Ligo.BaseDAO.Proposal.Config
   ) where
 
 import Lorentz
-import Universum (Constraint, (?:))
+import Universum (Constraint, (?:), fromIntegral)
 
 import qualified Ligo.BaseDAO.Types as DAO
 
@@ -192,7 +192,7 @@ instance IsConfigDescExt DAO.Config DAO.QuorumThreshold where
   fillConfig qt DAO.Config'{..} = DAO.Config'
     -- We set min quorum threshold since we use it to initialize
     -- the quorumThreshold in storage in tests.
-    { cMinQuorumThreshold = qt
+    { cMinQuorumThreshold = fromIntegral qt
     , ..
     }
 

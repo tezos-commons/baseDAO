@@ -136,6 +136,8 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulatorCaps "cannot unfreeze tokens from the same period" $
           cannotUnfreezeFromSamePeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
+      , nettestScenarioOnEmulatorCaps "cannot unfreeze staked tokens" $
+          cannotUnfreezeStakedTokens (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenarioOnEmulatorCaps "can unfreeze tokens from the previous period" $
           canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
@@ -417,6 +419,28 @@ cannotUnfreezeFromSamePeriod originateFn = do
   -- Cannot unfreeze in the same period
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 10)
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
+
+cannotUnfreezeStakedTokens
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+cannotUnfreezeStakedTokens originateFn = do
+  DaoOriginateData{..} <- originateFn testConfig
+
+  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 50)
+  checkTokenBalance frozenTokenId dodDao dodOwner1 150
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 15)
+  void $ createSampleProposal 1 dodOwner1 dodDao
+
+  -- the frozen tokens are still the same
+  checkTokenBalance frozenTokenId dodDao dodOwner1 150
+  -- but unfreeze won't let all of them be unfrozen because of the staked tokens
+  -- note: 110 tokens are staked here
+  withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 41)
+    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
+  -- it will allow the un-staked ones to be unfrozen
+  withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 40)
 
 canUnfreezeFromPreviousPeriod
   :: (MonadNettest caps base m, HasCallStack)
