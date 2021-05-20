@@ -107,7 +107,7 @@ withOriginated addrCount storageFn tests = do
           }
         }
 
-  baseDao <- originateLargeUntyped $ UntypedOriginateData
+  baseDao <- originateUntyped $ UntypedOriginateData
     { uodName = "BaseDAO - RegistryDAO Test Contract"
     , uodBalance = zeroMutez
     , uodStorage = untypeValue $ toVal storage
