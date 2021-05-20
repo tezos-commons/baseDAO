@@ -43,44 +43,34 @@ let treasury_DAO_rejected_proposal_return_value (params, extras : proposal * con
   let slash_division_value =  unpack_nat(find_big_map("slash_division_value", extras))
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
+let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (operation list) =
+  match transfer_type with
+  | Token_transfer_type tt ->
+    begin
+      match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
+          : transfer_params contract option) with
+      | Some contract ->
+          (Tezos.transaction tt.transfer_list 0mutez contract) :: ops
+      | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
+    end
+  | Xtz_transfer_type xt ->
+    begin
+      match (Tezos.get_contract_opt xt.recipient : unit contract option) with
+      | Some contract ->
+          (Tezos.transaction unit xt.amount contract) :: ops
+      | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
+    end
+
 let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     : operation list * contract_extra =
   let pm = unpack_proposal_metadata(proposal.metadata) in
-  let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
-      let (is_valid, extras, ops) = acc in
-      if is_valid then
-        match transfer_type with
-          Token_transfer_type tt ->
-            let result = match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
-                : transfer_params contract option) with
-              Some contract ->
-                let token_transfer_operation = Tezos.transaction tt.transfer_list 0mutez contract
-                in (is_valid, extras, token_transfer_operation :: ops)
-            | None ->
-                (false, extras, ops)
-            in result
-        | Xtz_transfer_type xt ->
-            let result = match (Tezos.get_contract_opt xt.recipient
-                : unit contract option) with
-              Some contract ->
-                let xtz_transfer_operation = Tezos.transaction unit xt.amount contract
-                in (is_valid, extras, xtz_transfer_operation :: ops)
-            | None ->
-                (false, extras, ops)
-            in result
-      else
-        (false, extras, ops)
-  in
-  let (is_valid, extras, ops) = List.fold handle_transfer pm.transfers (true, extras, ([] : operation list)) in
-  if is_valid then
-    (ops, extras)
-  else
-    (failwith("FAIL_DECISION_LAMBDA") : operation list * contract_extra)
+  let ops = List.fold handle_transfer pm.transfers ([] : operation list) in
+  (ops, extras)
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.
 let receive_xtz_entrypoint (_params, full_store : bytes * full_storage) : return =
-  (([]: operation list), full_store.0)
+  (nil_op, full_store.0)
 
 // -------------------------------------
 // Storage Generator
@@ -90,14 +80,14 @@ let default_treasury_DAO_full_storage (data : initial_treasuryDAO_storage) : ful
   let (store, config) = default_full_storage (data.base_data) in
   let new_storage = { store with
     extra = Big_map.literal [
-          ("frozen_scale_value" , Bytes.pack data.frozen_scale_value);
-          ("frozen_extra_value" , Bytes.pack data.frozen_extra_value);
-          ("max_proposal_size" , Bytes.pack data.max_proposal_size);
-          ("slash_scale_value" , Bytes.pack data.slash_scale_value);
-          ("slash_division_value" , Bytes.pack data.slash_division_value);
-          ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
-          ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
-          ];
+      ("frozen_scale_value" , Bytes.pack data.frozen_scale_value);
+      ("frozen_extra_value" , Bytes.pack data.frozen_extra_value);
+      ("max_proposal_size" , Bytes.pack data.max_proposal_size);
+      ("slash_scale_value" , Bytes.pack data.slash_scale_value);
+      ("slash_division_value" , Bytes.pack data.slash_division_value);
+      ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
+      ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
+      ];
   } in
   let new_config = { config with
     proposal_check = treasury_DAO_proposal_check;

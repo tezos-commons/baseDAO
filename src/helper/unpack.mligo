@@ -6,13 +6,6 @@
 
 #include "../types.mligo"
 
-(* Required version of `Map.find_opt`. Fail immediately if the required key does not exist  *)
-let find_map (key_name, ce : string * ((string, bytes) map)) : (string * bytes) =
-  match Map.find_opt key_name ce with
-  | Some (packed_b) -> (key_name, packed_b)
-  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> (string * bytes))]
-              ("MISSING_VALUE", key_name) : (string * bytes))
-
 (* Required version of `Big_map.find_opt`. Fail immediately if the required key does not exist  *)
 let find_big_map (key_name, ce : string * ((string, bytes) big_map)) : (string * bytes) =
   match Big_map.find_opt key_name ce with
@@ -39,11 +32,5 @@ let unpack_nat(key_name, packed_b: string * bytes) : nat =
   | Some (v) -> v
   | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> nat)]
               ("UNPACKING_FAILED", key_name) : nat)
-
-let unpack_nat_opt(key_name, packed_b: string * bytes) : nat option =
-  match ((Bytes.unpack packed_b) : (nat option) option) with
-  | Some (v) -> v
-  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> nat option)]
-              ("UNPACKING_FAILED", key_name) : nat option)
 
 #endif

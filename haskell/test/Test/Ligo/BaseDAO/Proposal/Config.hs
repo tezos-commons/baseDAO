@@ -23,7 +23,7 @@ module Test.Ligo.BaseDAO.Proposal.Config
   ) where
 
 import Lorentz
-import Universum (Constraint, (?:))
+import Universum (Constraint, (?:), fromIntegral)
 
 import qualified Ligo.BaseDAO.Types as DAO
 
@@ -121,7 +121,7 @@ divideOnRejectionBy divisor = RejectedProposalReturnValue $ do
 
 doNonsenseOnRejection :: RejectedProposalReturnValue
 doNonsenseOnRejection = RejectedProposalReturnValue $ do
-  drop; push (9999 :: Natural)
+  drop; push (10 :: Natural)
   toNamed #slash_amount
 
 data DecisionLambdaAction =
@@ -192,7 +192,7 @@ instance IsConfigDescExt DAO.Config DAO.QuorumThreshold where
   fillConfig qt DAO.Config'{..} = DAO.Config'
     -- We set min quorum threshold since we use it to initialize
     -- the quorumThreshold in storage in tests.
-    { cMinQuorumThreshold = qt
+    { cMinQuorumThreshold = fromIntegral qt
     , ..
     }
 

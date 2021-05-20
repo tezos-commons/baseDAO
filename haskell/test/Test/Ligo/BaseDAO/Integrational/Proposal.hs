@@ -105,12 +105,12 @@ checkFreezeHistoryTracking  = do
             when (fh /= (Just expected)) $
               Left $ CustomTestError "BaseDAO contract did not unstake tokens after voting period"
 
-calculateThreshold :: MaxChangePercent -> ChangePercent -> GovernanceTotalSupply -> Integer -> QuorumThreshold -> QuorumThreshold
-calculateThreshold (MaxChangePercent mcp) (ChangePercent cp) (GovernanceTotalSupply gts) staked oldQt =
+calculateThreshold :: QuorumFraction -> QuorumFraction -> GovernanceTotalSupply -> Integer -> QuorumThreshold -> QuorumThreshold
+calculateThreshold (QuorumFraction mcp) (QuorumFraction cp) (GovernanceTotalSupply gts) staked oldQt =
   let
-    changePercent = QuorumThreshold (percentageToFractionNumerator cp)
+    changePercent = QuorumThreshold . fromIntegral $ percentageToFractionNumerator cp
     participation = fractionToNumerator staked (fromIntegral gts)
-    maxChangePercent = QuorumThreshold $ percentageToFractionNumerator mcp
+    maxChangePercent = QuorumThreshold . fromIntegral $ percentageToFractionNumerator mcp
     possibeNewQuorum = addF (subF oldQt (mulF oldQt changePercent)) (mulF participation changePercent)
     one' = mkQuorumThreshold 1 1
     maxNewQuorum = mulF oldQt (addF one' maxChangePercent)
