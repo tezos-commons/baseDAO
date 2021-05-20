@@ -8,7 +8,6 @@
 module Test.Ligo.BaseDAO.Common
   ( DaoOriginateData(..)
   , OriginateFn
-  , TransferProposal(..)
   , totalSupplyFromLedger
 
   , frozenTokens
@@ -45,7 +44,6 @@ import Util.Named
 
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Ligo.BaseDAO.Common.Types (TransferType)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
@@ -63,19 +61,6 @@ data DaoOriginateData = DaoOriginateData
   , dodAdmin :: Address
   , dodGuardian :: TAddress (Address, ProposalKey)
   }
-
--- | Shared Proposal type used in Registry DAO and Treasury DAO
-data TransferProposal = TransferProposal
-  { tpAgoraPostId :: Natural
-  , tpTransfers :: [TransferType]
-  }
-
-instance HasAnnotation TransferProposal where
-  annOptions = baseDaoAnnOptions
-
-customGeneric "TransferProposal" ligoLayout
-deriving anyclass instance IsoValue TransferProposal
-
 
 -- | A dummy contract with FA2 parameter that remembers the
 -- transfer calls.

@@ -22,10 +22,7 @@ There is additional data to implement configuration lambdas, it's an implementat
 
 Proposals can be of different type and include (`proposal_metadata`) different data:
 
-1. Standard proposals contain:
-   - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed changes and motivation for them.
-   - a list of `update` items parameterized by `k` and `v` types. Each `update` item contains a key of the type `k` and a new value of the type `option v`.
-2. Proposals to update the parameters specified below taking
+1. Proposals to update the parameters specified below taking
    - 5 `option nat` values:
       - `max_proposal_size`
       - `frozen_scale_value`
@@ -35,11 +32,15 @@ Proposals can be of different type and include (`proposal_metadata`) different d
    - 2 `option tez` values
       - `min_xtz_amount`
       - `max_xtz_amount`
-3. Proposal to update the set of successful-proposal receiver contract addresses.
+2. Proposal to update the set of successful-proposal receiver contract addresses.
 This proposal takes a parameter that has two constructors. The proposal can add to,
 or remove from the set of addresses.
-4. Transfer proposals, that can transfer XTZ or tokens.
-Modeled just the same way as [treasuryDAO proposals](./treasury.md).
+3. Transfer proposals, that can transfer XTZ or tokens as well as update the
+registry. This includes:
+   - a list of `update` items parameterized by `k` and `v` types. Each `update` item contains a key of the type `k` and a new value of the type `option v`.
+   - a list of items where each item contains:
+   `or %transfers (pair (mutez %amount) (address %recipient)) (pair (address %fa2) (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))` specifies what transfer to make. The left part is used for XTZ transfers, the right part is used for FA2 transfers.
+   - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and/or changes and motivation for them.
 
 ## Configuration lambdas
 
