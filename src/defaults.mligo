@@ -12,10 +12,10 @@ let validate_default_config (data : initial_config_data) : unit =
   else unit
 
 let default_config (data : initial_config_data) : config =
-  let u : unit = validate_default_config(data) in {
-    proposal_check = (fun (params, extras : propose_params * contract_extra) -> true);
-    rejected_proposal_return_value = (fun (proposal, extras : proposal * contract_extra) -> 0n);
-    decision_lambda = (fun (proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
+  let _ : unit = validate_default_config(data) in {
+    proposal_check = (fun (_params, _extras : propose_params * contract_extra) -> true);
+    rejected_proposal_return_value = (fun (_proposal, _extras : proposal * contract_extra) -> 0n);
+    decision_lambda = (fun (_proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
     fixed_proposal_fee_in_token = data.fixed_proposal_fee_in_token;
     voting_period = data.voting_period;
     max_proposals = 500n;
