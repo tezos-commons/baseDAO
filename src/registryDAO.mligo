@@ -74,7 +74,6 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
           | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
         in
         List.fold is_all_transfers_valid tp.transfers has_correct_token_lock
-    | Normal_proposal _diff -> has_correct_token_lock
     | Update_receivers_proposal _urp -> has_correct_token_lock
     | Configuration_proposal _cp -> has_correct_token_lock
 
@@ -123,11 +122,6 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
   let proposal_key = to_proposal_key (propose_param, proposal.proposer) in
   let ops = ([] : operation list) in
   match unpack_proposal_metadata(proposal.metadata) with
-  | Normal_proposal np ->
-      let extras = apply_diff(np.registry_diff, extras) in
-      let extras =
-        apply_diff_affected(proposal_key, np.registry_diff, extras) in
-        (ops, extras)
   | Update_receivers_proposal urp ->
       let current_set = unpack_proposal_receivers(find_big_map("proposal_receivers", extras)) in
       begin
@@ -165,6 +159,13 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
         | None -> new_ce
       in (ops, new_ce)
   | Transfer_proposal tp ->
+      // handle updates
+      let registry_diff = tp.registry_diff in
+      let extras = apply_diff(registry_diff, extras) in
+      let extras = apply_diff_affected(proposal_key, registry_diff, extras) in
+
+      // handle transfers
+      let transfers = tp.transfers in
       let handle_transfer (acc, transfer_type : (bool * contract_extra * operation list) * transfer_type) =
         let (is_valid, extras, ops) = acc in
         if is_valid then
@@ -189,11 +190,10 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
         else
           (false, extras, ops)
       in
-      let (is_valid, extras, ops) = List.fold handle_transfer tp.transfers (true, extras, ops) in
+      let (is_valid, extras, ops) = List.fold handle_transfer transfers (true, extras, ops) in
       if is_valid then
         (ops, extras)
       else
-        // TODO: [#87] Improve handling of failed proposals
         (failwith("FAIL_DECISION_LAMBDA") : operation list * contract_extra)
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints

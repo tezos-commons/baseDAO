@@ -20,8 +20,10 @@ type initial_treasuryDAO_storage =
   }
 
 // Treasury dao `proposal_metadata` contains the type of proposal.
-// Currently only `transfer_proposal` type exists.
-type treasury_dao_proposal_metadata = transfer_proposal
+type treasury_dao_proposal_metadata =
+  { agora_post_id : nat
+  ; transfers : transfer_type list
+  }
 
 
 // -- Unpack Helpers (fail if the unpacked result is none) -- //
