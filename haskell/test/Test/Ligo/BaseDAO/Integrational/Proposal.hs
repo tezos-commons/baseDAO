@@ -60,7 +60,7 @@ checkFreezeHistoryTracking  = do
       ! #metadata mempty
       ! #now now
       ! #tokenAddress (unTAddress dodTokenContract)
-      ! #maxChangePercent 19
+      ! #maxQuorumFraction 19
       ! #changePercent 5
       ! #governanceTotalSupply 100
       ! #customEps mempty
@@ -105,16 +105,16 @@ checkFreezeHistoryTracking  = do
             when (fh /= (Just expected)) $
               Left $ CustomTestError "BaseDAO contract did not unstake tokens after voting period"
 
-calculateThreshold :: MaxChangePercent -> ChangePercent -> GovernanceTotalSupply -> Integer -> QuorumThreshold -> QuorumThreshold
-calculateThreshold (MaxChangePercent mcp) (ChangePercent cp) (GovernanceTotalSupply gts) staked oldQt =
+calculateThreshold :: QuorumFraction -> QuorumFraction -> GovernanceTotalSupply -> Integer -> QuorumThreshold -> QuorumThreshold
+calculateThreshold (QuorumFraction mcp) (QuorumFraction cp) (GovernanceTotalSupply gts) staked oldQt =
   let
-    changePercent = QuorumThreshold (percentageToFractionNumerator cp)
+    changePercent = QuorumThreshold . fromIntegral $ percentageToFractionNumerator cp
     participation = fractionToNumerator staked (fromIntegral gts)
-    maxChangePercent = QuorumThreshold $ percentageToFractionNumerator mcp
+    maxQuorumFraction = QuorumThreshold . fromIntegral $ percentageToFractionNumerator mcp
     possibeNewQuorum = addF (subF oldQt (mulF oldQt changePercent)) (mulF participation changePercent)
     one' = mkQuorumThreshold 1 1
-    maxNewQuorum = mulF oldQt (addF one' maxChangePercent)
-    minNewQuorum = divF oldQt (addF one' maxChangePercent)
+    maxNewQuorum = mulF oldQt (addF one' maxQuorumFraction)
+    minNewQuorum = divF oldQt (addF one' maxQuorumFraction)
     -- old_quorum - (old_quorum * changePercent) + participation * changePercent
     configMinQuorum = QuorumThreshold $ percentageToFractionNumerator 1
     configMaxQuorum = QuorumThreshold $ percentageToFractionNumerator 99
@@ -141,7 +141,7 @@ checkQuorumThresholdDynamicUpdate  = do
       ! #metadata mempty
       ! #now now
       ! #tokenAddress (unTAddress tokenContract)
-      ! #maxChangePercent 19
+      ! #maxQuorumFraction 19
       ! #changePercent 5
       ! #governanceTotalSupply 100
       ! #customEps mempty
@@ -193,7 +193,7 @@ checkQuorumThresholdDynamicUpdateUpperBound  = do
       ! #metadata mempty
       ! #now now
       ! #tokenAddress (unTAddress tokenContract)
-      ! #maxChangePercent 7
+      ! #maxQuorumFraction 7
       ! #changePercent 5
       ! #governanceTotalSupply 100
       ! #customEps mempty
@@ -239,7 +239,7 @@ checkQuorumThresholdDynamicUpdateLowerBound  = do
       ! #metadata mempty
       ! #now now
       ! #tokenAddress (unTAddress tokenContract)
-      ! #maxChangePercent 19
+      ! #maxQuorumFraction 19
       ! #changePercent 25
       ! #governanceTotalSupply 100
       ! #customEps mempty
@@ -281,7 +281,7 @@ checkProposalSavesQuorum  = do
       ! #metadata mempty
       ! #now now
       ! #tokenAddress (unTAddress tokenContract)
-      ! #maxChangePercent 19
+      ! #maxQuorumFraction 19
       ! #changePercent 5
       ! #governanceTotalSupply 100
       ! #customEps mempty

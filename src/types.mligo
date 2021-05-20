@@ -334,12 +334,12 @@ type config =
 
   ; max_proposals : nat
   ; max_votes : nat
-  ; max_quorum_threshold : quorum_threshold
-  ; min_quorum_threshold : quorum_threshold
+  ; max_quorum_threshold : quorum_fraction
+  ; min_quorum_threshold : quorum_fraction
   ; voting_period : voting_period
   ; fixed_proposal_fee_in_token : nat
-  ; max_quorum_change : unsigned_quorum_fraction
-  ; quorum_change : unsigned_quorum_fraction
+  ; max_quorum_change : quorum_fraction
+  ; quorum_change : quorum_fraction
   ; governance_total_supply : nat
   ; proposal_flush_time: seconds // Number of seconds until a proposal can be flushed
   ; proposal_expired_time: seconds // Number of seconds until a proposal is expired

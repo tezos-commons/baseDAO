@@ -6,6 +6,8 @@
 #include "token/fa2.mligo"
 #include "token.mligo"
 #include "permit.mligo"
+#include "proposal/freeze_history.mligo"
+#include "proposal/quorum_threshold.mligo"
 
 // -----------------------------------------------------------------
 // Helper
@@ -51,92 +53,6 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
     then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
     else proposal_key
 
-let quorum_denominator_int = int(quorum_denominator)
-  // Hopefuly this will be optimized by the compiler and does not actually
-  // call `int` for every access to this value
-
-// Multiply two quorum_fractions
-//
-// We store fractions by storing only the numerator and denominator is always
-// assumed to be quorum_denominator. So here qt_1, actually represents the
-// value qt_1.numerator/ quorum_denominator and qt_2 represents the value
-// qt_2.numerator/ quorum_denominator. So the product of the two is
-// qt_1.numerator * qt_2.numerator / (quorum_denominator *
-// quorum_denominator).  But since we store x as x * quorum_denominator,
-// the result here would be qt_1.numerator * qt_2.numerator /
-// quorum_denominator. This will also retain the required precision of
-// 1/quorum_denominator.
-[@inline]
-let fmul(qt_1, qt_2 : quorum_fraction * quorum_fraction): quorum_fraction =
-   { numerator = (qt_1.numerator * qt_2.numerator) / quorum_denominator_int }
-
-// Divide the first fraction by the second Here qt_1, actually represents the
-// value qt_1.numerator/ quorum_denominator and qt_2 represents the value
-// qt_2.numerator/ quorum_denominator. So the division can be expressed as
-// (qt_1.numerator * quorum_denominator) / (quorum_denominator *
-// qt_2.numerator) But since we store x as x * quorum_denominator, the result
-// here would be (qt_1.numerator * quorum_denominator_int) / qt_2.numerator
-[@inline]
-let fdiv(qt_1, qt_2 : quorum_fraction * quorum_fraction): quorum_fraction =
-  { numerator = (qt_1.numerator * quorum_denominator_int) / qt_2.numerator }
-
-[@inline]
-let fadd(qt_1, qt_2 : quorum_fraction * quorum_fraction): quorum_fraction =
-  {numerator = qt_1.numerator + qt_2.numerator }
-
-[@inline]
-let fsub(qt_1, qt_2 : quorum_fraction * quorum_fraction): quorum_fraction =
-  { numerator = qt_1.numerator - qt_2.numerator }
-
-[@inline]
-let bound_qt (qt, min_qt, max_qt : quorum_fraction * quorum_fraction * quorum_fraction)
-    : quorum_fraction =
-  if (qt.numerator > max_qt.numerator) then max_qt else
-    if (qt.numerator < min_qt.numerator) then min_qt else qt
-
-// -----------------------------------------------------------------
-// Freeze history operations
-// -----------------------------------------------------------------
-
-let add_frozen_fh (amt, fh : nat * address_freeze_history)
-    : address_freeze_history =
-  { fh with current_unstaked = fh.current_unstaked + amt }
-
-let sub_frozen_fh (amt, fh : nat * address_freeze_history)
-    : address_freeze_history =
-  match is_nat(fh.past_unstaked - amt) with
-  | None ->
-      ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
-        ( "NOT_ENOUGH_FROZEN_TOKENS", ()) : address_freeze_history)
-  | Some new_amt ->
-      { fh with past_unstaked = new_amt }
-
-let stake_frozen_fh (amt, fh : nat * address_freeze_history): address_freeze_history =
-  let fh = sub_frozen_fh(amt, fh) in
-  { fh with staked = fh.staked + amt }
-
-let unstake_frozen_fh (amt, fh : nat * address_freeze_history)
-    : address_freeze_history =
-  match is_nat(fh.staked - amt) with
-  | None ->
-      ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
-        ("NOT_ENOUGH_STAKED_TOKENS", ()) : address_freeze_history)
-  | Some new_amt ->
-     // Adding to past_unstaked should be fine since as of now, the staked tokens have to be from
-      // past periods.
-      { fh with staked = new_amt; past_unstaked = fh.past_unstaked + amt }
-
-// Update a possibly outdated freeze_history for the current period
-let update_fh (current_period, freeze_history : nat * address_freeze_history): address_freeze_history =
-  if freeze_history.current_period_num < current_period
-    then
-      { current_period_num = current_period
-      ; staked = freeze_history.staked
-      ; current_unstaked = 0n
-      ; past_unstaked = freeze_history.current_unstaked + freeze_history.past_unstaked
-      }
-    else freeze_history
-
 // -----------------------------------------------------------------
 // Propose
 // -----------------------------------------------------------------
@@ -164,9 +80,6 @@ let freeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, gover
   // to credit the `addr` address here.
   let (ledger, total_supply) = credit_to (tokens, addr, frozen_token_id, ledger, total_supply) in
   (operation, ledger, total_supply)
-
-[@inline]
-let period_to_cycle (p: nat): nat = (p + 1n) / 2n
 
 let stake_tk(token_amount, addr, voting_period, store : nat * address * voting_period * storage): storage =
   let current_period = get_current_period_num(store.start_time, voting_period) in
@@ -335,58 +248,12 @@ let delete_proposal
     Set.remove (start_date, proposal_key) store.proposal_key_list_sort_by_date
   }
 
-[@inline]
-let fraction_to_quorum_fraction(n, d : nat * nat): unsigned_quorum_fraction
-  = { numerator = (n * quorum_denominator) / d }
-
-[@inline]
-let to_signed(n : unsigned_quorum_fraction): quorum_fraction
-  = { numerator = int(n.numerator) }
-
-[@inline]
-let to_unsigned(n : quorum_fraction): unsigned_quorum_fraction
-  = { numerator = match is_nat(n.numerator) with
-              | Some n -> n
-              | None -> (failwith("BAD_UNSIGNED_CONVERSION"):nat)
-    }
-
-let update_quorum(store, config : storage * config): storage =
-  let current_period = get_current_period_num(store.start_time, config.voting_period) in
-  let current_cycle = period_to_cycle(current_period) in
-  if store.quorum_threshold_at_cycle.last_updated_cycle = current_cycle
-    then store // Quorum has been updated in this period, so no change is required.
-    else
-      if current_cycle > store.quorum_threshold_at_cycle.last_updated_cycle
-          then
-              let previous_staked = store.quorum_threshold_at_cycle.staked in
-              let previous_participation = to_signed(fraction_to_quorum_fraction(previous_staked, config.governance_total_supply)) in
-              let old_quorum = to_signed(store.quorum_threshold_at_cycle.quorum_threshold) in
-              let quorum_change = to_signed(config.quorum_change) in
-              let possible_new_quorum =
-                // old_quorum + (previous_participation - old_quorum) * quorum_change
-                fadd(old_quorum, fmul(quorum_change, fsub(previous_participation, old_quorum))) in
-              let one_plus_max_change_percent = to_signed({ numerator = config.max_quorum_change.numerator + quorum_denominator }) in
-              let min_new_quorum =
-                fdiv(old_quorum, one_plus_max_change_percent) in
-              let max_new_quorum =
-                fmul(old_quorum, one_plus_max_change_percent) in
-
-              let config_min_qt = to_signed(config.min_quorum_threshold) in
-              let config_max_qt = to_signed(config.max_quorum_threshold) in
-              let new_quorum = bound_qt(bound_qt(possible_new_quorum, min_new_quorum, max_new_quorum), config_min_qt, config_max_qt)
-              in { store with quorum_threshold_at_cycle =
-                   { quorum_threshold = to_unsigned(new_quorum)
-                   ; last_updated_cycle = current_cycle
-                   ; staked = 0n;
-                   }
-                 }
-            else store
-
 let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, store) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
-  let store = update_quorum(store, config) in
+  let current_period = get_current_period_num(store.start_time, config.voting_period) in
+  let store = update_quorum(current_period, store, config) in
   let store = stake_tk(amount_to_freeze, Tezos.sender, config.voting_period, store) in
   let store = add_proposal (param, config.voting_period, store) in
   (nil_op, store)

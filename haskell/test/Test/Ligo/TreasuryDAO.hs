@@ -233,7 +233,7 @@ originateTreasuryDaoWithBalance bal =
 
   in originateLigoDaoWithBalance (sExtra fsStorage)
       (fsConfig
-        { cMinQuorumThreshold = mkQuorumThreshold 1 100
+        { cMinQuorumThreshold = fromIntegral $ mkQuorumThreshold 1 100
         , cVotingPeriod = 10
         , cProposalFlushTime = 20
         , cProposalExpiredTime = 30

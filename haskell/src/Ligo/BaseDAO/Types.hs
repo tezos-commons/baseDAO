@@ -30,8 +30,7 @@ module Ligo.BaseDAO.Types
   , VotingPeriod (..)
   , VoteParam (..)
   , Voter (..)
-  , MaxChangePercent (..)
-  , ChangePercent (..)
+  , QuorumFraction (..)
   , GovernanceTotalSupply (..)
   , mkQuorumThreshold
   , fractionDenominator
@@ -76,7 +75,7 @@ module Ligo.BaseDAO.Types
   , sOperatorsLens
   ) where
 
-import Universum (Num, One(..), div, maybe, (*))
+import Universum (Enum, Integral, Num, One(..), Real, div, maybe, (*))
 
 import Control.Lens (makeLensesFor)
 import qualified Data.Map as M
@@ -179,10 +178,11 @@ type ProposalKey = Hash Blake2b $ Packed (ProposeParams, Address)
 -- regardless of upvotes > downvotes
 -- A proposal will be accepted only if:
 -- (quorum_threshold * total_supply >= upvote + downvote) && (upvote > downvote)
-data QuorumThreshold = QuorumThreshold
+newtype QuorumThreshold = QuorumThreshold
   { qtNumerator :: Natural
   }
-  deriving stock (Eq, Generic, Show)
+  deriving stock (Generic, Show)
+  deriving newtype (Enum, Ord, Eq, Num, Real, Integral)
   deriving anyclass IsoValue
 
 fractionDenominator :: Integer
@@ -206,21 +206,12 @@ newtype VotingPeriod = VotingPeriod { unVotingPeriod :: Natural}
 instance HasAnnotation VotingPeriod where
   annOptions = baseDaoAnnOptions
 
-newtype MaxChangePercent = MaxChangePercent Natural
+newtype QuorumFraction = QuorumFraction Integer
   deriving stock (Generic, Show)
-  deriving newtype Num
+  deriving newtype (Enum, Ord, Eq, Num, Real, Integral)
   deriving anyclass IsoValue
 
-instance HasAnnotation MaxChangePercent where
-  annOptions = baseDaoAnnOptions
-
--- | Voting period in seconds
-newtype ChangePercent = ChangePercent Natural
-  deriving stock (Generic, Show)
-  deriving newtype Num
-  deriving anyclass IsoValue
-
-instance HasAnnotation ChangePercent where
+instance HasAnnotation QuorumFraction where
   annOptions = baseDaoAnnOptions
 
 -- | Voting period in seconds
@@ -618,13 +609,13 @@ data Config' big_map = Config'
 
   , cMaxProposals :: Natural
   , cMaxVotes :: Natural
-  , cMaxQuorumThreshold :: QuorumThreshold
-  , cMinQuorumThreshold :: QuorumThreshold
+  , cMaxQuorumThreshold :: QuorumFraction
+  , cMinQuorumThreshold :: QuorumFraction
 
   , cFixedProposalFee :: FixedFee
   , cVotingPeriod :: VotingPeriod
-  , cMaxQuorumChange :: MaxChangePercent
-  , cQuorumChange :: ChangePercent
+  , cMaxQuorumChange :: QuorumFraction
+  , cQuorumChange :: QuorumFraction
   , cGovernanceTotalSupply :: GovernanceTotalSupply
   , cProposalFlushTime :: Natural
   , cProposalExpiredTime :: Natural
@@ -648,11 +639,11 @@ mkConfig
   :: [CustomEntrypoint]
   -> VotingPeriod
   -> FixedFee
-  -> MaxChangePercent
-  -> ChangePercent
+  -> QuorumFraction
+  -> QuorumFraction
   -> GovernanceTotalSupply
   -> Config
-mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent governanceTotalSupply = Config'
+mkConfig customEps votingPeriod fixedProposalFee maxQuorumFraction changePercent governanceTotalSupply = Config'
   { cProposalCheck = do
       dropN @2; push True
   , cRejectedProposalReturnValue = do
@@ -664,11 +655,11 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   , cVotingPeriod = votingPeriod
   , cProposalFlushTime = (unVotingPeriod votingPeriod) * 2
   , cProposalExpiredTime = (unVotingPeriod votingPeriod) * 3
-  , cMaxQuorumChange = percentageToFractionNumerator maxChangePercent
+  , cMaxQuorumChange = percentageToFractionNumerator maxQuorumFraction
   , cQuorumChange = percentageToFractionNumerator changePercent
   , cGovernanceTotalSupply = governanceTotalSupply
-  , cMaxQuorumThreshold = mkQuorumThreshold 99 100 -- 99%
-  , cMinQuorumThreshold = mkQuorumThreshold 1 100 -- 1%
+  , cMaxQuorumThreshold = percentageToFractionNumerator 99 -- 99%
+  , cMinQuorumThreshold = percentageToFractionNumerator 1 -- 1%
 
   , cMaxVotes = 1000
   , cMaxProposals = 500
@@ -706,8 +697,8 @@ mkFullStorage
   :: "admin" :! Address
   -> "votingPeriod" :? VotingPeriod
   -> "quorumThreshold" :? QuorumThreshold
-  -> "maxChangePercent" :? MaxChangePercent
-  -> "changePercent" :? ChangePercent
+  -> "maxQuorumFraction" :? QuorumFraction
+  -> "changePercent" :? QuorumFraction
   -> "governanceTotalSupply" :? GovernanceTotalSupply
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
@@ -718,7 +709,7 @@ mkFullStorage
 mkFullStorage admin vp qt mcp cp gts extra mdt now tokenAddress cEps = FullStorage'
   { fsStorage = mkStorage admin extra mdt now tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
-      (argDef #votingPeriod votingPeriodDef vp) 0 (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply 100 gts)
+      (argDef #votingPeriod votingPeriodDef vp) 0 (argDef #maxQuorumFraction 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply 100 gts)
   }
   where
     quorumThresholdDef = mkQuorumThreshold 1 10 -- 10% of frozen total supply
