@@ -110,12 +110,12 @@ type config =
   ; min_quorum_threshold : quorum_threshold
   // ^ Determine the minimum value of quorum threshold that is allowed.
 
-  ; voting_period : voting_period
-  // ^ Determine the voting_period length.
+  ; period : period
+  // ^ Determines the stages length.
 
   ; proposal_flush_time : seconds
   // ^ Determine the minimum amount of seconds after the proposal is proposed to be able to be `flushed`.
-  // Have to be bigger than `voting_period * 2`
+  // Have to be bigger than `period * 2`
 
   ; proposal_expired_time : seconds
   // ^ Determine the minimum amount of seconds after the proposal is proposed to be considered as expired.
@@ -177,10 +177,10 @@ These values are:
 2. `guardian : address` is the address of a contract that have permission to call `drop_proposal` on any proposals.
     - `guardian` contract cannot initiate the transaction that results in a call to `drop_proposal`
 3. `governance_token` is the FA2 contract address/token id pair that will be used as the governance token.
-4. `voting_period : nat` specifies how long the voting period lasts in seconds.
+4. `period : nat` specifies how long the stages lasts in seconds.
 5. `proposal_flush_time : nat`
     - Specifies in seconds how long after the proposal is proposed it can be flushed.
-    - IMPORTANT: Must be bigger than `voting_period * 2`.
+    - IMPORTANT: Must be bigger than `period * 2`.
 6. `proposal_expired_time : nat`
     - Specifies in seconds how long after the proposal is proposed it is considered expired.
     - IMPORTANT: Must be bigger than `proposal_flush_time`.
@@ -212,20 +212,21 @@ Additionally, the contract inherits the **operator** role from FA2.
 This role is "local" to a particular address.
 Each address can have any number of operators and be an operator of any number of addresses.
 
-## Stages
+## Period, Stages and Cycles
 
-The contract constantly cycles between two stages, a proposing stage and a voting stage.
-Both have the same same length, `voting_period` and alternate between each other,
-starting from "voting" for period number `0`. A proposal/voting period pair is called a cycle.
+The contract constantly cycles between two `stage`s, a proposing `stage` and a voting `stage`.
+Both have the same same length, called `period`, and alternate between each other,
+starting from "voting" for `stage` number `0`.
+A proposing and voting couple of `stage`s is called a `cycle`.
 
-The voting period is specified for the whole smart contract and never changes.
+The `period` is specified for the whole smart contract and never changes.
 
-Tokens can be frozen in any period, but they can only be used for voting, proposing
-and unfreezing starting from the following one and onwards.
+Tokens can be frozen in any `stage`, but they can only be used for voting, proposing
+and unfreezing starting from the one following and onwards.
 
-For this reason the contract starts from a `voting` stage, because even tho there
+For this reason the contract starts from a voting `stage`, because even tho there
 are no proposals to vote on yet, this allows token to be frozen in it and be
-usable in the first `proposing` stage, number `1`.
+usable in the first proposing `stage`, number `1`.
 
 For freezing, the address should have corresponding amount of tokens of proper
 token type (token_id of storage.governance_token.token_id) in the governance
@@ -238,7 +239,7 @@ contract to transfer tokens from its own address to the address that is doing un
 It then burns the corresponding amount of tokens. Only frozen tokens that are not currently
 staked in a vote or proposal can be unfreezed.
 
-The quorum threshold is updated at every cycle change, based on previous participation using
+The quorum threshold is updated at every `cycle` change, based on previous participation using
 the formula:
 
 ```
@@ -268,8 +269,8 @@ Everyone can make a new proposal, however, you have to freeze some tokens for th
 The proposer specifies how many frozen tokens they want to stake and this value is checked by
 the contract according to its compile-time configuration.
 
-Proposing can only be performed in a proposing stage period, meaning one that's odd-numbered and
-the proposer must have frozen his tokens in one of the preceding periods.
+Proposing can only be performed in a proposing `stage`, meaning one that's odd-numbered and
+the proposer must have frozen his tokens in one of the preceding `stage`s.
 
 Proposals are identified by a key which is a `bytes` value computed via Blake2B hashing function of a
 pair of propose entrypoint params and the proposer address.
@@ -279,9 +280,10 @@ pair of propose entrypoint params and the proposer address.
 Once a proposal is submitted, everyone can vote on it as long as they have enough frozen tokens to stake.
 One frozen token is required for one vote.
 
-A vote can only be cast in a voting stage period, meaning one that's even-numbered.
-Moreover the proposal to vote on must have been submitted in the proposing period immediately preceding
-and the voter must have frozen his tokens in one of the preceding periods.
+A vote can only be cast in a voting `stage`, meaning one that's even-numbered.
+Moreover the proposal to vote on must have been submitted in the proposing `stage`
+immediately preceding and the voter must have frozen his tokens in one of the
+preceding `stage`s.
 
 It's possible to vote positively or negatively.
 After the voting ends, the contract is "flushed" by calling a dedicated entrypoint.
@@ -306,32 +308,32 @@ We start with standard FA2 errors which are part of the FA2 specification.
 The next group consists of the errors that are not part of the FA2 specification.
 The list of errors may be inaccurate and incomplete, it will be updated during the implementation.
 
-| Error                            | Description                                                                                                      |
-|----------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `NOT_ADMIN`                      | The sender is not the administrator                                                                              |
-| `NOT_PENDING_ADMIN`              | Authorized sender is not the current pending administrator                                                       |
-| `NOT_TOKEN_OWNER`                | Trying to configure operators for a different wallet which sender does not own                                   |
-| `FAIL_PROPOSAL_CHECK`            | Throws when trying to propose a proposal that does not pass `proposalCheck`                                      |
-| `FROZEN_TOKEN_NOT_TRANSFERABLE`  | Transfer entrypoint is called for frozen token                                                                   |
-| `PROPOSAL_NOT_EXIST`             | Throws when trying to vote on a proposal that does not exist                                                     |
-| `QUORUM_NOT_MET`                 | A proposal is flushed, but there are not enough votes                                                            |
-| `VOTING_PERIOD_OVER`             | Throws when trying to vote on a proposal that is already ended                                                   |
-| `MAX_PROPOSALS_REACHED`          | Throws when trying to propose a proposal when proposals max amount is already reached                            |
-| `MAX_VOTES_REACHED`              | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached           |
-| `FORBIDDEN_XTZ`                  | Throws when some XTZ was received as part of the contract call                                                   |
-| `PROPOSER_NOT_EXIST_IN_LEDGER`   | Expect a proposer address to exist in Ledger but it is not found                                                 |
-| `PROPOSAL_NOT_UNIQUE`            | Trying to propose a proposal that is already existed in the Storage.                                             |
-| `MISSIGNED`                      | Parameter signature does not match the expected one - for permits.                                               |
-| `ENTRYPOINT_NOT_FOUND`           | Throw when `CallCustom` is called with a non-existing entrypoint                                                 |
-| `UNPACKING_FAILED`               | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.                    |
-| `MISSING_VALUE`                  | Throw when trying to unpack a field that does not exist.                                                         |
-| `NOT_PROPOSING_PERIOD`           | Throw when `propose` call is made on a non-proposing period.                                                     |
-| `NOT_ENOUGH_FROZEN_TOKENS`       | Throw when there is not enough frozen tokens for the operation.                                                  |
-| `NOT_ENOUGH_STAKED_TOKENS`       | Throw when there is not enough staked tokens for the operation.                                                  |
-| `BAD_TOKEN_CONTRACT`             | Throw when the token contract is not of expected type.                                                           |
-| `DROP_PROPOSAL_CONDITION_NOT_MET`| Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired.      |
-| `EXPIRED_PROPOSAL`               | Throw when trying to `flush` expired proposals.                                                                  |
-| `BAD_STATE`                     | Throw when storage is in an unexpected state, indicating a contract error.                                  |
+| Error                            | Description                                                                                                 |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `NOT_ADMIN`                      | The sender is not the administrator                                                                         |
+| `NOT_PENDING_ADMIN`              | Authorized sender is not the current pending administrator                                                  |
+| `NOT_TOKEN_OWNER`                | Trying to configure operators for a different wallet which sender does not own                              |
+| `FAIL_PROPOSAL_CHECK`            | Throws when trying to propose a proposal that does not pass `proposalCheck`                                 |
+| `FROZEN_TOKEN_NOT_TRANSFERABLE`  | Transfer entrypoint is called for frozen token                                                              |
+| `PROPOSAL_NOT_EXIST`             | Throws when trying to vote on a proposal that does not exist                                                |
+| `QUORUM_NOT_MET`                 | A proposal is flushed, but there are not enough votes                                                       |
+| `VOTING_STAGE_OVER`              | Throws when trying to vote on a proposal that is already ended                                              |
+| `MAX_PROPOSALS_REACHED`          | Throws when trying to propose a proposal when proposals max amount is already reached                       |
+| `MAX_VOTES_REACHED`              | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
+| `FORBIDDEN_XTZ`                  | Throws when some XTZ was received as part of the contract call                                              |
+| `PROPOSER_NOT_EXIST_IN_LEDGER`   | Expect a proposer address to exist in Ledger but it is not found                                            |
+| `PROPOSAL_NOT_UNIQUE`            | Trying to propose a proposal that is already existed in the Storage.                                        |
+| `MISSIGNED`                      | Parameter signature does not match the expected one - for permits.                                          |
+| `ENTRYPOINT_NOT_FOUND`           | Throw when `CallCustom` is called with a non-existing entrypoint                                            |
+| `UNPACKING_FAILED`               | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.               |
+| `MISSING_VALUE`                  | Throw when trying to unpack a field that does not exist.                                                    |
+| `NOT_PROPOSING_STAGE`            | Throw when `propose` call is made on a non-proposing period.                                                |
+| `NOT_ENOUGH_FROZEN_TOKENS`       | Throw when there is not enough frozen tokens for the operation.                                             |
+| `NOT_ENOUGH_STAKED_TOKENS`       | Throw when there is not enough staked tokens for the operation.                                             |
+| `BAD_TOKEN_CONTRACT`             | Throw when the token contract is not of expected type.                                                      |
+| `DROP_PROPOSAL_CONDITION_NOT_MET`| Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired. |
+| `EXPIRED_PROPOSAL`               | Throw when trying to `flush` expired proposals.                                                             |
+| `BAD_STATE`                      | Throw when storage is in an unexpected state, indicating a contract error.                                  |
 
 # Entrypoints
 
@@ -649,7 +651,7 @@ Parameter (in Michelson):
 - Sender MUST have enough frozen tokens (i. e. `≥ proposalTokenAmount + fee`) that are not already staked for a proposal or a vote.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the unstaked frozen token balance of the SENDER
   is less than `proposalTokenAmount + fee`.
-- Fails with `NOT_PROPOSING_PERIOD` if the current period is not a proposing stage.
+- Fails with `NOT_PROPOSING_STAGE` if the current stage is not a proposing one.
 - Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposalCheck` from the configuration.
 - Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
 - Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
@@ -705,11 +707,11 @@ Parameter (in Michelson):
 
 - This implements permits mechanism similar to the one in [TZIP-017](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-17/tzip-17.md) but injected directly to the entrypoint.
 - Vote author is identified by permit information, or if it is absent - `sender` is taken.
-- Author MUST have frozen tokens equal to `voteAmount` or more (1 unstaked frozen token is needed for 1 vote) from past periods.
-- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author from past periods that is not staked
+- Author MUST have frozen tokens equal to `voteAmount` or more (1 unstaked frozen token is needed for 1 vote) from past `stage`s.
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author from past stages that is not staked
   is less than specified `voteAmount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
-- Fails with `VOTING_PERIOD_OVER` if the voting period of proposal associated with the proposal key has already ended.
+- Fails with `VOTING_STAGE_OVER` if the voting `stage` for the proposal has already ended.
 - Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal is already at the max value set by the configuration.
 - Fails with `MISSIGNED` if permit is incorrect with respect to the provided vote parameter and contract state.
 - The entrypoint accepts a list of vote params. As a result, it is possible to `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
@@ -811,7 +813,7 @@ Parameter (in Michelson):
 - Mints the required number of frozen tokens after making an FA2 transfer on
   the governance token contract from the address of the sender to the address
   of the BaseDAO contract. The transfer is made using the governance token id.
-  The frozen tokens can only be used from the next period onward.
+  The frozen tokens can only be used from the next `stage` onward.
 
 - Author MUST have tokens equal to `freeze_param` or more, in the governance contract, with token id
   'governance-token.token_id`.
@@ -830,7 +832,7 @@ Parameter (in Michelson):
 (nat %unfreeze)
 ```
 
-- Burns the specified amount of tokens from the tokens frozen in previous periods, after making an FA2 transfer
+- Burns the specified amount of tokens from the tokens frozen in previous `stage`s, after making an FA2 transfer
   on the governance contract from the address of the baseDAO contract to the address of the sender.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the author does not have enough tokens that can be burned.
 

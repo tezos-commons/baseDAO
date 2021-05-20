@@ -26,12 +26,12 @@ type ledger_value = nat
 type ledger = (ledger_key, ledger_value) big_map
 
 // Frozen token history for an address.
-// This track the period number in which it was last updated and differentiates between
-// tokens that were frozen during that period and the ones frozen in any other before.
+// This track the stage number in which it was last updated and differentiates between
+// tokens that were frozen during that stage and the ones frozen in any other before.
 // It does so because only tokens that were frozen in the past can be staked, which is
 // also why it tracks staked tokens in a single field.
 type address_freeze_history =
-  { current_period_num : nat
+  { current_stage_num : nat
   ; staked : nat
   ; current_unstaked : nat
   ; past_unstaked : nat
@@ -120,7 +120,7 @@ type voter =
 type seconds = nat
 
 // Length of a 'stage'
-type voting_period = { length : seconds }
+type period = { length : seconds }
 
 // For efficiency, we only keep a `nat` for the numerator, whereas the
 // denominator is not stored and has a fixed value of `1000000`.
@@ -304,7 +304,7 @@ type initial_config_data =
   { max_quorum : quorum_threshold
   ; min_quorum : quorum_threshold
   ; quorum_threshold : quorum_threshold
-  ; voting_period : voting_period
+  ; period : period
   ; proposal_flush_time: seconds
   ; proposal_expired_time: seconds
   ; fixed_proposal_fee_in_token: nat
@@ -336,7 +336,7 @@ type config =
   ; max_votes : nat
   ; max_quorum_threshold : quorum_fraction
   ; min_quorum_threshold : quorum_fraction
-  ; voting_period : voting_period
+  ; period : period
   ; fixed_proposal_fee_in_token : nat
   ; max_quorum_change : quorum_fraction
   ; quorum_change : quorum_fraction

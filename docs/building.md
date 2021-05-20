@@ -58,7 +58,7 @@ make out/trivialDAO_storage.tz \
   change_percent = 5n \
   max_change_percent = 19n \
   governance_total_supply = 100n \
-  voting_period=950400n \
+  period=950400n \
   proposal_flush_time = 1900801n \
   proposal_expired_time = 2851200n \
   metadata_map=(Big_map.empty : metadata_map) \
@@ -97,7 +97,7 @@ make out/registryDAO_storage.tz \
   change_percent = 5n \
   max_change_percent = 19n \
   governance_total_supply = 100n \
-  voting_period=950400n \
+  period=950400n \
   proposal_flush_time = 1900801n \
   proposal_expired_time = 2851200n
 ```
@@ -132,7 +132,7 @@ make out/treasuryDAO_storage.tz \
   change_percent = 5n \
   max_change_percent = 19n \
   governance_total_supply = 100n \
-  voting_period=950400n \
+  period=950400n \
   proposal_flush_time = 1900801n \
   proposal_expired_time = 2851200n \
   metadata_map=(Big_map.empty : metadata_map) \

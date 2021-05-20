@@ -7,8 +7,8 @@
 let validate_default_config (data : initial_config_data) : unit =
   if data.proposal_expired_time <= data.proposal_flush_time then
     failwith("proposal_expired_time needs to be bigger than proposal_flush_time")
-  else if data.proposal_flush_time <= (data.voting_period.length * 2n) then
-    failwith("proposal_flush_time needs to be more than twice the voting_period length")
+  else if data.proposal_flush_time <= (data.period.length * 2n) then
+    failwith("proposal_flush_time needs to be more than twice the period length")
   else unit
 
 let default_config (data : initial_config_data) : config =
@@ -17,7 +17,7 @@ let default_config (data : initial_config_data) : config =
     rejected_proposal_return_value = (fun (_proposal, _extras : proposal * contract_extra) -> 0n);
     decision_lambda = (fun (_proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
     fixed_proposal_fee_in_token = data.fixed_proposal_fee_in_token;
-    voting_period = data.voting_period;
+    period = data.period;
     max_proposals = 500n;
     max_votes = 1000n;
     max_quorum_threshold = to_signed(data.max_quorum);
@@ -69,7 +69,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     start_time = data.now_val;
     quorum_threshold_at_cycle =
       { last_updated_cycle = 1n
-      // We use 1 here so that the initial quorum will be used for proposals raised in period 1
+      // We use 1 here so that the initial quorum will be used for proposals raised in stage 1
       // as there is no meaningful participation before that.
       ; quorum_threshold = to_unsigned(quorum_threshold)
       ; staked = 0n

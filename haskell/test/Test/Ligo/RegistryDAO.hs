@@ -565,7 +565,7 @@ test_RegistryDAO =
         }
       in fs { fsStorage = newStorage
             , fsConfig = oldConfig
-                { cVotingPeriod = 11
+                { cPeriod = 11
                 , cProposalFlushTime = 22
                 , cProposalExpiredTime = 33
                 }

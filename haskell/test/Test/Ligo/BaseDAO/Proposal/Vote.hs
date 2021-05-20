@@ -117,4 +117,4 @@ voteOutdatedProposal originateFn = do
     -- Advance two voting period to another voting stage.
     advanceTime (sec 25)
     call dodDao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_PERIOD_OVER dodDao
+      & expectCustomErrorNoArg #vOTING_STAGE_OVER dodDao

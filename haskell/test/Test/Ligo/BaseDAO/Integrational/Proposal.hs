@@ -81,7 +81,7 @@ checkFreezeHistoryTracking  = do
         lExpectStorage @FullStorage baseDao $ \storage -> do
             let fh = Map.lookup wallet1 (unBigMap $ sFreezeHistory $ fsStorage storage)
             let expected = AddressFreezeHistory
-                  { fhCurrentPeriodNum = 1
+                  { fhCurrentStageNum = 1
                   , fhCurrentUnstaked = 0
                   , fhStaked = requiredFrozen
                   , fhPastUnstaked = 0
@@ -97,7 +97,7 @@ checkFreezeHistoryTracking  = do
             -- We expect all the staked tokens to be unstaked after propoal rejection/accept.
             let fh = Map.lookup wallet1 (unBigMap $ sFreezeHistory $ fsStorage storage)
             let expected = AddressFreezeHistory
-                  { fhCurrentPeriodNum = 3
+                  { fhCurrentStageNum = 3
                   , fhCurrentUnstaked = 0
                   , fhStaked = 0
                   , fhPastUnstaked = requiredFrozen
