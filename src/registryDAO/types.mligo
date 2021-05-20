@@ -16,8 +16,9 @@ type update_receiver_param =
   | Add_receivers of (address list)
   | Remove_receivers of (address list)
 
-type normal_proposal =
+type transfer_proposal =
   { agora_post_id : nat
+  ; transfers : transfer_type list
   ; registry_diff : registry_diff
   }
 
@@ -31,7 +32,6 @@ type config_proposal =
 
 // Registry dao `proposal_metadata` contains the type of proposal.
 type registry_dao_proposal_metadata =
-  | Normal_proposal of normal_proposal
   | Update_receivers_proposal of update_receiver_param
   | Configuration_proposal of config_proposal
   | Transfer_proposal of transfer_proposal

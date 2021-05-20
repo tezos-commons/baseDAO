@@ -21,10 +21,21 @@ import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  ( DaoOriginateData(..), OriginateFn, TransferProposal(..)
-  , checkTokenBalance, makeProposalKey, originateLigoDaoWithBalance, sendXtz )
+  ( DaoOriginateData(..), OriginateFn, checkTokenBalance, makeProposalKey
+  , originateLigoDaoWithBalance, sendXtz )
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
+
+data TransferProposal = TransferProposal
+  { tpAgoraPostId :: Natural
+  , tpTransfers :: [TransferType]
+  }
+
+instance HasAnnotation TransferProposal where
+  annOptions = baseDaoAnnOptions
+
+customGeneric "TransferProposal" ligoLayout
+deriving anyclass instance IsoValue TransferProposal
 
 -- | Helper type for unpack/pack
 type TreasuryDaoProposalMetadata = TransferProposal
