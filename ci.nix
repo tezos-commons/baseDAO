@@ -117,7 +117,7 @@ rec {
     name = "baseDAO-ligo";
     src = ./.;
     nativeBuildInputs = [ ligo ];
-    buildPhase = "make";
+    buildPhase = "make all; make test-storage";
     installPhase = "mkdir -p $out; cp -r out/* $out";
   };
 

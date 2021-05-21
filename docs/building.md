@@ -24,13 +24,6 @@ which will use `ligo compile-contract` and save the result in `out/baseDAO.tz`.
 If you prefer to build it manually, the contract's main entrypoint is
 `base_DAO_contract`, located in [src/base_DAO.mligo](../src/base_DAO.mligo).
 
-You can also use:
-```sh
-make all
-```
-to generate the contract as well as all the example DAOs' initial storage
-defined below.
-
 ## Generating a contract storage
 
 You can use `ligo` to also generate a contract initial storage, using the
@@ -49,9 +42,9 @@ make out/trivialDAO_storage.tz \
   governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
   governance_token_id=0n \
   now_val=`date +"%s"` \
-  metadata_map=(Big_map.empty : metadata_map) \
+  metadata_map=Big_map.empty \
   fixed_proposal_fee_in_token=0n \
-  ledger=([] : ledger_list) \
+  ledger=[] \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
@@ -63,8 +56,9 @@ make out/trivialDAO_storage.tz \
   proposal_expired_time=2851200n
 ```
 
-All its arguments are optional and will be equal to the values above if not
-specified.
+The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
+are required values. For the rest of the arguments, they are optional and will be equal to the
+values above if not specified.
 
 You can see the [specification](specification.md) for more info about these
 values.
@@ -87,9 +81,9 @@ make out/registryDAO_storage.tz \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
   now_val=`date +"%s"` \
-  metadata_map=(Big_map.empty : metadata_map) \
+  metadata_map="Big_map.empty" \
   fixed_proposal_fee_in_token=0n \
-  ledger=([] : ledger_list) \
+  ledger="[]" \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
@@ -101,8 +95,9 @@ make out/registryDAO_storage.tz \
   governance_total_supply=100n
 ```
 
-All its arguments are optional and will be equal to the values above if not
-specified.
+The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
+are required values. For the rest of the arguments, they are optional and will be equal to the
+values above if not specified.
 
 ### TreasuryDAO
 
@@ -122,9 +117,9 @@ make out/treasuryDAO_storage.tz \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
   now_val=`date +"%s"` \
-  metadata_map=(Big_map.empty : metadata_map) \
+  metadata_map=Big_map.empty \
   fixed_proposal_fee_in_token=0n \
-  ledger=([] : ledger_list) \
+  ledger=[] \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
@@ -136,8 +131,9 @@ make out/treasuryDAO_storage.tz \
   governance_total_supply=100n
 ```
 
-As for the other examples, all the arguments are optional and will be equal to
-the values above the values above if not specified.
+The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
+are required values. For the rest of the arguments, they are optional and will be equal to the
+values above if not specified.
 
 ## Storage generation checks
 The LIGO functions used by the `Makefile` targets above perform some automatic check, specifically:
