@@ -1,5 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE NumericUnderscores #-}
 
 module Test.Ligo.BaseDAO.Common
@@ -21,6 +22,7 @@ module Test.Ligo.BaseDAO.Common
   , sendXtz
 
   , createSampleProposal
+  , createSampleProposals
   , originateLigoDaoWithBalance
   , originateLigoDaoWithConfigDesc
   , originateLigoDao
@@ -36,6 +38,7 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Lorentz.Test (contractConsumer)
 import Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Nettest
+import Morley.Nettest.Caps (MonadOps)
 import Named ((!))
 import Util.Named
 
@@ -271,11 +274,30 @@ originateLigoDao =
 createSampleProposal
   :: (MonadNettest caps base m, HasCallStack)
   => Int -> Address -> TAddress Parameter -> m ProposalKey
-createSampleProposal counter dodOwner1 dao = do
+createSampleProposal counter dodOwner dao = do
+  let (pk, action) = createSampleProposal_ counter dodOwner dao
+  withSender dodOwner action
+  pure pk
+
+createSampleProposal_
+  :: (MonadOps m, HasCallStack)
+  => Int -> Address -> TAddress Parameter -> (ProposalKey, m ())
+createSampleProposal_ counter dodOwner1 dao =
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer $ fromIntegral counter
         }
+  in (makeProposalKey params dodOwner1, call dao (Call @"Propose") params)
 
-  withSender dodOwner1 $ call dao (Call @"Propose") params
-  pure $ (makeProposalKey params dodOwner1)
+-- TODO consider making this polymorphic on the input/output size
+createSampleProposals
+  :: (MonadNettest caps base m, HasCallStack)
+  => (Int, Int) -> Address -> TAddress Parameter -> m (ProposalKey, ProposalKey)
+createSampleProposals (counter1, counter2) dodOwner1 dao = do
+  let (pk1, action1) = createSampleProposal_ counter1 dodOwner1 dao
+  let (pk2, action2) = createSampleProposal_ counter2 dodOwner1 dao
+  withSender dodOwner1 . inBatch $ do
+    action1
+    action2
+    return ()
+  pure (pk1, pk2)

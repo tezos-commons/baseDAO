@@ -334,8 +334,7 @@ dropProposal originateFn = withFrozenCallStack $ do
   -- Advance one voting period to a proposing stage.
   advanceLevel 20
 
-  key1 <- createSampleProposal 1 dodOwner1 dodDao
-  key2 <- createSampleProposal 2 dodOwner1 dodDao
+  (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
 
   -- Advance one voting period to a voting stage.
   advanceLevel 20

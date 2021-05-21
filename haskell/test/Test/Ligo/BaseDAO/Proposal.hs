@@ -1,5 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
+{-# LANGUAGE ApplicativeDo #-}
 
 module Test.Ligo.BaseDAO.Proposal
   ( test_BaseDAO_Proposal
