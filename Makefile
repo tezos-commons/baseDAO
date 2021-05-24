@@ -251,6 +251,19 @@ test-storage:
 		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
 		governance_token_id=0n
 
+
+metadata : output = metadata.json
+metadata: test-storage all
+	$(MAKE) -C haskell build PACKAGE=baseDAO-ligo-meta \
+		STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn" \
+	BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
+	REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
+	TREASURY_STORAGE_PATH=../$(OUT)/treasuryDAO_storage.tz
+
+	$(MAKE) -C haskell exec PACKAGE=baseDAO-ligo-meta \
+	EXEC_ARGUMENTS=print-metadata \
+  EXEC_OUTPUT=$(output)
+
 test: test-storage all
 	$(MAKE) -C haskell test PACKAGE=baseDAO-ligo-meta \
 	BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \

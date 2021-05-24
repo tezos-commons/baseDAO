@@ -872,13 +872,12 @@ Parameter (in Michelson):
 
 This contract implements [TZIP-016](https://gitlab.com/tzip/tzip/-/blob/21fb73fe01df8a744c9b03303e3d73b0f2265eb2/proposals/tzip-16/tzip-16.md).
 
-The DAO contract itself won't store the metadata, rather a dedicated contract will contain that.
-Motivation:
-* The baseDAO contract is very large and already over the Tezos hard limits.
-  * Providing the metadata during origination would increase the already excessive origination cost;
-  * Inserting the metadata after origination still requires mechanisms to manage the metadata, increasing the contract size even more.
+The DAO contract itself won't store the metadata, rather a file on IPFS (suggested), a dedicated contract or another external storage will contain that.
 
 ## Deployment with metadata
 
-The deployment of contract with metadata has an extra step: a dedicated contract for carrying metadata has to be originated first.
+The deployment of contract with metadata has an extra step, either:
+  - Uploading the contract metadata to IPFS.
+  - A dedicated contract for carrying metadata has to be originated first.
+
 Then the baseDAO contract should include the reference to a metadata key in the contract in order to be compliant with TZIP-016.
