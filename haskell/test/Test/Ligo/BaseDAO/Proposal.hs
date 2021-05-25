@@ -106,7 +106,7 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulatorCaps "flush should fail on expired proposals" $
           flushFailOnExpiredProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      , nettestScenarioOnEmulatorCaps "flush with bad cRejectedProposalReturnValue" $
+      , nettestScenarioOnEmulatorCaps "flush with bad cRejectedProposalSlashValue" $
           flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenarioOnEmulatorCaps "flush and run decision lambda" $

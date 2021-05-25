@@ -332,7 +332,7 @@ type config =
   // ^ A lambda used to verify whether a proposal can be submitted.
   // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
-  ; rejected_proposal_return_value : proposal * contract_extra -> nat
+  ; rejected_proposal_slash_value : proposal * contract_extra -> nat
   // ^ When a proposal is rejected, the value that voters get back can be slashed.
   // This lambda returns the amount to be slashed.
   ; decision_lambda : proposal * contract_extra -> operation list * contract_extra

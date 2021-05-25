@@ -38,7 +38,7 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
   else
     false
 
-let treasury_DAO_rejected_proposal_return_value (params, extras : proposal * contract_extra) : nat =
+let treasury_DAO_rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
   let slash_scale_value = unpack_nat(find_big_map("slash_scale_value", extras)) in
   let slash_division_value =  unpack_nat(find_big_map("slash_division_value", extras))
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
@@ -91,7 +91,7 @@ let default_treasury_DAO_full_storage (data : initial_treasuryDAO_storage) : ful
   } in
   let new_config = { config with
     proposal_check = treasury_DAO_proposal_check;
-    rejected_proposal_return_value = treasury_DAO_rejected_proposal_return_value;
+    rejected_proposal_slash_value = treasury_DAO_rejected_proposal_slash_value;
     decision_lambda = treasury_DAO_decision_lambda;
     custom_entrypoints = Big_map.literal [("receive_xtz", Bytes.pack (receive_xtz_entrypoint))];
     }
