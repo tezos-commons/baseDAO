@@ -50,8 +50,13 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
           \_emulated -> flushTokenTransfer
       , nettestScenarioOnEmulator "can flush a Xtz transfer proposal" $
           \_emulated -> flushXtzTransfer
+      ]
 
-      -- -- TODO #260: check all fail scenario of proposal_check
+  , testGroup "proposal_check:"
+      [ nettestScenarioOnEmulator "fail when xtz transfer contains 0 mutez" $
+          \_emulated -> proposalCheckFailZeroMutez
+
+      -- TODO #260: check all fail scenario of proposal_check
       ]
   ]
 
@@ -62,7 +67,7 @@ metadataSize md = fromIntegral $ BS.length md
 validProposal :: HasCallStack => NettestScenario m
 validProposal = uncapsNettest $ withFrozenCallStack do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance $ \owner1_ owner2_ ->
+    originateTreasuryDaoWithBalance id $ \owner1_ owner2_ ->
       [ ((owner1_, frozenTokenId), 200)
       , ((owner2_, frozenTokenId), 200)
       ]
@@ -93,7 +98,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
 flushTokenTransfer :: HasCallStack => NettestScenario m
 flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance $ \_ owner2_ ->
+    originateTreasuryDaoWithBalance id $ \_ owner2_ ->
       [ ((owner2_, frozenTokenId), 100)
       ]
 
@@ -140,7 +145,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
 flushXtzTransfer :: HasCallStack => NettestScenario m
 flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance $ \_ _ ->
+    originateTreasuryDaoWithBalance id $ \_ _ ->
       []
 
   sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
@@ -190,7 +195,36 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceTime (sec 10)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
---   -- TODO: check xtz balance
+  -- TODO: check xtz balance
+
+
+proposalCheckFailZeroMutez :: HasCallStack => NettestScenario m
+proposalCheckFailZeroMutez = uncapsNettest $ withFrozenCallStack do
+  DaoOriginateData{..} <-
+    originateTreasuryDaoWithBalance
+      (\store -> setExtra @Natural [mt|min_xtz_amount|] 0 store) $
+      \owner1_ owner2_ ->
+        [ ((owner1_, frozenTokenId), 200)
+        , ((owner2_, frozenTokenId), 200)
+        ]
+  let
+    proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
+      TransferProposal
+        { tpAgoraPostId = 1
+        , tpTransfers = [ xtzTransferType 0 dodOwner2 ]
+        }
+    proposalSize = metadataSize proposalMeta
+
+  -- Freeze in voting stage.
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! proposalSize)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime (sec 10)
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
+      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
 
 --------------------------------------------------------------------------
 -- Helper
@@ -218,8 +252,9 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
 
 originateTreasuryDaoWithBalance
  :: forall caps base m. (MonadNettest caps base m)
- => (Address -> Address -> [(LedgerKey, LedgerValue)]) -> OriginateFn m
-originateTreasuryDaoWithBalance bal =
+ => (FullStorage -> FullStorage)
+ -> (Address -> Address -> [(LedgerKey, LedgerValue)]) -> OriginateFn m
+originateTreasuryDaoWithBalance modifyStorageFn bal =
   let fs = fromVal ($(fetchValue @FullStorage "haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
       FullStorage'{..} = fs
         & setExtra @Natural [mt|frozen_scale_value|] 1
@@ -229,6 +264,7 @@ originateTreasuryDaoWithBalance bal =
         & setExtra @Natural [mt|max_proposal_size|] 1000
         & setExtra @Natural [mt|min_xtz_amount|] 2
         & setExtra @Natural [mt|max_xtz_amount|] 5
+        & modifyStorageFn
 
   in originateLigoDaoWithBalance (sExtra fsStorage)
       (fsConfig

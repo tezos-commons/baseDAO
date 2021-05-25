@@ -32,7 +32,7 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
     let is_all_transfers_valid (is_valid, transfer_type: bool * transfer_type) =
       match transfer_type with
       | Token_transfer_type _tt -> is_valid
-      | Xtz_transfer_type xt -> is_valid && min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
+      | Xtz_transfer_type xt -> min_xtz_amount <= xt.amount && xt.amount <= max_xtz_amount
     in
       List.fold is_all_transfers_valid pm.transfers true
   else
