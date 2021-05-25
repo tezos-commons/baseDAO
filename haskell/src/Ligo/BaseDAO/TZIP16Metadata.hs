@@ -234,7 +234,6 @@ permitsCounterView MetadataSettings{} = View
       ]
   }
 
--- TODO reconsider this
 convertOperatorParam
   :: forall store s.
      ( StoreHasField store "sTotalSupply" TotalSupply

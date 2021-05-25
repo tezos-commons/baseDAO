@@ -71,10 +71,6 @@ data ConfigProposal = ConfigProposal
 instance HasAnnotation ConfigProposal where
   annOptions = baseDaoAnnOptions
 
-
--- Note: Somehow setting `[@layout:comb]` in ligo types does not work.
--- Have to use `ligoLayout` instead.
-
 customGeneric "RegistryDaoProposalMetadata" ligoLayout
 deriving anyclass instance IsoValue RegistryDaoProposalMetadata
 

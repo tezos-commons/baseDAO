@@ -366,7 +366,7 @@ instance HasAnnotation a => HasAnnotation (PermitProtected a) where
       noAnn noAnn
       (getAnnotation @a NotFollowEntrypoint)
       (getAnnotation @(Maybe (Permit a)) NotFollowEntrypoint)
-    -- TODO: propably it is not assumed to look this way,
+    -- TODO: probably it is not assumed to look this way,
     --       rewrite in a prettier way somehow?
 
 -- | Perform operation from sender behalf.
@@ -452,7 +452,8 @@ type UnfreezeParam = ("amount" :! Natural)
 -- NOTE: Constructors of the parameter types should remain sorted for the
 --'ligoLayout' custom derivation to work.
 --
--- TODO: This above will be no longer the case once the following issue is fixed.
+-- TODO #259: The comment above should no longer be the case since the following
+-- issue has been fixed:
 -- https://gitlab.com/morley-framework/morley/-/issues/527
 data ForbidXTZParam
   = Accept_ownership ()

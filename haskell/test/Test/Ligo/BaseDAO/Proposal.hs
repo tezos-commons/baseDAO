@@ -109,9 +109,6 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulatorCaps "flush with bad cRejectedProposalReturnValue" $
           flushWithBadConfig (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      -- TODO [#15]: dodAdmin burn proposer token and test "flush"
-
-      -- TODO [#38]: Improve this when contract size is smaller
       , nettestScenarioOnEmulatorCaps "flush and run decision lambda" $
           flushDecisionLambda (originateLigoDaoWithConfigDesc dynRecUnsafe)
 

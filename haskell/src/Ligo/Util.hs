@@ -20,7 +20,7 @@ import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 
 import Michelson.Parser
-import Michelson.Test.Import -- TODO morley/565: remove cleveland dependency
+import Michelson.Test.Import -- TODO 258: remove cleveland dependency
 import Michelson.TypeCheck (typeCheckingWith)
 import Michelson.TypeCheck.Instr
 import Michelson.Typed

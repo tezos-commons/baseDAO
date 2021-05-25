@@ -2,9 +2,6 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 {-# LANGUAGE NumericUnderscores #-}
 
--- TODO: Replace 'Empty' with 'Never' from morley
-{-# OPTIONS_GHC -Wno-deprecations #-}
-
 module Test.Ligo.BaseDAO.Common
   ( DaoOriginateData(..)
   , OriginateFn

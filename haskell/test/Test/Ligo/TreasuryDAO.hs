@@ -51,8 +51,7 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
       , nettestScenarioOnEmulator "can flush a Xtz transfer proposal" $
           \_emulated -> flushXtzTransfer
 
-      -- -- TODO: flush a config proposal
-      -- -- TODO: check all fail scenario of proposal_check
+      -- -- TODO #260: check all fail scenario of proposal_check
       ]
   ]
 
