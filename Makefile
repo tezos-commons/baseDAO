@@ -24,6 +24,8 @@ BUILD_PARAMETER = $(LIGO) compile-parameter --syntax cameligo
 escape_quote = $(subst ','\'',$(1))
 # Utility function to escape double quotes
 escape_double_quote = $(subst $\",$\\",$(1))
+# Utility function to require a variable to be defined
+require_defined = $(if $(value $1),$(value $1),$(error "$1 needs to be defined"))
 
 # Where to put build files
 OUT ?= out
@@ -33,10 +35,7 @@ TS_OUT ?= typescript
 .PHONY: all clean test typescript
 
 all: \
-	$(OUT)/baseDAO.tz \
-	$(OUT)/trivialDAO_storage.tz \
-	$(OUT)/registryDAO_storage.tz \
-	$(OUT)/treasuryDAO_storage.tz
+	$(OUT)/baseDAO.tz
 
 # Compile LIGO contract into its michelson representation.
 $(OUT)/baseDAO.tz: src/**
@@ -57,14 +56,10 @@ ifeq ($(OPTIMIZE), true)
 endif
 	#
 
-$(OUT)/trivialDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/trivialDAO_storage.tz : guardian_address = KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh
-$(OUT)/trivialDAO_storage.tz : governance_token_address = KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5
-$(OUT)/trivialDAO_storage.tz : governance_token_id = 0n
 $(OUT)/trivialDAO_storage.tz : now_val = `date +"%s"`
-$(OUT)/trivialDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
+$(OUT)/trivialDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/trivialDAO_storage.tz : fixed_proposal_fee_in_token = 0n
-$(OUT)/trivialDAO_storage.tz : ledger = ([] : ledger_list)
+$(OUT)/trivialDAO_storage.tz : ledger = []
 $(OUT)/trivialDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/trivialDAO_storage.tz : min_quorum = 1n
 $(OUT)/trivialDAO_storage.tz : max_quorum = 99n
@@ -80,37 +75,33 @@ $(OUT)/trivialDAO_storage.tz: src/**
 	$(BUILD_STORAGE) --output-file $(OUT)/trivialDAO_storage.tz \
       src/base_DAO.mligo base_DAO_contract "default_full_storage( \
         { storage_data = \
-          { admin = (\"$(admin_address)\" : address) \
-          ; guardian = (\"$(guardian_address)\" : address) \
+          { admin = (\"$(call require_defined,admin_address)\" : address) \
+          ; guardian = (\"$(call require_defined,guardian_address)\" : address) \
           ; governance_token = \
-            { address = (\"$(governance_token_address)\" : address) \
-            ; token_id = $(governance_token_id) \
+            { address = (\"$(call require_defined,governance_token_address)\" : address) \
+            ; token_id = ($(call require_defined,governance_token_id) : nat) \
             } \
           ; now_val = ($(now_val) : timestamp)  \
-          ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
-          ; ledger_lst = $(call escape_double_quote,$(ledger)) \
+          ; metadata_map = ($(metadata_map) : metadata_map) \
+          ; ledger_lst = ($(ledger) : ledger_list) \
           } \
         ; config_data = \
-          { max_quorum = { numerator = ($(max_quorum) * quorum_denominator)/100n } \
-          ; min_quorum = { numerator = ($(min_quorum) * quorum_denominator)/100n } \
-          ; period = { length = $(period) } \
-          ; proposal_flush_time = $(proposal_flush_time) \
-          ; proposal_expired_time = $(proposal_expired_time) \
-          ; quorum_threshold = { numerator = ($(quorum_threshold) * quorum_denominator)/100n } \
-          ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
-          ; quorum_change = { numerator = ($(quorum_change) * quorum_denominator)/100n } \
-          ; max_quorum_change = { numerator = ($(max_quorum_change) * quorum_denominator)/100n } \
-          ; governance_total_supply = $(governance_total_supply) \
+          { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
+          ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
+          ; period = { length = ($(period) : nat) } \
+          ; proposal_flush_time = ($(proposal_flush_time)  : nat) \
+          ; proposal_expired_time = ($(proposal_expired_time) : nat) \
+          ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
+          ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
+          ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
+          ; max_quorum_change = { numerator = (($(max_quorum_change) : nat) * quorum_denominator)/100n } \
+          ; governance_total_supply = ($(governance_total_supply) : nat) \
           } \
         })"
 	# ================= Compilation successful ================= #
 	# See "$(OUT)/trivialDAO_storage.tz" for compilation result  #
 	#
 
-$(OUT)/registryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/registryDAO_storage.tz : guardian_address = KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh
-$(OUT)/registryDAO_storage.tz : governance_token_address = KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5
-$(OUT)/registryDAO_storage.tz : governance_token_id = 0n
 $(OUT)/registryDAO_storage.tz : frozen_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : frozen_extra_value = 0n
 $(OUT)/registryDAO_storage.tz : max_proposal_size = 100n
@@ -119,9 +110,9 @@ $(OUT)/registryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/registryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/registryDAO_storage.tz : max_xtz_amount = 100mutez
 $(OUT)/registryDAO_storage.tz : now_val = `date +"%s"`
-$(OUT)/registryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
+$(OUT)/registryDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/registryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
-$(OUT)/registryDAO_storage.tz : ledger = ([] : ledger_list)
+$(OUT)/registryDAO_storage.tz : ledger = []
 $(OUT)/registryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/registryDAO_storage.tz : min_quorum = 1n
 $(OUT)/registryDAO_storage.tz : max_quorum = 99n
@@ -138,44 +129,40 @@ $(OUT)/registryDAO_storage.tz: src/**
       src/registryDAO.mligo base_DAO_contract "default_registry_DAO_full_storage( \
         { base_data = \
           { storage_data = \
-            { admin = (\"$(admin_address)\" : address) \
-            ; guardian = (\"$(guardian_address)\" : address) \
+            { admin = (\"$(call require_defined,admin_address)\" : address) \
+            ; guardian = (\"$(call require_defined,guardian_address)\" : address) \
             ; governance_token = \
-              { address = (\"$(governance_token_address)\" : address) \
-              ; token_id = $(governance_token_id) \
+              { address = (\"$(call require_defined,governance_token_address)\" : address) \
+              ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
             ; now_val = ($(now_val) : timestamp)  \
-            ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
-            ; ledger_lst = $(call escape_double_quote,$(ledger)) \
+            ; metadata_map = ($(metadata_map) : metadata_map) \
+            ; ledger_lst = ($(ledger) : ledger_list) \
             } \
           ; config_data = \
-            { max_quorum = { numerator = ($(max_quorum) * quorum_denominator)/100n } \
-            ; min_quorum = { numerator = ($(min_quorum) * quorum_denominator)/100n } \
-            ; period = { length = $(period) } \
-            ; proposal_flush_time = $(proposal_flush_time) \
-            ; proposal_expired_time = $(proposal_expired_time) \
-            ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
-            ; quorum_threshold = { numerator = ($(quorum_threshold) * quorum_denominator)/100n } \
-            ; quorum_change = { numerator = ($(quorum_change) * quorum_denominator)/100n } \
-            ; max_quorum_change = { numerator = ($(max_quorum_change) * quorum_denominator)/100n } \
-            ; governance_total_supply = $(governance_total_supply) \
+            { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
+            ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
+            ; period = { length = ($(period) : nat) } \
+            ; proposal_flush_time = ($(proposal_flush_time)  : nat) \
+            ; proposal_expired_time = ($(proposal_expired_time) : nat) \
+            ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
+            ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
+            ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
+            ; max_quorum_change = { numerator = (($(max_quorum_change) : nat) * quorum_denominator)/100n } \
+            ; governance_total_supply = ($(governance_total_supply) : nat) \
             }} \
-          ; frozen_scale_value = $(frozen_scale_value) \
-          ; frozen_extra_value = $(frozen_extra_value) \
-          ; max_proposal_size = $(max_proposal_size) \
-          ; slash_scale_value = $(slash_scale_value) \
-          ; slash_division_value = $(slash_division_value) \
-          ; min_xtz_amount = $(min_xtz_amount) \
-          ; max_xtz_amount = $(max_xtz_amount) \
+          ; frozen_scale_value = ($(frozen_scale_value) : nat) \
+          ; frozen_extra_value = ($(frozen_extra_value) : nat) \
+          ; max_proposal_size = ($(max_proposal_size) : nat) \
+          ; slash_scale_value = ($(slash_scale_value) : nat) \
+          ; slash_division_value = ($(slash_division_value) : nat) \
+          ; min_xtz_amount = ($(min_xtz_amount) : tez) \
+          ; max_xtz_amount = ($(max_xtz_amount) : tez) \
           })"
 	# ================= Compilation successful ================= #
 	# See "$(OUT)/registryDAO_storage.tz" for compilation result #
 	#
 
-$(OUT)/treasuryDAO_storage.tz : admin_address = tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af
-$(OUT)/treasuryDAO_storage.tz : guardian_address = KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh
-$(OUT)/treasuryDAO_storage.tz : governance_token_address = KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5
-$(OUT)/treasuryDAO_storage.tz : governance_token_id = 0n
 $(OUT)/treasuryDAO_storage.tz : frozen_scale_value = 0n
 $(OUT)/treasuryDAO_storage.tz : frozen_extra_value = 0n
 $(OUT)/treasuryDAO_storage.tz : max_proposal_size = 0n
@@ -184,9 +171,9 @@ $(OUT)/treasuryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/treasuryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/treasuryDAO_storage.tz : max_xtz_amount = 100mutez
 $(OUT)/treasuryDAO_storage.tz : now_val = `date +"%s"`
-$(OUT)/treasuryDAO_storage.tz : metadata_map = (Big_map.empty : metadata_map)
+$(OUT)/treasuryDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/treasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
-$(OUT)/treasuryDAO_storage.tz : ledger = ([] : ledger_list)
+$(OUT)/treasuryDAO_storage.tz : ledger = []
 $(OUT)/treasuryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/treasuryDAO_storage.tz : min_quorum = 1n
 $(OUT)/treasuryDAO_storage.tz : max_quorum = 99n
@@ -203,42 +190,62 @@ $(OUT)/treasuryDAO_storage.tz: src/**
        src/treasuryDAO.mligo base_DAO_contract "default_treasury_DAO_full_storage( \
         { base_data = \
           { storage_data = \
-            { admin = (\"$(admin_address)\" : address) \
-            ; guardian = (\"$(guardian_address)\" : address) \
+            { admin = (\"$(call require_defined,admin_address)\" : address) \
+            ; guardian = (\"$(call require_defined,guardian_address)\" : address) \
             ; governance_token = \
-              { address = (\"$(governance_token_address)\" : address) \
-              ; token_id =  $(governance_token_id) \
+              { address = (\"$(call require_defined,governance_token_address)\" : address) \
+              ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
             ; now_val = ($(now_val) : timestamp)  \
-            ; metadata_map = $(call escape_double_quote,$(metadata_map)) \
-            ; ledger_lst = $(call escape_double_quote,$(ledger)) \
+            ; metadata_map = ($(metadata_map) : metadata_map) \
+            ; ledger_lst = ($(ledger) : ledger_list) \
             } \
           ; config_data = \
-            { max_quorum = { numerator = ($(max_quorum) * quorum_denominator)/100n } \
-            ; min_quorum = { numerator = ($(min_quorum) * quorum_denominator)/100n } \
-            ; period = { length = $(period) } \
-            ; proposal_flush_time = $(proposal_flush_time) \
-            ; proposal_expired_time = $(proposal_expired_time) \
-            ; fixed_proposal_fee_in_token = $(fixed_proposal_fee_in_token) \
-            ; quorum_threshold = { numerator = ($(quorum_threshold) * quorum_denominator)/100n } \
-            ; quorum_change = { numerator = ($(quorum_change) * quorum_denominator)/100n } \
-            ; max_quorum_change = { numerator = ($(max_quorum_change) * quorum_denominator)/100n } \
-            ; governance_total_supply = $(governance_total_supply) \
+            { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
+            ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
+            ; period = { length = ($(period) : nat) } \
+            ; proposal_flush_time = ($(proposal_flush_time)  : nat) \
+            ; proposal_expired_time = ($(proposal_expired_time) : nat) \
+            ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
+            ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
+            ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
+            ; max_quorum_change = { numerator = (($(max_quorum_change) : nat) * quorum_denominator)/100n } \
+            ; governance_total_supply = ($(governance_total_supply) : nat) \
             }} \
-          ; frozen_scale_value = $(frozen_scale_value) \
-          ; frozen_extra_value = $(frozen_extra_value) \
-          ; max_proposal_size = $(max_proposal_size) \
-          ; slash_scale_value = $(slash_scale_value) \
-          ; slash_division_value = $(slash_division_value) \
-          ; min_xtz_amount = $(min_xtz_amount) \
-          ; max_xtz_amount = $(max_xtz_amount) \
+          ; frozen_scale_value = ($(frozen_scale_value) : nat) \
+          ; frozen_extra_value = ($(frozen_extra_value) : nat) \
+          ; max_proposal_size = ($(max_proposal_size) : nat) \
+          ; slash_scale_value = ($(slash_scale_value) : nat) \
+          ; slash_division_value = ($(slash_division_value) : nat) \
+          ; min_xtz_amount = ($(min_xtz_amount) : tez) \
+          ; max_xtz_amount = ($(max_xtz_amount) : tez) \
           })"
 
 	# ============== Compilation successful ============== #
 	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
 	#
 
-test: all
+# For development and testing purpose
+test-storage:
+	make $(OUT)/trivialDAO_storage.tz \
+		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+		governance_token_id=0n
+
+	make $(OUT)/treasuryDAO_storage.tz \
+		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+		governance_token_id=0n
+
+	make $(OUT)/registryDAO_storage.tz \
+		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+		governance_token_id=0n
+
+test: test-storage all
 	$(MAKE) -C haskell test PACKAGE=baseDAO-ligo-meta \
 	BASEDAO_LIGO_PATH=../$(OUT)/baseDAO.tz \
 	REGISTRY_STORAGE_PATH=../$(OUT)/registryDAO_storage.tz \
