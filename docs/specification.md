@@ -91,7 +91,7 @@ type config =
   // ^ A lambda used to verify whether a proposal can be submitted.
   // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
-  ; rejected_proposal_return_value : proposal * contract_extra -> nat
+  ; rejected_proposal_slash_value : proposal * contract_extra -> nat
   // ^ When a proposal is rejected, the value that voters get back can be slashed.
   // This lambda returns the amount to be slashed.
   ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
@@ -763,7 +763,7 @@ Parameter (in Michelson):
 - Frozen tokens from voters and proposal submitter associated with those proposals
   are returned in the  form of tokens in governance token contract:
   - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
-    - The return amount for the proposer is equal to or less than the slashed amount based on `rejectedProposalReturnValue`.
+    - The return amount for the proposer is equal to or less than the slashed amount based on `rejected_proposal_slash_value`.
     - The paid fee is not returned to the proposer.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
   - If proposal got accepted:

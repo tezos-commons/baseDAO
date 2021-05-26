@@ -86,7 +86,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
  * where slash_scale_value and slash_division_value are specified by the DAO creator
  * in configuration and frozen is the amount that was frozen by the proposer.
  *)
-let registry_DAO_rejected_proposal_return_value (params, extras : proposal * contract_extra) : nat =
+let registry_DAO_rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
   let slash_scale_value = unpack_nat(find_big_map ("slash_scale_value", extras)) in
   let slash_division_value = unpack_nat(find_big_map ("slash_division_value", extras))
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
@@ -221,7 +221,7 @@ let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : ful
   } in
   let new_config = { config with
     proposal_check = registry_DAO_proposal_check;
-    rejected_proposal_return_value = registry_DAO_rejected_proposal_return_value;
+    rejected_proposal_slash_value = registry_DAO_rejected_proposal_slash_value;
     decision_lambda = registry_DAO_decision_lambda;
     custom_entrypoints = Big_map.literal
       [ "lookup_registry", Bytes.pack lookup_registry

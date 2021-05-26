@@ -191,14 +191,14 @@ let unstake_tk(token_amount, addr, period, store : nat * address * period * stor
           ("NOT_ENOUGH_STAKED_TOKENS", ()) : storage)
 
 let unfreeze_proposer_and_voter_token
-  (rejected_proposal_return, is_accepted, proposal, period, fixed_fee, store :
+  (rejected_proposal_slash, is_accepted, proposal, period, fixed_fee, store :
     (proposal * contract_extra -> nat) * bool * proposal * period * nat * storage): storage =
   // unfreeze_proposer_token
   let (tokens, store) =
     if is_accepted
     then (proposal.proposer_frozen_token + fixed_fee, store)
     else
-      let slash_amount = rejected_proposal_return (proposal, store.extra) in
+      let slash_amount = rejected_proposal_slash (proposal, store.extra) in
       let frozen_tokens = proposal.proposer_frozen_token + fixed_fee in
       let desired_burn_amount = slash_amount + fixed_fee in
       let store = burn_frozen_token (desired_burn_amount, proposal.proposer, store) in
@@ -276,7 +276,7 @@ let handle_proposal_is_over
               && proposal.upvotes > proposal.downvotes
     in
     let store = unfreeze_proposer_and_voter_token
-          (config.rejected_proposal_return_value, cond, proposal, config.period, config.fixed_proposal_fee_in_token, store) in
+          (config.rejected_proposal_slash_value, cond, proposal, config.period, config.fixed_proposal_fee_in_token, store) in
     let (new_ops, store) =
       if cond
       then
@@ -316,7 +316,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
     || proposal_is_expired
   then
     let store = unfreeze_proposer_and_voter_token
-          ( config.rejected_proposal_return_value
+          ( config.rejected_proposal_slash_value
           , false // A dropped proposal is treated as rejected regardless of its actual votes
           , proposal
           , config.period

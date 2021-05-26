@@ -12,7 +12,7 @@ module Test.Ligo.BaseDAO.Proposal.Config
   , ConfigConstants (..)
   , configConsts
   , ProposalFrozenTokensCheck (..)
-  , RejectedProposalReturnValue (..)
+  , RejectedProposalSlashValue (..)
   , DecisionLambdaAction (..)
 
   , testConfig
@@ -97,8 +97,8 @@ configConsts = ConfigConstants Nothing Nothing Nothing Nothing Nothing Nothing
 data ProposalFrozenTokensCheck =
   ProposalFrozenTokensCheck (Lambda ("ppFrozenToken" :! Natural) Bool)
 
-data RejectedProposalReturnValue =
-  RejectedProposalReturnValue (Lambda ("proposerFrozenToken" :! Natural) ("slash_amount" :! Natural))
+data RejectedProposalSlashValue =
+  RejectedProposalSlashValue (Lambda ("proposerFrozenToken" :! Natural) ("slash_amount" :! Natural))
 
 proposalFrozenTokensMinBound :: Natural -> ProposalFrozenTokensCheck
 proposalFrozenTokensMinBound minTokens = ProposalFrozenTokensCheck $ do
@@ -109,8 +109,8 @@ proposalFrozenTokensMinBound minTokens = ProposalFrozenTokensCheck $ do
   else
     push False
 
-divideOnRejectionBy :: Natural -> RejectedProposalReturnValue
-divideOnRejectionBy divisor = RejectedProposalReturnValue $ do
+divideOnRejectionBy :: Natural -> RejectedProposalSlashValue
+divideOnRejectionBy divisor = RejectedProposalSlashValue $ do
   fromNamed #proposerFrozenToken
   push divisor
   swap
@@ -119,8 +119,8 @@ divideOnRejectionBy divisor = RejectedProposalReturnValue $ do
     push (0 :: Natural)
   toNamed #slash_amount
 
-doNonsenseOnRejection :: RejectedProposalReturnValue
-doNonsenseOnRejection = RejectedProposalReturnValue $ do
+doNonsenseOnRejection :: RejectedProposalSlashValue
+doNonsenseOnRejection = RejectedProposalSlashValue $ do
   drop; push (10 :: Natural)
   toNamed #slash_amount
 
@@ -162,13 +162,13 @@ voteConfig = ConfigDesc $
     { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 4 100) }
 
 configWithRejectedProposal
-  :: AreConfigDescsExt config '[RejectedProposalReturnValue]
+  :: AreConfigDescsExt config '[RejectedProposalSlashValue]
   => ConfigDesc config
 configWithRejectedProposal =
   ConfigDesc (divideOnRejectionBy 2)
 
 badRejectedValueConfig
-  :: AreConfigDescsExt config '[RejectedProposalReturnValue]
+  :: AreConfigDescsExt config '[RejectedProposalSlashValue]
   => ConfigDesc config
 badRejectedValueConfig = ConfigDesc doNonsenseOnRejection
 
@@ -217,13 +217,13 @@ instance IsConfigDescExt DAO.Config ProposalFrozenTokensCheck where
     , ..
     }
 
-instance IsConfigDescExt DAO.Config RejectedProposalReturnValue where
-  fillConfig (RejectedProposalReturnValue toReturnValue) DAO.Config'{..} =
+instance IsConfigDescExt DAO.Config RejectedProposalSlashValue where
+  fillConfig (RejectedProposalSlashValue toSlashValue) DAO.Config'{..} =
     DAO.Config'
-    { cRejectedProposalReturnValue = do
+    { cRejectedProposalSlashValue = do
         dip drop
         toField #plProposerFrozenToken; toNamed #proposerFrozenToken
-        framed toReturnValue
+        framed toSlashValue
     , ..
     }
 
