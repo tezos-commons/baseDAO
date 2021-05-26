@@ -146,6 +146,27 @@ test_RegistryDAO =
                baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
                & expectFailProposalCheck baseDao
 
+    , nettestScenarioCaps "proposal_check: fail when xtz transfer contains 0 mutez" $
+        withOriginated 2
+          (\(admin: wallet1:_) ->
+              initialStorageWithExplictRegistryDAOConfig admin [wallet1]
+                & setExtra @Natural [mt|min_xtz_amount|] 0
+          ) $
+          \(_:wallet1:_) _ baseDao _ -> do
+            let proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
+                  Transfer_proposal $
+                    TransferProposal 1 [ xtzTransferType 0 wallet1 ] []
+            let proposalSize = metadataSize proposalMeta
+            withSender wallet1 $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+
+            -- Advance one voting period to a proposing stage.
+            advanceTime (sec $ 11)
+
+            withSender wallet1 $ call baseDao (Call @"Propose")
+              (ProposeParams proposalSize proposalMeta)
+                & expectFailProposalCheck baseDao
+
     , nettestScenarioCaps "checks it fails if required tokens are not frozen" $
         withOriginated 2
           (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
