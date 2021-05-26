@@ -71,6 +71,18 @@ It simply applies all updates from the accepted proposal one by one.
 They are applied in the same order as specified in the proposal, the head of the
 list is applied first.
 
+# Proposal Check Errors
+
+Here is a summary of all the strings used as error messages thrown by `proposal_check`.
+
+| Error                                | Description                                                                                                 |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `ZERO_MUTEZ`                         | Xtz transfer amount cannot be 0                                                                             |
+| `LOW_XTZ`               | Xtz transfer amount cannot be smaller than 'min_xtz_amount'                                                 |
+| `HIGH_XTZ`               | Xtz transfer amount cannot be bigger than 'max_xtz_amount'                                                  |
+| `WRONG_TOKEN_AMOUNT`             | Incorrect token amounts locked                                                                              |
+| `LARGE_PROPOSAL`                 | Proposal size is bigger than 'max_proposal_size'                                                            |
+
 ## Custom entrypoints
 
 ### Lookup registry on-chain view

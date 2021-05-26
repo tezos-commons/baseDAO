@@ -602,7 +602,7 @@ newtype FixedFee = FixedFee Natural
   deriving anyclass IsoValue
 
 data Config' big_map = Config'
-  { cProposalCheck :: '[ProposeParams, ContractExtra' big_map] :-> '[Bool]
+  { cProposalCheck :: '[ProposeParams, ContractExtra' big_map] :-> '[()]
   , cRejectedProposalSlashValue :: '[Proposal, ContractExtra' big_map]
       :-> '["slash_amount" :! Natural]
   , cDecisionLambda :: '[Proposal, ContractExtra' big_map]
@@ -646,7 +646,7 @@ mkConfig
   -> Config
 mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent governanceTotalSupply = Config'
   { cProposalCheck = do
-      dropN @2; push True
+      dropN @2; push ()
   , cRejectedProposalSlashValue = do
       dropN @2; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
@@ -819,7 +819,7 @@ instance CustomErrorHasDoc "fORBIDDEN_XTZ" where
   customErrDocMdCause =
     "Received some XTZ as part of a contract call, which is forbidden"
 
-type instance ErrorArg "fAIL_PROPOSAL_CHECK" = NoErrorArg
+type instance ErrorArg "fAIL_PROPOSAL_CHECK" = MText
 
 instance CustomErrorHasDoc "fAIL_PROPOSAL_CHECK" where
   customErrClass = ErrClassActionException

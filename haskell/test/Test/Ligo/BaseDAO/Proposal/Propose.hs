@@ -176,8 +176,8 @@ rejectProposal originateFn = do
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
 
-  withSender dodOwner1 $ call dodDao (Call @"Propose") params
-    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
+  (withSender dodOwner1 $ call dodDao (Call @"Propose") params)
+    & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooSmallXtzErrMsg
 
 nonUniqueProposal
   :: (MonadNettest caps base m, HasCallStack)

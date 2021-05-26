@@ -82,6 +82,7 @@ test-suite baseDAO-test
   other-modules:
       Ligo.BaseDAO.Contract
       Test.Ligo.BaseDAO.Common
+      Test.Ligo.BaseDAO.Common.Errors
       Test.Ligo.BaseDAO.Common.StorageHelper
       Test.Ligo.BaseDAO.FA2
       Test.Ligo.BaseDAO.Management

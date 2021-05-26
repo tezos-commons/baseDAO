@@ -58,12 +58,6 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
 // -----------------------------------------------------------------
 
 [@inline]
-let check_is_proposal_valid (config, propose_params, store : config * propose_params * storage): storage =
-  if config.proposal_check (propose_params, store.extra)
-  then store
-  else (failwith("FAIL_PROPOSAL_CHECK") : storage)
-
-[@inline]
 let check_proposal_limit_reached (config, store : config * storage): storage =
   if config.max_proposals <= List.length store.proposal_key_list_sort_by_level
   then (failwith("MAX_PROPOSALS_REACHED") : storage)
@@ -248,7 +242,7 @@ let delete_proposal
   }
 
 let propose (param, config, store : propose_params * config * storage): return =
-  let store = check_is_proposal_valid (config, param, store) in
+  let _ : unit = config.proposal_check (param, store.extra) in
   let store = check_proposal_limit_reached (config, store) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
   let current_stage = get_current_stage_num(store.start_level, config.period) in
