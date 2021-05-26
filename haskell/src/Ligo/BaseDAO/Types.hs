@@ -456,12 +456,10 @@ type UnfreezeParam = ("amount" :! Natural)
 -- issue has been fixed:
 -- https://gitlab.com/morley-framework/morley/-/issues/527
 data ForbidXTZParam
-  = Accept_ownership ()
-  | Call_FA2 FA2.Parameter
+  = Call_FA2 FA2.Parameter
   | Drop_proposal ProposalKey
   | Flush Natural
   | Freeze FreezeParam
-  | Transfer_ownership TransferOwnershipParam
   | Unfreeze UnfreezeParam
   | Vote [PermitProtected VoteParam]
   deriving stock (Show)
@@ -470,6 +468,8 @@ data AllowXTZParam
   = CallCustom CallCustomParam
   | Propose ProposeParams
   | Transfer_contract_tokens TransferContractTokensParam
+  | Transfer_ownership TransferOwnershipParam
+  | Accept_ownership ()
   deriving stock (Show)
 
 data Parameter

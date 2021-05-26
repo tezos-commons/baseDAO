@@ -17,10 +17,8 @@ import Lorentz as L hiding (now, (>>))
 import Michelson.Runtime.GState (genesisAddress)
 import Michelson.Typed (convertContract)
 import Michelson.Typed.Convert (untypeValue)
-import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps)
-import Tezos.Core (unsafeMkMutez)
 import Util.Named
 
 import Ligo.BaseDAO.Contract
@@ -51,18 +49,7 @@ withOriginated addrCount storageFn tests = do
 test_BaseDAO_Management :: [TestTree]
 test_BaseDAO_Management =
   [ testGroup "Ownership transfer"
-    [ nettestScenarioCaps "Contract forbids XTZ transfer" $ do
-        now <- getNow
-        withOriginated 2 (\(owner:_) -> initialStorage now owner) $ \[owner, wallet1] baseDao ->
-          withSender owner $ transfer TransferData
-            { tdTo = unTAddress baseDao
-            , tdAmount = unsafeMkMutez 1
-            , tdEntrypoint = unsafeBuildEpName "transfer_ownership"
-            , tdParameter = (#newOwner .! wallet1)
-            }
-          & expectForbiddenXTZ baseDao
-
-    , nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $ do
+    [ nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $ do
         now <- getNow
         transferOwnership withOriginated (initialStorage now)
 
@@ -259,8 +246,3 @@ expectNotPendingOwner
   :: (MonadNettest caps base m, ToAddress addr)
   => addr -> m a -> m ()
 expectNotPendingOwner = expectCustomErrorNoArg #nOT_PENDING_ADMIN
-
-expectForbiddenXTZ
-  :: (MonadNettest caps base m, ToAddress addr)
-  => addr -> m a -> m ()
-expectForbiddenXTZ = expectCustomErrorNoArg #fORBIDDEN_XTZ

@@ -264,8 +264,6 @@ type transfer_contract_tokens_param =
 type forbid_xtz_params =
   | Call_FA2 of fa2_parameter
   | Drop_proposal of proposal_key
-  | Transfer_ownership of transfer_ownership_param
-  | Accept_ownership of unit
   | Vote of vote_param_permited list
   | Flush of nat
   | Freeze of freeze_param
@@ -278,6 +276,8 @@ type allow_xtz_params =
   | CallCustom of custom_ep_param
   | Propose of propose_params
   | Transfer_contract_tokens of transfer_contract_tokens_param
+  | Transfer_ownership of transfer_ownership_param
+  | Accept_ownership of unit
 
 (*
  * Full parameter of the contract.

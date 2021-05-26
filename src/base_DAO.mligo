@@ -22,8 +22,6 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     match param with
     | Call_FA2 (p)           -> call_fa2(p, store)
     | Drop_proposal (p)      -> drop_proposal(p, config, store)
-    | Transfer_ownership (p) -> transfer_ownership(p, store)
-    | Accept_ownership       -> accept_ownership(store)
     | Vote (p)               -> vote(p, config, store)
     | Flush (p)              -> flush (p, config, store)
     | Freeze p               -> freeze(p, config, store)
@@ -38,6 +36,8 @@ let allowing_xtz (param, store, config : allow_xtz_params * storage * config) =
   | CallCustom p               -> call_custom(p, store, config)
   | Propose (p)                -> propose(p, config, store)
   | Transfer_contract_tokens p -> transfer_contract_tokens(p, store)
+  | Transfer_ownership (p)     -> transfer_ownership(p, store)
+  | Accept_ownership           -> accept_ownership(store)
 
 (*
  * The actual DAO contract, which in this version is the same independently from
