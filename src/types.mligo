@@ -304,6 +304,7 @@ type initial_config_data =
   { max_quorum : quorum_threshold
   ; min_quorum : quorum_threshold
   ; quorum_threshold : quorum_threshold
+  ; max_votes : nat
   ; period : period
   ; proposal_flush_time: seconds
   ; proposal_expired_time: seconds
