@@ -50,44 +50,44 @@ test_BaseDAO_Management :: [TestTree]
 test_BaseDAO_Management =
   [ testGroup "Ownership transfer"
     [ nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $ do
-        now <- getNow
+        now <- getLevel
         transferOwnership withOriginated (initialStorage now)
 
     , nettestScenarioCaps "sets pending owner" $ do
-        now <- getNow
+        now <- getLevel
         transferOwnership withOriginated (initialStorage now)
 
     , nettestScenarioCaps "does not set administrator" $ do
-        now <- getNow
+        now <- getLevel
         notSetAdmin withOriginated (initialStorage now)
 
     , nettestScenarioCaps "rewrite existing pending owner" $ do
-        now <- getNow
+        now <- getLevel
         rewritePendingOwner withOriginated (initialStorage now)
 
     , nettestScenarioCaps "invalidates pending owner if new owner is current admin" $ do
-        now <- getNow
+        now <- getLevel
         invalidatePendingOwner withOriginated (initialStorage now)
 
     , nettestScenarioCaps "bypasses accept_entrypoint if new admin address is self" $ do
-        now <- getNow
+        now <- getLevel
         bypassAcceptForSelf withOriginated (initialStorage now)
     ]
     , testGroup "Accept Ownership"
       [ nettestScenarioCaps "authenticates the sender" $ do
-          now <- getNow
+          now <- getLevel
           authenticateSender withOriginated (initialStorage now)
 
       , nettestScenarioCaps "changes the administrator to pending owner" $ do
-          now <- getNow
+          now <- getLevel
           changeToPendingAdmin withOriginated (initialStorage now)
 
       , nettestScenarioCaps "throws error when there is no pending owner" $ do
-          now <- getNow
+          now <- getLevel
           noPendingAdmin withOriginated (initialStorage now)
 
       , nettestScenarioCaps "throws error when called by current admin, when pending owner is not the same" $ do
-          now <- getNow
+          now <- getLevel
           pendingOwnerNotTheSame withOriginated (initialStorage now)
       ]
   ]
@@ -103,11 +103,11 @@ test_BaseDAO_Management =
         (L.dip (L.toField #fsStorage) # setField #sAdmin) #
       L.nil # pair
 
-    initialStorage now admin = mkFullStorage
+    initialStorage currentLevel admin = mkFullStorage
       ! #admin admin
       ! #extra dynRecUnsafe
       ! #metadata mempty
-      ! #now now
+      ! #level currentLevel
       ! #tokenAddress genesisAddress
       ! #customEps
           [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)

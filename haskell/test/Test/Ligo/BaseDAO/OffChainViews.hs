@@ -35,7 +35,7 @@ offChainViewStorage =
   ! #admin addr
   ! #extra dynRecUnsafe
   ! #metadata mempty
-  ! #now (timestampFromSeconds 0)
+  ! #level 100
   ! #tokenAddress genesisAddress
   ! #quorumThreshold (mkQuorumThreshold 1 100)
   ! defaults

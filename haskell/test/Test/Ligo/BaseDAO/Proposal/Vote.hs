@@ -11,7 +11,6 @@ module Test.Ligo.BaseDAO.Proposal.Vote
 import Universum
 
 import Lorentz hiding ((>>))
-import Lorentz.Test hiding (withSender)
 import Morley.Nettest
 import Util.Named
 
@@ -34,7 +33,7 @@ voteNonExistingProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
   -- Create sample proposal
   _ <- createSampleProposal 1 dodOwner1 dodDao
   let params = NoPermit VoteParam
@@ -43,7 +42,7 @@ voteNonExistingProposal originateFn = do
         , vProposalKey = UnsafeHash "\11\12\13"
         }
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
     & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
@@ -61,7 +60,7 @@ voteMultiProposals originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 5)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -80,7 +79,7 @@ voteMultiProposals originateFn = do
         ]
 
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
   checkTokenBalance (frozenTokenId) dodDao dodOwner2 105
   -- TODO [#31]: check storage if the vote update the proposal properly
@@ -98,7 +97,7 @@ voteOutdatedProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -110,11 +109,11 @@ voteOutdatedProposal originateFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   withSender dodOwner2 $ do
     call dodDao (Call @"Vote") [params]
     -- Advance two voting period to another voting stage.
-    advanceTime (sec 25)
+    advanceLevel (2 * dodPeriod)
     call dodDao (Call @"Vote") [params]
       & expectCustomErrorNoArg #vOTING_STAGE_OVER dodDao

@@ -4,11 +4,11 @@
 #include "types.mligo"
 #include "proposal.mligo"
 
-let validate_proposal_flush_expired_time (data : initial_config_data) : unit =
-  if data.proposal_expired_time <= data.proposal_flush_time then
-    failwith("'proposal_expired_time' needs to be bigger than 'proposal_flush_time'.")
-  else if data.proposal_flush_time <= (data.period.length * 2n) then
-    failwith("'proposal_flush_time' needs to be more than twice the 'period' length.")
+let validate_proposal_flush_expired_level (data : initial_config_data) : unit =
+  if data.proposal_expired_level.blocks <= data.proposal_flush_level.blocks then
+    failwith("proposal_expired_level needs to be bigger than proposal_flush_level")
+  else if data.proposal_flush_level.blocks <= (data.period.blocks * 2n) then
+    failwith("proposal_flush_level needs to be more than twice the voting_period length")
   else unit
 
 let validate_max_votes (data : initial_config_data) : unit =
@@ -26,7 +26,7 @@ let validate_quorum_threshold_bound (data : initial_config_data) : unit =
     unit
 
 let default_config (data : initial_config_data) : config =
-  let _ : unit = validate_proposal_flush_expired_time(data) in
+  let _ : unit = validate_proposal_flush_expired_level(data) in
   let _ : unit = validate_max_votes(data) in
   let _ : unit = validate_quorum_threshold_bound(data) in {
     proposal_check = (fun (_params, _extras : propose_params * contract_extra) -> true);
@@ -41,8 +41,8 @@ let default_config (data : initial_config_data) : config =
     max_quorum_change = to_signed(data.max_quorum_change);
     quorum_change = to_signed(data.quorum_change);
     governance_total_supply = data.governance_total_supply;
-    proposal_flush_time = data.proposal_flush_time;
-    proposal_expired_time = data.proposal_expired_time;
+    proposal_flush_level = data.proposal_flush_level;
+    proposal_expired_level = data.proposal_expired_level;
     custom_entrypoints = (Big_map.empty : custom_entrypoints);
   }
 
@@ -74,7 +74,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     metadata = data.metadata_map;
     extra = (Big_map.empty : (string, bytes) big_map);
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
-    proposal_key_list_sort_by_date = (Set.empty : (timestamp * proposal_key) set);
+    proposal_key_list_sort_by_level = (Set.empty : (blocks * proposal_key) set);
     permits_counter = 0n;
     freeze_history = (Big_map.empty : freeze_history);
     total_supply = List.fold total_supply_constructor data.ledger_lst (Map.literal
@@ -82,7 +82,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
       ]
     );
     frozen_token_id = frozen_token_id;
-    start_time = data.now_val;
+    start_level = data.current_level;
     quorum_threshold_at_cycle =
       { last_updated_cycle = 1n
       // We use 1 here so that the initial quorum will be used for proposals raised in stage 1

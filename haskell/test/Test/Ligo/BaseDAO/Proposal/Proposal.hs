@@ -11,8 +11,6 @@ module Test.Ligo.BaseDAO.Proposal.Proposal
 
 import Universum
 
-import Time (sec)
-
 import Lorentz hiding ((>>))
 import Morley.Nettest
 import Util.Named
@@ -42,7 +40,7 @@ validProposal originateFn getTotalSupplyFn = do
     (toVal [[FA2.TransferItem { tiFrom = dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]])
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
@@ -65,7 +63,7 @@ rejectProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
     & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
@@ -80,7 +78,7 @@ nonUniqueProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
   _ <- createSampleProposal 1 dodOwner1 dodDao
   createSampleProposal 1 dodOwner1 dodDao
     & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dodDao
@@ -98,7 +96,7 @@ voteValidProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   -- Create sample proposal (first proposal has id = 0)
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -109,7 +107,7 @@ voteValidProposal originateFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dodDao dodOwner2 102
   -- TODO [#31]: check if the vote is updated properly
