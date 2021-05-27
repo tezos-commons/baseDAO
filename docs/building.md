@@ -48,10 +48,11 @@ make out/trivialDAO_storage.tz \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
+  max_votes=1000n \
   period=950400n \
   quorum_change=5n \
   max_quorum_change=19n \
-  governance_total_supply=100n \
+  governance_total_supply=1000n \
   proposal_flush_time=1900801n \
   proposal_expired_time=2851200n
 ```
@@ -87,12 +88,13 @@ make out/registryDAO_storage.tz \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
+  max_votes=1000n \
   period=950400n \
   quorum_change=5n \
   max_quorum_change=19n \
   proposal_flush_time=1900801n \
   proposal_expired_time=2851200n \
-  governance_total_supply=100n
+  governance_total_supply=1000n
 ```
 
 The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
@@ -123,12 +125,13 @@ make out/treasuryDAO_storage.tz \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
+  max_votes=1000n \
   period=950400n \
   quorum_change=5n \
   max_quorum_change=19n \
   proposal_flush_time=1900801n \
   proposal_expired_time=2851200n \
-  governance_total_supply=100n
+  governance_total_supply=1000n
 ```
 
 The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
