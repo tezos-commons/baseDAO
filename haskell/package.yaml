@@ -149,7 +149,6 @@ tests:
     - morley-metadata
     - morley-prelude
     - named
-    - o-clock
     - tasty
     - tasty-hunit-compat
     - universum

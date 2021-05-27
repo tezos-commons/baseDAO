@@ -48,7 +48,7 @@ checkFreezeHistoryTracking  = do
   let frozen_scale_value = 2
   let frozen_extra_value = 10
 
-  now <- use isNow
+  currentLevel <- use isLevel
 
   withOriginated 2 (\(admin:_) -> do
     dodTokenContract <- lOriginate dummyFA2Contract "TokenContract" [] (toMutez 0)
@@ -58,7 +58,7 @@ checkFreezeHistoryTracking  = do
       ! #quorumThreshold (mkQuorumThreshold 10 100)
       ! #extra dynRecUnsafe
       ! #metadata mempty
-      ! #now now
+      ! #level currentLevel
       ! #tokenAddress (unTAddress dodTokenContract)
       ! #maxChangePercent 19
       ! #changePercent 5
@@ -74,7 +74,7 @@ checkFreezeHistoryTracking  = do
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "freeze") (toVal requiredFrozen)
 
         -- Advance one voting period to a proposing stage.
-        rewindTime 11
+        increaseLevel 11
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "propose") (toVal (ProposeParams requiredFrozen proposalMeta1))
 
@@ -89,7 +89,7 @@ checkFreezeHistoryTracking  = do
             when (fh /= (Just expected)) $ Left $ CustomTestError "BaseDAO contract did not stake tokens as expected"
 
         -- Advance two voting periods to another proposing stage.
-        rewindTime 21
+        increaseLevel 21
 
         tTransfer  (#from .! admin) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "flush") (toVal (1 :: Natural))
 
@@ -129,7 +129,7 @@ calculateThreshold (QuorumFraction mcp) (QuorumFraction cp) (GovernanceTotalSupp
 
 checkQuorumThresholdDynamicUpdate :: IntegrationalScenarioM ()
 checkQuorumThresholdDynamicUpdate  = do
-  now <- use isNow
+  currentLevel <- use isLevel
 
   withOriginated 2 (\(admin:_) -> do
     tokenContract <- lOriginate dummyFA2Contract "TokenContract" [] (toMutez 0)
@@ -139,7 +139,7 @@ checkQuorumThresholdDynamicUpdate  = do
       ! #quorumThreshold (mkQuorumThreshold 3 10)
       ! #extra dynRecUnsafe
       ! #metadata mempty
-      ! #now now
+      ! #level currentLevel
       ! #tokenAddress (unTAddress tokenContract)
       ! #maxChangePercent 19
       ! #changePercent 5
@@ -152,7 +152,7 @@ checkQuorumThresholdDynamicUpdate  = do
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "freeze") (toVal (2 * requiredFrozen))
 
-        rewindTime 11
+        increaseLevel 11
         -- First proposal period, cycle 0
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "propose") (toVal (ProposeParams requiredFrozen proposalMeta1))
@@ -164,7 +164,7 @@ checkQuorumThresholdDynamicUpdate  = do
               Left $ CustomTestError ("BaseDAO contract updated quorum threshold unexpectedly" <> (show qs))
 
         -- skip this proposal period and next voting period to be in next proposal period
-        rewindTime 21 -- cycle 2
+        increaseLevel 21 -- cycle 2
 
         let proposalMeta2 = "A"
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "propose") (toVal (ProposeParams requiredFrozen proposalMeta2))
@@ -181,7 +181,7 @@ checkQuorumThresholdDynamicUpdate  = do
 
 checkQuorumThresholdDynamicUpdateUpperBound :: IntegrationalScenarioM ()
 checkQuorumThresholdDynamicUpdateUpperBound  = do
-  now <- use isNow
+  currentLevel <- use isLevel
 
   withOriginated 2 (\(admin:_) -> do
     tokenContract <- lOriginate dummyFA2Contract "TokenContract" [] (toMutez 0)
@@ -191,7 +191,7 @@ checkQuorumThresholdDynamicUpdateUpperBound  = do
       ! #quorumThreshold (mkQuorumThreshold 3 10)
       ! #extra dynRecUnsafe
       ! #metadata mempty
-      ! #now now
+      ! #level currentLevel
       ! #tokenAddress (unTAddress tokenContract)
       ! #maxChangePercent 7
       ! #changePercent 5
@@ -204,11 +204,11 @@ checkQuorumThresholdDynamicUpdateUpperBound  = do
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "freeze") (toVal (2 * requiredFrozen))
 
-        rewindTime 11
+        increaseLevel 11
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "propose") (toVal (ProposeParams requiredFrozen proposalMeta1))
 
-        rewindTime 21
+        increaseLevel 21
         let proposalMeta2 = "A"
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "propose") (toVal (ProposeParams requiredFrozen proposalMeta2))
 
@@ -227,7 +227,7 @@ checkQuorumThresholdDynamicUpdateUpperBound  = do
 
 checkQuorumThresholdDynamicUpdateLowerBound :: IntegrationalScenarioM ()
 checkQuorumThresholdDynamicUpdateLowerBound  = do
-  now <- use isNow
+  currentLevel <- use isLevel
 
   withOriginated 2 (\(admin:_) -> do
     tokenContract <- lOriginate dummyFA2Contract "TokenContract" [] (toMutez 0)
@@ -237,7 +237,7 @@ checkQuorumThresholdDynamicUpdateLowerBound  = do
       ! #quorumThreshold (mkQuorumThreshold 3 10)
       ! #extra dynRecUnsafe
       ! #metadata mempty
-      ! #now now
+      ! #level currentLevel
       ! #tokenAddress (unTAddress tokenContract)
       ! #maxChangePercent 19
       ! #changePercent 25
@@ -250,7 +250,7 @@ checkQuorumThresholdDynamicUpdateLowerBound  = do
 
         -- We raise no proposals here, so participation for calculating next quorum would be zero.
 
-        rewindTime 31
+        increaseLevel 31
         let proposalMeta2 = "A"
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "propose") (toVal (ProposeParams requiredFrozen proposalMeta2))
 
@@ -269,7 +269,7 @@ checkQuorumThresholdDynamicUpdateLowerBound  = do
 
 checkProposalSavesQuorum :: IntegrationalScenarioM ()
 checkProposalSavesQuorum  = do
-  now <- use isNow
+  currentLevel <- use isLevel
 
   withOriginated 2 (\(admin:_) -> do
     tokenContract <- lOriginate dummyFA2Contract "TokenContract" [] (toMutez 0)
@@ -279,7 +279,7 @@ checkProposalSavesQuorum  = do
       ! #quorumThreshold (mkQuorumThreshold 3 10)
       ! #extra dynRecUnsafe
       ! #metadata mempty
-      ! #now now
+      ! #level currentLevel
       ! #tokenAddress (unTAddress tokenContract)
       ! #maxChangePercent 19
       ! #changePercent 5
@@ -292,7 +292,7 @@ checkProposalSavesQuorum  = do
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "freeze") (toVal (2 * requiredFrozen))
 
-        rewindTime 11
+        increaseLevel 11
         -- First proposal period, cycle 0
 
         tTransfer  (#from .! wallet1) (#to .! (unTAddress baseDao)) zeroMutez (unsafeBuildEpName "propose") (toVal (ProposeParams requiredFrozen proposalMeta1))
@@ -304,7 +304,7 @@ checkProposalSavesQuorum  = do
               Left $ CustomTestError ("BaseDAO contract updated quorum threshold unexpectedly")
 
         -- skip this proposal period and next voting period to be in next proposal period
-        rewindTime 21 -- cycle 2
+        increaseLevel 21 -- cycle 2
 
         let proposalMeta2 = "A"
         let proposeParams = ProposeParams requiredFrozen proposalMeta2

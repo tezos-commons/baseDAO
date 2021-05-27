@@ -57,6 +57,7 @@ data DaoOriginateData = DaoOriginateData
   , dodTokenContract :: TAddress FA2.Parameter
   , dodAdmin :: Address
   , dodGuardian :: TAddress (Address, ProposalKey)
+  , dodPeriod :: Natural
   }
 
 -- | A dummy contract with FA2 parameter that remembers the
@@ -203,7 +204,7 @@ originateLigoDaoWithBalance extra config balFunc = do
         , (#owner .! owner2, #operator .! operator2, #token_id .! unfrozenTokens)
         ]
 
-  now <- getNow
+  currentLevel <- getLevel
   tokenContract <- originateSimple "TokenContract" [] dummyFA2Contract
   guardianContract <- originateSimple "guardian" () dummyGuardianContract
 
@@ -214,7 +215,7 @@ originateLigoDaoWithBalance extra config balFunc = do
               ! #admin admin
               ! #metadata mempty
               ! #tokenAddress (unTAddress tokenContract)
-              ! #now now
+              ! #level currentLevel
               ! #quorumThreshold (fromIntegral $ cMinQuorumThreshold config)
             )
             { sLedger = bal
@@ -236,7 +237,8 @@ originateLigoDaoWithBalance extra config balFunc = do
 
   let dao = TAddress @Parameter daoUntyped
 
-  pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract admin guardianContract
+  pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract
+      admin guardianContract (unPeriod $ cPeriod config)
 
 originateLigoDaoWithConfig
  :: MonadNettest caps base m

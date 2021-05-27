@@ -13,7 +13,6 @@ import Universum
 import qualified Data.ByteString as BS
 import qualified Data.Map as Map
 import Test.Tasty (TestTree, testGroup)
-import Time (sec)
 
 import Lorentz as L
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
@@ -93,14 +92,14 @@ withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
   dodTokenContract <- originateSimple "token_contract" [] dummyFA2Contract
   let storageInitial = storageFn addresses
-  now_time <- getNow
+  now_level <- getLevel
   let storage = storageInitial
         { fsStorage = (fsStorage storageInitial)
           { sGovernanceToken = GovernanceToken
             { gtAddress = unTAddress dodTokenContract
             , gtTokenId = FA2.theTokenId
             }
-          , sStartTime = now_time
+          , sStartLevel = now_level
           }
         }
 
@@ -112,6 +111,9 @@ withOriginated addrCount storageFn tests = do
     }
   tests addresses storage (TAddress baseDao) dodTokenContract
 
+toPeriod :: FullStorage -> Natural
+toPeriod = unPeriod . cPeriod . fsConfig
+
 -- | We test non-token entrypoints of the BaseDAO contract here
 test_RegistryDAO :: [TestTree]
 test_RegistryDAO =
@@ -119,7 +121,7 @@ test_RegistryDAO =
     [ nettestScenarioOnEmulatorCaps "Calling the propose endpoint with an empty proposal works" $
         withOriginated 2
           (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
-          \(_:wallet1:_) _ baseDao _ -> do
+          \(_:wallet1:_) fs baseDao _ -> do
             let proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
                   Transfer_proposal $ TransferProposal 1 [] []
             let proposalSize = metadataSize proposalMeta
@@ -127,7 +129,7 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
 
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec $ 11)
+            advanceLevel (toPeriod fs)
 
             withSender wallet1 $ call baseDao (Call @"Propose")
               (ProposeParams proposalSize proposalMeta)
@@ -161,7 +163,7 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
 
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec $ 11)
+            advanceLevel 11
 
             withSender wallet1 $ call baseDao (Call @"Propose")
               (ProposeParams proposalSize proposalMeta)
@@ -183,7 +185,7 @@ test_RegistryDAO =
     , nettestScenarioOnEmulatorCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
           (\(admin: wallet1:_) -> setExtra @Natural [mt|frozen_extra_value|] 2 $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
-          \(_:wallet1:_) _ baseDao _ -> do
+          \(_:wallet1:_) fs baseDao _ -> do
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
                 Transfer_proposal $ TransferProposal 1 [] []
@@ -191,7 +193,7 @@ test_RegistryDAO =
 
             withSender wallet1 $
               call baseDao (Call @"Freeze") (#amount .! (proposalSize + 2))
-            advanceTime (sec $ 11)
+            advanceLevel (toPeriod fs)
 
             -- Here the proposal size and the configuration params frozen_scale_value,
             -- frozen_extra_value set to 1 and 2 means that it requires 12 tokens to be
@@ -211,7 +213,7 @@ test_RegistryDAO =
             setExtra @Natural [mt|slash_scale_value|] slash_scale_value $
             setExtra @Natural [mt|slash_division_value|] slash_division_value $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
 
-          \(admin: wallet1: _) _ baseDao _ -> let
+          \(admin: wallet1: _) (toPeriod -> period) baseDao _ -> let
             proposalMeta1 = lPackValueRaw @RegistryDaoProposalMetadata $
               Transfer_proposal $ TransferProposal 1 [] []
             proposalSize1 = metadataSize proposalMeta1
@@ -223,13 +225,13 @@ test_RegistryDAO =
                 call baseDao (Call @"Freeze") (#amount .! requiredFrozen)
 
               -- Advance one voting period to a proposing stage.
-              advanceTime (sec 11)
+              advanceLevel period
 
               withSender wallet1 $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
 
               -- Advance two voting periods to another proposing stage.
-              advanceTime (sec $ 22 + 1) -- 22 is `proposal_flush_time`
+              advanceLevel (2 * period + 1) -- 22 is `proposal_flush_time`
               withSender admin $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -261,7 +263,7 @@ test_RegistryDAO =
             setExtra @Natural [mt|max_proposal_size|] 200 $
             setExtra @Natural [mt|slash_division_value|] slash_division_value $ initialStorageWithExplictRegistryDAOConfig admin [wallet1, voter1]) $
 
-          \(admin: wallet1: voter1 : _) _ baseDao _ -> let
+          \(admin: wallet1: voter1 : _) (toPeriod -> period) baseDao _ -> let
             -- We currently have max_proposal_size of 200, but the following proposal is 341 bytes long.
             largeProposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
               Transfer_proposal $ TransferProposal 1 [] $
@@ -278,7 +280,7 @@ test_RegistryDAO =
                 call baseDao (Call @"Freeze") (#amount .! 100)
 
               -- Advance one voting period to a proposing stage.
-              advanceTime (sec 11)
+              advanceLevel period
 
               -- We expect this to fail because max_proposal_size is 200 and proposal size is 341.
               withSender wallet1 $
@@ -301,14 +303,14 @@ test_RegistryDAO =
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1)
 
               -- Advance one voting period to a voting stage.
-              advanceTime (sec 11)
+              advanceLevel period
               -- Then we send 60 upvotes for the proposal (as min quorum is 1% of 500)
               let proposalKey = makeProposalKey (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
               withSender voter1 $
                 call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 60) Nothing]
 
               -- Advance one voting period to a proposing stage.
-              advanceTime (sec $ 11 + 1)
+              advanceLevel (period + 1)
               withSender admin $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -322,7 +324,7 @@ test_RegistryDAO =
           (\(admin: wallet1: voter1:_) -> setExtra @Natural [mt|max_proposal_size|] 200 $
               initialStorageWithExplictRegistryDAOConfig admin [wallet1, voter1]) $
 
-          \(admin: wallet1: voter1 : _) _fs baseDao _ -> do
+          \(admin: wallet1: voter1 : _) (toPeriod -> period) baseDao _ -> do
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
                 Transfer_proposal $ TransferProposal 1 [] [([mt|key|], Just [mt|testVal|])]
@@ -335,7 +337,7 @@ test_RegistryDAO =
             withSender voter1 $
               call baseDao (Call @"Freeze") (#amount .! 50)
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec 13)
+            advanceLevel period
 
             let requiredFrozen = proposalSize -- since frozen_scale_value and frozen_scale_value are 1 and 0.
 
@@ -344,14 +346,14 @@ test_RegistryDAO =
               call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta)
 
             -- Advance one voting period to a voting stage.
-            advanceTime (sec 12)
+            advanceLevel period
             -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
             let proposalKey = makeProposalKey (ProposeParams requiredFrozen proposalMeta) wallet1
             withSender voter1 $
               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50) Nothing]
 
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec 12)
+            advanceLevel (period + 1)
             withSender admin $
               call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -367,7 +369,7 @@ test_RegistryDAO =
           (\(admin : wallets) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin wallets) $
-          \[admin, wallet1, wallet2] _ baseDao dodTokenContract -> do
+          \[admin, wallet1, wallet2] (toPeriod -> period) baseDao dodTokenContract -> do
 
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
@@ -384,7 +386,7 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount .! 20)
 
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec 13)
+            advanceLevel period
 
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
@@ -400,10 +402,10 @@ test_RegistryDAO =
                   }
 
             -- Advance one voting period to a voting stage.
-            advanceTime (sec 12)
+            advanceLevel period
             withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec 11)
+            advanceLevel (period + 1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
             checkTokenBalance frozenTokenId baseDao wallet1 (defaultTokenBalance + proposalSize)
@@ -420,7 +422,7 @@ test_RegistryDAO =
           (\(admin : wallets) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin wallets) $
-          \[_, wallet] _ baseDao _ -> do
+          \[_, wallet] (toPeriod -> period) baseDao _ -> do
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
                 Transfer_proposal $
@@ -435,7 +437,7 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
 
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec 10)
+            advanceLevel period
 
             -- Fails because 10 >= max_xtz_amount
             withSender wallet $
@@ -445,8 +447,8 @@ test_RegistryDAO =
             withSender wallet $
               call baseDao (Call @"Freeze") (#amount .! proposalSize2)
 
-            -- Advance one voting period to a voting stage.
-            advanceTime (sec 10)
+            -- Advance two voting period to another proposing stage.
+            advanceLevel (2*period)
 
             withSender wallet $
               call baseDao (Call @"Propose") (ProposeParams proposalSize2 proposalMeta2)
@@ -458,7 +460,7 @@ test_RegistryDAO =
           (\(admin : wallets) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin wallets) $
-          \[admin, wallet1, wallet2] _ baseDao dodTokenContract -> do
+          \[admin, wallet1, wallet2] (toPeriod -> period) baseDao dodTokenContract -> do
 
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
@@ -475,7 +477,7 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount .! 50)
 
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec 13)
+            advanceLevel period
 
             -- We propose the addition of a new registry key *and* a token transfer
             withSender wallet1 $
@@ -484,14 +486,13 @@ test_RegistryDAO =
             checkTokenBalance frozenTokenId baseDao wallet1 proposalSize
 
             -- Advance one voting period to a voting stage.
-            advanceTime (sec 12)
+            advanceLevel period
             -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
             let proposalKey = makeProposalKey (ProposeParams proposalSize proposalMeta) wallet1
             withSender wallet2 $
               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50) Nothing]
 
-            -- Advance one voting period to a proposing stage.
-            advanceTime (sec 11)
+            advanceLevel (period+1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
             -- check the registry update
@@ -515,7 +516,7 @@ test_RegistryDAO =
           (\(admin : wallets) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin wallets) $
-          \[admin, wallet1, wallet2] _ baseDao _ -> do
+          \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
             sendXtz (toAddress baseDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
             let
@@ -531,7 +532,7 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount .! 10)
 
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec 11)
+            advanceLevel period
 
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
@@ -547,10 +548,10 @@ test_RegistryDAO =
                 }
 
             -- Advance one voting period to a voting stage.
-            advanceTime (sec 11)
+            advanceLevel period
             withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
             -- Advance one voting period to a proposing stage.
-            advanceTime (sec 10)
+            advanceLevel (period+1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
     ]
   ]

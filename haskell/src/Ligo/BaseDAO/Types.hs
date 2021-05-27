@@ -427,7 +427,7 @@ type CustomEntrypoints = CustomEntrypoints' BigMap
 data Proposal = Proposal
   { plUpvotes                 :: Natural
   , plDownvotes               :: Natural
-  , plStartDate               :: Timestamp
+  , plStartLevel              :: Natural
   , plVotingStageNum          :: Natural
 
   , plMetadata                :: ProposalMetadata
@@ -515,11 +515,11 @@ data Storage' big_map = Storage'
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
   , sProposals :: big_map ProposalKey Proposal
-  , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKey)
+  , sProposalKeyListSortByDate :: Set (Natural, ProposalKey)
   , sGovernanceToken :: GovernanceToken
   , sTotalSupply :: TotalSupply
   , sFreezeHistory :: big_map Address AddressFreezeHistory
-  , sStartTime :: Timestamp
+  , sStartLevel :: Natural
   , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
   }
 
@@ -555,11 +555,11 @@ mkStorage
   :: "admin" :! Address
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
-  -> "now" :! Timestamp
+  -> "level" :! Natural
   -> "tokenAddress" :! Address
   -> "quorumThreshold" :! QuorumThreshold
   -> Storage
-mkStorage admin extra metadata now tokenAddress qt =
+mkStorage admin extra metadata lvl tokenAddress qt =
   Storage'
     { sAdmin = arg #admin admin
     , sGuardian = arg #admin admin
@@ -577,7 +577,7 @@ mkStorage admin extra metadata now tokenAddress qt =
         }
     , sTotalSupply = M.fromList [(frozenTokenId, 0)]
     , sFreezeHistory = mempty
-    , sStartTime = arg #now now
+    , sStartLevel = arg #level lvl
     , sFrozenTokenId = frozenTokenId
     , sQuorumThresholdAtCycle = QuorumThresholdAtCycle 1 (arg #quorumThreshold qt) 0
     }
@@ -703,12 +703,12 @@ mkFullStorage
   -> "governanceTotalSupply" :? GovernanceTotalSupply
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
-  -> "now" :! Timestamp
+  -> "level" :! Natural
   -> "tokenAddress" :! Address
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
-mkFullStorage admin vp qt mcp cp gts extra mdt now tokenAddress cEps = FullStorage'
-  { fsStorage = mkStorage admin extra mdt now tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
+mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress cEps = FullStorage'
+  { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
       (argDef #votingPeriod votingPeriodDef vp) 0 (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply 100 gts)
   }

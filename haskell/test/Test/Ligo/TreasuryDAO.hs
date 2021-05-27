@@ -14,7 +14,6 @@ import Michelson.Untyped.Entrypoints
 import Morley.Nettest
 import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
-import Time (sec)
 import Util.Named
 
 import Ligo.BaseDAO.Common.Types
@@ -84,7 +83,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
@@ -118,7 +117,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting periods to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams dodOwner1
@@ -133,10 +132,10 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   checkTokenBalance frozenTokenId dodDao dodOwner1 proposalSize
@@ -165,7 +164,7 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $ do
   -- due to smaller than min_xtz_amount
@@ -189,10 +188,10 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel dodPeriod
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: check xtz balance
@@ -220,7 +219,7 @@ proposalCheckFailZeroMutez = uncapsNettest $ withFrozenCallStack do
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (sec 10)
+  advanceLevel 10
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
