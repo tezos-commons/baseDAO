@@ -24,16 +24,16 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
   | None -> (failwith("PROPOSAL_NOT_EXIST") : proposal)
 
 // Gets the current stage counting how many `period` s have passed since
-// the 'started_on` timestamp. The stages are zero-indexed.
-let get_current_stage_num(start_time, period : timestamp * period) : nat =
-  match is_nat((Tezos.now - start_time) : int) with
-  | Some (elapsed_time) -> elapsed_time/period.length
+// the 'started_level`. The stages are zero-index.
+let get_current_stage_num(start, vp : blocks * period) : nat =
+  match is_nat((Tezos.level - start.blocks) : int) with
+  | Some (elapsed_levels) -> elapsed_levels/vp.blocks
   | None -> ([%Michelson ({| { FAILWITH } |} : string * unit -> nat)]
       ("BAD_STATE", ()))
 
 [@inline]
-let ensure_proposal_stage (proposal, period, store : proposal * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_time, period) in
+let ensure_proposal_voting_stage (proposal, voting_period, store : proposal * period * storage): storage =
+  let current_stage = get_current_stage_num(store.start_level, voting_period) in
   if current_stage = proposal.voting_stage_num
   then store
   else (failwith("VOTING_STAGE_OVER") : storage)
@@ -65,7 +65,7 @@ let check_is_proposal_valid (config, propose_params, store : config * propose_pa
 
 [@inline]
 let check_proposal_limit_reached (config, store : config * storage): storage =
-  if config.max_proposals <= List.length store.proposal_key_list_sort_by_date
+  if config.max_proposals <= List.length store.proposal_key_list_sort_by_level
   then (failwith("MAX_PROPOSALS_REACHED") : storage)
   else store
 
@@ -82,7 +82,7 @@ let freeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, gover
   (operation, ledger, total_supply)
 
 let stake_tk(token_amount, addr, period, store : nat * address * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_time, period) in
+  let current_stage = get_current_stage_num(store.start_level, period) in
   let new_cycle_staked = store.quorum_threshold_at_cycle.staked + token_amount in
   let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
@@ -110,13 +110,12 @@ let unfreeze_on_ledger (tokens, addr, ledger, total_supply, frozen_token_id, gov
 
 let add_proposal (propose_params, period, store : propose_params * period * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
-  let current_stage = get_current_stage_num(store.start_time, period) in
+  let current_stage = get_current_stage_num(store.start_level, period) in
   let store = ensure_proposing_stage(current_stage, store) in
-  let timestamp = Tezos.now in
   let proposal : proposal =
     { upvotes = 0n
     ; downvotes = 0n
-    ; start_date = timestamp
+    ; start_level = {blocks = Tezos.level}
     ; voting_stage_num = current_stage + 1n
     ; metadata = propose_params.proposal_metadata
     ; proposer = Tezos.sender
@@ -127,8 +126,8 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
   { store with
     proposals =
       Map.add proposal_key proposal store.proposals
-  ; proposal_key_list_sort_by_date =
-      Set.add (timestamp, proposal_key) store.proposal_key_list_sort_by_date
+  ; proposal_key_list_sort_by_level =
+      Set.add ({blocks = Tezos.level}, proposal_key) store.proposal_key_list_sort_by_level
   }
 
 // -----------------------------------------------------------------
@@ -167,7 +166,7 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
     let (param, author, store) = verify_permit_protected_vote (pp, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
     let vote_param = check_vote_limit_reached (config, proposal, param) in
-    let store = ensure_proposal_stage (proposal, config.period, store) in
+    let store = ensure_proposal_voting_stage (proposal, config.period, store) in
     let store = submit_vote (proposal, vote_param, author, config.period, store) in
     store
   in
@@ -180,7 +179,7 @@ let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
   in { store with ledger = ledger; total_supply = total_supply }
 
 let unstake_tk(token_amount, addr, period, store : nat * address * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_time, period) in
+  let current_stage = get_current_stage_num(store.start_level, period) in
   match Big_map.find_opt addr store.freeze_history with
     | Some(fh) ->
         let fh = update_fh(current_stage, fh) in
@@ -221,8 +220,8 @@ let unfreeze_proposer_and_voter_token
 
 
 [@inline]
-let is_time_reached (proposal, sec : proposal * seconds): bool =
-  Tezos.now > proposal.start_date + int(sec)
+let is_level_reached (proposal, target : proposal * blocks): bool =
+  Tezos.level > proposal.start_level.blocks + target.blocks
 
 [@inline]
 let frozen_total_supply(store : storage): nat =
@@ -240,19 +239,19 @@ let do_total_vote_meet_quorum_threshold (proposal, store : proposal * storage): 
   let reached_quorum = (votes_placed * quorum_denominator) / total_supply in
   (reached_quorum >= proposal.quorum_threshold.numerator)
 
-// Delete a proposal from 'sProposalKeyListSortByDate'
+// Delete a proposal from 'proposal_key_list_sort_by_level'
 [@inline]
 let delete_proposal
-    (start_date, proposal_key, store : timestamp * proposal_key * storage): storage =
-  { store with proposal_key_list_sort_by_date =
-    Set.remove (start_date, proposal_key) store.proposal_key_list_sort_by_date
+    (level, proposal_key, store : blocks * proposal_key * storage): storage =
+  { store with proposal_key_list_sort_by_level =
+    Set.remove (level, proposal_key) store.proposal_key_list_sort_by_level
   }
 
 let propose (param, config, store : propose_params * config * storage): return =
   let store = check_is_proposal_valid (config, param, store) in
   let store = check_proposal_limit_reached (config, store) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
-  let current_stage = get_current_stage_num(store.start_time, config.period) in
+  let current_stage = get_current_stage_num(store.start_level, config.period) in
   let store = update_quorum(current_stage, store, config) in
   let store = stake_tk(amount_to_freeze, Tezos.sender, config.period, store) in
   let store = add_proposal (param, config.period, store) in
@@ -260,15 +259,15 @@ let propose (param, config, store : propose_params * config * storage): return =
 
 [@inline]
 let handle_proposal_is_over
-    (config, start_date, proposal_key, store, ops, counter
-      : config * timestamp * proposal_key * storage * operation list * counter
+    (config, start_level, proposal_key, store, ops, counter
+      : config * blocks * proposal_key * storage * operation list * counter
     )
     : (operation list * storage * counter) =
   let proposal = check_if_proposal_exist (proposal_key, store) in
 
-  if is_time_reached (proposal, config.proposal_expired_time)
+  if is_level_reached (proposal, config.proposal_expired_level)
   then (failwith("EXPIRED_PROPOSAL") : (operation list * storage * counter))
-  else if is_time_reached (proposal, config.proposal_flush_time)
+  else if is_level_reached (proposal, config.proposal_flush_level)
        && counter.current < counter.total // not finished
   then
     let counter = { counter with current = counter.current + 1n } in
@@ -286,7 +285,7 @@ let handle_proposal_is_over
     in
     let cons = fun (l, e : operation list * operation) -> e :: l in
     let ops = List.fold cons ops new_ops in
-    let store = delete_proposal (start_date, proposal_key, store) in
+    let store = delete_proposal (start_level, proposal_key, store) in
     (ops, store, counter)
   else (ops, store, counter)
 
@@ -297,19 +296,19 @@ let flush(n, config, store : nat * config * storage): return =
   else
     let counter : counter = { current = 0n; total = n } in
     let flush_one
-        (acc, e: (operation list * storage * counter) * (timestamp * proposal_key)) =
+        (acc, e: (operation list * storage * counter) * (blocks * proposal_key)) =
           let (ops, store, counter) = acc in
-          let (start_date, proposal_key) = e in
-          handle_proposal_is_over (config, start_date, proposal_key, store, ops, counter)
+          let (start_level, proposal_key) = e in
+          handle_proposal_is_over (config, start_level, proposal_key, store, ops, counter)
         in
     let (ops, store, _) =
-      Set.fold flush_one store.proposal_key_list_sort_by_date (nil_op, store, counter)
+      Set.fold flush_one store.proposal_key_list_sort_by_level (nil_op, store, counter)
     in (ops, store)
 
 // Removes an accepted and finished proposal by key.
 let drop_proposal (proposal_key, config, store : proposal_key * config * storage): return =
   let proposal = check_if_proposal_exist (proposal_key, store) in
-  let proposal_is_expired = is_time_reached (proposal, config.proposal_expired_time) in
+  let proposal_is_expired = is_level_reached (proposal, config.proposal_expired_level) in
 
   if   (sender = proposal.proposer)
     || (sender = store.guardian && sender <> source) // Guardian cannot be equal to SOURCE
@@ -323,7 +322,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
           , config.fixed_proposal_fee_in_token
           , store
           ) in
-    let store = delete_proposal (proposal.start_date, proposal_key, store) in
+    let store = delete_proposal (proposal.start_level, proposal_key, store) in
     (nil_op, store)
   else
     (failwith("DROP_PROPOSAL_CONDITION_NOT_MET") : return)
@@ -333,7 +332,7 @@ let freeze (amt, config, store : freeze_param * config * storage) : return =
   let (operation, ledger, total_supply) = freeze_on_ledger (amt, addr, store.ledger, store.total_supply, store.frozen_token_id, store.governance_token) in
 
   // Add the `amt` to the current stage frozen token count of the freeze-history.
-  let current_stage = get_current_stage_num(store.start_time, config.period) in
+  let current_stage = get_current_stage_num(store.start_level, config.period) in
   let new_freeze_history_for_address = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
         let fh = update_fh(current_stage, fh) in
@@ -348,7 +347,7 @@ let freeze (amt, config, store : freeze_param * config * storage) : return =
 
 let unfreeze (amt, config, store : unfreeze_param * config * storage) : return =
   let addr = Tezos.sender in
-  let current_stage = get_current_stage_num(store.start_time, config.period) in
+  let current_stage = get_current_stage_num(store.start_level, config.period) in
 
   let new_freeze_history =
     match Big_map.find_opt addr store.freeze_history with

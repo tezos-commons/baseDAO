@@ -49,7 +49,8 @@ let bound_qt (qt, min_qt, max_qt : quorum_fraction * quorum_fraction * quorum_fr
   else qt
 
 [@inline]
-let period_to_cycle (p: nat): nat = (p + 1n) / 2n
+// Returns the 'cycle' number of which the given 'stage' number is part of.
+let stage_to_cycle (p: nat): nat = (p + 1n) / 2n
 
 [@inline]
 let to_signed(n : unsigned_quorum_fraction): quorum_fraction
@@ -68,7 +69,7 @@ let to_unsigned(n : quorum_fraction): unsigned_quorum_fraction =
   }
 
 let update_quorum(current_period, store, config : nat * storage * config): storage =
-  let current_cycle = period_to_cycle(current_period) in
+  let current_cycle = stage_to_cycle(current_period) in
   if store.quorum_threshold_at_cycle.last_updated_cycle = current_cycle
   then store // Quorum has been updated in this period, so no change is required.
   else if current_cycle > store.quorum_threshold_at_cycle.last_updated_cycle
