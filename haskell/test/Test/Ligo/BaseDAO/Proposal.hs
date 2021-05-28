@@ -124,6 +124,9 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulatorCaps "can unfreeze tokens from the previous period" $
           canUnfreezeFromPreviousPeriod (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
+      , nettestScenarioOnEmulatorCaps "correctly track freeze history" $
+          checkFreezeHistoryTracking (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            getFreezeHistoryEmulator
       ]
 
  , testGroup "LIGO-specific proposal tests:"
@@ -148,4 +151,19 @@ test_BaseDAO_Proposal =
     , nettestScenarioOnEmulatorCaps "the fee is burned if the proposal doesn't meet the quorum" $
         burnsFeeOnFailure QuorumNotMet
     ]
+
+  , testGroup "QuorumThreshold Updates"
+      [ nettestScenarioOnEmulatorCaps "updates quorum-threshold correctly" $
+          checkQuorumThresholdDynamicUpdate (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            getQtAtCycleEmulator
+      , nettestScenarioOnEmulatorCaps "updates quorum-threshold correctly within upper bounds" $
+          checkQuorumThresholdDynamicUpdateUpperBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            getQtAtCycleEmulator
+      , nettestScenarioOnEmulatorCaps "updates quorum-threshold correctly within lower bounds" $
+          checkQuorumThresholdDynamicUpdateLowerBound (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            getQtAtCycleEmulator
+      , nettestScenarioOnEmulatorCaps "proposal saves quorum for cycle" $
+          checkProposalSavesQuorum (originateLigoDaoWithConfigDesc dynRecUnsafe)
+            getProposalEmulator
+      ]
   ]

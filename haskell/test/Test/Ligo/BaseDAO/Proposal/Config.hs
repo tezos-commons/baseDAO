@@ -188,14 +188,6 @@ instance IsConfigDescExt DAO.Config ConfigConstants where
     , ..
     }
 
-instance IsConfigDescExt DAO.Config DAO.QuorumThreshold where
-  fillConfig qt DAO.Config'{..} = DAO.Config'
-    -- We set min quorum threshold since we use it to initialize
-    -- the quorumThreshold in storage in tests.
-    { cMinQuorumThreshold = fromIntegral qt
-    , ..
-    }
-
 instance IsConfigDescExt DAO.Config DAO.Period where
   fillConfig vp DAO.Config'{..} = DAO.Config'
     { cPeriod = vp
@@ -234,5 +226,26 @@ instance IsConfigDescExt DAO.Config DecisionLambdaAction where
         getField #plProposerFrozenToken; toNamed #frozen_tokens
         dip $ do toField #plProposer; toNamed #proposer
         framed lam
+    , ..
+    }
+
+instance IsConfigDescExt DAO.Config ("changePercent" :! Natural) where
+  fillConfig (arg #changePercent -> cp) DAO.Config'{..} =
+    DAO.Config'
+    { cQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
+    , ..
+    }
+
+instance IsConfigDescExt DAO.Config ("maxChangePercent" :! Natural) where
+  fillConfig (arg #maxChangePercent -> cp) DAO.Config'{..} =
+    DAO.Config'
+    { cMaxQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
+    , ..
+    }
+
+instance IsConfigDescExt DAO.Config ("governanceTotalSupply" :! Natural) where
+  fillConfig (arg #governanceTotalSupply -> ts) DAO.Config'{..} =
+    DAO.Config'
+    { cGovernanceTotalSupply = DAO.GovernanceTotalSupply ts
     , ..
     }

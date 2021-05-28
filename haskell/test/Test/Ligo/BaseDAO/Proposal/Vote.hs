@@ -28,7 +28,7 @@ voteNonExistingProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteNonExistingProposal originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
@@ -55,7 +55,7 @@ voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteMultiProposals originateFn = do
-  DaoOriginateData{..} <- originateFn voteConfig
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
@@ -91,7 +91,7 @@ voteOutdatedProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteOutdatedProposal originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
@@ -125,7 +125,7 @@ voteValidProposal
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteValidProposal originateFn = do
-  DaoOriginateData{..} <- originateFn voteConfig
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 2)
@@ -134,7 +134,7 @@ voteValidProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
 
   -- Create sample proposal (first proposal has id = 0)
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -145,7 +145,7 @@ voteValidProposal originateFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dodDao dodOwner2 102
   -- TODO [#31]: check if the vote is updated properly
@@ -154,12 +154,12 @@ voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 voteWithPermit originateFn = do
-  DaoOriginateData{..} <- originateFn voteConfig
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 12)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -172,7 +172,7 @@ voteWithPermit originateFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkTokenBalance frozenTokenId dodDao dodOwner1 112
@@ -182,7 +182,7 @@ voteWithPermitNonce
   => (ConfigDesc Config -> OriginateFn m) -> GetVotePermitsCounterFn m -> m ()
 voteWithPermitNonce originateFn getVotePermitsCounterFn = do
 
-  DaoOriginateData{..} <- originateFn voteConfig
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 60)
@@ -191,7 +191,7 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
     call dodDao (Call @"Freeze") (#amount .! 50)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -203,7 +203,7 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
   -- Going to try calls with different nonces
   signed1@(_          , _) <- addDataToSign dodDao (Nonce 0) voteParam
   signed2@(dataToSign2, _) <- addDataToSign dodDao (Nonce 1) voteParam
@@ -239,7 +239,7 @@ votesBoundedValue originateFn = do
   DaoOriginateData{..} <- originateFn
     ( voteConfig >>-
       ConfigDesc configConsts{ cmMaxVotes = Just 1 }
-    )
+    ) defaultQuorumThreshold
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 2)
 
@@ -247,7 +247,7 @@ votesBoundedValue originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner2 dodDao
   let upvote' = NoPermit VoteParam
         { vVoteType = False
@@ -260,7 +260,7 @@ votesBoundedValue originateFn = do
         , vProposalKey = key1
         }
   -- Advance one voting period to a voting stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
   withSender dodOwner1 $ do
     call dodDao (Call @"Vote") [downvote']
     call dodDao (Call @"Vote") [upvote']
