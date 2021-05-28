@@ -29,7 +29,7 @@ transferContractTokensScenario
   :: MonadNettest caps base m
   => OriginateFn m -> m ()
 transferContractTokensScenario originateFn = do
-  DaoOriginateData{..} <- originateFn
+  DaoOriginateData{..} <- originateFn defaultQuorumThreshold
   let target_owner1 = genesisAddress1
   let target_owner2 = genesisAddress2
 

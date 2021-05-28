@@ -16,23 +16,24 @@ import Test.Tasty (TestTree, testGroup)
 import Ligo.BaseDAO.Types (Parameter)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Token.Common
+import Test.Ligo.BaseDAO.Common (defaultQuorumThreshold)
 
 balanceOfTests :: TestTree
 balanceOfTests = testGroup "Balance_of:" $
   [ nettestScenarioCaps "returns an empty response on empty request" $ do
-      DaoOriginateData{..} <- originateWithCustomToken
+      DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
       consumer <- callBalanceOf [] dodDao
       checkStorage (toAddress consumer)
         (toVal [[] :: [FA2.BalanceResponseItem]])
 
   , nettestScenarioCaps "correctly returns the balance of tokens" $ do
-      DaoOriginateData{..} <- originateWithCustomToken
+      DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
       consumer <- callBalanceOf [(dodOwner1, unfrozenTokens)] dodDao
       checkStorage (toAddress consumer)
         (toVal [[((dodOwner1, unfrozenTokens), 1000 :: Natural)]])
 
   , nettestScenarioCaps "correctly handles several request items" $ do
-      DaoOriginateData{..} <- originateWithCustomToken
+      DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
       consumer <- callBalanceOf
           [(dodOwner1, frozenTokens), (dodOwner2, unfrozenTokens)] dodDao
       checkStorage (toAddress consumer)
@@ -40,7 +41,7 @@ balanceOfTests = testGroup "Balance_of:" $
                 , ((dodOwner2, unfrozenTokens), 1000 :: Natural)]])
 
   , nettestScenarioCaps "fails if requested for an undefined token" $ do
-      DaoOriginateData{..} <- originateWithCustomToken
+      DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
       callBalanceOf [(dodOwner1, frozenTokens), (dodOwner2, unknownTokens)] dodDao
         & expectCustomError_ #fA2_TOKEN_UNDEFINED dodDao
   ]

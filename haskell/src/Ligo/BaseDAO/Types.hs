@@ -75,7 +75,7 @@ module Ligo.BaseDAO.Types
   , sOperatorsLens
   ) where
 
-import Universum (Enum, Integral, Num, One(..), Real, div, maybe, (*))
+import Universum (Enum, Integral, Num, One(..), Real, fromIntegral, div, maybe, (*))
 
 import Control.Lens (makeLensesFor)
 import qualified Data.Map as M
@@ -640,8 +640,8 @@ mkConfig
   :: [CustomEntrypoint]
   -> Period
   -> FixedFee
-  -> QuorumFraction
-  -> QuorumFraction
+  -> Natural
+  -> Natural
   -> GovernanceTotalSupply
   -> Config
 mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent governanceTotalSupply = Config'
@@ -656,8 +656,8 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   , cPeriod = votingPeriod
   , cProposalFlushTime = (unPeriod votingPeriod) * 2
   , cProposalExpiredTime = (unPeriod votingPeriod) * 3
-  , cMaxQuorumChange = percentageToFractionNumerator maxChangePercent
-  , cQuorumChange = percentageToFractionNumerator changePercent
+  , cMaxQuorumChange = QuorumFraction $ fromIntegral $ percentageToFractionNumerator maxChangePercent
+  , cQuorumChange = QuorumFraction $ fromIntegral $ percentageToFractionNumerator changePercent
   , cGovernanceTotalSupply = governanceTotalSupply
   , cMaxQuorumThreshold = percentageToFractionNumerator 99 -- 99%
   , cMinQuorumThreshold = percentageToFractionNumerator 1 -- 1%
@@ -698,8 +698,8 @@ mkFullStorage
   :: "admin" :! Address
   -> "votingPeriod" :? Period
   -> "quorumThreshold" :? QuorumThreshold
-  -> "maxChangePercent" :? QuorumFraction
-  -> "changePercent" :? QuorumFraction
+  -> "maxChangePercent" :? Natural
+  -> "changePercent" :? Natural
   -> "governanceTotalSupply" :? GovernanceTotalSupply
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap

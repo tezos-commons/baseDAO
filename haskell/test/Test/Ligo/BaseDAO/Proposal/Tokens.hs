@@ -7,11 +7,13 @@ module Test.Ligo.BaseDAO.Proposal.Tokens
   ( canUnfreezeFromPreviousPeriod
   , cannotUnfreezeFromSamePeriod
   , cannotUnfreezeStakedTokens
+  , checkFreezeHistoryTracking
   , freezeTokens
   ) where
 
 import Universum
 
+import qualified Data.ByteString as BS
 import Lorentz hiding (assert, (>>))
 import Morley.Nettest
 import Util.Named
@@ -27,7 +29,7 @@ freezeTokens
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 freezeTokens originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
@@ -38,17 +40,45 @@ freezeTokens originateFn = do
       , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
       }]])
 
+checkFreezeHistoryTracking
+  :: (MonadEmulated caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m)
+  -> GetFreezeHistoryFn m
+  -> m ()
+checkFreezeHistoryTracking originateFn getFreezeHistory = do
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
+  let frozen_scale_value = 2
+  let frozen_extra_value = 10
+  let proposalMeta1 = ""
+  let proposalSize1 = fromIntegral . BS.length $ proposalMeta1
+  let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
+
+  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! requiredFrozen)
+  advanceLevel dodPeriod
+  withSender dodOwner1 $ call dodDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
+  advanceLevel dodPeriod
+
+  fh <- getFreezeHistory (unTAddress dodDao) dodOwner1 -- TODO [#31]
+  let expected = AddressFreezeHistory
+        { fhCurrentStageNum = 1
+        , fhCurrentUnstaked = 0
+        , fhStaked = requiredFrozen
+        , fhPastUnstaked = 0
+        }
+
+  assert (fh == (Just expected)) "Unexpected freeze history"
+
 canUnfreezeFromPreviousPeriod
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 canUnfreezeFromPreviousPeriod originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 15
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dodDao dodOwner1 100
@@ -68,13 +98,13 @@ cannotUnfreezeStakedTokens
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 cannotUnfreezeStakedTokens originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 50)
   checkTokenBalance frozenTokenId dodDao dodOwner1 150
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 15
+  advanceLevel dodPeriod
   void $ createSampleProposal 1 dodOwner1 dodDao
 
   -- the frozen tokens are still the same
@@ -90,7 +120,7 @@ cannotUnfreezeFromSamePeriod
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 cannotUnfreezeFromSamePeriod originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 10)
   checkTokenBalance frozenTokenId dodDao dodOwner1 110

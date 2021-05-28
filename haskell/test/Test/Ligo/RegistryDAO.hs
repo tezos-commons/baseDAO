@@ -154,7 +154,7 @@ test_RegistryDAO =
               initialStorageWithExplictRegistryDAOConfig admin [wallet1]
                 & setExtra @Natural [mt|min_xtz_amount|] 0
           ) $
-          \(_:wallet1:_) _ baseDao _ -> do
+          \(_:wallet1:_) fs baseDao _ -> do
             let proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
                   Transfer_proposal $
                     TransferProposal 1 [ xtzTransferType 0 wallet1 ] []
@@ -163,7 +163,7 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
 
             -- Advance one voting period to a proposing stage.
-            advanceLevel 11
+            advanceLevel (toPeriod fs)
 
             withSender wallet1 $ call baseDao (Call @"Propose")
               (ProposeParams proposalSize proposalMeta)

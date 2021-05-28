@@ -38,7 +38,7 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
       >>- (ConfigDesc $ Period 60)
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
-      )
+      ) defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 3)
@@ -47,12 +47,12 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 60
+  advanceLevel dodPeriod
 
   -- Accepted Proposals
   key1 <- createSampleProposal 1 dodOwner1 dodDao
   -- Advance one voting period to a voting stage.
-  advanceLevel 65
+  advanceLevel dodPeriod
 
   let upvote' = NoPermit VoteParam
         { vVoteType = True
@@ -72,7 +72,7 @@ flushAcceptedProposals originateFn getTotalSupplyFn = do
   checkTokenBalance (frozenTokenId) dodDao dodOwner2 103
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 61
+  advanceLevel (dodPeriod+1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -95,7 +95,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
         >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-        )
+        ) defaultQuorumThreshold
 
   -- [Voting]
   withSender dodOwner1 $
@@ -104,7 +104,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 6)
 
-  advanceLevel 20
+  advanceLevel dodPeriod
 
   -- [Proposing]
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
@@ -117,7 +117,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
         , vProposalKey = key
         }
 
-  advanceLevel 20
+  advanceLevel dodPeriod
 
   -- [Voting]
   withSender dodOwner2 . inBatch $ do
@@ -125,7 +125,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
       call dodDao (Call @"Vote") [vote' key2]
       pure ()
 
-  advanceLevel 22
+  advanceLevel (dodPeriod + 1)
 
   -- [Proposing]
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
@@ -144,11 +144,10 @@ flushRejectProposalQuorum
 flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
     <- originateFn (configWithRejectedProposal
-        >>- (ConfigDesc (mkQuorumThreshold 3 5))
         >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-        )
+        ) (mkQuorumThreshold 3 5)
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 5)
@@ -157,7 +156,7 @@ flushRejectProposalQuorum originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
 
   -- Rejected Proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -170,11 +169,11 @@ flushRejectProposalQuorum originateFn = do
           }
         ]
   -- Advance one voting period to a voting stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 21
+  advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -190,12 +189,10 @@ flushRejectProposalNegativeVotes
 flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
     <- originateFn (configWithRejectedProposal
-          >>- (ConfigDesc (mkQuorumThreshold 3 100))
           >>- (ConfigDesc (Period 20))
           >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
           >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-          >>- (ConfigDesc (mkQuorumThreshold 3 100))
-          )
+          ) (mkQuorumThreshold 3 100)
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 3)
@@ -204,7 +201,7 @@ flushRejectProposalNegativeVotes originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
 
   -- Rejected Proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -227,14 +224,14 @@ flushRejectProposalNegativeVotes originateFn = do
           }
         ]
   -- Advance one voting period to a voting stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Check proposer balance
   checkTokenBalance frozenTokenId dodDao dodOwner1 110
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 21
+  advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -250,12 +247,10 @@ flushWithBadConfig
 flushWithBadConfig originateFn = do
   DaoOriginateData{..} <-
     originateFn (badRejectedValueConfig
-      >>- (ConfigDesc (mkQuorumThreshold 1 2))
       >>- (ConfigDesc (Period 20))
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-      >>- (ConfigDesc (mkQuorumThreshold 1 2))
-      )
+      ) (mkQuorumThreshold 1 2)
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 3)
@@ -264,7 +259,7 @@ flushWithBadConfig originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
   let upvote' = NoPermit VoteParam
@@ -273,11 +268,11 @@ flushWithBadConfig originateFn = do
         , vProposalKey = key1
         }
   -- Advance one voting period to a voting stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote']
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 21
+  advanceLevel (dodPeriod+1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -297,7 +292,7 @@ flushDecisionLambda originateFn = do
       >>- (ConfigDesc $ Period 60)
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
-      )
+      ) defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
@@ -305,7 +300,7 @@ flushDecisionLambda originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 60
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
   let upvote' = NoPermit VoteParam
@@ -314,11 +309,11 @@ flushDecisionLambda originateFn = do
         , vProposalKey = key1
         }
   -- Advance one voting period to a voting stage.
-  advanceLevel 60
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote']
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 61
+  advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   results <- fromVal <$> getStorage (toAddress consumer)
@@ -332,11 +327,10 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (configWithRejectedProposal
-       >>- (ConfigDesc (mkQuorumThreshold 1 50))
        >>- (ConfigDesc (Period 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-      )
+      ) (mkQuorumThreshold 1 50)
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 20)
@@ -345,11 +339,11 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
   -- Advance one voting period to a voting stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
   let params key = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 20
@@ -357,10 +351,10 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
         }
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
   _key2 <- createSampleProposal 2 dodOwner1 dodDao
 
-  advanceLevel 41
+  advanceLevel (2*dodPeriod + 1)
   -- `key1` is now expired, and `key2` is not yet expired.
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
     & expectCustomErrorNoArg #eXPIRED_PROPOSAL dodDao
@@ -381,18 +375,18 @@ flushProposalFlushTimeNotReach originateFn = do
         >>- (ConfigDesc $ Period 20)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-        )
+        ) defaultQuorumThreshold
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 30)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 20
+  advanceLevel dodPeriod
 
   (_key1, _key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
   -- Advance two voting period to another proposing stage.
-  advanceLevel 20 -- skip voting period
-  advanceLevel 21
+  advanceLevel dodPeriod -- skip voting period
+  advanceLevel (dodPeriod + 1)
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 100

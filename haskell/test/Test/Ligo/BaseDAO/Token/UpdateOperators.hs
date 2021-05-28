@@ -14,6 +14,7 @@ import Test.Tasty (TestTree, testGroup)
 
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Token.Common
+import Test.Ligo.BaseDAO.Common (defaultQuorumThreshold)
 
 updateOperatorsTests :: TestTree
 updateOperatorsTests =
@@ -35,7 +36,7 @@ updateOperatorsTests =
 addOperator :: MonadNettest caps base m => m ()
 addOperator = do
   operator :: Address <- newAddress "operator"
-  DaoOriginateData{..} <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
   let params = FA2.OperatorParam
         { opOwner = dodOwner1
         , opOperator = operator
@@ -50,7 +51,7 @@ addOperator = do
 addOperatorSingleToken :: MonadNettest caps base m => m ()
 addOperatorSingleToken = do
   operator :: Address <- newAddress "operator"
-  DaoOriginateData{..} <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
   let params = FA2.OperatorParam
         { opOwner = dodOwner1
         , opOperator = operator
@@ -65,7 +66,7 @@ addOperatorSingleToken = do
 
 removeOperator :: MonadNettest caps base m => m ()
 removeOperator = do
-  DaoOriginateData{..} <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
   let params = FA2.OperatorParam
         { opOwner = dodOwner1
         , opOperator = dodOperator1
@@ -80,7 +81,7 @@ removeOperator = do
 
 notOwnerUpdatesOperator :: MonadNettest caps base m => m ()
 notOwnerUpdatesOperator = do
-  DaoOriginateData{..} <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
   let notOwnerParams = FA2.OperatorParam
         { opOwner = dodOwner2
         , opOperator = dodOwner1
@@ -95,7 +96,7 @@ notOwnerUpdatesOperator = do
 
 adminUnfrozenOperator :: MonadNettest caps base m => m ()
 adminUnfrozenOperator = do
-  DaoOriginateData{..} <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
   let params = FA2.OperatorParam
         { opOwner = dodOwner1
         , opOperator = dodAdmin
@@ -108,7 +109,7 @@ adminUnfrozenOperator = do
 
 frozenOperator :: MonadNettest caps base m => m ()
 frozenOperator = do
-  DaoOriginateData{..} <- originateWithCustomToken
+  DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
   let params op = FA2.OperatorParam
         { opOwner = dodOwner1
         , opOperator = op

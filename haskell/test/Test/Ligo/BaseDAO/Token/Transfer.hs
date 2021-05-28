@@ -14,13 +14,14 @@ import Test.Tasty (TestTree, testGroup)
 import Util.Named ((.!))
 
 import Test.Ligo.BaseDAO.Token.Common
+import Test.Ligo.BaseDAO.Common (defaultQuorumThreshold)
 
 
 transferTests :: TestTree
 transferTests = testGroup "Transfer:"
   [ testGroup "Transfers by operators:"
       [ nettestScenarioCaps "allows valid transfer and check balance" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOperator1 $
             transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
@@ -28,7 +29,7 @@ transferTests = testGroup "Transfer:"
           assertBalanceOf dodOwner2 1010 unfrozenTokens dodDao
 
       , nettestScenarioCaps "aborts if there is a failure (due to low balance)" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOperator1 $
             transfer 1001 unfrozenTokens dodOwner1 dodOwner2 dodDao
@@ -38,7 +39,7 @@ transferTests = testGroup "Transfer:"
 
       , nettestScenarioCaps "aborts if there is a failure (due to bad operator)" $ do
           op3 :: Address <- newAddress "operator3"
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOperator1 $
             transfer 10 unfrozenTokens dodOwner2 dodOwner1 dodDao
@@ -49,14 +50,14 @@ transferTests = testGroup "Transfer:"
               & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
       , nettestScenarioCaps "cannot transfer frozen tokens" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOperator1 $
             transfer 10 frozenTokens dodOwner1 dodOwner2 dodDao
               & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dodDao
 
       , nettestScenarioCaps "fails if trying to transfer unknown tokens" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOperator1 $
             transfer 0 unknownTokens dodOwner1 dodOwner2 dodDao
@@ -66,18 +67,18 @@ transferTests = testGroup "Transfer:"
   , testGroup "Transfers by token owners:"
       [ nettestScenarioCaps "accepts an empty list of transfers" $ do
           someone :: Address <- newAddress "someone"
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
           withSender someone $
             call dodDao (Call @"Transfer") []
 
       , nettestScenarioCaps "allows zero transfer from non-existent owner" $ do
           nonexistent :: Address <- newAddress "nonexistent"
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
           withSender nonexistent $
             transfer 0 unfrozenTokens nonexistent dodOwner1 dodDao
 
       , nettestScenarioCaps "allows valid transfer and check balance" $ do
-            DaoOriginateData{..} <- originateWithCustomToken
+            DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
             withSender dodOwner1 $
               transfer 10 unfrozenTokens dodOwner1 dodOwner2 dodDao
@@ -85,7 +86,7 @@ transferTests = testGroup "Transfer:"
             assertBalanceOf dodOwner2 1010 unfrozenTokens dodDao
 
       , nettestScenarioCaps "aborts if there is a failure (due to low balance)" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOwner1 $
             transfer 1001 unfrozenTokens dodOwner1 dodOwner2 dodDao
@@ -94,7 +95,7 @@ transferTests = testGroup "Transfer:"
                   (#required .! 1001, #present .! 1000)
 
       , nettestScenarioCaps "cannot transfer someone else's money" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOwner1 $
             transfer 10 unfrozenTokens dodOwner2 dodOwner1 dodDao
@@ -102,7 +103,7 @@ transferTests = testGroup "Transfer:"
 
       , nettestScenarioCaps "aborts if there is a failure (due to non existent source account)" $ do
           nonexistent :: Address <- newAddress "nonexistent"
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           -- Failed with 'fA2_INSUFFICIENT_BALANCE' due to nonexistent account is treated
           -- as an existing account with 0 balance.
@@ -111,14 +112,14 @@ transferTests = testGroup "Transfer:"
               & expectCustomError #fA2_INSUFFICIENT_BALANCE dodDao (#required .! 1, #present .! 0)
 
       , nettestScenarioCaps "cannot transfer frozen tokens" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOwner1 $
             transfer 10 frozenTokens dodOwner1 dodOwner2 dodDao
               & expectCustomErrorNoArg #fROZEN_TOKEN_NOT_TRANSFERABLE dodDao
 
       , nettestScenarioCaps "fails if trying to transfer unknown tokens" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodOwner1 $
             transfer 0 unknownTokens dodOwner1 dodOwner2 dodDao
@@ -127,14 +128,14 @@ transferTests = testGroup "Transfer:"
 
   , testGroup "Transfers by the administrator"
       [ nettestScenarioCaps "admin cannot transfer unfrozen tokens that don't belong to them" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodAdmin $
             transfer 10 unfrozenTokens dodOwner2 dodOwner1 dodDao
               & expectCustomError_ #fA2_NOT_OPERATOR dodDao
 
       , nettestScenarioCaps "admin cannot transfer frozen tokens from any address to any address" $ do
-          DaoOriginateData{..} <- originateWithCustomToken
+          DaoOriginateData{..} <- originateWithCustomToken defaultQuorumThreshold
 
           withSender dodAdmin $
             transfer 10 frozenTokens dodOwner1 dodOwner2 dodDao

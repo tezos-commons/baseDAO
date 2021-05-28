@@ -6,6 +6,15 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
 
   , GetTotalSupplyFn
   , getTotalSupplyEmulator
+
+  , GetProposalFn
+  , getProposalEmulator
+
+  , GetFreezeHistoryFn
+  , getFreezeHistoryEmulator
+
+  , GetQuorumThresholdAtCycleFn
+  , getQtAtCycleEmulator
   -- , getTotalSupplyNetwork
 
   , GetVotePermitsCounterFn
@@ -44,6 +53,24 @@ getTotalSupplyEmulator addr tokenId = do
         Just v -> v
         Nothing -> error "getTotalSupply: token_id does not exist."
   pure result
+
+type GetFreezeHistoryFn m = Address -> Address -> m (Maybe AddressFreezeHistory)
+
+getFreezeHistoryEmulator :: Address -> Address -> EmulatedT PureM (Maybe AddressFreezeHistory)
+getFreezeHistoryEmulator addr owner =
+  (M.lookup owner . unBigMap . sFreezeHistory . fsStorage) <$> getFullStorage addr
+
+type GetQuorumThresholdAtCycleFn m = Address -> m QuorumThresholdAtCycle
+
+getQtAtCycleEmulator :: Address -> EmulatedT PureM QuorumThresholdAtCycle
+getQtAtCycleEmulator addr = (sQuorumThresholdAtCycle . fsStorage) <$> getFullStorage addr
+
+type GetProposalFn m = Address -> ProposalKey -> m (Maybe Proposal)
+
+getProposalEmulator :: Address -> ProposalKey -> EmulatedT PureM (Maybe Proposal)
+getProposalEmulator addr pKey =
+  (M.lookup pKey . unBigMap . sProposals . fsStorage) <$> getFullStorage addr
+
 
 -- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
 -- anyway. Commented due to weeder.

@@ -23,6 +23,7 @@ module Test.Ligo.BaseDAO.Common
 
   , createSampleProposal
   , createSampleProposals
+  , defaultQuorumThreshold
   , originateLigoDaoWithBalance
   , originateLigoDaoWithConfigDesc
   , originateLigoDao
@@ -49,7 +50,7 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
-type OriginateFn m = m DaoOriginateData
+type OriginateFn m = QuorumThreshold -> m DaoOriginateData
 
 data DaoOriginateData = DaoOriginateData
   { dodOwner1 :: Address
@@ -187,13 +188,16 @@ sendXtz addr epName pm = withFrozenCallStack $ do
 -- checkPropertyOfProposal :: _
 -- checkPropertyOfProposal = error "undefined"
 
+defaultQuorumThreshold :: QuorumThreshold
+defaultQuorumThreshold = mkQuorumThreshold 1 100
+
 originateLigoDaoWithBalance
  :: MonadNettest caps base m
  => ContractExtra
  -> Config
  -> (Address -> Address -> [(LedgerKey, LedgerValue)])
  -> OriginateFn m
-originateLigoDaoWithBalance extra config balFunc = do
+originateLigoDaoWithBalance extra config balFunc qt = do
   owner1 :: Address <- newAddress "owner1"
   operator1 :: Address <- newAddress "operator1"
   owner2 :: Address <- newAddress "owner2"
@@ -219,7 +223,7 @@ originateLigoDaoWithBalance extra config balFunc = do
               ! #metadata mempty
               ! #tokenAddress (unTAddress tokenContract)
               ! #level currentLevel
-              ! #quorumThreshold (fromIntegral $ cMinQuorumThreshold config)
+              ! #quorumThreshold qt
             )
             { sLedger = bal
             , sOperators = operators

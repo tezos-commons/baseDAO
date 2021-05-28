@@ -20,7 +20,7 @@ import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  ( DaoOriginateData(..), OriginateFn, checkTokenBalance, makeProposalKey
+  ( DaoOriginateData(..), OriginateFn, checkTokenBalance, defaultQuorumThreshold, makeProposalKey
   , originateLigoDaoWithBalance, sendXtz )
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
@@ -66,10 +66,10 @@ metadataSize md = fromIntegral $ BS.length md
 validProposal :: HasCallStack => NettestScenario m
 validProposal = uncapsNettest $ withFrozenCallStack do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance id $ \owner1_ owner2_ ->
+    originateTreasuryDaoWithBalance id (\owner1_ owner2_ ->
       [ ((owner1_, frozenTokenId), 200)
       , ((owner2_, frozenTokenId), 200)
-      ]
+      ]) defaultQuorumThreshold
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       TransferProposal
@@ -97,9 +97,9 @@ validProposal = uncapsNettest $ withFrozenCallStack do
 flushTokenTransfer :: HasCallStack => NettestScenario m
 flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance id $ \_ owner2_ ->
+    originateTreasuryDaoWithBalance id (\_ owner2_ ->
       [ ((owner2_, frozenTokenId), 100)
-      ]
+      ]) defaultQuorumThreshold
 
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
@@ -144,8 +144,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
 flushXtzTransfer :: HasCallStack => NettestScenario m
 flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance id $ \_ _ ->
-      []
+    originateTreasuryDaoWithBalance id (\_ _ -> []) defaultQuorumThreshold
 
   sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
@@ -201,11 +200,11 @@ proposalCheckFailZeroMutez :: HasCallStack => NettestScenario m
 proposalCheckFailZeroMutez = uncapsNettest $ withFrozenCallStack do
   DaoOriginateData{..} <-
     originateTreasuryDaoWithBalance
-      (\store -> setExtra @Natural [mt|min_xtz_amount|] 0 store) $
+      (\store -> setExtra @Natural [mt|min_xtz_amount|] 0 store) (
       \owner1_ owner2_ ->
         [ ((owner1_, frozenTokenId), 200)
         , ((owner2_, frozenTokenId), 200)
-        ]
+        ]) defaultQuorumThreshold
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       TransferProposal
@@ -219,7 +218,7 @@ proposalCheckFailZeroMutez = uncapsNettest $ withFrozenCallStack do
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 10
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
