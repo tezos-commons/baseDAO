@@ -83,8 +83,8 @@ $(OUT)/trivialDAO_storage.tz: src/**
             ; token_id = ($(call require_defined,governance_token_id) : nat) \
             } \
           ; current_level = {blocks = $(current_level)} \
-          ; metadata_map = ($(metadata_map) : metadata_map) \
-          ; ledger_lst = ($(ledger) : ledger_list) \
+          ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+          ; ledger_lst = ($(call escape_double_quote,$(ledger)) : ledger_list) \
           } \
         ; config_data = \
           { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
@@ -139,8 +139,8 @@ $(OUT)/registryDAO_storage.tz: src/**
               ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
             ; current_level = {blocks = $(current_level)} \
-            ; metadata_map = ($(metadata_map) : metadata_map) \
-            ; ledger_lst = ($(ledger) : ledger_list) \
+            ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+            ; ledger_lst = ($(call escape_double_quote,$(ledger)) : ledger_list) \
             } \
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
@@ -202,8 +202,8 @@ $(OUT)/treasuryDAO_storage.tz: src/**
               ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
             ; current_level = {blocks = $(current_level)} \
-            ; metadata_map = ($(metadata_map) : metadata_map) \
-            ; ledger_lst = ($(ledger) : ledger_list) \
+            ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+            ; ledger_lst = ($(call escape_double_quote,$(ledger)) : ledger_list) \
             } \
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
