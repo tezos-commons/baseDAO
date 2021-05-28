@@ -20,7 +20,6 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     (failwith("FORBIDDEN_XTZ") : return)
   else
     match param with
-    | Call_FA2 (p)           -> call_fa2(p, store)
     | Drop_proposal (p)      -> drop_proposal(p, config, store)
     | Vote (p)               -> vote(p, config, store)
     | Flush (p)              -> flush (p, config, store)

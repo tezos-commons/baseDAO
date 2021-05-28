@@ -58,8 +58,8 @@ endif
 
 $(OUT)/trivialDAO_storage.tz : current_level = 100n
 $(OUT)/trivialDAO_storage.tz : metadata_map = Big_map.empty
+$(OUT)/trivialDAO_storage.tz : freeze_history = []
 $(OUT)/trivialDAO_storage.tz : fixed_proposal_fee_in_token = 0n
-$(OUT)/trivialDAO_storage.tz : ledger = []
 $(OUT)/trivialDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/trivialDAO_storage.tz : min_quorum = 1n
 $(OUT)/trivialDAO_storage.tz : max_quorum = 99n
@@ -84,7 +84,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
             } \
           ; current_level = {blocks = $(current_level)} \
           ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
-          ; ledger_lst = ($(call escape_double_quote,$(ledger)) : ledger_list) \
+          ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
           } \
         ; config_data = \
           { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
@@ -113,8 +113,8 @@ $(OUT)/registryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/registryDAO_storage.tz : max_xtz_amount = 100mutez
 $(OUT)/registryDAO_storage.tz : current_level = 100n
 $(OUT)/registryDAO_storage.tz : metadata_map = Big_map.empty
+$(OUT)/registryDAO_storage.tz : freeze_history = []
 $(OUT)/registryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
-$(OUT)/registryDAO_storage.tz : ledger = []
 $(OUT)/registryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/registryDAO_storage.tz : min_quorum = 1n
 $(OUT)/registryDAO_storage.tz : max_quorum = 99n
@@ -140,7 +140,7 @@ $(OUT)/registryDAO_storage.tz: src/**
               } \
             ; current_level = {blocks = $(current_level)} \
             ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
-            ; ledger_lst = ($(call escape_double_quote,$(ledger)) : ledger_list) \
+            ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
             } \
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
@@ -176,8 +176,8 @@ $(OUT)/treasuryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/treasuryDAO_storage.tz : max_xtz_amount = 100mutez
 $(OUT)/treasuryDAO_storage.tz : current_level = 100n
 $(OUT)/treasuryDAO_storage.tz : metadata_map = Big_map.empty
+$(OUT)/treasuryDAO_storage.tz : freeze_history = []
 $(OUT)/treasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
-$(OUT)/treasuryDAO_storage.tz : ledger = []
 $(OUT)/treasuryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/treasuryDAO_storage.tz : min_quorum = 1n
 $(OUT)/treasuryDAO_storage.tz : max_quorum = 99n
@@ -203,7 +203,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
               } \
             ; current_level = {blocks = $(current_level)} \
             ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
-            ; ledger_lst = ($(call escape_double_quote,$(ledger)) : ledger_list) \
+            ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
             } \
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \

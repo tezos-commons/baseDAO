@@ -24,7 +24,7 @@ let unstake_frozen_fh (amt_to_unstake, amt_to_burn, fh : nat * nat * address_fre
       { fh with staked = new_staked_amt; past_unstaked = fh.past_unstaked + amt_to_unstake }
   | None ->
       ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
-        ("NOT_ENOUGH_STAKED_TOKENS", ()) : address_freeze_history)
+        ("BAD_STATE", ()) : address_freeze_history)
 
 // Update a possibly outdated freeze_history for the current stage
 let update_fh (current_stage, freeze_history : nat * address_freeze_history): address_freeze_history =

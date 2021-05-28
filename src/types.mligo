@@ -3,27 +3,11 @@
 
 // Corresponds to Types.hs module
 
-// -- FA2 types -- //
-
 #if !TYPES_H
 #define TYPES_H
 
 // ID of an FA2 token
 type token_id = nat
-
-// FA2 token operator
-type operator =
-  [@layout:comb]
-  { owner : address
-  ; operator : address
-  ; token_id : token_id
-  }
-type operators = (operator, unit) big_map
-
-// Types for FA2 tokens' ledger
-type ledger_key = address * token_id
-type ledger_value = nat
-type ledger = (ledger_key, ledger_value) big_map
 
 // Frozen token history for an address.
 // This track the stage number in which it was last updated and differentiates between
@@ -40,8 +24,7 @@ type address_freeze_history =
 // Frozen token history for all addresses
 type freeze_history = (address, address_freeze_history) big_map
 
-// Total supply of all FA2 tokens
-type total_supply = (token_id, nat) map
+type freeze_history_list = (address * nat) list
 
 // FA2 transfer types
 type transfer_destination =
@@ -56,43 +39,6 @@ type transfer_item =
   ; txs : transfer_destination list
   }
 type transfer_params = transfer_item list
-
-// FA2 balance entrypoint types
-type balance_request_item =
-  [@layout:comb]
-  { owner : address
-  ; token_id : token_id
-  }
-type balance_response_item =
-  [@layout:comb]
-  { request : balance_request_item
-  ; balance : nat
-  }
-type balance_request_params =
-  [@layout:comb]
-  { requests : balance_request_item list
-  ; callback : balance_response_item list contract
-  }
-
-// FA2 operator entrypoints types
-type operator_param =
-  [@layout:comb]
-  { owner : address
-  ; operator : address
-  ; token_id : token_id
-  }
-type update_operator =
-  [@layout:comb]
-  | Add_operator of operator_param
-  | Remove_operator of operator_param
-type update_operators_param = update_operator list
-
-// Full FA2 compliance parameter
-type fa2_parameter =
-  [@layout:comb]
-    Transfer of transfer_params
-  | Balance_of of balance_request_params
-  | Update_operators of update_operators_param
 
 // -- Helpers -- //
 
@@ -191,9 +137,7 @@ type quorum_threshold_at_cycle =
   }
 
 type storage =
-  { ledger : ledger
-  ; operators : operators
-  ; governance_token : governance_token
+  { governance_token : governance_token
   ; admin : address
   ; guardian : address // A special role that can drop any proposals at anytime
   ; pending_owner : address
@@ -202,11 +146,11 @@ type storage =
   ; proposals : (proposal_key, proposal) big_map
   ; proposal_key_list_sort_by_level : (blocks * proposal_key) set
   ; permits_counter : nonce
-  ; total_supply : total_supply
   ; freeze_history : freeze_history
   ; frozen_token_id : token_id
   ; start_level : blocks
   ; quorum_threshold_at_cycle : quorum_threshold_at_cycle
+  ; frozen_total_supply : nat
   }
 
 // -- Parameter -- //
@@ -257,7 +201,6 @@ type transfer_contract_tokens_param =
  * Entrypoints that forbids Tz transfers
  *)
 type forbid_xtz_params =
-  | Call_FA2 of fa2_parameter
   | Drop_proposal of proposal_key
   | Vote of vote_param_permited list
   | Flush of nat
@@ -291,10 +234,6 @@ type decision_lambda_input =
 
 // -- Config -- //
 
-type initial_ledger_val = address * token_id * nat
-
-type ledger_list = (ledger_key * ledger_value) list
-
 type initial_config_data =
   { max_quorum : quorum_threshold
   ; min_quorum : quorum_threshold
@@ -315,7 +254,7 @@ type initial_storage_data =
   ; governance_token : governance_token
   ; current_level : blocks
   ; metadata_map : metadata_map
-  ; ledger_lst : ledger_list
+  ; freeze_history : freeze_history_list
   }
 
 type initial_data =
