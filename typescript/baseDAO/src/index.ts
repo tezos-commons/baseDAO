@@ -6,16 +6,6 @@ import { InMemorySigner, importKey } from '@taquito/signer';
 
 export {CallCustom} from  './generated/CallCustom';
 export {Accept_ownership} from  './generated/Accept_ownership';
-export {Balance_of, Balance_ofRequests, Balance_ofRequestsItem} from  './generated/Balance_of';
-export {Transfer, TransferItem, TransferItemTxs, TransferItemTxsItem } from  './generated/Transfer';
-export
-  { Update_operators
-  , Update_operatorsItem
-  , Update_operatorsItemAdd_operator
-  , Update_operatorsItemAdd_operatorItem
-  , Update_operatorsItemRemove_operator
-  , Update_operatorsItemRemove_operatorItem
-  } from  './generated/Update_operators';
 export {Drop_proposal} from  './generated/Drop_proposal';
 export {Flush} from  './generated/Flush';
 export {Propose} from  './generated/Propose';

@@ -228,9 +228,10 @@ checkProposalSavesQuorum originateFn getProposal = do
     "BaseDAO contract did not store quorum threshold in proposal as expected"
 
 proposalIsRejectedIfNoQuorum
-  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
-  => m ()
-proposalIsRejectedIfNoQuorum = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => CheckBalanceFn m
+  -> m ()
+proposalIsRejectedIfNoQuorum checkBalanceFn = do
   DaoOriginateData{..} <-
     originateLigoDaoWithConfigDesc dynRecUnsafe
       ((ConfigDesc $ Period 60)
@@ -259,29 +260,31 @@ proposalIsRejectedIfNoQuorum = do
   let vote_ =
         NoPermit VoteParam
           { vVoteType = True
-          , vVoteAmount = 13
-            -- The minimum votes that is required to pass is 280 * 1/20  = 14.
+          , vVoteAmount = 3
+            -- The minimum votes that is required to pass is 80 * 1/20  = 4.
           , vProposalKey = key1
           }
   withSender voter $
     call dao (Call @"Vote") [vote_]
 
-  let expectedFrozen = 100 + 42 + 10
-  checkTokenBalance frozenTokenId dao proposer expectedFrozen
+  let expectedFrozen = 42 + 10
+  checkBalanceFn (unTAddress dao) proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
   withSender admin $ call dao (Call @"Flush") 100
 
-  checkTokenBalance frozenTokenId dao proposer 110 -- We expect 42 tokens to have burned
+  checkBalanceFn (unTAddress dao) proposer 10 -- We expect 42 tokens to have burned
 
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum
-  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
-  => m ()
-proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
+  :: (MonadNettest caps base m, HasCallStack)
+  => CheckBalanceFn m
+  -> m ()
+proposalSucceedsIfUpVotesGtDownvotesAndQuorum checkBalanceFn = do
   DaoOriginateData{..} <-
     originateLigoDaoWithConfigDesc dynRecUnsafe
-      ((ConfigDesc $ Period 60)
+      (testConfig
+      >>- (ConfigDesc $ Period 60)
       >>- (ConfigDesc (FixedFee 42))
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 1800 })
       ) $ mkQuorumThreshold 1 20
@@ -307,19 +310,19 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   let vote_ =
         NoPermit VoteParam
           { vVoteType = True
-          , vVoteAmount = 14
-            -- The minimum votes that is required to pass is 280 * 1/20  = 14.
+          , vVoteAmount = 4
+            -- The minimum votes that is required to pass is 80 * 1/20  = 4.
           , vProposalKey = key1
           }
   withSender voter $
     call dao (Call @"Vote") [vote_]
 
-  let expectedFrozen = 100 + 42 + 10
-  checkTokenBalance frozenTokenId dao proposer expectedFrozen
+  let expectedFrozen = 42 + 10
+  checkBalanceFn (unTAddress dao) proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
   withSender admin $ call dao (Call @"Flush") 100
 
-  checkTokenBalance frozenTokenId dao proposer 152
+  checkBalanceFn (unTAddress dao) proposer 52
 

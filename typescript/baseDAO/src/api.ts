@@ -10,14 +10,11 @@ import { InMemorySigner, importKey } from '@taquito/signer';
 import { Parameter } from './generated/Parameter';
 import { CallCustom } from './generated/CallCustom';
 import { Accept_ownership } from './generated/Accept_ownership';
-import { Balance_of } from './generated/Balance_of';
 import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
 import { Propose } from './generated/Propose';
-import { Transfer } from './generated/Transfer';
 import { Transfer_contract_tokens } from './generated/Transfer_contract_tokens';
 import { Transfer_ownership } from './generated/Transfer_ownership';
-import { Update_operators } from './generated/Update_operators';
 import { Vote } from './generated/Vote';
 import { Freeze } from './generated/Freeze';
 import { Unfreeze } from './generated/Unfreeze';
@@ -137,10 +134,6 @@ export class BaseDAOContract {
   }
 
   // entrypoint methods
-  balance_of(arg: Balance_of): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.balance_of(arg.requests, arg.callback));
-  }
 
   accept_ownership(): Promise<string|void> {
     return this.withContract(
@@ -167,10 +160,6 @@ export class BaseDAOContract {
       contract => contract.methods.propose(arg.frozen_token, arg.proposal_metadata));
   }
 
-  transfer(arg: Transfer): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.transfer(arg));
-  }
 
   transfer_contract_tokens(arg: Transfer_contract_tokens): Promise<string|void> {
     return this.withContract(
@@ -180,12 +169,6 @@ export class BaseDAOContract {
   transfer_ownership(arg: Transfer_ownership): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.transfer_ownership(arg));
-  }
-
-  update_operators(arg: Update_operators) {
-
-    return this.withContract(
-      contract => contract.methods.update_operators(arg));
   }
 
   vote(arg: Vote) {

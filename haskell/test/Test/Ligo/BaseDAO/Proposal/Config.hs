@@ -16,7 +16,6 @@ module Test.Ligo.BaseDAO.Proposal.Config
   , DecisionLambdaAction (..)
 
   , testConfig
-  , configWithRejectedProposal
   , badRejectedValueConfig
   , decisionLambdaConfig
   , voteConfig
@@ -146,9 +145,10 @@ passProposerOnDecision target = DecisionLambdaAction $ do
 ------------------------------------------------------------------------
 
 testConfig
-  :: AreConfigDescsExt config [ConfigConstants, ProposalFrozenTokensCheck]
+  :: AreConfigDescsExt config [ConfigConstants, ProposalFrozenTokensCheck, RejectedProposalSlashValue]
   => ConfigDesc config
 testConfig =
+  ConfigDesc (divideOnRejectionBy 2) >>-
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
   ConfigDesc configConsts
     { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100) }
@@ -162,12 +162,6 @@ voteConfig = ConfigDesc $
   ConfigDesc (proposalFrozenTokensMinBound 10) >>-
   ConfigDesc configConsts
     { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 4 100) }
-
-configWithRejectedProposal
-  :: AreConfigDescsExt config '[RejectedProposalSlashValue]
-  => ConfigDesc config
-configWithRejectedProposal =
-  ConfigDesc (divideOnRejectionBy 2)
 
 badRejectedValueConfig
   :: AreConfigDescsExt config '[RejectedProposalSlashValue]

@@ -56,8 +56,8 @@ voteNonExistingProposal originateFn = do
 
 voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-voteMultiProposals originateFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> CheckBalanceFn m -> m ()
+voteMultiProposals originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
@@ -87,7 +87,7 @@ voteMultiProposals originateFn = do
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
-  checkTokenBalance (frozenTokenId) dodDao dodOwner2 105
+  checkBalanceFn (unTAddress dodDao) dodOwner2 5
   -- TODO [#31]: check storage if the vote update the proposal properly
 
 proposalCorrectlyTrackVotes
@@ -227,8 +227,10 @@ voteOutdatedProposal originateFn = do
 
 voteValidProposal
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-voteValidProposal originateFn = do
+  => (ConfigDesc Config -> OriginateFn m)
+  -> CheckBalanceFn m
+  -> m ()
+voteValidProposal originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
@@ -251,13 +253,13 @@ voteValidProposal originateFn = do
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkTokenBalance frozenTokenId dodDao dodOwner2 102
+  checkBalanceFn (unTAddress dodDao) dodOwner2 2
   -- TODO [#31]: check if the vote is updated properly
 
 voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-voteWithPermit originateFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> CheckBalanceFn m -> m ()
+voteWithPermit originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 12)
@@ -279,7 +281,7 @@ voteWithPermit originateFn = do
   advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkTokenBalance frozenTokenId dodDao dodOwner1 112
+  checkBalanceFn (unTAddress dodDao) dodOwner1 12
 
 voteWithPermitNonce
   :: (MonadNettest caps base m, HasCallStack)

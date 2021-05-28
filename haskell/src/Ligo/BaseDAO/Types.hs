@@ -7,18 +7,6 @@ module Ligo.BaseDAO.Types
   ( frozenTokenId
   , baseDaoAnnOptions
 
-    -- * Operators
-  , Operator
-  , Operators
-
-    -- * Ledger
-  , Ledger
-  , LedgerKey
-  , LedgerValue
-
-    -- * Total Supply
-  , TotalSupply
-
     -- * Proposals
   , ProposalKey
   , ProposeParams(..)
@@ -71,13 +59,11 @@ module Ligo.BaseDAO.Types
   , defaultConfig
   , mkFullStorage
   , setExtra
-
-  , sOperatorsLens
   ) where
 
 import Universum (Enum, Integral, Num, One(..), Real, fromIntegral, div, maybe, (*))
 
-import Control.Lens (makeLensesFor)
+import Fmt (Buildable, build, genericF)
 import qualified Data.Map as M
 
 import Lorentz hiding (now)
@@ -115,33 +101,6 @@ frozenTokenId = FA2.TokenId 0
 
 baseDaoAnnOptions :: AnnOptions
 baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnake }
-
-------------------------------------------------------------------------
--- Operators
-------------------------------------------------------------------------
-
-type Operator = ("owner" :! Address, "operator" :! Address, "token_id" :! FA2.TokenId)
-
-type Operators' big_map = big_map Operator ()
-
-type Operators = Operators' BigMap
-
-------------------------------------------------------------------------
--- Ledger
-------------------------------------------------------------------------
-
-type Ledger' big_map = big_map LedgerKey LedgerValue
-type Ledger = Ledger' BigMap
-
-type LedgerKey = (Address, FA2.TokenId)
-
-type LedgerValue = Natural
-
-------------------------------------------------------------------------
--- Total Supply
-------------------------------------------------------------------------
-
-type TotalSupply = Map FA2.TokenId Natural
 
 ------------------------------------------------------------------------
 -- Proposals
@@ -454,8 +413,7 @@ type UnfreezeParam = ("amount" :! Natural)
 -- issue has been fixed:
 -- https://gitlab.com/morley-framework/morley/-/issues/527
 data ForbidXTZParam
-  = Call_FA2 FA2.Parameter
-  | Drop_proposal ProposalKey
+  = Drop_proposal ProposalKey
   | Flush Natural
   | Freeze FreezeParam
   | Unfreeze UnfreezeParam
@@ -482,6 +440,9 @@ data AddressFreezeHistory = AddressFreezeHistory
   , fhStaked :: Natural
   } deriving stock (Eq, Show)
 
+instance Buildable AddressFreezeHistory where
+  build = genericF
+
 data GovernanceToken = GovernanceToken
   { gtAddress :: Address
   , gtTokenId :: FA2.TokenId
@@ -507,18 +468,16 @@ data Storage' big_map = Storage'
   , sGuardian :: Address
   , sExtra :: ContractExtra' big_map
   , sFrozenTokenId :: FA2.TokenId
-  , sLedger :: Ledger' big_map
   , sMetadata :: TZIP16.MetadataMap big_map
-  , sOperators :: Operators' big_map
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
   , sProposals :: big_map ProposalKey Proposal
   , sProposalKeyListSortByDate :: Set (Natural, ProposalKey)
   , sGovernanceToken :: GovernanceToken
-  , sTotalSupply :: TotalSupply
   , sFreezeHistory :: big_map Address AddressFreezeHistory
   , sStartLevel :: Natural
   , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
+  , sFrozenTotalSupply :: Natural
   }
 
 customGeneric "Storage'" ligoLayout
@@ -562,9 +521,7 @@ mkStorage admin extra metadata lvl tokenAddress qt =
     { sAdmin = arg #admin admin
     , sGuardian = arg #admin admin
     , sExtra = arg #extra extra
-    , sLedger = mempty
     , sMetadata = arg #metadata metadata
-    , sOperators = mempty
     , sPendingOwner = arg #admin admin
     , sPermitsCounter = Nonce 0
     , sProposals = mempty
@@ -573,11 +530,11 @@ mkStorage admin extra metadata lvl tokenAddress qt =
         { gtAddress = arg #tokenAddress tokenAddress
         , gtTokenId = FA2.theTokenId
         }
-    , sTotalSupply = M.fromList [(frozenTokenId, 0)]
     , sFreezeHistory = mempty
     , sStartLevel = arg #level lvl
     , sFrozenTokenId = frozenTokenId
     , sQuorumThresholdAtCycle = QuorumThresholdAtCycle 1 (arg #quorumThreshold qt) 0
+    , sFrozenTotalSupply = 0
     }
 
 mkMetadataMap
@@ -747,14 +704,6 @@ instance ParameterHasEntrypoints Parameter where
 
 customGeneric "AddressFreezeHistory" ligoLayout
 deriving anyclass instance IsoValue AddressFreezeHistory
-
-
--- Lenses
-------------------------------------------------
-
-makeLensesFor
-  [ ("sOperators", "sOperatorsLens")
-  ] ''Storage'
 
 ------------------------------------------------------------------------
 -- Errors
