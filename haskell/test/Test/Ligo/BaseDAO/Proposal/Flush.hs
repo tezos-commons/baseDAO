@@ -1,5 +1,7 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
+--
+{-# LANGUAGE ApplicativeDo #-}
 
 -- | Contains tests on @flush@ entrypoint logic.
 module Test.Ligo.BaseDAO.Proposal.Flush
@@ -105,8 +107,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   advanceLevel 20
 
   -- [Proposing]
-  key1 <- createSampleProposal 1 dodOwner1 dodDao
-  key2 <- createSampleProposal 2 dodOwner1 dodDao
+  (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
   advanceLevel 1
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
@@ -119,9 +120,10 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   advanceLevel 20
 
   -- [Voting]
-  withSender dodOwner2 $ do
-    call dodDao (Call @"Vote") [vote' key1]
-    call dodDao (Call @"Vote") [vote' key2]
+  withSender dodOwner2 . inBatch $ do
+      call dodDao (Call @"Vote") [vote' key1]
+      call dodDao (Call @"Vote") [vote' key2]
+      pure ()
 
   advanceLevel 22
 
@@ -135,7 +137,6 @@ flushAcceptedProposalsWithAnAmount originateFn = do
 
   -- key3 is rejected
   checkTokenBalance frozenTokenId dodDao dodOwner1 125
-
 
 flushRejectProposalQuorum
   :: (MonadNettest caps base m, HasCallStack)
@@ -388,8 +389,7 @@ flushProposalFlushTimeNotReach originateFn = do
   -- Advance one voting period to a proposing stage.
   advanceLevel 20
 
-  _key1 <- createSampleProposal 1 dodOwner1 dodDao
-  _key2 <- createSampleProposal 2 dodOwner1 dodDao
+  (_key1, _key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
   -- Advance two voting period to another proposing stage.
   advanceLevel 20 -- skip voting period
   advanceLevel 21

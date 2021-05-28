@@ -1,6 +1,7 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 --
+{-# LANGUAGE ApplicativeDo #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 -- For all the incomplete list pattern matches in the calls to the
 -- `withOriginated` function
@@ -88,13 +89,14 @@ notSetAdmin
 notSetAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      withSender owner $ do
+      withSender owner . inBatch $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
         -- Make the call once again to make sure the admin still retains admin
         -- privileges
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
+        pure ()
 
 rewritePendingOwner
   :: MonadNettest caps base m
@@ -102,11 +104,12 @@ rewritePendingOwner
 rewritePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
-      withSender owner $ do
+      withSender owner . inBatch $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet2)
+        pure ()
       -- Make the accept ownership call from wallet1 and see that it fails
       withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
         & expectNotPendingOwner baseDao
@@ -119,11 +122,12 @@ invalidatePendingOwner
 invalidatePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      withSender owner $ do
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner .! wallet1)
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner .! owner)
+      withSender owner . inBatch $ do
+          call baseDao (Call @"Transfer_ownership")
+            (#newOwner .! wallet1)
+          call baseDao (Call @"Transfer_ownership")
+            (#newOwner .! owner)
+          pure ()
       -- Make the accept ownership call from wallet1 and see that it fails
       -- with 'not pending owner' error
       withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
