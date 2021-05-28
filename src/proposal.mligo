@@ -169,12 +169,12 @@ let burn_frozen_token (tokens, addr, store : nat * address * storage): storage =
   let (ledger, total_supply) = debit_from(tokens, addr, store.frozen_token_id, store.ledger, store.total_supply)
   in { store with ledger = ledger; total_supply = total_supply }
 
-let unstake_tk(token_amount, addr, period, store : nat * address * period * storage): storage =
+let unstake_tk(token_amount, burn_amount, addr, period, store : nat * nat * address * period * storage): storage =
   let current_stage = get_current_stage_num(store.start_level, period) in
   match Big_map.find_opt addr store.freeze_history with
     | Some(fh) ->
         let fh = update_fh(current_stage, fh) in
-        let fh = unstake_frozen_fh(token_amount, fh) in
+        let fh = unstake_frozen_fh(token_amount, burn_amount, fh) in
         let new_freze_history = Big_map.update addr (Some(fh)) store.freeze_history in
         { store with freeze_history = new_freze_history }
     | None -> ([%Michelson ({| { FAILWITH } |} : (string * unit) -> storage)]
@@ -184,9 +184,9 @@ let unfreeze_proposer_and_voter_token
   (rejected_proposal_slash, is_accepted, proposal, period, fixed_fee, store :
     (proposal * contract_extra -> nat) * bool * proposal * period * nat * storage): storage =
   // unfreeze_proposer_token
-  let (tokens, store) =
+  let (tokens, burn_amount, store) =
     if is_accepted
-    then (proposal.proposer_frozen_token + fixed_fee, store)
+    then (proposal.proposer_frozen_token + fixed_fee, 0n, store)
     else
       let slash_amount = rejected_proposal_slash (proposal, store.extra) in
       let frozen_tokens = proposal.proposer_frozen_token + fixed_fee in
@@ -197,14 +197,14 @@ let unfreeze_proposer_and_voter_token
               Some value -> value
             | None -> 0n
             in
-      (tokens, store)
+      (tokens, desired_burn_amount, store)
     in
-  let store = unstake_tk(tokens, proposal.proposer, period, store) in
+  let store = unstake_tk(tokens, burn_amount, proposal.proposer, period, store) in
 
   // unfreeze_voter_token
   let do_unfreeze = fun
         ( store, voter_with_vote : storage * ((address * vote_type) * nat))
-          -> unstake_tk(voter_with_vote.1, voter_with_vote.0.0, period, store) in
+          -> unstake_tk(voter_with_vote.1, 0n, voter_with_vote.0.0, period, store) in
 
   Map.fold do_unfreeze proposal.voters store
 
