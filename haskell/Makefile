@@ -14,6 +14,11 @@ STACK_DEV_TEST_OPTIONS = --fast --ghc-options -Wwarn
 STACK_CI_TEST_OPTIONS = --fast --ghc-options -Werror
 # Addtional (specified by user) options passed to test executable
 TEST_ARGUMENTS ?= ""
+# Addtional (specified by user) options passed to `exec` command
+EXEC_ARGUMENTS ?= ""
+# Addtional (specified by user) options for specifying output file
+# Mainly used when generating metadata
+EXEC_OUTPUT ?= ""
 # Packages to apply the command (build, test, e.t.c) for.
 PACKAGE = baseDAO templateDAO
 
@@ -28,6 +33,9 @@ build:
 
 test:
 	$(call call_test,"",$(STACK_DEV_TEST_OPTIONS))
+
+exec:
+	stack exec -- $(PACKAGE) $(EXEC_ARGUMENTS) > "../$(EXEC_OUTPUT)"
 
 # Like 'test' command, but enforces dumb terminal which may be useful to
 # workardoung some issues with `tasty`.

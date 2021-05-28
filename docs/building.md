@@ -24,6 +24,40 @@ which will use `ligo compile-contract` and save the result in `out/baseDAO.tz`.
 If you prefer to build it manually, the contract's main entrypoint is
 `base_DAO_contract`, located in [src/base_DAO.mligo](../src/base_DAO.mligo).
 
+## Generating a contract metadata
+
+BaseDAO metadata should be compliant with [TZIP-16](https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-16/tzip-16.md).
+
+You can generate the known metadata, but you'll need the `stack` tool installed, see
+[The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial for instructions on how to obtain it.
+
+```bash
+make metadata --output=metadata.json
+```
+You can then modify the produced `metadata.json` if you want to add more information.
+
+This metadata should be stored either:
+- On IPFS: [Get started with IPFS](https://ipfs.io/)
+- As a separate contract: [The `tezos-storage` URI Scheme](https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-16/tzip-16.md#the-tezos-storage-uri-scheme)
+
+
+To use this metadata, follow [TZIP-16 Contract storage](https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-16/tzip-16.md#contract-storage)
+
+Specifically:
+> The encoding of the values must be the direct stream
+of bytes of the data being stored. For instance, an URI starting with `http:`
+will start with the 5 bytes `0x687474703a` (`h` is `0x68`, `t` is `0x74`,
+etc.). There is no implicit conversion to Michelson's binary format (`PACK`) nor
+quoting mechanism.
+
+After the conversion, the bytes could be use in the argument `metadata_map` of the `make <storage>` command
+(See the next section for more detail.)
+```
+make <storage.tz> \
+  ... \
+  metadata_map=(Big_map.literal [("", <metadata-bytes>)])
+```
+
 ## Generating a contract storage
 
 You can use `ligo` to also generate a contract initial storage, using the
