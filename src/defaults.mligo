@@ -86,6 +86,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
       ; staked = 0n
       };
     frozen_total_supply = total;
+    delegates = (Big_map.empty : delegates);
   }
 
 let default_full_storage (data : initial_data) : full_storage =

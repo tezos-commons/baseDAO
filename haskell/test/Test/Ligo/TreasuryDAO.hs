@@ -82,11 +82,11 @@ validProposal checkBalanceFn = withFrozenCallStack $ do
   advanceLevel dodPeriod
 
   withSender dodOwner1 $
-    call dodDao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
+    call dodDao (Call @"Propose") (ProposeParams dodOwner1 (proposalSize + 1) proposalMeta)
     & expectCustomError #fAIL_PROPOSAL_CHECK dodDao incorrectTokenAmountErrMsg
 
   withSender dodOwner1 $
-    call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
+    call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
 
   checkBalanceFn (unTAddress dodDao) dodOwner1 (proposalSize)
 
@@ -103,7 +103,7 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
         , tpTransfers = [ tokenTransferType (toAddress dodTokenContract) dodOwner2 dodOwner1 ]
         }
     proposalSize = metadataSize proposalMeta
-    proposeParams = ProposeParams proposalSize proposalMeta
+    proposeParams = ProposeParams dodOwner1 proposalSize proposalMeta
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
@@ -115,13 +115,14 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
   advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") proposeParams
-  let key1 = makeProposalKey proposeParams dodOwner1
+  let key1 = makeProposalKey proposeParams
 
   checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
 
   let
     upvote = NoPermit VoteParam
-        { vVoteType = True
+        { vFrom = dodOwner2
+        , vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key1
         }
@@ -150,7 +151,7 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
         { tpAgoraPostId = 1
         , tpTransfers = [ xtzTransferType amt dodOwner2 ]
         }
-    proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
+    proposeParams amt = ProposeParams dodOwner1 (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
   -- Freeze in initial voting stage.
   withSender dodOwner1 $
@@ -171,13 +172,14 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
       & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeXtzErrMsg
 
     call dodDao (Call @"Propose") (proposeParams 3)
-  let key1 = makeProposalKey (proposeParams 3) dodOwner1
+  let key1 = makeProposalKey (proposeParams 3)
 
   checkBalanceFn (unTAddress dodDao) dodOwner1 43
 
   let
     upvote = NoPermit VoteParam
-        { vVoteType = True
+        { vFrom = dodOwner2
+        , vVoteType = True
         , vVoteAmount = 1
         , vProposalKey = key1
         }
@@ -217,18 +219,15 @@ proposalCheckFailZeroMutez = withFrozenCallStack do
   advanceLevel dodPeriod
 
   withSender dodOwner1 $
-    call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
+    call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
       & expectCustomError #fAIL_PROPOSAL_CHECK dodDao zeroMutezErrMsg
 
-proposalCheckBiggerThanMaxProposalSize :: HasCallStack => NettestScenario m
-proposalCheckBiggerThanMaxProposalSize = uncapsNettest $ withFrozenCallStack do
+proposalCheckBiggerThanMaxProposalSize
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  => m ()
+proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance id
-      (\owner1_ owner2_ ->
-        [ ((owner1_, frozenTokenId), 200)
-        , ((owner2_, frozenTokenId), 200)
-        ])
-      defaultQuorumThreshold
+    originateTreasuryDao id defaultQuorumThreshold
   let
     largeProposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       TransferProposal 1 $
@@ -243,7 +242,7 @@ proposalCheckBiggerThanMaxProposalSize = uncapsNettest $ withFrozenCallStack do
   advanceLevel 10
 
   withSender dodOwner1 $
-    call dodDao (Call @"Propose") (ProposeParams largeProposalSize largeProposalMeta)
+    call dodDao (Call @"Propose") (ProposeParams dodOwner1 largeProposalSize largeProposalMeta)
       & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeProposalErrMsg
 
 

@@ -56,12 +56,14 @@ flushAcceptedProposals originateFn getFreezeHistoryFn = do
   advanceLevel dodPeriod
 
   let upvote' = NoPermit VoteParam
-        { vVoteType = True
+        { vFrom = dodOwner2
+        , vVoteType = True
         , vVoteAmount = 10
         , vProposalKey = key1
         }
       downvote' = NoPermit VoteParam
-        { vVoteType = False
+        { vFrom = dodOwner2
+        , vVoteType = False
         , vVoteAmount = 5
         , vProposalKey = key1
         }
@@ -116,7 +118,8 @@ flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   let vote' key = NoPermit VoteParam
-        { vVoteType = True
+        { vFrom = dodOwner2
+        , vVoteType = True
         , vVoteAmount = 5
         , vProposalKey = key
         }
@@ -172,6 +175,7 @@ flushRejectProposalQuorum originateFn checkBalanceFn = do
           { vVoteType = True
           , vVoteAmount = 3
           , vProposalKey = key1
+          , vFrom = dodOwner2
           }
         ]
   -- Advance one voting period to a voting stage.
@@ -219,16 +223,19 @@ flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
           { vVoteType = True
           , vVoteAmount = 1
           , vProposalKey = key1
+          , vFrom = dodOwner2
           }
         , VoteParam
           { vVoteType = False
           , vVoteAmount = 1
           , vProposalKey = key1
+          , vFrom = dodOwner2
           }
         , VoteParam
           { vVoteType = False
           , vVoteAmount = 1
           , vProposalKey = key1
+          , vFrom = dodOwner2
           }
         ]
   -- Advance one voting period to a voting stage.
@@ -276,6 +283,7 @@ flushWithBadConfig originateFn checkBalanceFn = do
         { vVoteType = True
         , vVoteAmount = 1
         , vProposalKey = key1
+        , vFrom = dodOwner2
         }
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
@@ -317,6 +325,7 @@ flushDecisionLambda originateFn = do
         { vVoteType = True
         , vVoteAmount = 10
         , vProposalKey = key1
+        , vFrom = dodOwner2
         }
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
@@ -360,6 +369,7 @@ flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
         { vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key
+        , vFrom = dodOwner2
         }
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
@@ -417,7 +427,7 @@ flushNotEmpty
 flushNotEmpty originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
-     (configWithRejectedProposal
+     (testConfig
        >>- (ConfigDesc (Period 20))
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
@@ -440,6 +450,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
         { vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key
+        , vFrom = dodOwner2
         }
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
 

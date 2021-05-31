@@ -88,6 +88,7 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.OffChainViews
       Test.Ligo.BaseDAO.Proposal
       Test.Ligo.BaseDAO.Proposal.Config
+      Test.Ligo.BaseDAO.Proposal.Delegate
       Test.Ligo.BaseDAO.Proposal.Flush
       Test.Ligo.BaseDAO.Proposal.Propose
       Test.Ligo.BaseDAO.Proposal.Quorum

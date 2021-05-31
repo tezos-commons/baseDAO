@@ -136,6 +136,15 @@ type quorum_threshold_at_cycle =
   ; staked : nat
   }
 
+// A 'delegate' has the permission to `vote` and `propose` on behalf of an address
+
+type delegate =
+  [@layout:comb]
+  { owner : address
+  ; delegate : address
+  }
+type delegates = (delegate, unit) big_map
+
 type storage =
   { governance_token : governance_token
   ; admin : address
@@ -151,6 +160,7 @@ type storage =
   ; start_level : blocks
   ; quorum_threshold_at_cycle : quorum_threshold_at_cycle
   ; frozen_total_supply : nat
+  ; delegates : delegates
   }
 
 // -- Parameter -- //
@@ -163,13 +173,15 @@ type transfer_ownership_param = address
 type custom_ep_param = (string * bytes)
 
 type propose_params =
-  { frozen_token : nat
+  [@layout:comb]
+  { from : address
+  ; frozen_token : nat
   ; proposal_metadata : proposal_metadata
   }
 
 type vote_param =
-  [@layout:comb]
-  { proposal_key : proposal_key
+  { from : address
+  ; proposal_key : proposal_key
   ; vote_type : vote_type
   ; vote_amount : nat
   }
@@ -196,6 +208,13 @@ type transfer_contract_tokens_param =
   ; params : transfer_params
   }
 
+type update_delegate =
+  [@layout:comb]
+  { enable : bool
+  ; delegate : address
+  }
+
+type update_delegate_params = update_delegate list
 
 (*
  * Entrypoints that forbids Tz transfers
@@ -206,6 +225,7 @@ type forbid_xtz_params =
   | Flush of nat
   | Freeze of freeze_param
   | Unfreeze of unfreeze_param
+  | Update_delegate of update_delegate_params
 
 (*
  * Entrypoints that allow Tz transfers

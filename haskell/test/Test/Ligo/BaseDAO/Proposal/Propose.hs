@@ -35,15 +35,16 @@ import Test.Ligo.BaseDAO.Proposal.Config
 
 data FailureReason = QuorumNotMet | Downvoted
 
-vote :: Bool -> ProposalKey -> PermitProtected VoteParam
-vote how key =
+vote :: Bool -> Address -> ProposalKey -> PermitProtected VoteParam
+vote how addr key =
   NoPermit VoteParam
     { vVoteType = how
     , vVoteAmount = 1
     , vProposalKey = key
+    , vFrom = addr
     }
 
-downvote :: ProposalKey -> PermitProtected VoteParam
+downvote :: Address -> ProposalKey -> PermitProtected VoteParam
 downvote = vote False
 
 validProposal
@@ -54,6 +55,7 @@ validProposal originateFn getFrozenTotalSupplyFn getFreezeHistoryFn = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
+        , ppFrom = dodOwner1
         }
 
   withSender dodOwner1 $
@@ -86,6 +88,7 @@ validProposalWithFixedFee getFrozenTotalSupplyFn getFreezeHistoryFn = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
+        , ppFrom = dodOwner1
         }
   let proposer = dodOwner1
 
@@ -96,7 +99,7 @@ validProposalWithFixedFee getFrozenTotalSupplyFn getFreezeHistoryFn = do
 
   withSender proposer $ call dodDao (Call @"Propose") params
 
-  supply <- getFrozenTotalSupplyFn (unTAddress dodDao) 
+  supply <- getFrozenTotalSupplyFn (unTAddress dodDao)
   supply @== 52
   fh <- getFreezeHistoryFn (unTAddress dodDao) dodOwner1
   fh @== Just (AddressFreezeHistory 0 0 1 52)
@@ -135,6 +138,7 @@ proposerIsReturnedFeeAfterSucceeding checkBalanceFn = do
           { vVoteType = True
           , vVoteAmount = 10
           , vProposalKey = key1
+          , vFrom = voter
           }
   withSender voter $
     call dodDao (Call @"Vote") [vote_]
@@ -164,6 +168,7 @@ cannotProposeWithInsufficientTokens = do
   let params = ProposeParams
         { ppFrozenToken = 1
         , ppProposalMetadata = lPackValueRaw @Integer 1
+        , ppFrom = dodOwner1
         }
   withSender proposer $ call dodDao (Call @"Propose") params
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
@@ -176,6 +181,7 @@ rejectProposal originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 9
         , ppProposalMetadata = lPackValueRaw @Integer 1
+        , ppFrom = dodOwner1
         }
 
   withSender dodOwner1 $
@@ -217,6 +223,7 @@ nonProposalPeriodProposal originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
+        , ppFrom = dodOwner1
         }
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
@@ -254,7 +261,7 @@ burnsFeeOnFailure reason checkBalanceFn = do
   case reason of
     Downvoted -> do
       withSender voter $
-        call dodDao (Call @"Vote") [downvote key1]
+        call dodDao (Call @"Vote") [downvote voter key1]
     QuorumNotMet -> return ()
 
   let expectedFrozen = 42 + 10
@@ -302,6 +309,7 @@ unstakesTokensForMultipleVotes getFhFn = do
           { vVoteType = typ
           , vVoteAmount = 10
           , vProposalKey = key1
+          , vFrom = voter
           }
 
   withSender voter . inBatch $ do
@@ -338,6 +346,7 @@ insufficientTokenProposal originateFn getProposalAmountFn = do
   let params = ProposeParams
         { ppFrozenToken = 101
         , ppProposalMetadata = lPackValueRaw @Integer 1
+        , ppFrom = dodOwner1
         }
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
@@ -366,11 +375,13 @@ insufficientTokenVote originateFn = do
             { vVoteType = True
             , vVoteAmount = 51
             , vProposalKey = key1
+            , vFrom = dodOwner2
            }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 50
             , vProposalKey = key1
+            , vFrom = dodOwner2
             }
         ]
   -- Advance one voting period to a voting stage.
@@ -408,6 +419,7 @@ dropProposal originateFn checkBalanceFn = withFrozenCallStack $ do
         { vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key
+        , vFrom = dodOwner2
         }
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
@@ -459,6 +471,7 @@ proposalBoundedValue originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
+        , ppFrom = dodOwner1
         }
 
   withSender dodOwner1 $ do

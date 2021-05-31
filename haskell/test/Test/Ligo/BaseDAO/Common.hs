@@ -79,8 +79,8 @@ dummyGuardianContract = defaultContract $
   stackType @'[[Operation], ()] #
   pair
 
-makeProposalKey :: ProposeParams -> Address -> ProposalKey
-makeProposalKey params owner = toHashHs $ lPackValue (params, owner)
+makeProposalKey :: ProposeParams -> ProposalKey
+makeProposalKey params = toHashHs $ lPackValue params
 
 addDataToSign
   :: (MonadNettest caps base m)
@@ -206,10 +206,11 @@ createSampleProposal_
   => Int -> Address -> TAddress Parameter -> (ProposalKey, m ())
 createSampleProposal_ counter dodOwner1 dao =
   let params = ProposeParams
-        { ppFrozenToken = 10
+        { ppFrom = dodOwner1
+        , ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer $ fromIntegral counter
         }
-  in (makeProposalKey params dodOwner1, call dao (Call @"Propose") params)
+  in (makeProposalKey params, call dao (Call @"Propose") params)
 
 -- TODO consider making this polymorphic on the input/output size
 createSampleProposals

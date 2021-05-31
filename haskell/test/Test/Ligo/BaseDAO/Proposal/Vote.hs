@@ -47,6 +47,7 @@ voteNonExistingProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = UnsafeHash "\11\12\13"
+        , vFrom = dodOwner2
         }
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
@@ -76,11 +77,13 @@ voteMultiProposals originateFn checkBalanceFn = do
             { vVoteType = True
             , vVoteAmount = 2
             , vProposalKey = key1
+            , vFrom = dodOwner2
             }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 3
             , vProposalKey = key2
+            , vFrom = dodOwner2
             }
         ]
 
@@ -121,11 +124,13 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
             { vVoteType = True
             , vVoteAmount = 5
             , vProposalKey = key1
+            , vFrom = voter1
             }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 3
             , vProposalKey = key2
+            , vFrom = voter1
             }
         ]
 
@@ -134,11 +139,13 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
             { vVoteType = False
             , vVoteAmount = 2
             , vProposalKey = key1
+            , vFrom = voter2
             }
         , VoteParam
             { vVoteType = True
             , vVoteAmount = 4
             , vProposalKey = key2
+            , vFrom = voter2
             }
         ]
 
@@ -147,11 +154,13 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
             { vVoteType = True
             , vVoteAmount = 3
             , vProposalKey = key1
+            , vFrom = voter1
             }
         , VoteParam
             { vVoteType = True
             , vVoteAmount = 3
             , vProposalKey = key2
+            , vFrom = voter1
             }
         ]
 
@@ -213,6 +222,7 @@ voteOutdatedProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
+        , vFrom = dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
@@ -248,6 +258,7 @@ voteValidProposal originateFn checkBalanceFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
+        , vFrom = dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
@@ -275,6 +286,7 @@ voteWithPermit originateFn checkBalanceFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
+        , vFrom = dodOwner1
         }
 
   -- Advance one voting period to a voting stage.
@@ -306,6 +318,7 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
+        , vFrom = dodOwner1
         }
 
   -- Advance one voting period to a voting stage.
@@ -359,11 +372,13 @@ votesBoundedValue originateFn = do
         { vVoteType = False
         , vVoteAmount = 1
         , vProposalKey = key1
+        , vFrom = dodOwner2
         }
       downvote' = NoPermit VoteParam
         { vVoteType = False
         , vVoteAmount = 1
         , vProposalKey = key1
+        , vFrom = dodOwner1
         }
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod

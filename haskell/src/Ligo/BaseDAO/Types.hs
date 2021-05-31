@@ -24,6 +24,11 @@ module Ligo.BaseDAO.Types
   , fractionDenominator
   , percentageToFractionNumerator
 
+  -- * Delegates
+  , Delegate (..)
+  , Delegates
+  , DelegateParam (..)
+
     -- * Non FA2
   , TransferContractTokensParam (..)
 
@@ -107,7 +112,8 @@ baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnak
 ------------------------------------------------------------------------
 
 data ProposeParams = ProposeParams
-  { ppFrozenToken      :: Natural
+  { ppFrom             :: Address
+  , ppFrozenToken      :: Natural
   --  ^ Determines how many sender's tokens will be frozen to get
   -- the proposal accepted
   , ppProposalMetadata :: ProposalMetadata
@@ -125,7 +131,7 @@ instance TypeHasDoc ProposalMetadata => TypeHasDoc ProposeParams where
 instance HasAnnotation ProposeParams where
   annOptions = baseDaoAnnOptions
 
-type ProposalKey = Hash Blake2b $ Packed (ProposeParams, Address)
+type ProposalKey = Hash Blake2b $ Packed ProposeParams
 
 ------------------------------------------------------------------------
 -- Voting
@@ -202,9 +208,9 @@ data VoteParam = VoteParam
   { vProposalKey :: ProposalKey
   , vVoteType    :: VoteType
   , vVoteAmount  :: Natural
+  , vFrom        :: Address
   }
-  deriving stock (Generic, Show)
-  deriving anyclass IsoValue
+  deriving stock (Show)
 
 instance TypeHasDoc ProposalMetadata => TypeHasDoc VoteParam where
   typeDocMdDescription = "Describes target proposal id, vote type and vote amount"
@@ -231,6 +237,46 @@ instance TypeHasDoc TransferContractTokensParam where
     "Describes an FA2 contract address and the parameter to call its 'transfer' entrypoint"
 
 instance HasAnnotation TransferContractTokensParam where
+  annOptions = baseDaoAnnOptions
+
+------------------------------------------------------------------------
+-- Delegates
+------------------------------------------------------------------------
+
+data Delegate = Delegate
+  { dOwner :: Address
+  , dDelegate :: Address
+  }
+  deriving stock (Generic, Show, Eq, Ord)
+  deriving anyclass IsoValue
+
+instance TypeHasDoc Delegate where
+  typeDocMdDescription =
+    "Describes a relation of a delegate address and an owner address"
+
+instance HasAnnotation Delegate where
+  annOptions = baseDaoAnnOptions
+
+type Delegates' big_map = big_map Delegate ()
+
+type Delegates = Delegates' BigMap
+
+
+data DelegateParam = DelegateParam
+  { dpEnable :: Bool
+  , dpDelegate :: Address
+  }
+  deriving stock (Generic, Show)
+  deriving anyclass IsoValue
+
+instance TypeHasDoc ProposalMetadata => TypeHasDoc DelegateParam where
+  typeDocMdDescription =
+     "Describes the parameters to update/remove a delegate."
+  typeDocMdReference = homomorphicTypeDocMdReference
+  typeDocHaskellRep = concreteTypeDocHaskellRep @DelegateParam
+  typeDocMichelsonRep = concreteTypeDocMichelsonRep @DelegateParam
+
+instance HasAnnotation DelegateParam where
   annOptions = baseDaoAnnOptions
 
 ------------------------------------------------------------------------
@@ -417,6 +463,7 @@ data ForbidXTZParam
   | Flush Natural
   | Freeze FreezeParam
   | Unfreeze UnfreezeParam
+  | Update_delegate [DelegateParam]
   | Vote [PermitProtected VoteParam]
   deriving stock (Show)
 
@@ -478,6 +525,7 @@ data Storage' big_map = Storage'
   , sStartLevel :: Natural
   , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
   , sFrozenTotalSupply :: Natural
+  , sDelegates :: Delegates' big_map
   }
 
 customGeneric "Storage'" ligoLayout
@@ -535,6 +583,7 @@ mkStorage admin extra metadata lvl tokenAddress qt =
     , sFrozenTokenId = frozenTokenId
     , sQuorumThresholdAtCycle = QuorumThresholdAtCycle 1 (arg #quorumThreshold qt) 0
     , sFrozenTotalSupply = 0
+    , sDelegates = mempty
     }
 
 mkMetadataMap
@@ -705,6 +754,9 @@ instance ParameterHasEntrypoints Parameter where
 customGeneric "AddressFreezeHistory" ligoLayout
 deriving anyclass instance IsoValue AddressFreezeHistory
 
+customGeneric "VoteParam" ligoLayout
+deriving anyclass instance IsoValue VoteParam
+
 ------------------------------------------------------------------------
 -- Errors
 ------------------------------------------------------------------------
@@ -783,6 +835,13 @@ type instance ErrorArg "vOTING_STAGE_OVER" = NoErrorArg
 instance CustomErrorHasDoc "vOTING_STAGE_OVER" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to vote on a proposal that is already ended"
+
+type instance ErrorArg "nOT_DELEGATE" = NoErrorArg
+
+instance CustomErrorHasDoc "nOT_DELEGATE" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "The sender of transaction is a delegate of the address"
 
 ------------------------------------------------
 -- Error causes by bounded value

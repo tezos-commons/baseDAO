@@ -55,7 +55,7 @@ checkFreezeHistoryTracking originateFn getFreezeHistory = do
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! requiredFrozen)
   advanceLevel dodPeriod
-  withSender dodOwner1 $ call dodDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
+  withSender dodOwner1 $ call dodDao (Call @"Propose") (ProposeParams dodOwner1 requiredFrozen proposalMeta1)
   advanceLevel dodPeriod
 
   fh <- getFreezeHistory (unTAddress dodDao) dodOwner1 -- TODO [#31]

@@ -140,10 +140,11 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
 let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
     : operation list * contract_extra =
   let propose_param : propose_params = {
+    from = proposal.proposer;
     frozen_token = proposal.proposer_frozen_token;
     proposal_metadata = proposal.metadata
     } in
-  let proposal_key = to_proposal_key (propose_param, proposal.proposer) in
+  let proposal_key = to_proposal_key (propose_param) in
   let ops = ([] : operation list) in
   match unpack_proposal_metadata(proposal.metadata) with
   | Update_receivers_proposal urp ->

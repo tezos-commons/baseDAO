@@ -13,8 +13,8 @@
 // -----------------------------------------------------------------
 
 [@inline]
-let to_proposal_key (propose_params, sender_addr : propose_params * address): proposal_key =
-  Crypto.blake2b (Bytes.pack (propose_params, sender_addr))
+let to_proposal_key (propose_params: propose_params): proposal_key =
+  Crypto.blake2b (Bytes.pack propose_params)
 
 [@inline]
 let check_if_proposal_exist (proposal_key, store : proposal_key * storage): proposal =
@@ -47,10 +47,40 @@ let ensure_proposing_stage(stage_num, store : nat * storage): storage =
 
 [@inline]
 let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
-  let proposal_key = to_proposal_key(propose_params, Tezos.sender) in
+  let proposal_key = to_proposal_key(propose_params) in
   if Map.mem proposal_key store.proposals
     then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
     else proposal_key
+
+// -----------------------------------------------------------------
+// Delegate
+// -----------------------------------------------------------------
+
+// Check if the `author`/`sender` address is the same as `from` or a delegate of `from`.
+// Return `from` as the result.
+[@inline]
+let check_delegate (from, author, store : address * address * storage): address =
+  let key: delegate = { owner = from; delegate = author } in
+  if (author <> from) && not (Big_map.mem key store.delegates) then
+    (failwith("NOT_DELEGATE") : address)
+  else from
+
+let update_delegate (delegates, param: delegates * update_delegate): delegates =
+  let delegate_update =
+    if param.enable
+    then (Some unit)
+    else (None : unit option) in
+  let key: delegate =
+      { owner = Tezos.sender
+      ; delegate = param.delegate
+      } in
+  let updated_delegates = Big_map.update key delegate_update delegates
+  in  updated_delegates
+
+let update_delegates (params, config, store : update_delegate_params * config * storage): return =
+  ( nil_op
+  , { store with delegates = List.fold update_delegate params store.delegates }
+  )
 
 // -----------------------------------------------------------------
 // Propose
@@ -108,7 +138,7 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
     ; start_level = {blocks = Tezos.level}
     ; voting_stage_num = current_stage + 1n
     ; metadata = propose_params.proposal_metadata
-    ; proposer = Tezos.sender
+    ; proposer = propose_params.from
     ; proposer_frozen_token = propose_params.frozen_token
     ; voters = (Map.empty : voter_map)
     ; quorum_threshold = store.quorum_threshold_at_cycle.quorum_threshold
@@ -151,10 +181,11 @@ let check_vote_limit_reached
 let vote(votes, config, store : vote_param_permited list * config * storage): return =
   let accept_vote = fun (store, pp : storage * vote_param_permited) ->
     let (param, author, store) = verify_permit_protected_vote (pp, store) in
+    let valid_from = check_delegate (pp.argument.from, author, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
     let vote_param = check_vote_limit_reached (config, proposal, param) in
     let store = ensure_proposal_voting_stage (proposal, config.period, store) in
-    let store = submit_vote (proposal, vote_param, author, config.period, store) in
+    let store = submit_vote (proposal, vote_param, valid_from, config.period, store) in
     store
   in
   (nil_op, List.fold accept_vote votes store)
@@ -228,12 +259,13 @@ let delete_proposal
   }
 
 let propose (param, config, store : propose_params * config * storage): return =
+  let valid_from = check_delegate (param.from, Tezos.sender, store) in
   let _ : unit = config.proposal_check (param, store.extra) in
   let store = check_proposal_limit_reached (config, store) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
   let current_stage = get_current_stage_num(store.start_level, config.period) in
   let store = update_quorum(current_stage, store, config) in
-  let store = stake_tk(amount_to_freeze, Tezos.sender, config.period, store) in
+  let store = stake_tk(amount_to_freeze, valid_from, config.period, store) in
   let store = add_proposal (param, config.period, store) in
   (nil_op, store)
 

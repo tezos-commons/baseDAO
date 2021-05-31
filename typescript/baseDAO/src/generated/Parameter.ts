@@ -7,6 +7,7 @@ import {Propose} from  './Propose';
 import {Transfer_contract_tokens} from  './Transfer_contract_tokens';
 import {Transfer_ownership} from  './Transfer_ownership';
 import {Unfreeze} from  './Unfreeze';
+import {Update_delegate} from  './Update_delegate';
 import {Vote} from  './Vote';
 export type Parameter =
   | Accept_ownership
@@ -18,4 +19,5 @@ export type Parameter =
   | Transfer_contract_tokens
   | Transfer_ownership
   | Unfreeze
+  | Update_delegate
   | Vote
