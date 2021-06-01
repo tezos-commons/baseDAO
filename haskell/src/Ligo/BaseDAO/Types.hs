@@ -897,6 +897,13 @@ instance CustomErrorHasDoc "eXPIRED_PROPOSAL" where
   customErrDocMdCause =
     "Throw when trying to `flush` expired proposals."
 
+type instance ErrorArg "eMPTY_FLUSH" = NoErrorArg
+
+instance CustomErrorHasDoc "eMPTY_FLUSH" where
+  customErrClass = ErrClassActionException
+  customErrDocMdCause =
+    "Thrown when trying to `flush` with no available proposals."
+
 type instance ErrorArg "nEGATIVE_TOTAL_SUPPLY" = ()
 
 instance CustomErrorHasDoc "nEGATIVE_TOTAL_SUPPLY" where

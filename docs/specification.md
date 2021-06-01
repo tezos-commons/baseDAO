@@ -351,6 +351,7 @@ The list of errors may be inaccurate and incomplete, it will be updated during t
 | `BAD_VIEW_CONTRACT`                  | Throw when the contract for a view entrypoint is not of the expected type.                                  |
 | `DROP_PROPOSAL_CONDITION_NOT_MET`    | Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired. |
 | `EXPIRED_PROPOSAL`                   | Throw when trying to `flush` expired proposals.                                                             |
+| `EMPTY_FLUSH`                        | Thrown when trying to `flush` with no available proposals.                                                  |
 | `BAD_STATE`                          | Throw when storage is in an unexpected state, indicating a contract error.                                  |
 
 # Entrypoints
@@ -774,6 +775,7 @@ Parameter (in Michelson):
   stored in the proposal, and this threshold will be used to check if the votes
   meet the quorum threshold.
   So any dynamic update to the quorum threshold shall not affect the proposal.
+- If no proposals can be flushed when called, fails with `EMPTY_FLUSH`.
 
 ### **drop_proposal**
 

@@ -135,7 +135,7 @@ proposerIsReturnedFeeAfterSucceeding = do
   checkTokenBalance frozenTokenId dodDao proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceLevel $ dodPeriod + 1
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   checkTokenBalance frozenTokenId dodDao proposer 152

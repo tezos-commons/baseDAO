@@ -13,6 +13,7 @@ module Test.Ligo.BaseDAO.Proposal.Flush
   , flushFailOnExpiredProposal
   , flushWithBadConfig
   , flushDecisionLambda
+  , flushNotEmpty
   ) where
 
 import Universum
@@ -395,3 +396,47 @@ flushProposalFlushTimeNotReach originateFn = do
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
   -- checkIfAProposalExist (key2 :: ByteString) dodDao
+
+
+flushNotEmpty
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+flushNotEmpty originateFn = withFrozenCallStack $ do
+  DaoOriginateData{..} <-
+    originateFn
+     (configWithRejectedProposal
+       >>- (ConfigDesc (Period 20))
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+      ) (mkQuorumThreshold 1 50)
+
+  -- no proposal exist at this point, so flush is empty
+  withSender dodAdmin $ call dodDao (Call @"Flush") 1
+    & expectCustomErrorNoArg #eMPTY_FLUSH dodDao
+
+  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 20)
+  withSender dodOwner2 $ call dodDao (Call @"Freeze") (#amount .! 20)
+
+  -- Advance one voting period to a proposing stage.
+  advanceLevel dodPeriod
+  key1 <- createSampleProposal 1 dodOwner1 dodDao
+
+  -- Advance one voting period to a voting stage.
+  advanceLevel dodPeriod
+  let params key = NoPermit VoteParam
+        { vVoteType = True
+        , vVoteAmount = 20
+        , vProposalKey = key
+        }
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
+
+  -- Advance one voting period to a proposing stage.
+  advanceLevel dodPeriod
+  -- the proposal exists at this point (and has votes), but it can't be flushed
+  -- yet, because it needs one more level to meet the `proposal_flush_time`
+  withSender dodAdmin $ call dodDao (Call @"Flush") 1
+    & expectCustomErrorNoArg #eMPTY_FLUSH dodDao
+
+  -- however after one more level flushing is allowed
+  advanceLevel 1
+  withSender dodAdmin $ call dodDao (Call @"Flush") 1

@@ -135,7 +135,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   checkTokenBalance frozenTokenId dodDao dodOwner1 proposalSize
@@ -190,7 +190,7 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: check xtz balance
