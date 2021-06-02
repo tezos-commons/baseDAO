@@ -301,9 +301,13 @@ let flush(n, config, store : nat * config * storage): return =
           let (start_level, proposal_key) = e in
           handle_proposal_is_over (config, start_level, proposal_key, store, ops, counter)
         in
-    let (ops, store, _) =
+    let (ops, store, counter) =
       Set.fold flush_one store.proposal_key_list_sort_by_level (nil_op, store, counter)
-    in (ops, store)
+    in
+    // prevent empty flushes to avoid gas costs when unnecessary.
+    if counter.current = 0n
+    then (failwith("EMPTY_FLUSH") : return)
+    else (ops, store)
 
 // Removes an accepted and finished proposal by key.
 let drop_proposal (proposal_key, config, store : proposal_key * config * storage): return =

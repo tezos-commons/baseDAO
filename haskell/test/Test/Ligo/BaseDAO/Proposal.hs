@@ -97,6 +97,9 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulatorCaps "flush and run decision lambda" $
           flushDecisionLambda (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
+      , nettestScenarioOnEmulatorCaps "empty flush calls are rejected" $
+          flushNotEmpty (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       , nettestScenarioOnEmulatorCaps "can drop proposals, only when allowed" $
           dropProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
