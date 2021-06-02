@@ -15,21 +15,14 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 # Overview
 
-The contract described here consists of two parts:
-- Token functionality ([FA2-based][FA2]).
+The contract described here consists of:
 - DAO functionality with proposals and voting.
 
-These two parts are coupled into one smart contract to reduce interactions
-between smart contracts, which is expensive and hard to get right in Tezos.
-However, an existing separate FA2 contract is used for governance.
+An existing separate FA2 contract is used for governance.
 
 # General Requirements
 
-- The contract must be FA2 compatible.
-
-- The contract must store frozen tokens (`token_id` is 0).
-
-- The contract may store tokens with other token identifiers.
+- The contract must store frozen tokens.
 
 - The contract must store a 'governance token'. This consist of the address of
   an FA2 contract and a `token_id` in that contract. The 'governance token'  is
@@ -198,14 +191,13 @@ These values are:
 
 This chapter provides a high-level overview of the contract's logic.
 
-- The contract maintains a ledger of address and its balance (frozen tokens and optionally others).
+- The contract maintains a map of addresses and its balance (frozen tokens).
 - The contract maintains the address of an a FA2 contract and a `token_id`,
   to use in the governance process.
-- The contract manages two special roles, the `admin` and `guardian`.
+- The contract manages three special roles, the `admin`, `guardian`, and `delegate`.
 - The contract stores a list of proposals that can be in one of the states:
-  "ongoing", "rejected", "accepted" or "expired".
-- The contract forbids transferring XTZ to the contract,
-  because they might be locked forever.
+  "proposed", "ongoing", "pending flush", "accepted", "rejected", or "expired".
+- The contract forbids transferring XTZ to the contract on certain entrypoints.
 
 ## Roles
 
@@ -222,9 +214,10 @@ These roles apply to the whole contract (hence "global"):
   - There always must be exactly one `guardian`.
 
 
-Additionally, the contract inherits the **operator** role from FA2.
-This role is "local" to a particular address.
-Each address can have any number of operators and be an operator of any number of addresses.
+Additionally, the contract also contains the **delegate** role:
+  - This role is "local" to a particular address.
+  - Each address can have any number of delegates and be an delegate of any number of addresses
+  - This role can call `propose` and `vote` on behalf of the owner.
 
 ## Period, Stages and Cycles
 
@@ -319,16 +312,7 @@ In error scenarios the contract fails with a string or a pair where the first
 item is a string.
 
 Here is a summary of all the strings used as error messages.
-We start with standard FA2 errors which are part of the FA2 specification.
-
-| Error                      | Description                                                                 |
-|----------------------------|-----------------------------------------------------------------------------|
-| `FA2_TOKEN_UNDEFINED`      | One of the specified `token_id`s is not defined                             |
-| `FA2_INSUFFICIENT_BALANCE` | Cannot debit from a wallet because of excessive amount of tokens            |
-| `FA2_NOT_OPERATOR`         | A transfer is initiated neither by the token owner nor a permitted operator |
-
-The next group consists of the errors that are not part of the FA2 specification.
-The list of errors may be inaccurate and incomplete, it will be updated during the implementation.
+(The list of errors may be inaccurate and incomplete, it will be updated during the implementation.)
 
 | Error                                | Description                                                                                                              |
 |--------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
@@ -352,23 +336,21 @@ The list of errors may be inaccurate and incomplete, it will be updated during t
 | `MISSING_VALUE`                      | Throw when trying to unpack a field that does not exist.                                                                 |
 | `NOT_PROPOSING_STAGE`                | Throw when `propose` call is made on a non-proposing period.                                                             |
 | `NOT_ENOUGH_FROZEN_TOKENS`           | Throw when there is not enough frozen tokens for the operation.                                                          |
-| `NOT_ENOUGH_STAKED_TOKENS`           | Throw when there is not enough staked tokens for the operation.                                                          |
 | `BAD_TOKEN_CONTRACT`                 | Throw when the token contract is not of expected type.                                                                   |
 | `BAD_VIEW_CONTRACT`                  | Throw when the contract for a view entrypoint is not of the expected type.                                               |
 | `DROP_PROPOSAL_CONDITION_NOT_MET`    | Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired.              |
 | `EXPIRED_PROPOSAL`                   | Throw when trying to `flush` expired proposals.                                                                          |
 | `EMPTY_FLUSH`                        | Thrown when trying to `flush` with no available proposals.                                                               |
 | `BAD_STATE`                          | Throw when storage is in an unexpected state, indicating a contract error.                                               |
+| `NOT_DELEGATE`                       | Throw when calling `propose` and `vote` with the sender that is not `from` or delegate of `from`.                        |
 
 # Entrypoints
 
 Full list:
-* [`transfer`](#transfer)
-* [`balance_of`](#balance_of)
-* [`update_operators`](#update_operators)
 * [`transfer_contract_tokens`](#transfer_contract_tokens)
 * [`transfer_ownership`](#transfer_ownership)
 * [`accept_ownership`](#accept_ownership)
+* [`update_delegates`](#update_delegates)
 * [`propose`](#propose)
 * [`vote`](#vote)
 * [`flush`](#flush)
@@ -394,160 +376,9 @@ In the definitions below it may be omitted, but it is still implied.
 Note: CameLIGO definitions are provided only for readability.
 If Michelson type contradicts what's written in CameLIGO definition, the Michelson definition takes precedence.
 
-## Standard FA2 Token Functions
+## Token Entrypoints
 
-Functions present in the [*FA2 Tezos Token Standard*][FA2].
-
-### **transfer**
-
-```ocaml
-type token_id = nat
-
-type transfer_destination =
-  [@layout:comb]
-  { to_ : address
-  ; token_id : token_id
-  ; amount : nat
-  }
-
-type transfer_item =
-  [@layout:comb]
-  { from_ : address
-  ; txs : transfer_destination list
-  }
-
-type transfer_params = transfer_item list
-
-Transfer of transfer_params
-```
-
-Parameter (in Michelson):
-```
-(list %transfer
-  (pair
-    (address %from_)
-    (list %txs
-      (pair
-        (address %to_)
-        (pair
-          (nat %token_id)
-          (nat %amount)
-        )
-      )
-    )
-  )
-)
-```
-
-- This entrypoint MUST follow the FA2 requirements.
-
-- Permission logic follows the default permissions descriptor specified in FA2.
-
-- Fails with `FROZEN_TOKEN_NOT_TRANSFERABLE` when trying to transfer frozen tokens.
-
-### **balance_of**
-
-```ocaml
-type token_id = nat
-
-type balance_request_item =
-  [@layout:comb]
-  { owner : address
-  ; token_id : token_id
-  }
-
-type balance_response_item =
-  [@layout:comb]
-  { request : balance_request_item
-  ; balance : nat
-  }
-
-type balance_request_params =
-  [@layout:comb]
-  { requests : balance_request_item list
-  ; callback : balance_response_item list contract
-  }
-
-Balance_of of balance_request_params
-```
-
-Parameter (in Michelson):
-```
-(pair %balance_of
-  (list %requests
-    (pair
-      (address %owner)
-      (nat %token_id)
-    )
-  )
-  (contract %callback
-    (list
-      (pair
-        (pair %request
-          (address %owner)
-          (nat %token_id)
-        )
-        (nat %balance)
-      )
-    )
-  )
-)
-```
-
-- This entrypoint MUST follow the FA2 requirements.
-
-### **update_operators**
-
-```ocaml
-type token_id = nat
-
-type operator_param =
-  [@layout:comb]
-  { owner : address
-  ; operator : address
-  ; token_id : token_id
-  }
-type update_operator =
-  [@layout:comb]
-  | Add_operator of operator_param
-  | Remove_operator of operator_param
-
-type update_operators_param = update_operator list
-
-Update_operators of update_operators_param
-```
-
-Parameter (in Michelson)
-```
-(list %update_operators
-  (or
-    (pair %add_operator
-      (address %owner)
-      (pair
-        (address %operator)
-        (nat %token_id)
-      )
-    )
-    (pair %remove_operator
-      (address %owner)
-      (pair
-        (address %operator)
-        (nat %token_id)
-      )
-    )
-  )
-)
-```
-
-- This entrypoint MUST follow the FA2 requirements.
-
-- Each `owner` must be equal to `SENDER`, otherwise `NOT_OWNER` error occurs.
-
-- The `token_id` field must not be equal to frozen token identifier (zero), otherwise `OPERATION_PROHIBITED` error occurs.
-
-## Custom (non-FA2) token functions
-
-Functions related to token transfers, but not present in FA2.
+Functions related to token transfers.
 
 ### **transfer_contract_tokens**
 
@@ -563,7 +394,7 @@ type transfer_destination =
 
 type transfer_item =
   [@layout:comb]
-  { from_ : address
+  { from : address
   ; txs : transfer_destination list
   }
 
@@ -582,7 +413,7 @@ Parameter (in Michelson):
 (pair %transfer_contract_tokens
   (address %contract_address)
   (list %params
-    (pair (address %from_)
+    (pair (address %from)
       (list %txs
         (pair
           (address %to_)
@@ -651,6 +482,31 @@ Parameter (in Michelson):
 - When pending administrator is not set, it is considered equal to the current owner,
   thus administrator can accept ownership of its own contract without a prior `transfer_ownership` call.
 
+
+### **update_delegates**
+
+```ocaml
+type update_delegate =
+  [@layout:comb]
+  { enable : bool
+  ; delegate : address
+  }
+
+type update_delegate_params = update_delegate list
+
+Update_delegate of update_delegate_params
+```
+
+Parameter (in Michelson)
+```
+(list %update_delegate
+  (pair (bool %enable) (address %delegate)
+  )
+)
+```
+
+- Add/Update or remove delegates of owners. The owner address is taken from `SENDER`.
+
 ## Proposal entrypoints
 
 ### **propose**
@@ -659,7 +515,8 @@ Parameter (in Michelson):
 type proposal_metadata = bytes
 
 type propose_params =
-  { frozen_token : nat
+  { from : address
+  ; frozen_token : nat
   ; proposal_metadata : proposal_metadata
   }
 
@@ -669,17 +526,18 @@ Propose of propose_params
 Parameter (in Michelson):
 ```
 (pair %propose
-  (nat %frozen_token)
-  (bytes %proposal_metadata)
-)
+  (address %from)
+  (pair (nat %frozen_token) (bytes %proposal_metadata)))
 ```
 
-- The proposal is saved under `BLAKE2b` hash of proposal value and sender.
-- The `Natural` value: `proposalTokenAmount` determines how many sender's frozen
+- The `proposer` address is taken from `from`.
+- Fails with `NOT_DELEGATE` if the `SENDER` address is not equal to `proposer` address or the `delegate` address of the proposer.
+- The proposal is saved under `BLAKE2b` hash of proposal value and proposer.
+- The `Natural` value: `proposalTokenAmount` determines how many proposer's frozen
   tokens will be staked in addition to the [fee](#configuration)
-- Sender MUST have enough frozen tokens (i. e. `≥ proposalTokenAmount + fee`) that
+- Proposer MUST have enough frozen tokens (i. e. `≥ proposalTokenAmount + fee`) that
   are not already staked for a proposal or a vote.
-- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the unstaked frozen token balance of the SENDER
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the unstaked frozen token balance of the proposer
   is less than `proposalTokenAmount + fee`.
 - Fails with `NOT_PROPOSING_STAGE` if the current stage is not a proposing one.
 - Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposal_check`
@@ -705,6 +563,7 @@ type vote_param =
   { proposal_key : proposal_key
   ; vote_type : vote_type
   ; vote_amount : nat
+  ; from : address
   }
 
 type vote_param_permited =
@@ -718,30 +577,20 @@ Vote of vote_param_permited list
 Parameter (in Michelson):
 ```
 (list %vote
-  (pair
-    (pair %argument
-      (bytes %proposal_key)
-      (pair
-        (bool %vote_type)
-        (nat %vote_amount)
-      )
-    )
-    (option %permit
-      (pair
-        (key %key)
-        (signature %signature)
-      )
-    )
-  )
-)
+  (pair (pair %argument
+          (pair (address %from) (bytes %proposal_key))
+          (pair (nat %vote_amount) (bool %vote_type)))
+        (option %permit (pair (key %key) (signature %signature)))))
 ```
 
 - This implements permits mechanism similar to the one in [TZIP-017](https://gitlab.com/tzip/tzip/-/blob/23c5640db0e2242878b4f2dfacf159a5f6d2544e/proposals/tzip-17/tzip-17.md)
   but injected directly to the entrypoint.
-- Vote author is identified by permit information, or if it is absent - `sender` is taken.
-- Author MUST have frozen tokens equal to `vote_amount` or more
+- The `author` is identified by permit information, or if it is absent - `SENDER` is taken.
+- The `voter` address is taken from `from`.
+- Fails with `NOT_DELEGATE` if the `author` address is not equal to `voter` address or the `delegate` address of the `voter`.
+- The voter MUST have frozen tokens equal to `vote_amount` or more
   (1 unstaked frozen token is needed for 1 vote) from past `stage`s.
-- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the author
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the frozen token balance of the voter
   from past stages that is not staked is less than specified `vote_amount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
 - Fails with `VOTING_STAGE_OVER` if the voting `stage` for the proposal has already ended.
