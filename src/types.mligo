@@ -327,7 +327,7 @@ type initial_data =
   }
 
 type config =
-  { proposal_check : propose_params * contract_extra -> bool
+  { proposal_check : propose_params * contract_extra -> unit
   // ^ A lambda used to verify whether a proposal can be submitted.
   // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements

@@ -30,7 +30,6 @@ import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  (checkTokenBalance, dummyFA2Contract, makeProposalKey, sendXtz, totalSupplyFromLedger)
 
 -- | Helper type for unpack/pack
 data RegistryDaoProposalMetadata
@@ -146,7 +145,7 @@ test_RegistryDAO =
             proposalSize = metadataSize proposalMeta
             in withSender wallet1 $ call
                baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-               & expectFailProposalCheck baseDao
+               & expectFailProposalCheck baseDao tooLargeProposalErrMsg
 
     , nettestScenarioCaps "proposal_check: fail when xtz transfer contains 0 mutez" $
         withOriginated 2
@@ -167,7 +166,7 @@ test_RegistryDAO =
 
             withSender wallet1 $ call baseDao (Call @"Propose")
               (ProposeParams proposalSize proposalMeta)
-                & expectFailProposalCheck baseDao
+                & expectFailProposalCheck baseDao zeroMutezErrMsg
 
     , nettestScenarioCaps "checks it fails if required tokens are not frozen" $
         withOriginated 2
@@ -180,7 +179,7 @@ test_RegistryDAO =
             -- tokens to be frozen (6 * 1 + 0) because proposal size happen to be 6 here.
             in withSender wallet1 $
                call baseDao (Call @"Propose") (ProposeParams 2 proposalMeta)
-               & expectFailProposalCheck baseDao
+               & expectFailProposalCheck baseDao incorrectTokenAmountErrMsg
 
     , nettestScenarioOnEmulatorCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
@@ -285,7 +284,7 @@ test_RegistryDAO =
               -- We expect this to fail because max_proposal_size is 200 and proposal size is 341.
               withSender wallet1 $
                 call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
-                & expectFailProposalCheck baseDao
+                & expectFailProposalCheck baseDao tooLargeProposalErrMsg
 
               -- We create a new proposal to increase max_proposal_size to largeProposalSize + 1.
               let sMaxUpdateproposalMeta1 = lPackValueRaw @RegistryDaoProposalMetadata $
@@ -424,36 +423,38 @@ test_RegistryDAO =
             initialStorageWithExplictRegistryDAOConfig admin wallets) $
           \[_, wallet] (toPeriod -> period) baseDao _ -> do
             let
-              proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
+              proposalMeta amt = lPackValueRaw @RegistryDaoProposalMetadata $
                 Transfer_proposal $
-                  TransferProposal 1 [ xtzTransferType 10 wallet ] []
-              proposalMeta2 = lPackValueRaw @RegistryDaoProposalMetadata $
-                Transfer_proposal $
-                  TransferProposal 2 [ xtzTransferType 3 wallet ] []
-              proposalSize = metadataSize proposalMeta
-              proposalSize2 = metadataSize proposalMeta2
+                  TransferProposal 1 [ xtzTransferType amt wallet ] []
+              proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
+              proposalSize amt = metadataSize $ proposalMeta amt
 
             withSender wallet $
-              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+              call baseDao (Call @"Freeze") (#amount .! proposalSize 10)
 
             -- Advance one voting period to a proposing stage.
             advanceLevel period
 
             -- Fails because 10 >= max_xtz_amount
             withSender wallet $
-              call baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-              & expectFailProposalCheck baseDao
+              call baseDao (Call @"Propose") (proposeParams 10)
+              & expectFailProposalCheck baseDao tooLargeXtzErrMsg
+
+            -- Fails because 1 >= min_xtz_amount
+            withSender wallet $
+              call baseDao (Call @"Propose") (proposeParams 1)
+              & expectFailProposalCheck baseDao tooSmallXtzErrMsg
 
             withSender wallet $
-              call baseDao (Call @"Freeze") (#amount .! proposalSize2)
+              call baseDao (Call @"Freeze") (#amount .! proposalSize 3)
 
             -- Advance two voting period to another proposing stage.
             advanceLevel (2*period)
 
             withSender wallet $
-              call baseDao (Call @"Propose") (ProposeParams proposalSize2 proposalMeta2)
+              call baseDao (Call @"Propose") (proposeParams 3)
 
-            checkTokenBalance frozenTokenId baseDao wallet (defaultTokenBalance + proposalSize + proposalSize2)
+            checkTokenBalance frozenTokenId baseDao wallet (defaultTokenBalance + (proposalSize 3) + (proposalSize 10))
 
     , nettestScenarioOnEmulatorCaps "can flush a transfer proposal with registry updates" $
         withOriginated 3
@@ -602,8 +603,9 @@ test_RegistryDAO =
 
 expectFailProposalCheck
   :: (MonadNettest caps base m, ToAddress addr)
-  => addr -> m a -> m ()
-expectFailProposalCheck = expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK
+  => addr -> MText -> m a -> m ()
+expectFailProposalCheck =
+  expectCustomError #fAIL_PROPOSAL_CHECK
 
 --------------------------------------------------------------------------
 -- Helper

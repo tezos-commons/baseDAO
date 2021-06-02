@@ -26,6 +26,7 @@ import Lorentz
 import Universum (Constraint, (?:), fromIntegral)
 
 import qualified Ligo.BaseDAO.Types as DAO
+import Test.Ligo.BaseDAO.Common.Errors (tooSmallXtzErrMsg)
 
 -- | Configuration descriptor.
 --
@@ -95,7 +96,7 @@ configConsts :: ConfigConstants
 configConsts = ConfigConstants Nothing Nothing Nothing Nothing Nothing Nothing
 
 data ProposalFrozenTokensCheck =
-  ProposalFrozenTokensCheck (Lambda ("ppFrozenToken" :! Natural) Bool)
+  ProposalFrozenTokensCheck (Lambda ("ppFrozenToken" :! Natural) ())
 
 data RejectedProposalSlashValue =
   RejectedProposalSlashValue (Lambda ("proposerFrozenToken" :! Natural) ("slash_amount" :! Natural))
@@ -105,9 +106,10 @@ proposalFrozenTokensMinBound minTokens = ProposalFrozenTokensCheck $ do
   push minTokens
   toNamed #requireValue
   if #requireValue <=. #ppFrozenToken then
-    push True
-  else
-    push False
+    push ()
+  else do
+    push tooSmallXtzErrMsg
+    failCustom #fAIL_PROPOSAL_CHECK
 
 divideOnRejectionBy :: Natural -> RejectedProposalSlashValue
 divideOnRejectionBy divisor = RejectedProposalSlashValue $ do

@@ -42,6 +42,18 @@ In case of insufficient balance the decision lambda can fail.
   + For XTZ transfers it sends `amount` to the `recepient` address with `unit` parameter. I. e. it returns a single `TRANSFER_TOKENS` operation.
   + For FA2 transfers it calls `transfer` entrypoint of the `fa2` contract with given argument.
 
+# Proposal Check Errors
+
+Here is a summary of all the strings used as error messages thrown by `proposal_check`.
+
+| Error                                | Description                                                                                                 |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `ZERO_MUTEZ`                         | Xtz transfer amount cannot be 0                                                                             |
+| `LOW_XTZ`               | Xtz transfer amount cannot be smaller than 'min_xtz_amount'                                                 |
+| `HIGH_XTZ`               | Xtz transfer amount cannot be bigger than 'max_xtz_amount'                                                  |
+| `WRONG_TOKEN_AMOUNT`             | Incorrect token amounts locked                                                                              |
+| `LARGE_PROPOSAL`                 | Proposal size is bigger than 'max_proposal_size'                                                            |
+
 ## Custom entrypoints
 
 ### Receive XTZ

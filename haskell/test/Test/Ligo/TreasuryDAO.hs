@@ -20,8 +20,6 @@ import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-  ( DaoOriginateData(..), OriginateFn, checkTokenBalance, defaultQuorumThreshold, makeProposalKey
-  , originateLigoDaoWithBalance, sendXtz )
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -54,8 +52,8 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
   , testGroup "proposal_check:"
       [ nettestScenarioOnEmulator "fail when xtz transfer contains 0 mutez" $
           \_emulated -> proposalCheckFailZeroMutez
-
-      -- TODO #260: check all fail scenario of proposal_check
+      , nettestScenarioOnEmulator "fail when proposal size is bigger than max" $
+          \_emulated -> proposalCheckBiggerThanMaxProposalSize
       ]
   ]
 
@@ -87,7 +85,7 @@ validProposal = uncapsNettest $ withFrozenCallStack do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
-    & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
+    & expectCustomError #fAIL_PROPOSAL_CHECK dodDao incorrectTokenAmountErrMsg
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
@@ -168,11 +166,11 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   withSender dodOwner1 $ do
   -- due to smaller than min_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 1)
-      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
+      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooSmallXtzErrMsg
 
   -- due to bigger than max_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 6)
-      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
+      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeXtzErrMsg
 
     call dodDao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3) dodOwner1
@@ -222,7 +220,34 @@ proposalCheckFailZeroMutez = uncapsNettest $ withFrozenCallStack do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-      & expectCustomErrorNoArg #fAIL_PROPOSAL_CHECK dodDao
+      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao zeroMutezErrMsg
+
+proposalCheckBiggerThanMaxProposalSize :: HasCallStack => NettestScenario m
+proposalCheckBiggerThanMaxProposalSize = uncapsNettest $ withFrozenCallStack do
+  DaoOriginateData{..} <-
+    originateTreasuryDaoWithBalance id
+      (\owner1_ owner2_ ->
+        [ ((owner1_, frozenTokenId), 200)
+        , ((owner2_, frozenTokenId), 200)
+        ])
+      defaultQuorumThreshold
+  let
+    largeProposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
+      TransferProposal 1 $
+        [tokenTransferType (toAddress dodDao) dodOwner1 dodOwner2 | (_ :: Integer) <- [1..10]]
+    largeProposalSize = metadataSize largeProposalMeta
+
+  -- Freeze in voting stage.
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! largeProposalSize)
+
+  -- Advance one voting period to a proposing stage.
+  advanceLevel 10
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Propose") (ProposeParams largeProposalSize largeProposalMeta)
+      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeProposalErrMsg
+
 
 --------------------------------------------------------------------------
 -- Helper

@@ -29,6 +29,7 @@ module Test.Ligo.BaseDAO.Common
   , originateLigoDao
 
   -- * Re-export
+  , module Errors
   , module StorageHelper
   ) where
 
@@ -47,6 +48,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
+import Test.Ligo.BaseDAO.Common.Errors as Errors
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
@@ -305,3 +307,4 @@ createSampleProposals (counter1, counter2) dodOwner1 dao = do
     action2
     return ()
   pure (pk1, pk2)
+

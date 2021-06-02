@@ -87,7 +87,7 @@ DAO configuration value parameters are captured by the `config` type:
 
 ```ocaml
 type config =
-  { proposal_check : propose_params * contract_extra -> bool
+  { proposal_check : propose_params * contract_extra -> unit
   // ^ A lambda used to verify whether a proposal can be submitted.
   // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
@@ -324,35 +324,35 @@ We start with standard FA2 errors which are part of the FA2 specification.
 The next group consists of the errors that are not part of the FA2 specification.
 The list of errors may be inaccurate and incomplete, it will be updated during the implementation.
 
-| Error                                | Description                                                                                                 |
-|--------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| `NOT_ADMIN`                          | The sender is not the administrator                                                                         |
-| `NOT_PENDING_ADMIN`                  | Authorized sender is not the current pending administrator                                                  |
-| `NOT_TOKEN_OWNER`                    | Trying to configure operators for a different wallet which sender does not own                              |
-| `FAIL_PROPOSAL_CHECK`                | Throws when trying to propose a proposal that does not pass `proposal_check`                                |
-| `FROZEN_TOKEN_NOT_TRANSFERABLE`      | Transfer entrypoint is called for frozen token                                                              |
-| `PROPOSAL_NOT_EXIST`                 | Throws when trying to vote on a proposal that does not exist                                                |
-| `QUORUM_NOT_MET`                     | A proposal is flushed, but there are not enough votes                                                       |
-| `VOTING_STAGE_OVER`                  | Throws when trying to vote on a proposal that is already ended                                              |
-| `MAX_PROPOSALS_REACHED`              | Throws when trying to propose a proposal when proposals max amount is already reached                       |
-| `MAX_VOTES_REACHED`                  | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached      |
-| `FORBIDDEN_XTZ`                      | Throws when some XTZ was received as part of the contract call                                              |
-| `PROPOSER_NOT_EXIST_IN_LEDGER`       | Expect a proposer address to exist in Ledger but it is not found                                            |
-| `PROPOSAL_NOT_UNIQUE`                | Trying to propose a proposal that is already existed in the Storage.                                        |
-| `MISSIGNED`                          | Parameter signature does not match the expected one - for permits.                                          |
-| `ENTRYPOINT_NOT_FOUND`               | Throw when `CallCustom` is called with a non-existing entrypoint                                            |
-| `UNPACKING_FAILED`                   | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.               |
-| `UNPACKING_PROPOSAL_METADATA_FAILED` | Throw when unpacking of a proposal metadata fails.                                                          |
-| `MISSING_VALUE`                      | Throw when trying to unpack a field that does not exist.                                                    |
-| `NOT_PROPOSING_STAGE`                | Throw when `propose` call is made on a non-proposing period.                                                |
-| `NOT_ENOUGH_FROZEN_TOKENS`           | Throw when there is not enough frozen tokens for the operation.                                             |
-| `NOT_ENOUGH_STAKED_TOKENS`           | Throw when there is not enough staked tokens for the operation.                                             |
-| `BAD_TOKEN_CONTRACT`                 | Throw when the token contract is not of expected type.                                                      |
-| `BAD_VIEW_CONTRACT`                  | Throw when the contract for a view entrypoint is not of the expected type.                                  |
-| `DROP_PROPOSAL_CONDITION_NOT_MET`    | Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired. |
-| `EXPIRED_PROPOSAL`                   | Throw when trying to `flush` expired proposals.                                                             |
-| `EMPTY_FLUSH`                        | Thrown when trying to `flush` with no available proposals.                                                  |
-| `BAD_STATE`                          | Throw when storage is in an unexpected state, indicating a contract error.                                  |
+| Error                                | Description                                                                                                              |
+|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `NOT_ADMIN`                          | The sender is not the administrator                                                                                      |
+| `NOT_PENDING_ADMIN`                  | Authorized sender is not the current pending administrator                                                               |
+| `NOT_TOKEN_OWNER`                    | Trying to configure operators for a different wallet which sender does not own                                           |
+| `FAIL_PROPOSAL_CHECK`                | Throws paired with an additional `string` message when trying to submit a proposal that does not pass `proposal_check`.  |
+| `FROZEN_TOKEN_NOT_TRANSFERABLE`      | Transfer entrypoint is called for frozen token                                                                           |
+| `PROPOSAL_NOT_EXIST`                 | Throws when trying to vote on a proposal that does not exist                                                             |
+| `QUORUM_NOT_MET`                     | A proposal is flushed, but there are not enough votes                                                                    |
+| `VOTING_STAGE_OVER`                  | Throws when trying to vote on a proposal that is already ended                                                           |
+| `MAX_PROPOSALS_REACHED`              | Throws when trying to propose a proposal when proposals max amount is already reached                                    |
+| `MAX_VOTES_REACHED`                  | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached                   |
+| `FORBIDDEN_XTZ`                      | Throws when some XTZ was received as part of the contract call                                                           |
+| `PROPOSER_NOT_EXIST_IN_LEDGER`       | Expect a proposer address to exist in Ledger but it is not found                                                         |
+| `PROPOSAL_NOT_UNIQUE`                | Trying to propose a proposal that is already existed in the Storage.                                                     |
+| `MISSIGNED`                          | Parameter signature does not match the expected one - for permits.                                                       |
+| `ENTRYPOINT_NOT_FOUND`               | Throw when `CallCustom` is called with a non-existing entrypoint                                                         |
+| `UNPACKING_FAILED`                   | Throw when unpacking of a stored entrypoint, its parameter or a required `extra` value fails.                            |
+| `UNPACKING_PROPOSAL_METADATA_FAILED` | Throw when unpacking of a proposal metadata fails.                                                                       |
+| `MISSING_VALUE`                      | Throw when trying to unpack a field that does not exist.                                                                 |
+| `NOT_PROPOSING_STAGE`                | Throw when `propose` call is made on a non-proposing period.                                                             |
+| `NOT_ENOUGH_FROZEN_TOKENS`           | Throw when there is not enough frozen tokens for the operation.                                                          |
+| `NOT_ENOUGH_STAKED_TOKENS`           | Throw when there is not enough staked tokens for the operation.                                                          |
+| `BAD_TOKEN_CONTRACT`                 | Throw when the token contract is not of expected type.                                                                   |
+| `BAD_VIEW_CONTRACT`                  | Throw when the contract for a view entrypoint is not of the expected type.                                               |
+| `DROP_PROPOSAL_CONDITION_NOT_MET`    | Throw when calling `drop_proposal` when the sender is not proposer or guardian and proposal is not expired.              |
+| `EXPIRED_PROPOSAL`                   | Throw when trying to `flush` expired proposals.                                                                          |
+| `EMPTY_FLUSH`                        | Thrown when trying to `flush` with no available proposals.                                                               |
+| `BAD_STATE`                          | Throw when storage is in an unexpected state, indicating a contract error.                                               |
 
 # Entrypoints
 
