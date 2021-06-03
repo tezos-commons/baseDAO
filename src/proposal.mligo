@@ -114,7 +114,7 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
     ; metadata = propose_params.proposal_metadata
     ; proposer = Tezos.sender
     ; proposer_frozen_token = propose_params.frozen_token
-    ; voters = ([] : voter list)
+    ; voters = (Map.empty : voter_map)
     ; quorum_threshold = store.quorum_threshold_at_cycle.quorum_threshold
     } in
   { store with
@@ -130,29 +130,26 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
 
 let submit_vote (proposal, vote_param, author, period, store : proposal * vote_param * address * period * storage): storage =
   let proposal_key = vote_param.proposal_key in
-
   let proposal =
-    if vote_param.vote_type
-      then { proposal with upvotes = proposal.upvotes + vote_param.vote_amount }
-      else { proposal with downvotes = proposal.downvotes + vote_param.vote_amount }
-    in
-  let voter =
-    { voter_address = author
-    ; vote_amount = vote_param.vote_amount
-    ; vote_type = vote_param.vote_type
-    } in
+        let map_key = (author, vote_param.vote_type) in
+        let new_votes = match Map.find_opt map_key proposal.voters with
+          | Some votes -> votes + vote_param.vote_amount
+          | None -> vote_param.vote_amount in
+        { proposal with voters = Map.add map_key new_votes proposal.voters } in
   let proposal =
-    { proposal with
-      voters = voter :: proposal.voters
-    } in
+        if vote_param.vote_type
+          then { proposal with upvotes = proposal.upvotes + vote_param.vote_amount }
+          else { proposal with downvotes = proposal.downvotes + vote_param.vote_amount } in
   let store = stake_tk(vote_param.vote_amount, author, period, store) in
   { store with proposals = Map.add proposal_key proposal store.proposals }
 
 [@inline]
 let check_vote_limit_reached
     (config, proposal, vote_param : config * proposal * vote_param): vote_param =
-  if config.max_votes < proposal.upvotes + proposal.downvotes + vote_param.vote_amount
-  then (failwith("MAX_VOTES_REACHED") : vote_param)
+  if config.max_voters <= Map.size(proposal.voters)
+      // We use <= because this function is called before the voter is added to the proposal.voters
+      // map.
+  then (failwith("MAX_VOTERS_REACHED") : vote_param)
   else vote_param
 
 let vote(votes, config, store : vote_param_permited list * config * storage): return =
@@ -206,12 +203,10 @@ let unfreeze_proposer_and_voter_token
 
   // unfreeze_voter_token
   let do_unfreeze = fun
-        ( store, voter
-        : storage * voter
-        ) -> unstake_tk(voter.vote_amount, voter.voter_address, period, store) in
+        ( store, voter_with_vote : storage * ((address * vote_type) * nat))
+          -> unstake_tk(voter_with_vote.1, voter_with_vote.0.0, period, store) in
 
-  List.fold do_unfreeze proposal.voters store
-
+  Map.fold do_unfreeze proposal.voters store
 
 [@inline]
 let is_level_reached (proposal, target : proposal * blocks): bool =
