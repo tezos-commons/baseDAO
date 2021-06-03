@@ -101,8 +101,9 @@ type config =
 
   ; max_proposals : nat
   // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
-  ; max_votes : nat
-  // ^ Determine the maximum number of votes associated with a proposal.
+  ; max_voters : nat
+  // ^ Determine the maximum number of voters that are allowed to vote on a proposal.
+  // Voters who votes on a proposal, both ways are counted twice.
   ; max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction
@@ -299,6 +300,11 @@ Moreover the proposal to vote on must have been submitted in the proposing `stag
 immediately preceding and the voter must have frozen his tokens in one of the
 preceding `stage`s.
 
+Each vote stakes one frozen token. Staked tokens cannot be unfreezed till they
+are unstaked when the associated proposal is flushed. The number of staked tokens
+only depend on the number of votes, and does not depend on whether the vote is in
+favor or against a proposal.
+
 It's possible to vote positively or negatively.
 After the voting ends, the contract is "flushed" by calling a dedicated entrypoint.
 
@@ -335,7 +341,7 @@ The list of errors may be inaccurate and incomplete, it will be updated during t
 | `QUORUM_NOT_MET`                     | A proposal is flushed, but there are not enough votes                                                                    |
 | `VOTING_STAGE_OVER`                  | Throws when trying to vote on a proposal that is already ended                                                           |
 | `MAX_PROPOSALS_REACHED`              | Throws when trying to propose a proposal when proposals max amount is already reached                                    |
-| `MAX_VOTES_REACHED`                  | Throws when trying to vote on a proposal when the votes max amount of that proposal is already reached                   |
+| `MAX_VOTERS_REACHED`                 | Throws when trying to vote on a proposal when the max voter count of that proposal is already reached                   |
 | `FORBIDDEN_XTZ`                      | Throws when some XTZ was received as part of the contract call                                                           |
 | `PROPOSER_NOT_EXIST_IN_LEDGER`       | Expect a proposer address to exist in Ledger but it is not found                                                         |
 | `PROPOSAL_NOT_UNIQUE`                | Trying to propose a proposal that is already existed in the Storage.                                                     |
@@ -739,7 +745,7 @@ Parameter (in Michelson):
   from past stages that is not staked is less than specified `vote_amount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
 - Fails with `VOTING_STAGE_OVER` if the voting `stage` for the proposal has already ended.
-- Fails with `MAX_VOTES_REACHED` if the amount of votes of the associated proposal
+- Fails with `MAX_VOTERS_REACHED` if the voter count of the associated proposal
   is already at the max value set by the configuration.
 - Fails with `MISSIGNED` if permit is incorrect with respect to the provided vote parameter and contract state.
 - The entrypoint accepts a list of vote params. As a result, it is possible to

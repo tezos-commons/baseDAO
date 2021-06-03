@@ -109,12 +109,9 @@ type nonce = nat
 // Represents whether a voter has voted against (false) or for (true) a given proposal.
 type vote_type = bool
 
-// Voter info for a proposal
-type voter =
-  { voter_address : address
-  ; vote_amount : nat
-  ; vote_type : vote_type
-  }
+type voter_map_key = (address * vote_type)
+
+type voter_map = (voter_map_key, nat) map
 
 // Amount of blocks.
 type blocks = { blocks : nat }
@@ -153,7 +150,7 @@ type proposal =
   // ^ address of the proposer
   ; proposer_frozen_token : nat
   // ^ amount of frozen tokens used by the proposer, exluding the fixed fee
-  ; voters : voter list
+  ; voters : voter_map
   // ^ voter data
   ; quorum_threshold: quorum_threshold
   // ^ quorum threshold at the cycle in which proposal was raised
@@ -302,7 +299,7 @@ type initial_config_data =
   { max_quorum : quorum_threshold
   ; min_quorum : quorum_threshold
   ; quorum_threshold : quorum_threshold
-  ; max_votes : nat
+  ; max_voters : nat
   ; period : period
   ; proposal_flush_level: blocks
   ; proposal_expired_level: blocks
@@ -341,8 +338,8 @@ type config =
 
   ; max_proposals : nat
   // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
-  ; max_votes : nat
-  // ^ Determine the maximum number of votes associated with a proposal.
+  ; max_voters : nat
+  // ^ Determine the maximum number of voters allowed to vote in the context of a proposal.
   ; max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction
