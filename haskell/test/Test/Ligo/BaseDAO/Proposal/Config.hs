@@ -82,7 +82,7 @@ ConfigDesc a >>- ConfigDesc b = ConfigDesc (ConfigDescChain a b)
 
 data ConfigConstants = ConfigConstants
   { cmMaxProposals :: Maybe Natural
-  , cmMaxVotes :: Maybe Natural
+  , cmMaxVoters :: Maybe Natural
   , cmQuorumThreshold :: Maybe DAO.QuorumThreshold
   , cmPeriod :: Maybe DAO.Period
   , cmProposalFlushTime :: Maybe Natural
@@ -184,7 +184,7 @@ decisionLambdaConfig target = ConfigDesc $ passProposerOnDecision target
 instance IsConfigDescExt DAO.Config ConfigConstants where
   fillConfig ConfigConstants{..} DAO.Config'{..} = DAO.Config'
     { cMaxProposals = cmMaxProposals ?: cMaxProposals
-    , cMaxVotes = cmMaxVotes ?: cMaxVotes
+    , cMaxVoters = cmMaxVoters ?: cMaxVoters
     , cProposalFlushTime = cmProposalFlushTime ?: cProposalFlushTime
     , cProposalExpiredTime = cmProposalExpiredTime ?: cProposalExpiredTime
     , ..

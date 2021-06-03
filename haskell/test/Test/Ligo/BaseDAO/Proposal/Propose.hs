@@ -1,6 +1,7 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+{-# LANGUAGE ApplicativeDo #-}
 -- | Contains tests on @propose@ entrypoint logic for testing the Ligo contract.
 module Test.Ligo.BaseDAO.Proposal.Propose
   ( FailureReason(..)
@@ -16,6 +17,7 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , rejectProposal
   , validProposal
   , validProposalWithFixedFee
+  , unstakesTokensForMultipleVotes
   ) where
 
 import Universum
@@ -261,6 +263,66 @@ burnsFeeOnFailure reason = do
   -- case, so we expect 42 tokens to be burnt
   let expectedBurn = 42
   checkTokenBalance frozenTokenId dodDao proposer (100 + (52 - expectedBurn))
+
+unstakesTokensForMultipleVotes
+  :: forall caps base m. (MonadNettest caps base m)
+  => GetFreezeHistoryFn m
+  -> m ()
+unstakesTokensForMultipleVotes getFhFn = do
+  DaoOriginateData{..} <-
+      originateLigoDaoWithConfigDesc dynRecUnsafe
+        (   (ConfigDesc $ Period 60)
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
+        >>- (ConfigDesc $ FixedFee 42)
+        ) defaultQuorumThreshold
+  let proposer = dodOwner1
+  let voter = dodOwner2
+
+  withSender proposer $
+    call dodDao (Call @"Freeze") (#amount .! 52)
+
+  withSender voter $
+    call dodDao (Call @"Freeze") (#amount .! 30)
+
+  -- Advance one voting period to a proposing stage.
+  advanceLevel dodPeriod
+  key1 <- createSampleProposal 1 proposer dodDao
+
+  -- Advance one voting period to a voting stage.
+  advanceLevel dodPeriod
+  let vote_ typ =
+        NoPermit VoteParam
+          { vVoteType = typ
+          , vVoteAmount = 10
+          , vProposalKey = key1
+          }
+
+  withSender voter . inBatch $ do
+    call dodDao (Call @"Vote") [vote_ True]
+    call dodDao (Call @"Vote") [vote_ False]
+    return ()
+
+  fh <- getFhFn (unTAddress dodDao) voter
+  let expected = Just (AddressFreezeHistory
+        { fhCurrentUnstaked = 0
+        , fhPastUnstaked = 10
+        , fhCurrentStageNum = 2
+        , fhStaked = 20
+        })
+  assert (fh == expected) "Unexpected freeze history after voting"
+
+  -- Advance one voting period to a proposing stage.
+  advanceLevel (dodPeriod+1)
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
+  fh_after_flush <- getFhFn (unTAddress dodDao) voter
+  let expected_after_flush = Just (AddressFreezeHistory
+        { fhCurrentUnstaked = 0
+        , fhPastUnstaked = 30
+        , fhCurrentStageNum = 3
+        , fhStaked = 0
+        })
+  assert (fh_after_flush == expected_after_flush) "Unexpected freeze history after flush"
 
 insufficientTokenProposal
   :: (MonadNettest caps base m, HasCallStack)

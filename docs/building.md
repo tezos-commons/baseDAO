@@ -82,7 +82,7 @@ make out/trivialDAO_storage.tz \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
-  max_votes=1000n \
+  max_voters=1000n \
   period=15840n  \
   quorum_change=5n \
   max_quorum_change=19n \
@@ -122,7 +122,7 @@ make out/registryDAO_storage.tz \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
-  max_votes=1000n \
+  max_voters=1000n \
   period=15840n \
   quorum_change=5n \
   max_quorum_change=19n \
@@ -159,7 +159,7 @@ make out/treasuryDAO_storage.tz \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
-  max_votes=1000n \
+  max_voters=1000n \
   period=15840n  \
   quorum_change=5n \
   max_quorum_change=19n \

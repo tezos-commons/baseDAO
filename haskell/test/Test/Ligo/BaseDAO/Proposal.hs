@@ -51,6 +51,9 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulatorCaps "cannot vote on outdated proposal" $
           voteOutdatedProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
+      , nettestScenarioOnEmulatorCaps "proposal track votes" $
+          proposalCorrectlyTrackVotes (originateLigoDaoWithConfigDesc dynRecUnsafe) getProposalEmulator
+
       ]
 
 
@@ -153,6 +156,9 @@ test_BaseDAO_Proposal =
 
     , nettestScenarioOnEmulatorCaps "the fee is burned if the proposal doesn't meet the quorum" $
         burnsFeeOnFailure QuorumNotMet
+
+    , nettestScenarioOnEmulatorCaps "the frozen tokens are correctly unstaked when address cast multiple votes" $
+        unstakesTokensForMultipleVotes getFreezeHistoryEmulator
     ]
 
   , testGroup "QuorumThreshold Updates"

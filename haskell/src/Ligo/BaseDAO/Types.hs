@@ -227,8 +227,7 @@ instance HasAnnotation GovernanceTotalSupply where
 type VoteType = Bool
 
 data Voter = Voter
-  { voterAddress :: Address
-  , voteAmount :: Natural
+  { voteAmount :: Natural
   , voteType :: VoteType
   }
   deriving stock (Show)
@@ -423,7 +422,6 @@ type ContractExtra = ContractExtra' BigMap
 type CustomEntrypoints' big_map = DynamicRec' big_map "ep"
 type CustomEntrypoints = CustomEntrypoints' BigMap
 
-
 data Proposal = Proposal
   { plUpvotes                 :: Natural
   , plDownvotes               :: Natural
@@ -435,7 +433,7 @@ data Proposal = Proposal
   , plProposer                :: Address
   , plProposerFrozenToken     :: Natural
 
-  , plVoters                  :: [Voter]
+  , plVoters                  :: Map (Address, Bool) Natural
   , plQuorumThreshold         :: QuorumThreshold
   }
   deriving stock (Show)
@@ -609,7 +607,7 @@ data Config' big_map = Config'
       :-> '[List Operation, ContractExtra' big_map]
 
   , cMaxProposals :: Natural
-  , cMaxVotes :: Natural
+  , cMaxVoters :: Natural
   , cMaxQuorumThreshold :: QuorumFraction
   , cMinQuorumThreshold :: QuorumFraction
 
@@ -662,7 +660,7 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   , cMaxQuorumThreshold = percentageToFractionNumerator 99 -- 99%
   , cMinQuorumThreshold = percentageToFractionNumerator 1 -- 1%
 
-  , cMaxVotes = 1000
+  , cMaxVoters = 1000
   , cMaxProposals = 500
   }
 
@@ -847,9 +845,9 @@ instance CustomErrorHasDoc "mAX_PROPOSALS_REACHED" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to propose a proposal when proposals max amount is already reached"
 
-type instance ErrorArg "mAX_VOTES_REACHED" = NoErrorArg
+type instance ErrorArg "mAX_VOTERS_REACHED" = NoErrorArg
 
-instance CustomErrorHasDoc "mAX_VOTES_REACHED" where
+instance CustomErrorHasDoc "mAX_VOTERS_REACHED" where
   customErrClass = ErrClassActionException
   customErrDocMdCause = "Trying to vote on a proposal when the votes max amount of that proposal is already reached"
 

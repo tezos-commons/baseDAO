@@ -63,7 +63,7 @@ $(OUT)/trivialDAO_storage.tz : ledger = []
 $(OUT)/trivialDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/trivialDAO_storage.tz : min_quorum = 1n
 $(OUT)/trivialDAO_storage.tz : max_quorum = 99n
-$(OUT)/trivialDAO_storage.tz : max_votes = 1000n
+$(OUT)/trivialDAO_storage.tz : max_voters = 1000n
 $(OUT)/trivialDAO_storage.tz : period = 15840n # 11 days
 $(OUT)/trivialDAO_storage.tz : quorum_change = 5n
 $(OUT)/trivialDAO_storage.tz : max_quorum_change = 19n
@@ -89,7 +89,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
         ; config_data = \
           { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
           ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
-          ; max_votes = ($(max_votes) : nat) \
+          ; max_voters = ($(max_voters) : nat) \
           ; period = { blocks = ($(period) : nat) } \
           ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
           ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) }\
@@ -118,7 +118,7 @@ $(OUT)/registryDAO_storage.tz : ledger = []
 $(OUT)/registryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/registryDAO_storage.tz : min_quorum = 1n
 $(OUT)/registryDAO_storage.tz : max_quorum = 99n
-$(OUT)/registryDAO_storage.tz : max_votes = 1000n
+$(OUT)/registryDAO_storage.tz : max_voters = 1000n
 $(OUT)/registryDAO_storage.tz : period = 15840n # 11 days
 $(OUT)/registryDAO_storage.tz : quorum_change = 5n
 $(OUT)/registryDAO_storage.tz : max_quorum_change = 19n
@@ -145,7 +145,7 @@ $(OUT)/registryDAO_storage.tz: src/**
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
             ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
-            ; max_votes = ($(max_votes) : nat) \
+            ; max_voters = ($(max_voters) : nat) \
             ; period = { blocks = ($(period) : nat) } \
             ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
             ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) } \
@@ -181,7 +181,7 @@ $(OUT)/treasuryDAO_storage.tz : ledger = []
 $(OUT)/treasuryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/treasuryDAO_storage.tz : min_quorum = 1n
 $(OUT)/treasuryDAO_storage.tz : max_quorum = 99n
-$(OUT)/treasuryDAO_storage.tz : max_votes = 1000n
+$(OUT)/treasuryDAO_storage.tz : max_voters = 1000n
 $(OUT)/treasuryDAO_storage.tz : period = 15840n # 11 days
 $(OUT)/treasuryDAO_storage.tz : quorum_change = 5n
 $(OUT)/treasuryDAO_storage.tz : max_quorum_change = 19n
@@ -208,7 +208,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
             ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
-            ; max_votes = ($(max_votes) : nat) \
+            ; max_voters = ($(max_voters) : nat) \
             ; period = { blocks = ($(period) : nat) } \
             ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
             ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) } \
