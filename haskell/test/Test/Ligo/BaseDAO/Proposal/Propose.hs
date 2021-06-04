@@ -479,3 +479,32 @@ proposalBoundedValue originateFn = do
     call dodDao (Call @"Propose") params
       & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED dodDao
 
+proposalCreationUnderStorageLimit
+  :: forall caps base m.
+    ( MonadNettest caps base m
+    , HasCallStack
+    )
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+proposalCreationUnderStorageLimit  originateFn = do
+  DaoOriginateData {..} <- originateFn testConfig defaultQuorumThreshold
+
+  let totalTokens = 100000
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! totalTokens)
+
+  advanceLevel 600
+
+  forM_ [(1 :: Integer)..500] $ \n -> do
+
+    runIO $ putTextLn $ ("Creating proposal " <> (show n))
+
+    let params = ProposeParams
+          { ppFrozenToken = 10
+          , ppProposalMetadata = lPackValueRaw n
+          }
+
+    withSender dodOwner1 $ call dodDao (Call @"Propose") params
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! 1)
