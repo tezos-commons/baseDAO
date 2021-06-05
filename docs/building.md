@@ -77,8 +77,8 @@ make out/trivialDAO_storage.tz \
   governance_token_id=0n \
   current_level=100n \
   metadata_map=Big_map.empty \
+  freeze_history=[] \
   fixed_proposal_fee_in_token=0n \
-  ledger=[] \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
@@ -87,7 +87,7 @@ make out/trivialDAO_storage.tz \
   quorum_change=5n \
   max_quorum_change=19n \
   governance_total_supply=1000n \
-  proposal_flush_level=356000n  \
+  proposal_flush_level=36000n  \
   proposal_expired_level=47520n \
 ```
 
@@ -116,9 +116,9 @@ make out/registryDAO_storage.tz \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
   current_level=100n \
-  metadata_map="Big_map.empty" \
+  metadata_map=Big_map.empty \
+  freeze_history=[] \
   fixed_proposal_fee_in_token=0n \
-  ledger="[]" \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
@@ -126,7 +126,7 @@ make out/registryDAO_storage.tz \
   period=15840n \
   quorum_change=5n \
   max_quorum_change=19n \
-  proposal_flush_level=356000n \
+  proposal_flush_level=36000n \
   proposal_expired_level= 47520n \
   governance_total_supply=1000n
 ```
@@ -154,8 +154,9 @@ make out/treasuryDAO_storage.tz \
   max_xtz_amount=100mutez \
   current_level=100n \
   metadata_map=Big_map.empty \
+  freeze_history=Big_map.empty \
   fixed_proposal_fee_in_token=0n \
-  ledger=[] \
+  freeze_history=[] \
   quorum_threshold=10n \
   min_quorum=1n \
   max_quorum=99n \
@@ -163,7 +164,7 @@ make out/treasuryDAO_storage.tz \
   period=15840n  \
   quorum_change=5n \
   max_quorum_change=19n \
-  proposal_flush_level=356000n \
+  proposal_flush_level=36000n \
   proposal_expired_level=47520n \
   governance_total_supply=1000n
 ```

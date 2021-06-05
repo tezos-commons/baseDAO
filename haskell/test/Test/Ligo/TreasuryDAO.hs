@@ -41,19 +41,19 @@ type TreasuryDaoProposalMetadata = TransferProposal
 test_TreasuryDAO :: TestTree
 test_TreasuryDAO = testGroup "TreasuryDAO Tests"
   [ testGroup "Proposal creator:"
-      [ nettestScenarioOnEmulator "can propose a valid proposal" $
-          \_emulated -> validProposal
-      , nettestScenarioOnEmulator "can flush a Token transfer proposal" $
-          \_emulated -> flushTokenTransfer
-      , nettestScenarioOnEmulator "can flush a Xtz transfer proposal" $
-          \_emulated -> flushXtzTransfer
+      [ nettestScenarioOnEmulatorCaps "can propose a valid proposal" $
+          validProposal checkBalanceEmulator
+      , nettestScenarioOnEmulatorCaps "can flush a Token transfer proposal" $
+          flushTokenTransfer checkBalanceEmulator
+      , nettestScenarioOnEmulatorCaps "can flush a Xtz transfer proposal" $
+          flushXtzTransfer checkBalanceEmulator
       ]
 
   , testGroup "proposal_check:"
-      [ nettestScenarioOnEmulator "fail when xtz transfer contains 0 mutez" $
-          \_emulated -> proposalCheckFailZeroMutez
-      , nettestScenarioOnEmulator "fail when proposal size is bigger than max" $
-          \_emulated -> proposalCheckBiggerThanMaxProposalSize
+      [ nettestScenarioOnEmulatorCaps "fail when xtz transfer contains 0 mutez" $
+          proposalCheckFailZeroMutez
+      , nettestScenarioOnEmulatorCaps "fail when proposal size is bigger than max" $
+          proposalCheckBiggerThanMaxProposalSize
       ]
   ]
 
@@ -61,13 +61,11 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
 metadataSize :: ByteString -> Natural
 metadataSize md = fromIntegral $ BS.length md
 
-validProposal :: HasCallStack => NettestScenario m
-validProposal = uncapsNettest $ withFrozenCallStack do
-  DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance id (\owner1_ owner2_ ->
-      [ ((owner1_, frozenTokenId), 200)
-      , ((owner2_, frozenTokenId), 200)
-      ]) defaultQuorumThreshold
+validProposal
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  => CheckBalanceFn m -> m ()
+validProposal checkBalanceFn = withFrozenCallStack $ do
+  DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       TransferProposal
@@ -84,20 +82,19 @@ validProposal = uncapsNettest $ withFrozenCallStack do
   advanceLevel dodPeriod
 
   withSender dodOwner1 $
-    call dodDao (Call @"Propose") (ProposeParams (proposalSize + 1) proposalMeta)
+    call dodDao (Call @"Propose") (ProposeParams dodOwner1 (proposalSize + 1) proposalMeta)
     & expectCustomError #fAIL_PROPOSAL_CHECK dodDao incorrectTokenAmountErrMsg
 
   withSender dodOwner1 $
-    call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
+    call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
 
-  checkTokenBalance frozenTokenId dodDao dodOwner1 (200 + proposalSize)
+  checkBalanceFn (unTAddress dodDao) dodOwner1 (proposalSize)
 
-flushTokenTransfer :: HasCallStack => NettestScenario m
-flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
-  DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance id (\_ owner2_ ->
-      [ ((owner2_, frozenTokenId), 100)
-      ]) defaultQuorumThreshold
+flushTokenTransfer
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  => CheckBalanceFn m -> m ()
+flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
+  DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
 
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
@@ -106,7 +103,7 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
         , tpTransfers = [ tokenTransferType (toAddress dodTokenContract) dodOwner2 dodOwner1 ]
         }
     proposalSize = metadataSize proposalMeta
-    proposeParams = ProposeParams proposalSize proposalMeta
+    proposeParams = ProposeParams dodOwner1 proposalSize proposalMeta
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
@@ -118,13 +115,14 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") proposeParams
-  let key1 = makeProposalKey proposeParams dodOwner1
+  let key1 = makeProposalKey proposeParams
 
-  checkTokenBalance frozenTokenId dodDao dodOwner1 proposalSize
+  checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
 
   let
     upvote = NoPermit VoteParam
-        { vVoteType = True
+        { vFrom = dodOwner2
+        , vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key1
         }
@@ -136,13 +134,14 @@ flushTokenTransfer = uncapsNettest $ withFrozenCallStack $ do
   advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  checkTokenBalance frozenTokenId dodDao dodOwner1 proposalSize
-  checkTokenBalance frozenTokenId dodDao dodOwner2 120
+  checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
+  checkBalanceFn (unTAddress dodDao) dodOwner2 20
 
-flushXtzTransfer :: HasCallStack => NettestScenario m
-flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
-  DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance id (\_ _ -> []) defaultQuorumThreshold
+flushXtzTransfer
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  => CheckBalanceFn m -> m ()
+flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
+  DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
 
   sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
@@ -152,7 +151,7 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
         { tpAgoraPostId = 1
         , tpTransfers = [ xtzTransferType amt dodOwner2 ]
         }
-    proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
+    proposeParams amt = ProposeParams dodOwner1 (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
   -- Freeze in initial voting stage.
   withSender dodOwner1 $
@@ -173,13 +172,14 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
       & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeXtzErrMsg
 
     call dodDao (Call @"Propose") (proposeParams 3)
-  let key1 = makeProposalKey (proposeParams 3) dodOwner1
+  let key1 = makeProposalKey (proposeParams 3)
 
-  checkTokenBalance (frozenTokenId) dodDao dodOwner1 43
+  checkBalanceFn (unTAddress dodDao) dodOwner1 43
 
   let
     upvote = NoPermit VoteParam
-        { vVoteType = True
+        { vFrom = dodOwner2
+        , vVoteType = True
         , vVoteAmount = 1
         , vProposalKey = key1
         }
@@ -194,15 +194,15 @@ flushXtzTransfer = uncapsNettest $ withFrozenCallStack $ do
   -- TODO: check xtz balance
 
 
-proposalCheckFailZeroMutez :: HasCallStack => NettestScenario m
-proposalCheckFailZeroMutez = uncapsNettest $ withFrozenCallStack do
+proposalCheckFailZeroMutez
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  => m ()
+proposalCheckFailZeroMutez = withFrozenCallStack do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance
-      (\store -> setExtra @Natural [mt|min_xtz_amount|] 0 store) (
-      \owner1_ owner2_ ->
-        [ ((owner1_, frozenTokenId), 200)
-        , ((owner2_, frozenTokenId), 200)
-        ]) defaultQuorumThreshold
+    originateTreasuryDao
+      (\store -> setExtra @Natural [mt|min_xtz_amount|] 0 store)
+      defaultQuorumThreshold
+
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       TransferProposal
@@ -219,18 +219,15 @@ proposalCheckFailZeroMutez = uncapsNettest $ withFrozenCallStack do
   advanceLevel dodPeriod
 
   withSender dodOwner1 $
-    call dodDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
+    call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
       & expectCustomError #fAIL_PROPOSAL_CHECK dodDao zeroMutezErrMsg
 
-proposalCheckBiggerThanMaxProposalSize :: HasCallStack => NettestScenario m
-proposalCheckBiggerThanMaxProposalSize = uncapsNettest $ withFrozenCallStack do
+proposalCheckBiggerThanMaxProposalSize
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  => m ()
+proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
   DaoOriginateData{..} <-
-    originateTreasuryDaoWithBalance id
-      (\owner1_ owner2_ ->
-        [ ((owner1_, frozenTokenId), 200)
-        , ((owner2_, frozenTokenId), 200)
-        ])
-      defaultQuorumThreshold
+    originateTreasuryDao id defaultQuorumThreshold
   let
     largeProposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       TransferProposal 1 $
@@ -245,7 +242,7 @@ proposalCheckBiggerThanMaxProposalSize = uncapsNettest $ withFrozenCallStack do
   advanceLevel 10
 
   withSender dodOwner1 $
-    call dodDao (Call @"Propose") (ProposeParams largeProposalSize largeProposalMeta)
+    call dodDao (Call @"Propose") (ProposeParams dodOwner1 largeProposalSize largeProposalMeta)
       & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeProposalErrMsg
 
 
@@ -273,11 +270,11 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
       } ]
   }
 
-originateTreasuryDaoWithBalance
+originateTreasuryDao
  :: forall caps base m. (MonadNettest caps base m)
  => (FullStorage -> FullStorage)
- -> (Address -> Address -> [(LedgerKey, LedgerValue)]) -> OriginateFn m
-originateTreasuryDaoWithBalance modifyStorageFn bal =
+ -> OriginateFn m
+originateTreasuryDao modifyStorageFn =
   let fs = fromVal ($(fetchValue @FullStorage "haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
       FullStorage'{..} = fs
         & setExtra @Natural [mt|frozen_scale_value|] 1
@@ -289,11 +286,11 @@ originateTreasuryDaoWithBalance modifyStorageFn bal =
         & setExtra @Natural [mt|max_xtz_amount|] 5
         & modifyStorageFn
 
-  in originateLigoDaoWithBalance (sExtra fsStorage)
+  in originateLigoDaoWithConfig (sExtra fsStorage)
       (fsConfig
         { cMinQuorumThreshold = fromIntegral $ mkQuorumThreshold 1 100
         , cPeriod = 10
         , cProposalFlushTime = 20
         , cProposalExpiredTime = 30
         }
-      ) bal
+      )

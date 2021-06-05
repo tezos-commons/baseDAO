@@ -5,13 +5,6 @@
 
 #include "common.mligo"
 #include "types.mligo"
-#include "token/fa2.mligo"
-
-let call_fa2(param, store : fa2_parameter * storage) : return =
-  match param with
-  | Transfer (p)         -> transfer (p, store)
-  | Balance_of (p)       -> balance_of(p, store)
-  | Update_operators (p) -> update_operators(p, store)
 
 let make_transfer_on_token (tps, contract_addr : transfer_params * address) : operation =
   let token_contract =

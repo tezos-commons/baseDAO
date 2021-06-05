@@ -11,7 +11,6 @@ module Test.Ligo.RegistryDAO
 import Universum
 
 import qualified Data.ByteString as BS
-import qualified Data.Map as Map
 import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L
@@ -119,7 +118,7 @@ test_RegistryDAO =
   [ testGroup "RegistryDAO Tests"
     [ nettestScenarioOnEmulatorCaps "Calling the propose endpoint with an empty proposal works" $
         withOriginated 2
-          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
+          (\(admin: _) -> initialStorageWithExplictRegistryDAOConfig admin) $
           \(_:wallet1:_) fs baseDao _ -> do
             let proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
                   Transfer_proposal $ TransferProposal 1 [] []
@@ -131,11 +130,11 @@ test_RegistryDAO =
             advanceLevel (toPeriod fs)
 
             withSender wallet1 $ call baseDao (Call @"Propose")
-              (ProposeParams proposalSize proposalMeta)
+              (ProposeParams wallet1 proposalSize proposalMeta)
 
     , nettestScenarioCaps "proposal exceeding max_proposal_size result in error" $
         withOriginated 2
-          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
+          (\(admin: _) -> initialStorageWithExplictRegistryDAOConfig admin) $
           \(_:wallet1:_) _ baseDao _ -> let
             -- In the explicitly set configuration max_proposal_size is set at 100.
             -- And here we create a proposal that is bigger then 100.
@@ -144,13 +143,13 @@ test_RegistryDAO =
                 [(unsafeMkMText ("long_key" <> (show @_ @Int t)), Just [mt|long_value|]) | t <- [1..10]]
             proposalSize = metadataSize proposalMeta
             in withSender wallet1 $ call
-               baseDao (Call @"Propose") (ProposeParams proposalSize proposalMeta)
-               & expectFailProposalCheck baseDao tooLargeProposalErrMsg
+               baseDao (Call @"Propose") (ProposeParams wallet1 proposalSize proposalMeta)
+                & expectFailProposalCheck baseDao tooLargeProposalErrMsg
 
     , nettestScenarioCaps "proposal_check: fail when xtz transfer contains 0 mutez" $
         withOriginated 2
-          (\(admin: wallet1:_) ->
-              initialStorageWithExplictRegistryDAOConfig admin [wallet1]
+          (\(admin: _) ->
+              initialStorageWithExplictRegistryDAOConfig admin
                 & setExtra @Natural [mt|min_xtz_amount|] 0
           ) $
           \(_:wallet1:_) fs baseDao _ -> do
@@ -165,12 +164,12 @@ test_RegistryDAO =
             advanceLevel (toPeriod fs)
 
             withSender wallet1 $ call baseDao (Call @"Propose")
-              (ProposeParams proposalSize proposalMeta)
+              (ProposeParams wallet1 proposalSize proposalMeta)
                 & expectFailProposalCheck baseDao zeroMutezErrMsg
 
     , nettestScenarioCaps "checks it fails if required tokens are not frozen" $
         withOriginated 2
-          (\(admin: wallet1:_) -> initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
+          (\(admin: _) -> initialStorageWithExplictRegistryDAOConfig admin) $
           \(_:wallet1:_) _ baseDao _ -> let
             proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
               Transfer_proposal $ TransferProposal 1 [] []
@@ -178,12 +177,12 @@ test_RegistryDAO =
             -- frozen_scale_value, frozen_extra_value set to 1 and 0 means that it requires 6
             -- tokens to be frozen (6 * 1 + 0) because proposal size happen to be 6 here.
             in withSender wallet1 $
-               call baseDao (Call @"Propose") (ProposeParams 2 proposalMeta)
+               call baseDao (Call @"Propose") (ProposeParams wallet1 2 proposalMeta)
                & expectFailProposalCheck baseDao incorrectTokenAmountErrMsg
 
     , nettestScenarioOnEmulatorCaps "check it correctly calculates required frozen tokens" $
         withOriginated 2
-          (\(admin: wallet1:_) -> setExtra @Natural [mt|frozen_extra_value|] 2 $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
+          (\(admin: _) -> setExtra @Natural [mt|frozen_extra_value|] 2 $ initialStorageWithExplictRegistryDAOConfig admin) $
           \(_:wallet1:_) fs baseDao _ -> do
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
@@ -198,7 +197,7 @@ test_RegistryDAO =
             -- frozen_extra_value set to 1 and 2 means that it requires 12 tokens to be
             -- frozen (10 * 1 + 2) if proposal size is 10.
             withSender wallet1 $
-               call baseDao (Call @"Propose") (ProposeParams (proposalSize + 2) proposalMeta)
+               call baseDao (Call @"Propose") (ProposeParams wallet1 (proposalSize + 2) proposalMeta)
 
     , nettestScenarioOnEmulatorCaps "checks it correctly calculates tokens to burn when rejecting" $ do
         let frozen_scale_value = 2
@@ -206,11 +205,11 @@ test_RegistryDAO =
         let slash_scale_value = 1
         let slash_division_value = 4
         withOriginated 2
-          (\(admin: wallet1:_) ->
+          (\(admin: _) ->
             setExtra @Natural [mt|frozen_scale_value|] frozen_scale_value $
             setExtra @Natural [mt|frozen_extra_value|] frozen_extra_value $
             setExtra @Natural [mt|slash_scale_value|] slash_scale_value $
-            setExtra @Natural [mt|slash_division_value|] slash_division_value $ initialStorageWithExplictRegistryDAOConfig admin [wallet1]) $
+            setExtra @Natural [mt|slash_division_value|] slash_division_value $ initialStorageWithExplictRegistryDAOConfig admin) $
 
           \(admin: wallet1: _) (toPeriod -> period) baseDao _ -> let
             proposalMeta1 = lPackValueRaw @RegistryDaoProposalMetadata $
@@ -227,7 +226,7 @@ test_RegistryDAO =
               advanceLevel period
 
               withSender wallet1 $
-                call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta1)
+                call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozen proposalMeta1)
 
               -- Advance two voting periods to another proposing stage.
               advanceLevel (2 * period + 1) -- 22 is `proposal_flush_time`
@@ -239,15 +238,12 @@ test_RegistryDAO =
               -- will be returned to the proposer.  So they will have a balance
               -- of 100 - proposalSize1.
 
-              -- Check the balance of wallet1 using 'Balance_of' entrypoint.
-              consumer <- originateSimple "consumer" [] (contractConsumer @[FA2.BalanceResponseItem])
-              let balanceRequestItem = FA2.BalanceRequestItem { briOwner = wallet1, briTokenId = frozenTokenId }
-              let balanceRequest = FA2.mkFA2View [balanceRequestItem] consumer
-              withSender wallet1 $ call baseDao (Call @"Balance_of") balanceRequest
+
 
               let spent = div (requiredFrozen * slash_scale_value) slash_division_value
 
-              checkStorage (unTAddress consumer) (toVal [[FA2.BalanceResponseItem balanceRequestItem (defaultTokenBalance + (requiredFrozen - spent))]])
+              checkBalanceEmulator (unTAddress baseDao) wallet1 (requiredFrozen - spent)
+
 
     , nettestScenarioOnEmulatorCaps "checks it correctly executes the proposal that has won" $ do
         let frozen_scale_value = 1
@@ -255,12 +251,12 @@ test_RegistryDAO =
         let slash_scale_value = 1
         let slash_division_value = 1
         withOriginated 3
-          (\(admin: wallet1: voter1:_) ->
+          (\(admin: _) ->
             setExtra @Natural [mt|frozen_scale_value|] frozen_scale_value $
             setExtra @Natural [mt|frozen_extra_value|] frozen_extra_value $
             setExtra @Natural [mt|slash_scale_value|] slash_scale_value $
             setExtra @Natural [mt|max_proposal_size|] 200 $
-            setExtra @Natural [mt|slash_division_value|] slash_division_value $ initialStorageWithExplictRegistryDAOConfig admin [wallet1, voter1]) $
+            setExtra @Natural [mt|slash_division_value|] slash_division_value $ initialStorageWithExplictRegistryDAOConfig admin) $
 
           \(admin: wallet1: voter1 : _) (toPeriod -> period) baseDao _ -> let
             -- We currently have max_proposal_size of 200, but the following proposal is 341 bytes long.
@@ -283,7 +279,7 @@ test_RegistryDAO =
 
               -- We expect this to fail because max_proposal_size is 200 and proposal size is 341.
               withSender wallet1 $
-                call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
+                call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozen largeProposalMeta)
                 & expectFailProposalCheck baseDao tooLargeProposalErrMsg
 
               -- We create a new proposal to increase max_proposal_size to largeProposalSize + 1.
@@ -299,14 +295,14 @@ test_RegistryDAO =
               let requiredFrozenForUpdate = sMaxUpdateproposalSize1 * frozen_scale_value + frozen_extra_value
 
               withSender wallet1 $
-                call baseDao (Call @"Propose") (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1)
+                call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozenForUpdate sMaxUpdateproposalMeta1)
 
               -- Advance one voting period to a voting stage.
               advanceLevel period
               -- Then we send 60 upvotes for the proposal (as min quorum is 1% of 500)
-              let proposalKey = makeProposalKey (ProposeParams requiredFrozenForUpdate sMaxUpdateproposalMeta1) wallet1
+              let proposalKey = makeProposalKey (ProposeParams wallet1 requiredFrozenForUpdate sMaxUpdateproposalMeta1)
               withSender voter1 $
-                call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 60) Nothing]
+                call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 60 voter1) Nothing]
 
               -- Advance one voting period to a proposing stage.
               advanceLevel (period + 1)
@@ -315,13 +311,13 @@ test_RegistryDAO =
 
               -- Now we expect this to work
               withSender wallet1 $
-                call baseDao (Call @"Propose") (ProposeParams requiredFrozen largeProposalMeta)
+                call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozen largeProposalMeta)
 
     , nettestScenarioOnEmulatorCaps "checks on-chain view correctly returns the registry value" $ do
         -- The default values assigned from initialStorageWithExplictRegistryDAOConfig function
         withOriginated 3
-          (\(admin: wallet1: voter1:_) -> setExtra @Natural [mt|max_proposal_size|] 200 $
-              initialStorageWithExplictRegistryDAOConfig admin [wallet1, voter1]) $
+          (\(admin:_) -> setExtra @Natural [mt|max_proposal_size|] 200 $
+              initialStorageWithExplictRegistryDAOConfig admin) $
 
           \(admin: wallet1: voter1 : _) (toPeriod -> period) baseDao _ -> do
             let
@@ -342,14 +338,14 @@ test_RegistryDAO =
 
             -- We propose the addition of a new registry key
             withSender wallet1 $
-              call baseDao (Call @"Propose") (ProposeParams requiredFrozen proposalMeta)
+              call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozen proposalMeta)
 
             -- Advance one voting period to a voting stage.
             advanceLevel period
             -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
-            let proposalKey = makeProposalKey (ProposeParams requiredFrozen proposalMeta) wallet1
+            let proposalKey = makeProposalKey (ProposeParams wallet1 requiredFrozen proposalMeta)
             withSender voter1 $
-              call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50) Nothing]
+              call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50 voter1) Nothing]
 
             -- Advance one voting period to a proposing stage.
             advanceLevel (period + 1)
@@ -365,9 +361,9 @@ test_RegistryDAO =
 
     , nettestScenarioOnEmulatorCaps "checks it can flush a transfer type proposal (#66)" $
         withOriginated 3
-          (\(admin : wallets) ->
+          (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
-            initialStorageWithExplictRegistryDAOConfig admin wallets) $
+            initialStorageWithExplictRegistryDAOConfig admin) $
           \[admin, wallet1, wallet2] (toPeriod -> period) baseDao dodTokenContract -> do
 
             let
@@ -377,7 +373,7 @@ test_RegistryDAO =
                   [ tokenTransferType (toAddress dodTokenContract) wallet2 wallet1]
                   []
               proposalSize = metadataSize proposalMeta
-              proposeParams = ProposeParams proposalSize proposalMeta
+              proposeParams = ProposeParams wallet1 proposalSize proposalMeta
 
             withSender wallet1 $
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
@@ -390,12 +386,13 @@ test_RegistryDAO =
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
 
-            checkTokenBalance frozenTokenId baseDao wallet1 proposalSize
+            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
 
             let
-              key1 = makeProposalKey proposeParams wallet1
+              key1 = makeProposalKey proposeParams
               upvote = NoPermit VoteParam
-                  { vVoteType = True
+                  { vFrom = wallet2
+                  , vVoteType = True
                   , vVoteAmount = 20
                   , vProposalKey = key1
                   }
@@ -407,8 +404,9 @@ test_RegistryDAO =
             advanceLevel (period + 1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            checkTokenBalance frozenTokenId baseDao wallet1 (defaultTokenBalance + proposalSize)
-            checkTokenBalance frozenTokenId baseDao wallet2 (defaultTokenBalance + 20)
+            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
+            checkBalanceEmulator (unTAddress baseDao) wallet2 20
+
             checkStorage (unTAddress dodTokenContract)
               (toVal
                 [ [ FA2.TransferItem { tiFrom = wallet2, tiTxs = [FA2.TransferDestination { tdTo = wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
@@ -418,15 +416,15 @@ test_RegistryDAO =
 
     , nettestScenarioOnEmulatorCaps "checks it can propose a valid xtz type proposal (#66)" $
         withOriginated 2
-          (\(admin : wallets) ->
+          (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
-            initialStorageWithExplictRegistryDAOConfig admin wallets) $
+            initialStorageWithExplictRegistryDAOConfig admin) $
           \[_, wallet] (toPeriod -> period) baseDao _ -> do
             let
               proposalMeta amt = lPackValueRaw @RegistryDaoProposalMetadata $
                 Transfer_proposal $
                   TransferProposal 1 [ xtzTransferType amt wallet ] []
-              proposeParams amt = ProposeParams (metadataSize $ proposalMeta amt) $ proposalMeta amt
+              proposeParams amt = ProposeParams wallet (metadataSize $ proposalMeta amt) $ proposalMeta amt
               proposalSize amt = metadataSize $ proposalMeta amt
 
             withSender wallet $
@@ -454,13 +452,14 @@ test_RegistryDAO =
             withSender wallet $
               call baseDao (Call @"Propose") (proposeParams 3)
 
-            checkTokenBalance frozenTokenId baseDao wallet (defaultTokenBalance + (proposalSize 3) + (proposalSize 10))
+            checkBalanceEmulator (unTAddress baseDao) wallet (proposalSize 3 + proposalSize 10)
+
 
     , nettestScenarioOnEmulatorCaps "can flush a transfer proposal with registry updates" $
         withOriginated 3
-          (\(admin : wallets) ->
+          (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
-            initialStorageWithExplictRegistryDAOConfig admin wallets) $
+            initialStorageWithExplictRegistryDAOConfig admin) $
           \[admin, wallet1, wallet2] (toPeriod -> period) baseDao dodTokenContract -> do
 
             let
@@ -470,7 +469,7 @@ test_RegistryDAO =
                   [ tokenTransferType (toAddress dodTokenContract) wallet2 wallet1 ]
                   [ ([mt|testKey|], Just [mt|testValue|]) ]
               proposalSize = metadataSize proposalMeta
-              proposeParams = ProposeParams proposalSize proposalMeta
+              proposeParams = ProposeParams wallet1 proposalSize proposalMeta
 
             withSender wallet1 $
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
@@ -484,14 +483,14 @@ test_RegistryDAO =
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
 
-            checkTokenBalance frozenTokenId baseDao wallet1 proposalSize
+            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
 
             -- Advance one voting period to a voting stage.
             advanceLevel period
             -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
-            let proposalKey = makeProposalKey (ProposeParams proposalSize proposalMeta) wallet1
+            let proposalKey = makeProposalKey (ProposeParams wallet1 proposalSize proposalMeta)
             withSender wallet2 $
-              call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50) Nothing]
+              call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50 wallet2) Nothing]
 
             advanceLevel (period+1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
@@ -502,9 +501,10 @@ test_RegistryDAO =
               ([mt|lookup_registry|], lPackValueRaw ([mt|testKey|], consumer))
             checkStorage (unTAddress consumer) (toVal [([mt|testKey|], Just [mt|testValue|])])
 
-            -- check the transfer
-            checkTokenBalance frozenTokenId baseDao wallet1 (defaultTokenBalance + proposalSize)
-            checkTokenBalance frozenTokenId baseDao wallet2 (defaultTokenBalance + 50)
+            -- check the balance
+            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
+            checkBalanceEmulator (unTAddress baseDao) wallet2 50
+
             checkStorage (unTAddress dodTokenContract)
               (toVal
                 [ [ FA2.TransferItem { tiFrom = wallet2, tiTxs = [FA2.TransferDestination { tdTo = wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
@@ -514,9 +514,9 @@ test_RegistryDAO =
 
     , nettestScenarioOnEmulatorCaps "checks it can transfer with receive_xtz_entrypoint (#66)" $
         withOriginated 3
-          (\(admin : wallets) ->
+          (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
-            initialStorageWithExplictRegistryDAOConfig admin wallets) $
+            initialStorageWithExplictRegistryDAOConfig admin) $
           \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
             sendXtz (toAddress baseDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
@@ -525,7 +525,7 @@ test_RegistryDAO =
                 Transfer_proposal $
                   TransferProposal 1 [ xtzTransferType 3 wallet2 ] []
               proposalSize = metadataSize proposalMeta
-              proposeParams = ProposeParams proposalSize proposalMeta
+              proposeParams = ProposeParams wallet1 proposalSize proposalMeta
 
             withSender wallet1 $
               call baseDao (Call @"Freeze") (#amount .! proposalSize)
@@ -537,13 +537,15 @@ test_RegistryDAO =
 
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
-            let key1 = makeProposalKey proposeParams wallet1
+            let key1 = makeProposalKey proposeParams
 
-            checkTokenBalance frozenTokenId baseDao wallet1 (defaultTokenBalance + proposalSize)
+            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
+
 
             let
               upvote = NoPermit VoteParam
-                { vVoteType = True
+                { vFrom = wallet2
+                , vVoteType = True
                 , vVoteAmount = 2
                 , vProposalKey = key1
                 }
@@ -558,8 +560,6 @@ test_RegistryDAO =
   ]
   where
 
-    defaultTokenBalance :: Natural = 0
-
     metadataSize :: ProposalMetadata -> Natural
     metadataSize = fromIntegral . BS.length
 
@@ -569,36 +569,33 @@ test_RegistryDAO =
     -- RegistryDAO configuration values using the setExtra function below, and
     -- initialize the contract using it. This let us have the lambdas from LIGO
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
-    initialStorage :: Address -> [Address] -> FullStorage
-    initialStorage admin wallets = let
+    initialStorage :: Address -> FullStorage
+    initialStorage admin = let
       fs = fromVal ($(fetchValue @FullStorage "haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
       oldStorage = fsStorage fs
       oldConfig = fsConfig fs
 
-      ledger = BigMap $ Map.fromList [((w, frozenTokenId), defaultTokenBalance) | w <- wallets]
-
       newStorage = oldStorage
         { sAdmin = admin
-        , sLedger = ledger
-        , sTotalSupply = totalSupplyFromLedger ledger
         }
       in fs { fsStorage = newStorage
             , fsConfig = oldConfig
                 { cPeriod = 11
                 , cProposalFlushTime = 22
                 , cProposalExpiredTime = 33
+                , cGovernanceTotalSupply = 100
                 }
             }
 
-    initialStorageWithExplictRegistryDAOConfig :: Address -> [Address] -> FullStorage
-    initialStorageWithExplictRegistryDAOConfig admin wallets =
+    initialStorageWithExplictRegistryDAOConfig :: Address -> FullStorage
+    initialStorageWithExplictRegistryDAOConfig admin =
       setExtra @Natural [mt|frozen_scale_value|] 1 $
       setExtra @Natural [mt|frozen_extra_value|] 0 $
       setExtra @Natural [mt|slash_scale_value|] 1 $
       setExtra @Natural [mt|slash_division_value|] 1 $
       setExtra @Natural [mt|min_xtz_amount|] 2 $
       setExtra @Natural [mt|max_xtz_amount|] 5 $
-      setExtra @Natural [mt|max_proposal_size|] 100 (initialStorage admin wallets)
+      setExtra @Natural [mt|max_proposal_size|] 100 (initialStorage admin)
 
 
 expectFailProposalCheck

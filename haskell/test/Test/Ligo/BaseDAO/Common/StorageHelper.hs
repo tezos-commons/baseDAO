@@ -4,8 +4,11 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
   ( getFullStorage
   , getFullStorageView
 
-  , GetTotalSupplyFn
-  , getTotalSupplyEmulator
+  , GetFrozenTotalSupplyFn
+  , getFrozenTotalSupplyEmulator
+
+  , GetQuorumThresholdAtCycleFn
+  , getQtAtCycleEmulator
 
   , GetProposalFn
   , getProposalEmulator
@@ -13,9 +16,8 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
   , GetFreezeHistoryFn
   , getFreezeHistoryEmulator
 
-  , GetQuorumThresholdAtCycleFn
-  , getQtAtCycleEmulator
-  -- , getTotalSupplyNetwork
+  , CheckBalanceFn
+  , checkBalanceEmulator
 
   , GetVotePermitsCounterFn
   , getVotePermitsCounterEmulator
@@ -28,7 +30,6 @@ import Universum
 import qualified Data.Map as M
 import Morley.Nettest
 import Morley.Nettest.Pure (PureM)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 
 import Ligo.BaseDAO.Types
 
@@ -40,19 +41,21 @@ getFullStorageView :: (Monad m) => Address -> NettestT m FullStorageView
 getFullStorageView addr =
   fromVal @FullStorageView <$> getStorage @(ToT FullStorageView) addr
 
+
 ------------------------------------------------------------------------
--- GetTotalSupply
+-- GetFrozenTotalSupplyFn
 ------------------------------------------------------------------------
 
-type GetTotalSupplyFn m = Address -> FA2.TokenId -> m Natural
+type GetFrozenTotalSupplyFn m = Address -> m Natural
 
-getTotalSupplyEmulator :: Address -> FA2.TokenId -> EmulatedT PureM Natural
-getTotalSupplyEmulator addr tokenId = do
+getFrozenTotalSupplyEmulator :: Address -> EmulatedT PureM Natural
+getFrozenTotalSupplyEmulator addr = do
   fs <- getFullStorage addr
-  let result = case M.lookup tokenId $ sTotalSupply (fsStorage fs) of
-        Just v -> v
-        Nothing -> error "getTotalSupply: token_id does not exist."
-  pure result
+  pure $ sFrozenTotalSupply $ fsStorage fs
+
+------------------------------------------------------------------------
+-- GetFreezeHistoryFn
+------------------------------------------------------------------------
 
 type GetFreezeHistoryFn m = Address -> Address -> m (Maybe AddressFreezeHistory)
 
@@ -75,13 +78,19 @@ getProposalEmulator addr pKey =
 -- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
 -- anyway. Commented due to weeder.
 
--- getTotalSupplyNetwork :: (Monad m) => Address -> FA2.TokenId -> NettestT m Natural
--- getTotalSupplyNetwork addr tokenId = do
---   fs <- getFullStorageView addr
---   let result = case M.lookup tokenId $ sTotalSupply (fsStorage fs) of
---         Just v -> v
---         Nothing -> error "getTotalSupply: token_id does not exist."
---   pure result
+------------------------------------------------------------------------
+-- CheckBalanceFn
+------------------------------------------------------------------------
+
+type CheckBalanceFn m = Address -> Address -> Natural -> m ()
+
+checkBalanceEmulator :: Address -> Address -> Natural -> EmulatedT PureM ()
+checkBalanceEmulator addr owner bal = do
+  fh <- getFreezeHistoryEmulator addr owner
+  (sumAddressFreezeHistory <$> fh) @== Just bal
+
+sumAddressFreezeHistory :: AddressFreezeHistory -> Natural
+sumAddressFreezeHistory AddressFreezeHistory{..} = fhCurrentUnstaked + fhPastUnstaked + fhStaked
 
 ------------------------------------------------------------------------
 -- GetVotePermitsCounter

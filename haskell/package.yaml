@@ -99,7 +99,6 @@ library:
     - filepath
     - text
     - fmt
-    - lens
     - lorentz
     - morley
     - morley-client
@@ -142,7 +141,6 @@ tests:
     - cleveland
     - containers
     - fmt
-    - lens
     - lorentz
     - morley
     - morley-ledgers

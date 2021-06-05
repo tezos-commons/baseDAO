@@ -43,7 +43,6 @@ library
     , directory
     , filepath
     , fmt
-    , lens
     , lorentz
     , morley
     , morley-client
@@ -84,22 +83,18 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Common
       Test.Ligo.BaseDAO.Common.Errors
       Test.Ligo.BaseDAO.Common.StorageHelper
-      Test.Ligo.BaseDAO.FA2
       Test.Ligo.BaseDAO.Management
       Test.Ligo.BaseDAO.Management.TransferOwnership
       Test.Ligo.BaseDAO.OffChainViews
       Test.Ligo.BaseDAO.Proposal
       Test.Ligo.BaseDAO.Proposal.Config
+      Test.Ligo.BaseDAO.Proposal.Delegate
       Test.Ligo.BaseDAO.Proposal.Flush
       Test.Ligo.BaseDAO.Proposal.Propose
       Test.Ligo.BaseDAO.Proposal.Quorum
       Test.Ligo.BaseDAO.Proposal.Tokens
       Test.Ligo.BaseDAO.Proposal.Vote
       Test.Ligo.BaseDAO.Token
-      Test.Ligo.BaseDAO.Token.BalanceOf
-      Test.Ligo.BaseDAO.Token.Common
-      Test.Ligo.BaseDAO.Token.Transfer
-      Test.Ligo.BaseDAO.Token.UpdateOperators
       Test.Ligo.BaseDAO.Types
       Test.Ligo.RegistryDAO
       Test.Ligo.TreasuryDAO
@@ -118,7 +113,6 @@ test-suite baseDAO-test
     , cleveland
     , containers
     , fmt
-    , lens
     , lorentz
     , morley
     , morley-ledgers

@@ -47,6 +47,7 @@ voteNonExistingProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = UnsafeHash "\11\12\13"
+        , vFrom = dodOwner2
         }
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
@@ -56,8 +57,8 @@ voteNonExistingProposal originateFn = do
 
 voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-voteMultiProposals originateFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> CheckBalanceFn m -> m ()
+voteMultiProposals originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
@@ -76,18 +77,20 @@ voteMultiProposals originateFn = do
             { vVoteType = True
             , vVoteAmount = 2
             , vProposalKey = key1
+            , vFrom = dodOwner2
             }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 3
             , vProposalKey = key2
+            , vFrom = dodOwner2
             }
         ]
 
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
-  checkTokenBalance (frozenTokenId) dodDao dodOwner2 105
+  checkBalanceFn (unTAddress dodDao) dodOwner2 5
   -- TODO [#31]: check storage if the vote update the proposal properly
 
 proposalCorrectlyTrackVotes
@@ -121,11 +124,13 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
             { vVoteType = True
             , vVoteAmount = 5
             , vProposalKey = key1
+            , vFrom = voter1
             }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 3
             , vProposalKey = key2
+            , vFrom = voter1
             }
         ]
 
@@ -134,11 +139,13 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
             { vVoteType = False
             , vVoteAmount = 2
             , vProposalKey = key1
+            , vFrom = voter2
             }
         , VoteParam
             { vVoteType = True
             , vVoteAmount = 4
             , vProposalKey = key2
+            , vFrom = voter2
             }
         ]
 
@@ -147,11 +154,13 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
             { vVoteType = True
             , vVoteAmount = 3
             , vProposalKey = key1
+            , vFrom = voter1
             }
         , VoteParam
             { vVoteType = True
             , vVoteAmount = 3
             , vProposalKey = key2
+            , vFrom = voter1
             }
         ]
 
@@ -213,6 +222,7 @@ voteOutdatedProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
+        , vFrom = dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
@@ -227,8 +237,10 @@ voteOutdatedProposal originateFn = do
 
 voteValidProposal
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-voteValidProposal originateFn = do
+  => (ConfigDesc Config -> OriginateFn m)
+  -> CheckBalanceFn m
+  -> m ()
+voteValidProposal originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
@@ -246,18 +258,19 @@ voteValidProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
+        , vFrom = dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkTokenBalance frozenTokenId dodDao dodOwner2 102
+  checkBalanceFn (unTAddress dodDao) dodOwner2 2
   -- TODO [#31]: check if the vote is updated properly
 
 voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-voteWithPermit originateFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> CheckBalanceFn m -> m ()
+voteWithPermit originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 12)
@@ -273,13 +286,14 @@ voteWithPermit originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
+        , vFrom = dodOwner1
         }
 
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkTokenBalance frozenTokenId dodDao dodOwner1 112
+  checkBalanceFn (unTAddress dodDao) dodOwner1 12
 
 voteWithPermitNonce
   :: (MonadNettest caps base m, HasCallStack)
@@ -304,6 +318,7 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
+        , vFrom = dodOwner1
         }
 
   -- Advance one voting period to a voting stage.
@@ -357,11 +372,13 @@ votesBoundedValue originateFn = do
         { vVoteType = False
         , vVoteAmount = 1
         , vProposalKey = key1
+        , vFrom = dodOwner2
         }
       downvote' = NoPermit VoteParam
         { vVoteType = False
         , vVoteAmount = 1
         , vProposalKey = key1
+        , vFrom = dodOwner1
         }
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
