@@ -28,7 +28,7 @@ import Ligo.BaseDAO.Types
 
 type WithOriginateFn m = Integer
   -> ([Address] -> FullStorage)
-  -> ([Address] -> TAddress Parameter  -> m ())
+  -> ([Address] -> ContractHandler Parameter FullStorage -> m ())
   -> m ()
 
 type WithStorage = Address -> FullStorage
@@ -39,18 +39,18 @@ transferOwnership
 transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
     withSender wallet1 $ call baseDao (Call @"Transfer_ownership") (#newOwner .! wallet1)
-      & expectNotAdmin baseDao
+      & expectNotAdmin
 
 authenticateSender
   :: MonadNettest caps base m
   => WithOriginateFn m -> WithStorage -> m ()
 authenticateSender withOriginatedFn initialStorage =
-  withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
+  withOriginatedFn 3 (\(owner:_ ) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
       withSender owner $ call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       withSender wallet2 $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner baseDao
+        & expectNotPendingOwner
 
 changeToPendingAdmin
   :: MonadNettest caps base m
@@ -70,7 +70,7 @@ noPendingAdmin withOriginatedFn initialStorage =
     \[_, wallet1] baseDao -> do
       withSender wallet1 $
         call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner baseDao
+        & expectNotPendingOwner
 
 pendingOwnerNotTheSame
   :: MonadNettest caps base m
@@ -81,7 +81,7 @@ pendingOwnerNotTheSame withOriginatedFn initialStorage =
       call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       call baseDao (Call @"Accept_ownership") ()
-      & expectNotPendingOwner baseDao
+      & expectNotPendingOwner
 
 notSetAdmin
   :: MonadNettest caps base m
@@ -112,7 +112,7 @@ rewritePendingOwner withOriginatedFn initialStorage =
         pure ()
       -- Make the accept ownership call from wallet1 and see that it fails
       withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner baseDao
+        & expectNotPendingOwner
       -- Make the accept ownership call from wallet1 and see that it works
       withSender wallet2 $ call baseDao (Call @"Accept_ownership") ()
 
@@ -131,7 +131,7 @@ invalidatePendingOwner withOriginatedFn initialStorage =
       -- Make the accept ownership call from wallet1 and see that it fails
       -- with 'not pending owner' error
       withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner baseDao
+        & expectNotPendingOwner
 
 bypassAcceptForSelf
   :: MonadNettest caps base m
@@ -141,23 +141,23 @@ bypassAcceptForSelf withOriginatedFn initialStorage =
     \[owner, wallet1] baseDao -> do
       withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
-          (#newOwner .! (unTAddress baseDao))
+          (#newOwner .! (chAddress baseDao))
       -- Same call should return error, because admin has been changed
       withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
-          (#newOwner .! (unTAddress baseDao))
-        & expectNotAdmin baseDao
+          (#newOwner .! (chAddress baseDao))
+        & expectNotAdmin
       -- But this should work
-      withSender (unTAddress baseDao) $ do
+      withSender (chAddress baseDao) $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet1)
 
 expectNotAdmin
-  :: (MonadNettest caps base m, ToAddress addr)
-  => addr -> m a -> m ()
+  :: (MonadNettest caps base m)
+  => m a -> m ()
 expectNotAdmin = expectCustomErrorNoArg #nOT_ADMIN
 
 expectNotPendingOwner
-  :: (MonadNettest caps base m, ToAddress addr)
-  => addr -> m a -> m ()
+  :: (MonadNettest caps base m)
+  => m a -> m ()
 expectNotPendingOwner = expectCustomErrorNoArg #nOT_PENDING_ADMIN

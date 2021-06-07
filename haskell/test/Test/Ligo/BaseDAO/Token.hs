@@ -48,12 +48,11 @@ transferContractTokensScenario originateFn = do
 
   withSender dodOwner1 $
     call dodDao (Call @"Transfer_contract_tokens") param
-    & expectCustomErrorNoArg #nOT_ADMIN dodDao
+    & expectCustomErrorNoArg #nOT_ADMIN
 
   withSender dodAdmin $
     call dodDao (Call @"Transfer_contract_tokens") param
 
-  checkStorage (unTAddress dodTokenContract)
-    (toVal
-      [ [ FA2.TransferItem { tiFrom = target_owner1, tiTxs = [FA2.TransferDestination { tdTo = target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
-      ])
+  getStorage dodTokenContract @@==
+    [ [ FA2.TransferItem { tiFrom = target_owner1, tiTxs = [FA2.TransferDestination { tdTo = target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
+    ]

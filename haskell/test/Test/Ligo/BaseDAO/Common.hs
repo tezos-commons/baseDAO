@@ -47,10 +47,10 @@ data DaoOriginateData = DaoOriginateData
   , dodOperator1 :: Address
   , dodOwner2 :: Address
   , dodOperator2 :: Address
-  , dodDao :: TAddress Parameter
-  , dodTokenContract :: TAddress FA2.Parameter
+  , dodDao :: ContractHandler Parameter FullStorage
+  , dodTokenContract :: ContractHandler FA2.Parameter [FA2.TransferParams]
   , dodAdmin :: Address
-  , dodGuardian :: TAddress (Address, ProposalKey)
+  , dodGuardian :: ContractHandler (Address, ProposalKey) ()
   , dodPeriod :: Natural
   }
 
@@ -84,11 +84,11 @@ makeProposalKey params = toHashHs $ lPackValue params
 
 addDataToSign
   :: (MonadNettest caps base m)
-  => TAddress param
+  => ContractHandler param storage
   -> Nonce
   -> d
   -> m (DataToSign d, d)
-addDataToSign (toAddress -> dsContract) dsNonce dsData = do
+addDataToSign (chAddress -> dsContract) dsNonce dsData = do
   dsChainId <- getChainId
   return (DataToSign{..}, dsData)
 
@@ -158,11 +158,11 @@ originateLigoDaoWithConfig extra config qt = do
               ! #extra extra
               ! #admin admin
               ! #metadata mempty
-              ! #tokenAddress (unTAddress tokenContract)
+              ! #tokenAddress (chAddress tokenContract)
               ! #level currentLevel
               ! #quorumThreshold qt
             )
-            { sGuardian = unTAddress guardianContract
+            { sGuardian = chAddress guardianContract
             }
         , fsConfig = config
         }
@@ -176,7 +176,7 @@ originateLigoDaoWithConfig extra config qt = do
 
   daoUntyped <- originateUntyped originateData
 
-  let dao = TAddress @Parameter daoUntyped
+  let dao = ContractHandler @Parameter @FullStorage "dao" daoUntyped
 
   pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract
       admin guardianContract (unPeriod $ cPeriod config)
@@ -195,7 +195,7 @@ originateLigoDao =
 
 createSampleProposal
   :: (MonadNettest caps base m, HasCallStack)
-  => Int -> Address -> TAddress Parameter -> m ProposalKey
+  => Int -> Address -> ContractHandler Parameter FullStorage -> m ProposalKey
 createSampleProposal counter dodOwner dao = do
   let (pk, action) = createSampleProposal_ counter dodOwner dao
   withSender dodOwner action
@@ -203,7 +203,7 @@ createSampleProposal counter dodOwner dao = do
 
 createSampleProposal_
   :: (MonadOps m, HasCallStack)
-  => Int -> Address -> TAddress Parameter -> (ProposalKey, m ())
+  => Int -> Address -> ContractHandler Parameter FullStorage -> (ProposalKey, m ())
 createSampleProposal_ counter dodOwner1 dao =
   let params = ProposeParams
         { ppFrom = dodOwner1
@@ -215,7 +215,7 @@ createSampleProposal_ counter dodOwner1 dao =
 -- TODO consider making this polymorphic on the input/output size
 createSampleProposals
   :: (MonadNettest caps base m, HasCallStack)
-  => (Int, Int) -> Address -> TAddress Parameter -> m (ProposalKey, ProposalKey)
+  => (Int, Int) -> Address -> ContractHandler Parameter FullStorage -> m (ProposalKey, ProposalKey)
 createSampleProposals (counter1, counter2) dodOwner1 dao = do
   let (pk1, action1) = createSampleProposal_ counter1 dodOwner1 dao
   let (pk2, action2) = createSampleProposal_ counter2 dodOwner1 dao

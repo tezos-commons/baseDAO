@@ -33,18 +33,19 @@ withOriginated
   :: MonadNettest caps base m
   => Integer
   -> ([Address] -> FullStorage)
-  -> ([Address] -> TAddress Parameter -> m a)
+  -> ([Address] -> ContractHandler Parameter FullStorage -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
-  addresses <- mapM (\x -> newAddress $ "address" <> (show x)) [1 ..addrCount]
-  baseDao <- originateUntyped $ UntypedOriginateData
+  addresses <- mapM (\_ -> newAddress auto) [1 ..addrCount]
+  baseDaoUntyped <- originateUntyped $ UntypedOriginateData
     { uodName = "BaseDAO Test Contract"
     , uodBalance = zeroMutez
     , uodStorage = untypeValue $ toVal $ storageFn addresses
     , uodContract = convertContract baseDAOContractLigo
     }
+  let baseDao = ContractHandler @Parameter @FullStorage "baseDao" baseDaoUntyped
 
-  tests addresses (TAddress baseDao)
+  tests addresses baseDao
 
 -- | We test non-token entrypoints of the BaseDAO contract here
 test_BaseDAO_Management :: [TestTree]

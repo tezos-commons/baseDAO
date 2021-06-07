@@ -83,12 +83,12 @@ validProposal checkBalanceFn = withFrozenCallStack $ do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 (proposalSize + 1) proposalMeta)
-    & expectCustomError #fAIL_PROPOSAL_CHECK dodDao incorrectTokenAmountErrMsg
+    & expectCustomError #fAIL_PROPOSAL_CHECK incorrectTokenAmountErrMsg
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 (proposalSize)
+  checkBalanceFn (chAddress dodDao) dodOwner1 (proposalSize)
 
 flushTokenTransfer
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -117,7 +117,7 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
   withSender dodOwner1 $ call dodDao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
+  checkBalanceFn (chAddress dodDao) dodOwner1 proposalSize
 
   let
     upvote = NoPermit VoteParam
@@ -134,8 +134,8 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
   advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
-  checkBalanceFn (unTAddress dodDao) dodOwner2 20
+  checkBalanceFn (chAddress dodDao) dodOwner1 proposalSize
+  checkBalanceFn (chAddress dodDao) dodOwner2 20
 
 flushXtzTransfer
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -165,16 +165,16 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
   withSender dodOwner1 $ do
   -- due to smaller than min_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 1)
-      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooSmallXtzErrMsg
+      & expectCustomError #fAIL_PROPOSAL_CHECK tooSmallXtzErrMsg
 
   -- due to bigger than max_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 6)
-      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeXtzErrMsg
+      & expectCustomError #fAIL_PROPOSAL_CHECK tooLargeXtzErrMsg
 
     call dodDao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3)
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 43
+  checkBalanceFn (chAddress dodDao) dodOwner1 43
 
   let
     upvote = NoPermit VoteParam
@@ -220,7 +220,7 @@ proposalCheckFailZeroMutez = withFrozenCallStack do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
-      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao zeroMutezErrMsg
+      & expectCustomError #fAIL_PROPOSAL_CHECK zeroMutezErrMsg
 
 proposalCheckBiggerThanMaxProposalSize
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -243,7 +243,7 @@ proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 largeProposalSize largeProposalMeta)
-      & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooLargeProposalErrMsg
+      & expectCustomError #fAIL_PROPOSAL_CHECK tooLargeProposalErrMsg
 
 
 --------------------------------------------------------------------------

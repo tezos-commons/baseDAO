@@ -67,8 +67,8 @@ test_BaseDAO_Proposal =
   , nettestScenarioOnEmulatorCaps "cannot propose with insufficient tokens (emulator) " $
       insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorage addr)
 
-  , nettestScenarioOnNetworkCaps "cannot propose with insufficient tokens (network) " $
-      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorageView addr)
+--   , nettestScenarioOnNetworkCaps "cannot propose with insufficient tokens (network) " $
+--       insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorageView addr)
 
   , testGroup "Permit:"
       [ nettestScenarioOnEmulatorCaps "can vote from another user behalf" $

@@ -34,12 +34,10 @@ import Morley.Nettest.Pure (PureM)
 import Ligo.BaseDAO.Types
 
 getFullStorage :: Address -> EmulatedT PureM FullStorage
-getFullStorage addr =
-  fromVal @FullStorage <$> getStorage' @(ToT FullStorage) addr
+getFullStorage = getStorage' @FullStorage
 
-getFullStorageView :: (Monad m) => Address -> NettestT m FullStorageView
-getFullStorageView addr =
-  fromVal @FullStorageView <$> getStorage @(ToT FullStorageView) addr
+getFullStorageView :: (Monad m, HasAnnotation FullStorageView) => Address -> NettestT m FullStorageView
+getFullStorageView = getStorage @FullStorageView
 
 
 ------------------------------------------------------------------------

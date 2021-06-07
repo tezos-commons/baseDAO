@@ -53,7 +53,7 @@ voteNonExistingProposal originateFn = do
   advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
 
 voteMultiProposals
   :: (MonadNettest caps base m, HasCallStack)
@@ -90,7 +90,7 @@ voteMultiProposals originateFn checkBalanceFn = do
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
-  checkBalanceFn (unTAddress dodDao) dodOwner2 5
+  checkBalanceFn (chAddress dodDao) dodOwner2 5
   -- TODO [#31]: check storage if the vote update the proposal properly
 
 proposalCorrectlyTrackVotes
@@ -174,8 +174,8 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
   withSender voter2  do
     call dodDao (Call @"Vote") params2
 
-  proposal1 <- fromMaybe (error "proposal not found") <$> getProposalFn (unTAddress dodDao) key1
-  proposal2 <- fromMaybe (error "proposal not found") <$> getProposalFn (unTAddress dodDao) key2
+  proposal1 <- fromMaybe (error "proposal not found") <$> getProposalFn (chAddress dodDao) key1
+  proposal2 <- fromMaybe (error "proposal not found") <$> getProposalFn (chAddress dodDao) key2
 
   assert (plUpvotes proposal1 == 8) "proposal did not track upvotes correctly"
   assert (plDownvotes proposal1 == 2) "proposal did not track downvotes correctly"
@@ -233,7 +233,7 @@ voteOutdatedProposal originateFn = do
     -- Advance two voting period to another voting stage.
     advanceLevel (2 * dodPeriod)
     call dodDao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_STAGE_OVER dodDao
+      & expectCustomErrorNoArg #vOTING_STAGE_OVER
 
 voteValidProposal
   :: (MonadNettest caps base m, HasCallStack)
@@ -264,7 +264,7 @@ voteValidProposal originateFn checkBalanceFn = do
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkBalanceFn (unTAddress dodDao) dodOwner2 2
+  checkBalanceFn (chAddress dodDao) dodOwner2 2
   -- TODO [#31]: check if the vote is updated properly
 
 voteWithPermit
@@ -293,7 +293,7 @@ voteWithPermit originateFn checkBalanceFn = do
   advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkBalanceFn (unTAddress dodDao) dodOwner1 12
+  checkBalanceFn (chAddress dodDao) dodOwner1 12
 
 voteWithPermitNonce
   :: (MonadNettest caps base m, HasCallStack)
@@ -338,17 +338,17 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
 
     -- Outdated nonce
     call dodDao (Call @"Vote") [params1]
-      & expectCustomError #mISSIGNED dodDao (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
     -- Nonce from future
     call dodDao (Call @"Vote") [params3]
-      & expectCustomError #mISSIGNED dodDao (checkedCoerce $ lPackValue dataToSign2)
+      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
     -- Good nonce after the previous successful entrypoint call
     call dodDao (Call @"Vote") [params2]
 
   -- Check counter
-  (Nonce counter) <- getVotePermitsCounterFn (unTAddress dodDao)
+  (Nonce counter) <- getVotePermitsCounterFn (chAddress dodDao)
   counter @== 2
 
 votesBoundedValue
@@ -387,4 +387,4 @@ votesBoundedValue originateFn = do
 
   withSender dodOwner2 $ do
     call dodDao (Call @"Vote") [upvote']
-      & expectCustomErrorNoArg #mAX_VOTERS_REACHED dodDao
+      & expectCustomErrorNoArg #mAX_VOTERS_REACHED

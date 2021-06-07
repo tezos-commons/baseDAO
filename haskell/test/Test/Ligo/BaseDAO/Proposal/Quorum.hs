@@ -73,7 +73,7 @@ checkQuorumThresholdDynamicUpdate originateFn getQtAtCycle = do
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
-  quorumThresholdActual_ <- getQtAtCycle (unTAddress dodDao)
+  quorumThresholdActual_ <- getQtAtCycle (chAddress dodDao)
   let quorumThresholdExpected_ = QuorumThresholdAtCycle 1 (mkQuorumThreshold 3 10) 10
   assert (quorumThresholdActual_ == quorumThresholdExpected_) "Unexpected quorumThreshold update"
 
@@ -84,7 +84,7 @@ checkQuorumThresholdDynamicUpdate originateFn getQtAtCycle = do
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
 
-  quorumThresholdActual <- getQtAtCycle (unTAddress dodDao)
+  quorumThresholdActual <- getQtAtCycle (chAddress dodDao)
   -- We start with quorumThreshold of 3/10, with participation as 10 and governance total supply as 100
   -- participation = 10/100 = 1/10
   -- so possible_new_quorum = 3/10 * (1 - 0.05)  + (1/10 * 5/100)
@@ -126,7 +126,7 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn getQtAtCycle = do
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
 
-  quorumThresholdActual <- getQtAtCycle (unTAddress dodDao)
+  quorumThresholdActual <- getQtAtCycle (chAddress dodDao)
   -- We start with quorumThreshold of 3/10, with participation as 100 and governance total supply as 100
   -- participation = 100/100 = 1
   -- so possible_new_quorum = 3/10 * (1 - 0.05)  + (1 * 5/100)
@@ -171,7 +171,7 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn getQtAtCycle = do
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
 
-  quorumThresholdActual <- getQtAtCycle (unTAddress dodDao)
+  quorumThresholdActual <- getQtAtCycle (chAddress dodDao)
   -- We start with quorumThreshold of 3/10, with participation as 0 and governance total supply as 100
   -- participation = 100/100 = 1
   -- so possible_new_quorum = 3/10 * (1 - 0.25)  + (0 * 5/100)
@@ -218,7 +218,7 @@ checkProposalSavesQuorum originateFn getProposal = do
     call dodDao (Call @"Propose") proposeParams
 
   let proposalKey = makeProposalKey proposeParams
-  proposal <- fromMaybe (error "Proposal not found") <$> getProposal (unTAddress dodDao) proposalKey
+  proposal <- fromMaybe (error "Proposal not found") <$> getProposal (chAddress dodDao) proposalKey
   -- We start with quorumThreshold of 3/10, with participation as 10 and governance total supply as 100
   -- participation = 10/100 = 1/10
   -- so possible_new_quorum = 3/10 * (1 - 0.05)  + (1/10 * 5/100)
@@ -269,13 +269,13 @@ proposalIsRejectedIfNoQuorum checkBalanceFn = do
     call dao (Call @"Vote") [vote_]
 
   let expectedFrozen = 42 + 10
-  checkBalanceFn (unTAddress dao) proposer expectedFrozen
+  checkBalanceFn (chAddress dao) proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
   withSender admin $ call dao (Call @"Flush") 100
 
-  checkBalanceFn (unTAddress dao) proposer 10 -- We expect 42 tokens to have burned
+  checkBalanceFn (chAddress dao) proposer 10 -- We expect 42 tokens to have burned
 
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum
   :: (MonadNettest caps base m, HasCallStack)
@@ -320,11 +320,11 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum checkBalanceFn = do
     call dao (Call @"Vote") [vote_]
 
   let expectedFrozen = 42 + 10
-  checkBalanceFn (unTAddress dao) proposer expectedFrozen
+  checkBalanceFn (chAddress dao) proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
   withSender admin $ call dao (Call @"Flush") 100
 
-  checkBalanceFn (unTAddress dao) proposer 52
+  checkBalanceFn (chAddress dao) proposer 52
 

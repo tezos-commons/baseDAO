@@ -20,7 +20,7 @@ import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 
 import Michelson.Parser
-import Michelson.Test.Import -- TODO 258: remove cleveland dependency
+import Michelson.Runtime.Import (readContract)
 import Michelson.TypeCheck (typeCheckingWith)
 import Michelson.TypeCheck.Instr
 import Michelson.Typed
@@ -31,10 +31,10 @@ import Michelson.Typed
 -- types in error messages on types mismatch.
 fetchContract :: forall cp st. (KnownT cp, KnownT st) => String -> TH.ExpQ
 fetchContract envKey = do
-  path <- resolveSourcePath "haskell/test/baseDAO.tz" envKey
+  (path :: FilePath) <- resolveSourcePath "haskell/test/baseDAO.tz" envKey
                           -- ↑ This default path works on CI.
                           -- There it's relative to the repo root, apparently.
-  contract <- readDependentSource path
+  (contract :: Text) <- readDependentSource path
 
   case readContract @cp @st path contract of
     Left e ->
@@ -45,7 +45,7 @@ fetchContract envKey = do
       [|
         -- Note: it's ok to use `error` here, because we just proved that the contract
         -- can be parsed+typechecked.
-        either (error . pretty) snd $
+        either (error . pretty) id $
           readContract path contract
       |]
 
