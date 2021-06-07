@@ -10,7 +10,6 @@ module Ligo.Util
 
 import Universum
 
-import Data.Default (def)
 import Fmt (pretty)
 import qualified Language.Haskell.TH as TH
 import Language.Haskell.TH.Syntax (qAddDependentFile)
@@ -19,10 +18,7 @@ import System.Directory (listDirectory)
 import System.Environment (lookupEnv)
 import System.FilePath ((</>))
 
-import Michelson.Parser
-import Michelson.Test.Import -- TODO 258: remove cleveland dependency
-import Michelson.TypeCheck (typeCheckingWith)
-import Michelson.TypeCheck.Instr
+import Michelson.Runtime.Import (readContract, readValue)
 import Michelson.Typed
 
 -- | Read a contract at compile time assuming its expected type is known.
@@ -45,7 +41,7 @@ fetchContract envKey = do
       [|
         -- Note: it's ok to use `error` here, because we just proved that the contract
         -- can be parsed+typechecked.
-        either (error . pretty) snd $
+        either (error . pretty) id $
           readContract path contract
       |]
 
@@ -69,7 +65,7 @@ fetchValues defaultPath envKey = do
 
 verifiedFetchedValue :: forall st. KnownT (ToT st) => Text -> TH.ExpQ
 verifiedFetchedValue valueLiteral =
-  case readTypedValue_ @(ToT st) valueLiteral of
+  case readValue @(ToT st) "" valueLiteral of
     Left e ->
       -- Emit a compiler error if the value cannot be read.
       fail (pretty e)
@@ -78,7 +74,7 @@ verifiedFetchedValue valueLiteral =
       [|
         -- Note: it's ok to use `error` here, because we just proved that the
         -- value can be parsed+typechecked.
-        either (error . pretty) fromVal $ readTypedValue_ valueLiteral
+        either (error . pretty) fromVal $ readValue "" valueLiteral
       |]
 
 readDependentSource
@@ -98,8 +94,3 @@ resolveSourcePath
   -> m FilePath
 resolveSourcePath defaultPath envKey =
   fromMaybe defaultPath <$> liftIO (lookupEnv envKey)
-
-readTypedValue_ :: forall st. (KnownT st) => Text -> Either Text (Value st)
-readTypedValue_ valueLiteral = do
-  uValue <- first pretty $ parseExpandValue valueLiteral
-  first pretty . typeCheckingWith def $ typeVerifyStorage @st uValue
