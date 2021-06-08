@@ -92,9 +92,7 @@ library:
   generated-other-modules:
     - Paths_baseDAO_ligo_meta
   dependencies:
-    - cleveland
     - containers
-    - data-default
     - directory
     - filepath
     - text

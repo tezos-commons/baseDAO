@@ -102,13 +102,13 @@ packages:
     version: 1.14.0
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 9642
-      sha256: d3bcd49fd41cdc9a6a8f063f5bc3864b915cffe2d9f6e36bd6d170da27a73453
-    commit: 085fa13c8fed5fcd715a68f9ce67d113db6f66ef
+      size: 9714
+      sha256: 6d8aa305476a17563279f2bee5da0c58e181b1c03aa91adc57434a549aa24283
+    commit: ac7d485d35a81fe60658447e68710ac62b3f34ad
   original:
     subdir: code/morley
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 085fa13c8fed5fcd715a68f9ce67d113db6f66ef
+    commit: ac7d485d35a81fe60658447e68710ac62b3f34ad
 - completed:
     subdir: code/lorentz
     name: lorentz
@@ -116,12 +116,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
       size: 3873
-      sha256: 2ff6d21af0dc23fda2d6c4b8068e749aa92aed9593bb46d22b16125179a2e169
-    commit: 085fa13c8fed5fcd715a68f9ce67d113db6f66ef
+      sha256: 06d4942c0d2232b15f417bbc115e91e77afd595b38a799cd3b10698183997548
+    commit: ac7d485d35a81fe60658447e68710ac62b3f34ad
   original:
     subdir: code/lorentz
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 085fa13c8fed5fcd715a68f9ce67d113db6f66ef
+    commit: ac7d485d35a81fe60658447e68710ac62b3f34ad
 - completed:
     subdir: code/cleveland
     name: cleveland
@@ -129,12 +129,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
       size: 13229
-      sha256: 41c3cc7cc6ca880d0a056046021ae71b5a6e62c1d953f39679e319e3da8b0f19
-    commit: 085fa13c8fed5fcd715a68f9ce67d113db6f66ef
+      sha256: d7dbc769461a218f97c1c6152708ba0b5621a08f054a1e122cb36027113ebaa9
+    commit: ac7d485d35a81fe60658447e68710ac62b3f34ad
   original:
     subdir: code/cleveland
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 085fa13c8fed5fcd715a68f9ce67d113db6f66ef
+    commit: ac7d485d35a81fe60658447e68710ac62b3f34ad
 - completed:
     subdir: code/morley-client
     name: morley-client
@@ -143,11 +143,11 @@ packages:
     pantry-tree:
       size: 3313
       sha256: 6276f12da6cffcdd1724ba1271ceb43c4aa5470d443de23ec8cb09a7d4caa347
-    commit: 085fa13c8fed5fcd715a68f9ce67d113db6f66ef
+    commit: ac7d485d35a81fe60658447e68710ac62b3f34ad
   original:
     subdir: code/morley-client
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 085fa13c8fed5fcd715a68f9ce67d113db6f66ef
+    commit: ac7d485d35a81fe60658447e68710ac62b3f34ad
 - completed:
     name: caps
     version: '0'
