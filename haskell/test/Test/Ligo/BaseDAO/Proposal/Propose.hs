@@ -18,6 +18,7 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , validProposal
   , validProposalWithFixedFee
   , unstakesTokensForMultipleVotes
+  , proposalCreationUnderStorageLimit
   ) where
 
 import Universum
@@ -485,26 +486,72 @@ proposalCreationUnderStorageLimit
     , HasCallStack
     )
   => (ConfigDesc Config -> OriginateFn m) -> m ()
-proposalCreationUnderStorageLimit  originateFn = do
+proposalCreationUnderStorageLimit originateFn = do
   DaoOriginateData {..} <- originateFn testConfig defaultQuorumThreshold
 
-  let totalTokens = 100000
+  runIO $ putTextLn (show dodPeriod)
 
+  originLevel <- getLevel
+  runIO $ putTextLn "Origin level"
+  runIO $ putTextLn (show originLevel)
+
+  let totalTokens = 100000
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! totalTokens)
 
-  advanceLevel 600
+  addresses <- mapM (\s -> do
+    runIO $ putTextLn ("Creating address:" <> show s)
+    newAddress s) $ (\s -> "addr" <> (show s)) <$> [1..2]
 
-  forM_ [(1 :: Integer)..500] $ \n -> do
+  runIO $ putTextLn "Originated contracts"
 
-    runIO $ putTextLn $ ("Creating proposal " <> (show n))
+  forM_ addresses $ \s -> do
+    runIO $ putTextLn ("Freezing for " <> show s)
+    withSender s $
+      call dodDao (Call @"Freeze") (#amount .! 1)
 
-    let params = ProposeParams
-          { ppFrozenToken = 10
-          , ppProposalMetadata = lPackValueRaw n
+  nowLevel <- getLevel
+  let targetLevel = originLevel + dodPeriod
+
+  if targetLevel > nowLevel
+      then advanceLevel (targetLevel - nowLevel)
+      else pass
+
+  runIO $ putTextLn $ ("Creating proposal")
+
+  nowLevel <- getLevel
+  runIO $ putTextLn "Now"
+  runIO $ putTextLn (show nowLevel)
+  let params = ProposeParams
+        { ppFrozenToken = 10
+        , ppProposalMetadata = lPackValueRaw (1 :: Natural)
+        , ppFrom = dodOwner1
+        }
+
+  withSender dodOwner1 $ call dodDao (Call @"Propose") params
+
+  nowLevel <- getLevel
+  runIO $ putTextLn "Now"
+  runIO $ putTextLn (show nowLevel)
+
+  let targetLevel = originLevel + (2 * dodPeriod)
+  nowLevel <- getLevel
+  if targetLevel > nowLevel
+      then advanceLevel (targetLevel - nowLevel)
+      else pass
+
+  forM_ addresses $ \n -> do
+
+    let voteParam = NoPermit VoteParam
+          { vVoteType = True
+          , vVoteAmount = 1
+          , vProposalKey = makeProposalKey params
+          , vFrom = n
           }
 
-    withSender dodOwner1 $ call dodDao (Call @"Propose") params
+    nowLevel <- getLevel
+    runIO $ putTextLn $ ("Voting: Level= " <> (show nowLevel))
+    withSender n $ call dodDao (Call @"Vote") [voteParam]
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 1)
