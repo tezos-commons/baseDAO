@@ -105,6 +105,19 @@ steps:
   #     ./result/bin/baseDAO-test --nettest-run-network
   #       --pattern '\$1 == "On network" || \$NF == "On network" || \$0 ~ /.On network./'
 
+  # TODO #124 uncomment:
+  # - label: ligo-test-local-chain-010
+  #   env:
+  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
+  #   if: *not_scheduled
+  #   depends_on:
+  #     - build-ligo
+  #     - build-haskell
+  #     - ligo-test
+  #     # NOTE ^ this last dependency is not strictly necessary, but it saves us
+  #     # from building the tests twice and 'ligo-test' running time is mostly that.
+  #   commands: *ligo-nettest
+
   - label: check typescript api
     if: *not_scheduled
     depends_on:
@@ -140,6 +153,19 @@ steps:
   #   if: build.source == "schedule"
   #   env:
   #     TASTY_NETTEST_NODE_ENDPOINT: "http://florence.testnet.tezos.serokell.team:8732"
+  #   depends_on:
+  #     - build-ligo
+  #     - build-haskell
+  #   commands: *ligo-nettest
+  #   retry:
+  #     automatic:
+  #       limit: 1
+
+  # TODO #124 uncomment:
+  # - label: scheduled granadanet ligo test
+  #   if: build.source == "schedule"
+  #   env:
+  #     TASTY_NETTEST_NODE_ENDPOINT: "http://granada.testnet.tezos.serokell.team:8732"
   #   depends_on:
   #     - build-ligo
   #     - build-haskell
