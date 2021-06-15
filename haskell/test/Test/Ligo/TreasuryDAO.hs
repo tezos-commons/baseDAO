@@ -79,7 +79,7 @@ validProposal checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 (proposalSize + 1) proposalMeta)
@@ -112,7 +112,7 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting periods to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams
@@ -128,10 +128,10 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
+  advanceTime $ addSec dodPeriod -- meet `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
@@ -160,7 +160,7 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   withSender dodOwner1 $ do
   -- due to smaller than min_xtz_amount
@@ -185,10 +185,10 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
+  advanceTime $ addSec dodPeriod -- meet `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: check xtz balance
@@ -216,7 +216,7 @@ proposalCheckFailZeroMutez = withFrozenCallStack do
     call dodDao (Call @"Freeze") (#amount .! proposalSize)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
@@ -239,7 +239,7 @@ proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
     call dodDao (Call @"Freeze") (#amount .! largeProposalSize)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel 10
+  advanceTime $ sec 10
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 largeProposalSize largeProposalMeta)

@@ -40,7 +40,7 @@ voteNonExistingProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   -- Create sample proposal
   _ <- createSampleProposal 1 dodOwner1 dodDao
   let params = NoPermit VoteParam
@@ -50,7 +50,7 @@ voteNonExistingProposal originateFn = do
         , vFrom = dodOwner2
         }
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
     & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
@@ -68,7 +68,7 @@ voteMultiProposals originateFn checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 5)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   -- Create sample proposal
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
@@ -88,7 +88,7 @@ voteMultiProposals originateFn checkBalanceFn = do
         ]
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
   checkBalanceFn (unTAddress dodDao) dodOwner2 5
   -- TODO [#31]: check storage if the vote update the proposal properly
@@ -115,7 +115,7 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
     call dodDao (Call @"Freeze") (#amount .! 40)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   -- Create sample proposal
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
@@ -165,7 +165,7 @@ proposalCorrectlyTrackVotes originateFn getProposalFn = do
         ]
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   withSender voter1 . inBatch $ do
     call dodDao (Call @"Vote") params1
     call dodDao (Call @"Vote") params3
@@ -213,7 +213,7 @@ voteOutdatedProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -226,12 +226,12 @@ voteOutdatedProposal originateFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   withSender dodOwner2 $ do
     call dodDao (Call @"Vote") [params]
     -- Advance two voting period to another voting stage.
-    advanceLevel (2 * dodPeriod)
+    advanceTime (doubleTime dodPeriod)
     call dodDao (Call @"Vote") [params]
       & expectCustomErrorNoArg #vOTING_STAGE_OVER dodDao
 
@@ -250,7 +250,7 @@ voteValidProposal originateFn checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   -- Create sample proposal (first proposal has id = 0)
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -262,7 +262,7 @@ voteValidProposal originateFn checkBalanceFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkBalanceFn (unTAddress dodDao) dodOwner2 2
   -- TODO [#31]: check if the vote is updated properly
@@ -276,7 +276,7 @@ voteWithPermit originateFn checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 12)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -290,7 +290,7 @@ voteWithPermit originateFn checkBalanceFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkBalanceFn (unTAddress dodDao) dodOwner1 12
@@ -309,7 +309,7 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
     call dodDao (Call @"Freeze") (#amount .! 50)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -322,7 +322,7 @@ voteWithPermitNonce originateFn getVotePermitsCounterFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   -- Going to try calls with different nonces
   signed1@(_          , _) <- addDataToSign dodDao (Nonce 0) voteParam
   signed2@(dataToSign2, _) <- addDataToSign dodDao (Nonce 1) voteParam
@@ -366,7 +366,7 @@ votesBoundedValue originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 11)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   key1 <- createSampleProposal 1 dodOwner2 dodDao
   let upvote' = NoPermit VoteParam
         { vVoteType = False
@@ -381,7 +381,7 @@ votesBoundedValue originateFn = do
         , vFrom = dodOwner1
         }
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   withSender dodOwner1 $ do
     call dodDao (Call @"Vote") [downvote']
 

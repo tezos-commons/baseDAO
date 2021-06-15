@@ -6,10 +6,13 @@
 module Test.Ligo.BaseDAO.Common
   ( DaoOriginateData(..)
   , OriginateFn
+  , Seconds
 
+  , addDataToSign
+  , addSec
+  , doubleTime
   , dummyFA2Contract
   , makeProposalKey
-  , addDataToSign
   , permitProtect
   , sendXtz
 
@@ -23,6 +26,7 @@ module Test.Ligo.BaseDAO.Common
   -- * Re-export
   , module Errors
   , module StorageHelper
+  , sec
   ) where
 
 import Universum hiding (drop, swap)
@@ -33,6 +37,7 @@ import Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Nettest
 import Morley.Nettest.Caps (MonadOps)
 import Named ((!))
+import Time (Second, Time, sec, (*:*), (+:+))
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
@@ -41,6 +46,14 @@ import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
 type OriginateFn m = QuorumThreshold -> m DaoOriginateData
+
+type Seconds = Time Second
+
+doubleTime :: Time Second -> Time Second
+doubleTime c = 2 *:* c
+
+addSec :: Time Second -> Time Second
+addSec c = (sec 1) +:+ c
 
 data DaoOriginateData = DaoOriginateData
   { dodOwner1 :: Address
@@ -51,7 +64,7 @@ data DaoOriginateData = DaoOriginateData
   , dodTokenContract :: TAddress FA2.Parameter
   , dodAdmin :: Address
   , dodGuardian :: TAddress (Address, ProposalKey)
-  , dodPeriod :: Natural
+  , dodPeriod :: Seconds
   }
 
 -- | A dummy contract with FA2 parameter that remembers the
@@ -116,7 +129,6 @@ sendXtz addr epName pm = withFrozenCallStack $ do
         }
   transfer transferData
 
-
 -- TODO: Implement this via [#31] instead
 -- checkIfAProposalExist
 --   :: MonadNettest caps base m
@@ -148,7 +160,7 @@ originateLigoDaoWithConfig extra config qt = do
 
   admin :: Address <- newAddress "admin"
 
-  currentLevel <- getLevel
+  currentLevel <- getNow
   tokenContract <- originateSimple "TokenContract" [] dummyFA2Contract
   guardianContract <- originateSimple "guardian" () dummyGuardianContract
 
@@ -159,7 +171,7 @@ originateLigoDaoWithConfig extra config qt = do
               ! #admin admin
               ! #metadata mempty
               ! #tokenAddress (unTAddress tokenContract)
-              ! #level currentLevel
+              ! #startTime currentLevel
               ! #quorumThreshold qt
             )
             { sGuardian = unTAddress guardianContract
@@ -179,7 +191,7 @@ originateLigoDaoWithConfig extra config qt = do
   let dao = TAddress @Parameter daoUntyped
 
   pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract
-      admin guardianContract (unPeriod $ cPeriod config)
+      admin guardianContract (sec $ fromIntegral $ unPeriod $ cPeriod config)
 
 originateLigoDaoWithConfigDesc
  :: MonadNettest caps base m
