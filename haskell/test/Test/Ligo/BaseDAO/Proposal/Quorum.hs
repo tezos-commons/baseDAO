@@ -67,7 +67,7 @@ checkQuorumThresholdDynamicUpdate originateFn getQtAtCycle = do
   withSender proposer $
     call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
 
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   -- First proposal period, cycle 0
 
   withSender proposer $
@@ -78,7 +78,7 @@ checkQuorumThresholdDynamicUpdate originateFn getQtAtCycle = do
   assert (quorumThresholdActual_ == quorumThresholdExpected_) "Unexpected quorumThreshold update"
 
   -- skip this proposal period and next voting period to be in next proposal period
-  advanceLevel (2 * dodPeriod + 1)
+  advanceTime (addSec $ doubleTime dodPeriod)
 
   let proposalMeta2 = "A"
   withSender proposer $
@@ -113,14 +113,14 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn getQtAtCycle = do
   withSender proposer $
     call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
 
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   -- First proposal period, cycle 0
 
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
-  advanceLevel (2 * dodPeriod + 1)
+  advanceTime (addSec $ doubleTime dodPeriod)
 
   let proposalMeta2 = "A"
   withSender proposer $
@@ -158,14 +158,14 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn getQtAtCycle = do
   withSender proposer $
     call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
 
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   -- First proposal period, cycle 0
 
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
-  advanceLevel (2 * dodPeriod + 1)
+  advanceTime (addSec $ doubleTime dodPeriod)
 
   let proposalMeta2 = "A"
   withSender proposer $
@@ -203,14 +203,14 @@ checkProposalSavesQuorum originateFn getProposal = do
   withSender proposer $
     call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
 
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   -- First proposal period, cycle 0
 
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
-  advanceLevel (2 * dodPeriod + 1)
+  advanceTime (addSec $ doubleTime dodPeriod)
 
   let proposalMeta2 = "A"
   let proposeParams = ProposeParams proposer requiredFrozen proposalMeta2
@@ -253,10 +253,10 @@ proposalIsRejectedIfNoQuorum checkBalanceFn = do
     call dao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   key1 <- createSampleProposal 1 proposer dao
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   let vote_ =
         NoPermit VoteParam
           { vVoteType = True
@@ -272,7 +272,7 @@ proposalIsRejectedIfNoQuorum checkBalanceFn = do
   checkBalanceFn (unTAddress dao) proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   withSender admin $ call dao (Call @"Flush") 100
 
   checkBalanceFn (unTAddress dao) proposer 10 -- We expect 42 tokens to have burned
@@ -304,10 +304,10 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum checkBalanceFn = do
     call dao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   key1 <- createSampleProposal 1 proposer dao
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   let vote_ =
         NoPermit VoteParam
           { vVoteType = True
@@ -323,7 +323,7 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum checkBalanceFn = do
   checkBalanceFn (unTAddress dao) proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceTime dodPeriod
   withSender admin $ call dao (Call @"Flush") 100
 
   checkBalanceFn (unTAddress dao) proposer 52

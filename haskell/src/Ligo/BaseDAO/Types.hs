@@ -66,10 +66,10 @@ module Ligo.BaseDAO.Types
   , setExtra
   ) where
 
-import Universum (Enum, Integral, Num, One(..), Real, fromIntegral, div, maybe, (*))
+import Universum (Enum, Integral, Num, One(..), Real, div, fromIntegral, maybe, (*))
 
-import Fmt (Buildable, build, genericF)
 import qualified Data.Map as M
+import Fmt (Buildable, build, genericF)
 
 import Lorentz hiding (now)
 import Lorentz.Annotation ()
@@ -430,7 +430,7 @@ type CustomEntrypoints = CustomEntrypoints' BigMap
 data Proposal = Proposal
   { plUpvotes                 :: Natural
   , plDownvotes               :: Natural
-  , plStartLevel              :: Natural
+  , plStartDate               :: Timestamp
   , plVotingStageNum          :: Natural
 
   , plMetadata                :: ProposalMetadata
@@ -519,10 +519,10 @@ data Storage' big_map = Storage'
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
   , sProposals :: big_map ProposalKey Proposal
-  , sProposalKeyListSortByDate :: Set (Natural, ProposalKey)
+  , sProposalKeyListSortByDate :: Set (Timestamp, ProposalKey)
   , sGovernanceToken :: GovernanceToken
   , sFreezeHistory :: big_map Address AddressFreezeHistory
-  , sStartLevel :: Natural
+  , sStartTime :: Timestamp
   , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
   , sFrozenTotalSupply :: Natural
   , sDelegates :: Delegates' big_map
@@ -560,11 +560,11 @@ mkStorage
   :: "admin" :! Address
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
-  -> "level" :! Natural
+  -> "startTime" :! Timestamp
   -> "tokenAddress" :! Address
   -> "quorumThreshold" :! QuorumThreshold
   -> Storage
-mkStorage admin extra metadata lvl tokenAddress qt =
+mkStorage admin extra metadata start tokenAddress qt =
   Storage'
     { sAdmin = arg #admin admin
     , sGuardian = arg #admin admin
@@ -579,7 +579,7 @@ mkStorage admin extra metadata lvl tokenAddress qt =
         , gtTokenId = FA2.theTokenId
         }
     , sFreezeHistory = mempty
-    , sStartLevel = arg #level lvl
+    , sStartTime = arg #startTime start
     , sFrozenTokenId = frozenTokenId
     , sQuorumThresholdAtCycle = QuorumThresholdAtCycle 1 (arg #quorumThreshold qt) 0
     , sFrozenTotalSupply = 0
@@ -671,7 +671,7 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   }
 
 defaultConfig :: Config
-defaultConfig = mkConfig [] 10 0 19 5 500
+defaultConfig = mkConfig [] (Period 10) 0 19 5 500
 
 data FullStorage' big_map = FullStorage'
   { fsStorage :: Storage' big_map
@@ -707,18 +707,18 @@ mkFullStorage
   -> "governanceTotalSupply" :? GovernanceTotalSupply
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
-  -> "level" :! Natural
+  -> "startTime" :! Timestamp
   -> "tokenAddress" :! Address
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
-mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress cEps = FullStorage'
-  { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
+mkFullStorage admin vp qt mcp cp gts extra mdt start tokenAddress cEps = FullStorage'
+  { fsStorage = mkStorage admin extra mdt start tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
       (argDef #votingPeriod votingPeriodDef vp) 0 (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply 100 gts)
   }
   where
     quorumThresholdDef = mkQuorumThreshold 1 10 -- 10% of frozen total supply
-    votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
+    votingPeriodDef = Period $ 60 * 60 * 24 * 7  -- 7 days
 
 setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
 setExtra key v (s@FullStorage' {..}) = s { fsStorage = newStorage }

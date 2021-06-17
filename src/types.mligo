@@ -59,9 +59,11 @@ type voter_map_key = (address * vote_type)
 
 type voter_map = (voter_map_key, nat) map
 
-// Amount of blocks.
-type blocks = { blocks : nat }
-type period = blocks
+// Amount of `seconds` used for lengths of time
+type seconds = nat
+
+// Length of a 'stage'
+type period = { length : seconds }
 
 // For efficiency, we only keep a `nat` for the numerator, whereas the
 // denominator is not stored and has a fixed value of `1000000`.
@@ -86,8 +88,8 @@ type proposal =
   // ^ total amount of votes in favor
   ; downvotes : nat
   // ^ total amount of votes against
-  ; start_level : blocks
-  // ^ block level of submission, used to order proposals
+  ; start_date : timestamp
+  // ^ time of submission, used to order proposals
   ; voting_stage_num : nat
   // ^ stage number in which it is possible to vote on this proposal
   ; metadata : proposal_metadata
@@ -153,11 +155,11 @@ type storage =
   ; metadata : metadata_map
   ; extra : contract_extra
   ; proposals : (proposal_key, proposal) big_map
-  ; proposal_key_list_sort_by_level : (blocks * proposal_key) set
+  ; proposal_key_list_sort_by_date : (timestamp * proposal_key) set
   ; permits_counter : nonce
   ; freeze_history : freeze_history
   ; frozen_token_id : token_id
-  ; start_level : blocks
+  ; start_time : timestamp
   ; quorum_threshold_at_cycle : quorum_threshold_at_cycle
   ; frozen_total_supply : nat
   ; delegates : delegates
@@ -260,8 +262,8 @@ type initial_config_data =
   ; quorum_threshold : quorum_threshold
   ; max_voters : nat
   ; period : period
-  ; proposal_flush_level: blocks
-  ; proposal_expired_level: blocks
+  ; proposal_flush_time: seconds
+  ; proposal_expired_time: seconds
   ; fixed_proposal_fee_in_token: nat
   ; max_quorum_change : unsigned_quorum_fraction
   ; quorum_change : unsigned_quorum_fraction
@@ -272,7 +274,7 @@ type initial_storage_data =
   { admin : address
   ; guardian : address
   ; governance_token : governance_token
-  ; current_level : blocks
+  ; now_val : timestamp
   ; metadata_map : metadata_map
   ; freeze_history : freeze_history_list
   }
@@ -320,12 +322,12 @@ type config =
   // ^ The total supply of governance tokens used in the computation of
   // of new quorum threshold value at each stage.
 
-  ; proposal_flush_level : blocks
-  // ^ Determine the minimum number of levels after the proposal is proposed
+  ; proposal_flush_time : seconds
+  // ^ Determine the minimum amount of seconds after the proposal is proposed
   // to allow it to be `flushed`.
   // Has to be bigger than `period * 2`
-  ; proposal_expired_level : blocks
-  // ^ Determine the minimum number of levels after the proposal is proposed
+  ; proposal_expired_time : seconds
+  // ^ Determine the minimum amount of seconds after the proposal is proposed
   // to be considered as expired.
   // Has to be bigger than `proposal_flush_time`
 
