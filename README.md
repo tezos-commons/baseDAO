@@ -14,7 +14,7 @@ contract, meaning that DAOs with different logic and needs can be obtained by
 providing a different initial storage.
 
 Aside from the specification, that contains detail about the configuration as
-well, there are also [included DAOs](#included-daos) below.
+well, there are also the [included DAOs](#included-daos) below.
 
 ## Getting/Building
 

@@ -50,7 +50,7 @@ will start with the 5 bytes `0x687474703a` (`h` is `0x68`, `t` is `0x74`,
 etc.). There is no implicit conversion to Michelson's binary format (`PACK`) nor
 quoting mechanism.
 
-After the conversion, the bytes could be use in the argument `metadata_map` of the `make <storage>` command
+After the conversion, the bytes can be use in the argument `metadata_map` of the `make <storage>` command
 (See the next section for more detail.)
 ```
 make <storage.tz> \
@@ -60,7 +60,7 @@ make <storage.tz> \
 
 ## Generating a contract storage
 
-You can use `ligo` to also generate a contract initial storage, using the
+You can use `ligo` to also generate the contract initial storage, using the
 `ligo compile-storage` command.
 
 Following are the intructions to generate the initial storages of the DAO configuration
@@ -92,7 +92,7 @@ make out/trivialDAO_storage.tz \
 ```
 
 The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
-are required values. For the rest of the arguments, they are optional and will be equal to the
+are required values. The rest of the arguments are optional and will be equal to the
 values above if not specified.
 
 You can see the [specification](specification.md) for more info about these
@@ -132,7 +132,7 @@ make out/registryDAO_storage.tz \
 ```
 
 The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
-are required values. For the rest of the arguments, they are optional and will be equal to the
+are required values. The rest of the arguments are optional and will be equal to the
 values above if not specified.
 
 ### TreasuryDAO
@@ -170,9 +170,12 @@ make out/treasuryDAO_storage.tz \
 ```
 
 The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
-are required values. For the rest of the arguments, they are optional and will be equal to the
+are required values. The rest of the arguments are optional and will be equal to the
 values above if not specified.
 
 ## Storage generation checks
 The LIGO functions used by the `Makefile` targets above perform some automatic check, specifically:
-If `ledger` is specified, than `total_supply` will be calculated, depending on its value.
+- if `freeze_history` is specified, then `total_supply` will be calculated, depending on its value
+- `proposal_expired_time` will be rejected if it's not bigger than `proposal_flush_time`
+- `proposal_flush_time` will be rejected if it's not bigger than twice the `period` length
+- `quorum_threshold` will be rejected if bigger than `max_quorum` or smaller than `min_quorum`

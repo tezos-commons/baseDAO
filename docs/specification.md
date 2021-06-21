@@ -15,18 +15,18 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 # Overview
 
-The contract described here consists of:
-- DAO functionality with proposals and voting.
+The contract described here implements the DAO functionality with proposals and voting.
 
-An existing separate FA2 contract is used for governance.
+An existing separate FA2 contract is required and used for governance.
 
 # General Requirements
 
 - The contract must store frozen tokens.
 
-- The contract must store a 'governance token'. This consist of the address of
-  an FA2 contract and a `token_id` in that contract. The 'governance token'  is
-  used as part of the freeze/unfreeze process by making FA2 transfers on it.
+- The contract must store info about the external 'governance token'.
+  This consist of the address of an FA2 contract and a `token_id` in that contract.
+  The 'governance token' is used as part of the freeze/unfreeze process by
+  performing FA2 transfers to/from it.
 
 - The storage of the contract must have annotations for all fields
   and must be documented to make its interpretation easy for users.
@@ -172,32 +172,34 @@ These values are:
 2. `guardian : address` is the address of a contract that has permission to call
    `drop_proposal` on any proposals.
    Note: the `guardian` contract cannot initiate the transaction that results
-   in a call to `drop_proposal`
+   in a call to `drop_proposal`.
 3. `governance_token` is the FA2 contract address/token_id pair that will be
    used as the governance token.
 4. `period : nat` specifies how long the stages lasts in seconds.
 5. `proposal_flush_time : nat`
-    - Specifies in seconds how long after the proposal is proposed it can be flushed.
+    - Specifies, in seconds, how long it takes before a proposal can be flushed,
+      from when it was proposed.
     - IMPORTANT: Must be bigger than `period * 2`.
 6. `proposal_expired_time : nat`
-    - Specifies in seconds how long after the proposal is proposed it is considered expired.
+    - Specifies, in seconds, how long it takes for a proposal to be considered
+      expired, from when it was proposed.
     - IMPORTANT: Must be bigger than `proposal_flush_time`.
 7. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
-   tokens total supply of total votes are required for a successful proposal.
+   tokens total supply are required in total to vote for a successful proposal.
 8. `fixed_proposal_fee_in_token : nat` specifies the fee to be paid for submitting
-   a proposal (in frozen tokens).
+   a proposal (in frozen tokens), if any.
 
 # Contract logic
 
 This chapter provides a high-level overview of the contract's logic.
 
-- The contract maintains a map of addresses and its balance (frozen tokens).
+- The contract maintains a map of addresses and their frozen token balance.
 - The contract maintains the address of an a FA2 contract and a `token_id`,
   to use in the governance process.
 - The contract manages three special roles, the `admin`, `guardian`, and `delegate`.
 - The contract stores a list of proposals that can be in one of the states:
   "proposed", "ongoing", "pending flush", "accepted", "rejected", or "expired".
-- The contract forbids transferring XTZ to the contract on certain entrypoints.
+- The contract forbids transferring XTZ to it on certain entrypoints.
 
 ## Roles
 
@@ -216,7 +218,7 @@ These roles apply to the whole contract (hence "global"):
 
 Additionally, the contract also contains the **delegate** role:
   - This role is "local" to a particular address.
-  - Each address can have any number of delegates and be an delegate of any number of addresses
+  - Each address can have any number of delegates and be a delegate of any number of addresses.
   - This role can call `propose` and `vote` on behalf of the owner.
 
 ## Period, Stages and Cycles
@@ -300,11 +302,6 @@ favor or against a proposal.
 
 It's possible to vote positively or negatively.
 After the voting ends, the contract is "flushed" by calling a dedicated entrypoint.
-
-## Ledger
-
-Every address that is stored in the ledger is associated with its balance
-associated with the frozen token id as well as to any other custom tokens.
 
 # Errors
 
@@ -454,14 +451,12 @@ Parameter (in Michelson):
 - Fails with `NOT_ADMIN` if the sender is not the administrator.
 
 - The current administrator retains his privileges up until
-  `accept_ownership` is called.
+  `accept_ownership` is called, unless the proposed administrator is the DAO itself.
+  In such case, the role is given to the DAO right away.
 
 - Can be called multiple times, each call replaces pending administrator with
-  the new one. Note, that if proposed administrator is the same as the current
+  the new one. Note, that if the proposed administrator is the same as the current
   one, then the pending administrator is simply invalidated.
-
-- If the new owner is the BaseDAO contract itself, the admin is set right away,
-  without the need for a call to 'accept_ownership' entrypoint.
 
 ### **accept_ownership**
 
@@ -617,7 +612,7 @@ Parameter (in Michelson):
   The proposals which have the same timestamp due to being in the same block,
   are processed in the order of their proposal keys.
 - Frozen tokens from voters and proposal submitter associated with those proposals
-  are returned in the  form of tokens in governance token contract:
+  are returned in the form of tokens in governance token contract:
   - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
     - The return amount for the proposer is equal to or less than the slashed amount based on `rejected_proposal_slash_value`.
     - The paid fee is not returned to the proposer.
@@ -625,8 +620,8 @@ Parameter (in Michelson):
   - If proposal got accepted:
     - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
-- If proposal is accepted, decision lambda is called.
-- The quorum_threshold at the cycle in which the proposal was raised will be
+- If proposal is accepted, the decision lambda is called.
+- The `quorum_threshold` at the cycle in which the proposal was raised will be
   stored in the proposal, and this threshold will be used to check if the votes
   meet the quorum threshold.
   So any dynamic update to the quorum threshold shall not affect the proposal.
@@ -645,9 +640,10 @@ Parameter (in Michelson):
 (bytes %drop_proposal)
 ```
 
-- Delete a proposal when its `proposal_expired_time` is reached.
-- The proposer can call this entrypoint to delete his/her own proposal regardless of `proposal_expired_time`.
-- The `guardian` can call this entrypoint to delete any proposals at anytime regardless of `proposal_expired_time`.
+- Delete a proposal when either:
+  - The `proposal_expired_time` has been reached.
+  - The proposer is the `SENDER`, regardless of the `proposal_expired_time`.
+  - The `guardian` is the `SENDER`, regardless of the `proposal_expired_time`.
 - Fails with `DROP_PROPOSAL_CONDITION_NOT_MET` when none of the conditions above are met.
 - Tokens that are frozen for this proposal are returned to the proposer and voters
   as if the proposal was rejected, regardless of the actual votes.
@@ -672,8 +668,8 @@ Parameter (in Michelson):
   of the BaseDAO contract. The transfer is made using the governance token id.
   The frozen tokens can only be used from the next `stage` onward.
 
-- Author MUST have tokens equal to `freeze_param` or more, in the governance contract, with token id
-  'governance-token.token_id`.
+- Author MUST have tokens equal to `freeze_param` or more, in the governance
+  contract, with token id `governance-token.token_id`.
 
 
 ### **unfreeze**
@@ -689,9 +685,11 @@ Parameter (in Michelson):
 (nat %unfreeze)
 ```
 
-- Burns the specified amount of tokens from the tokens frozen in previous `stage`s, after making an FA2 transfer
-  on the governance contract from the address of the baseDAO contract to the address of the sender.
-- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the author does not have enough tokens that can be burned.
+- Burns the specified amount of tokens from the tokens frozen in previous `stage`s,
+  after making an FA2 transfer on the governance contract from the address of the
+  baseDAO contract to the address of the sender.
+- Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the author does not have enough tokens
+  that can be burned.
 
 ## Custom entrypoints
 
@@ -729,7 +727,8 @@ Parameter (in Michelson):
 
 This contract implements [TZIP-016](https://gitlab.com/tzip/tzip/-/blob/21fb73fe01df8a744c9b03303e3d73b0f2265eb2/proposals/tzip-16/tzip-16.md).
 
-The DAO contract itself won't store the metadata, rather a file on IPFS (suggested), a dedicated contract or another external storage will contain that.
+The DAO contract itself won't store the metadata, rather a file on IPFS (suggested),
+a dedicated contract or another external storage will contain that.
 
 ## Deployment with metadata
 
@@ -737,4 +736,5 @@ The deployment of contract with metadata has an extra step, either:
   - Uploading the contract metadata to IPFS.
   - A dedicated contract for carrying metadata has to be originated first.
 
-Then the baseDAO contract should include the reference to a metadata key in the contract in order to be compliant with TZIP-016.
+Then the baseDAO contract should include the reference to a metadata key in the
+contract in order to be compliant with TZIP-016.
