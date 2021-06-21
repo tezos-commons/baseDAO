@@ -56,7 +56,7 @@ ifeq ($(OPTIMIZE), true)
 endif
 	#
 
-$(OUT)/trivialDAO_storage.tz : now_val = `date +"%s"`
+$(OUT)/trivialDAO_storage.tz : current_level = 100n
 $(OUT)/trivialDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/trivialDAO_storage.tz : freeze_history = []
 $(OUT)/trivialDAO_storage.tz : fixed_proposal_fee_in_token = 0n
@@ -64,12 +64,12 @@ $(OUT)/trivialDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/trivialDAO_storage.tz : min_quorum = 1n
 $(OUT)/trivialDAO_storage.tz : max_quorum = 99n
 $(OUT)/trivialDAO_storage.tz : max_voters = 1000n
-$(OUT)/trivialDAO_storage.tz : period = 950400n # 11 days
+$(OUT)/trivialDAO_storage.tz : period = 15840n # 11 days
 $(OUT)/trivialDAO_storage.tz : quorum_change = 5n
 $(OUT)/trivialDAO_storage.tz : max_quorum_change = 19n
 $(OUT)/trivialDAO_storage.tz : governance_total_supply = 1000n
-$(OUT)/trivialDAO_storage.tz : proposal_flush_time = 1900801n # 22 days 1 seconds
-$(OUT)/trivialDAO_storage.tz : proposal_expired_time = 2851200n # 33 days
+$(OUT)/trivialDAO_storage.tz : proposal_flush_level = 36000n # 22 days
+$(OUT)/trivialDAO_storage.tz : proposal_expired_level = 47520n # 33 days
 $(OUT)/trivialDAO_storage.tz: src/**
 	# ============== Compiling TrivialDAO storage ============== #
 	mkdir -p $(OUT)
@@ -82,7 +82,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
             { address = (\"$(call require_defined,governance_token_address)\" : address) \
             ; token_id = ($(call require_defined,governance_token_id) : nat) \
             } \
-          ; now_val = ($(now_val) : timestamp)  \
+          ; current_level = {blocks = $(current_level)} \
           ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
           ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
           } \
@@ -90,9 +90,9 @@ $(OUT)/trivialDAO_storage.tz: src/**
           { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
           ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
           ; max_voters = ($(max_voters) : nat) \
-          ; period = { length = ($(period) : nat) } \
-          ; proposal_flush_time = ($(proposal_flush_time)  : nat) \
-          ; proposal_expired_time = ($(proposal_expired_time) : nat) \
+          ; period = { blocks = ($(period) : nat) } \
+          ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
+          ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) }\
           ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
           ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
           ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
@@ -111,7 +111,7 @@ $(OUT)/registryDAO_storage.tz : slash_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/registryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/registryDAO_storage.tz : max_xtz_amount = 100mutez
-$(OUT)/registryDAO_storage.tz : now_val = `date +"%s"`
+$(OUT)/registryDAO_storage.tz : current_level = 100n
 $(OUT)/registryDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/registryDAO_storage.tz : freeze_history = []
 $(OUT)/registryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
@@ -119,11 +119,11 @@ $(OUT)/registryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/registryDAO_storage.tz : min_quorum = 1n
 $(OUT)/registryDAO_storage.tz : max_quorum = 99n
 $(OUT)/registryDAO_storage.tz : max_voters = 1000n
-$(OUT)/registryDAO_storage.tz : period = 950400n # 11 days
+$(OUT)/registryDAO_storage.tz : period = 15840n # 11 days
 $(OUT)/registryDAO_storage.tz : quorum_change = 5n
 $(OUT)/registryDAO_storage.tz : max_quorum_change = 19n
-$(OUT)/registryDAO_storage.tz : proposal_flush_time = 1900801n # 22 days 1 seconds
-$(OUT)/registryDAO_storage.tz : proposal_expired_time = 2851200n # 33 days
+$(OUT)/registryDAO_storage.tz : proposal_flush_level = 36000n # 22 days
+$(OUT)/registryDAO_storage.tz : proposal_expired_level = 47520n # 33 days
 $(OUT)/registryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
@@ -138,7 +138,7 @@ $(OUT)/registryDAO_storage.tz: src/**
               { address = (\"$(call require_defined,governance_token_address)\" : address) \
               ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
-            ; now_val = ($(now_val) : timestamp)  \
+            ; current_level = {blocks = $(current_level)} \
             ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
             ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
             } \
@@ -146,9 +146,9 @@ $(OUT)/registryDAO_storage.tz: src/**
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
             ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
             ; max_voters = ($(max_voters) : nat) \
-            ; period = { length = ($(period) : nat) } \
-            ; proposal_flush_time = ($(proposal_flush_time)  : nat) \
-            ; proposal_expired_time = ($(proposal_expired_time) : nat) \
+            ; period = { blocks = ($(period) : nat) } \
+            ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
+            ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) } \
             ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
             ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
             ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
@@ -174,7 +174,7 @@ $(OUT)/treasuryDAO_storage.tz : slash_scale_value = 0n
 $(OUT)/treasuryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/treasuryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/treasuryDAO_storage.tz : max_xtz_amount = 100mutez
-$(OUT)/treasuryDAO_storage.tz : now_val = `date +"%s"`
+$(OUT)/treasuryDAO_storage.tz : current_level = 100n
 $(OUT)/treasuryDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/treasuryDAO_storage.tz : freeze_history = []
 $(OUT)/treasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
@@ -182,11 +182,11 @@ $(OUT)/treasuryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/treasuryDAO_storage.tz : min_quorum = 1n
 $(OUT)/treasuryDAO_storage.tz : max_quorum = 99n
 $(OUT)/treasuryDAO_storage.tz : max_voters = 1000n
-$(OUT)/treasuryDAO_storage.tz : period = 950400n # 11 days
+$(OUT)/treasuryDAO_storage.tz : period = 15840n # 11 days
 $(OUT)/treasuryDAO_storage.tz : quorum_change = 5n
 $(OUT)/treasuryDAO_storage.tz : max_quorum_change = 19n
-$(OUT)/treasuryDAO_storage.tz : proposal_flush_time = 1900801n # 22 days 1 seconds
-$(OUT)/treasuryDAO_storage.tz : proposal_expired_time = 2851200n # 33 days
+$(OUT)/treasuryDAO_storage.tz : proposal_flush_level = 36000n # 22 days
+$(OUT)/treasuryDAO_storage.tz : proposal_expired_level = 47520n # 33 days
 $(OUT)/treasuryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
@@ -201,7 +201,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
               { address = (\"$(call require_defined,governance_token_address)\" : address) \
               ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
-            ; now_val = ($(now_val) : timestamp)  \
+            ; current_level = {blocks = $(current_level)} \
             ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
             ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
             } \
@@ -209,9 +209,9 @@ $(OUT)/treasuryDAO_storage.tz: src/**
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
             ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
             ; max_voters = ($(max_voters) : nat) \
-            ; period = { length = ($(period) : nat) } \
-            ; proposal_flush_time = ($(proposal_flush_time)  : nat) \
-            ; proposal_expired_time = ($(proposal_expired_time) : nat) \
+            ; period = { blocks = ($(period) : nat) } \
+            ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
+            ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) } \
             ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
             ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
             ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \

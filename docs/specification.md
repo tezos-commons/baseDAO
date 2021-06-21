@@ -103,7 +103,7 @@ type config =
   // ^ Determine the minimum value of quorum threshold that is allowed.
 
   ; period : period
-  // ^ Determines the stages length in seconds.
+  // ^ Determines the stages length in number of blocks.
 
   ; fixed_proposal_fee_in_token : nat
   // ^ A base fee paid for submitting a new proposal.
@@ -118,14 +118,14 @@ type config =
   // ^ The total supply of governance tokens used in the computation of
   // of new quorum threshold value at each stage.
 
-  ; proposal_flush_time : seconds
-  // ^ Determine the minimum amount of seconds after the proposal is proposed
+  ; proposal_flush_level : blocks
+  // ^ Determine the minimum amount of blocks after the proposal is proposed
   // to allow it to be `flushed`.
   // Has to be bigger than `period * 2`
-  ; proposal_expired_time : seconds
-  // ^ Determine the minimum amount of seconds after the proposal is proposed
+  ; proposal_expired_level : blocks
+  // ^ Determine the minimum amount of blocks after the proposal is proposed
   // to be considered as expired.
-  // Has to be bigger than `proposal_flush_time`
+  // Has to be bigger than `proposal_flush_level`
 
   ; custom_entrypoints : custom_entrypoints
   // ^ Packed arbitrary lambdas associated to a name for custom execution.
@@ -146,8 +146,8 @@ type proposal =
   // ^ total amount of votes in favor
   ; downvotes : nat
   // ^ total amount of votes against
-  ; start_date : timestamp
-  // ^ time of submission, used to order proposals
+  ; start_level : blocks
+  // ^ block level of submission, used to order proposals
   ; voting_stage_num : nat
   // ^ stage number in which it is possible to vote on this proposal
   ; metadata : proposal_metadata
@@ -175,15 +175,15 @@ These values are:
    in a call to `drop_proposal`.
 3. `governance_token` is the FA2 contract address/token_id pair that will be
    used as the governance token.
-4. `period : nat` specifies how long the stages lasts in seconds.
-5. `proposal_flush_time : nat`
-    - Specifies, in seconds, how long it takes before a proposal can be flushed,
+4. `period : blocks` specifies how long the stages lasts in blocks.
+5. `proposal_flush_level : blocks`
+    - Specifies, in blocks, how long it takes before a proposal can be flushed,
       from when it was proposed.
     - IMPORTANT: Must be bigger than `period * 2`.
-6. `proposal_expired_time : nat`
-    - Specifies, in seconds, how long it takes for a proposal to be considered
+6. `proposal_expired_level : blocks`
+    - Specifies, in blocks, how long it takes for a proposal to be considered
       expired, from when it was proposed.
-    - IMPORTANT: Must be bigger than `proposal_flush_time`.
+    - IMPORTANT: Must be bigger than `proposal_flush_level`.
 7. `quorum_threshold : quorum_threshold` specifies what fraction of the frozen
    tokens total supply are required in total to vote for a successful proposal.
 8. `fixed_proposal_fee_in_token : nat` specifies the fee to be paid for submitting
@@ -607,10 +607,10 @@ Parameter (in Michelson):
 (nat %flush)
 ```
 
-- Finish voting process on an amount of proposals for which their `proposal_flush_time`
-  was reached, but their `proposal_expire_time` wasn't yet.
+- Finish voting process on an amount of proposals for which their `proposal_flush_level`
+  was reached, but their `proposal_expire_level` wasn't yet.
 - The order of processing proposals are from 'the oldest' to 'the newest'.
-  The proposals which have the same timestamp due to being in the same block,
+  The proposals which have the same level due to being in the same block,
   are processed in the order of their proposal keys.
 - Frozen tokens from voters and proposal submitter associated with those proposals
   are returned in the form of tokens in governance token contract:
@@ -642,9 +642,9 @@ Parameter (in Michelson):
 ```
 
 - Delete a proposal when either:
-  - The `proposal_expired_time` has been reached.
-  - The proposer is the `SENDER`, regardless of the `proposal_expired_time`.
-  - The `guardian` is the `SENDER`, regardless of the `proposal_expired_time`.
+  - The `proposal_expired_level` has been reached.
+  - The proposer is the `SENDER`, regardless of the `proposal_expired_level`.
+  - The `guardian` is the `SENDER`, regardless of the `proposal_expired_level`.
 - Fails with `DROP_PROPOSAL_CONDITION_NOT_MET` when none of the conditions above are met.
 - Tokens that are frozen for this proposal are returned to the proposer and voters
   as if the proposal was rejected, regardless of the actual votes.

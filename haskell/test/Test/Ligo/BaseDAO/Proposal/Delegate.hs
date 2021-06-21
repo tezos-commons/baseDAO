@@ -44,7 +44,7 @@ addRemoveDelegate originateFn = do
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 100)
 
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   let params counter = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer counter
@@ -58,7 +58,7 @@ addRemoveDelegate originateFn = do
                 , vFrom = dodOwner1
                 }
   withSender dodOperator1 $ call dodDao (Call @"Propose") (params 1)
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   withSender dodOperator1 $ call dodDao (Call @"Vote") [vote]
 
   withSender dodOwner1 $
@@ -66,7 +66,7 @@ addRemoveDelegate originateFn = do
 
   withSender dodOperator1 $ call dodDao (Call @"Vote") [vote]
     & expectCustomErrorNoArg #nOT_DELEGATE dodDao
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   withSender dodOperator1 $ call dodDao (Call @"Propose") (params 2)
     & expectCustomErrorNoArg #nOT_DELEGATE dodDao
 
