@@ -613,6 +613,7 @@ data DecisionLambdaInput big_map = DecisionLambdaInput
   }
 
 customGeneric "DecisionLambdaInput" ligoLayout
+
 deriving anyclass instance IsoValue (DecisionLambdaInput BigMap)
 deriving anyclass instance IsoValue (DecisionLambdaInput BigMapId)
 deriving stock instance Show (DecisionLambdaInput BigMap)

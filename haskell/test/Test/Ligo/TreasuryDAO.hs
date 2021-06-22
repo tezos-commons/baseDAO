@@ -32,6 +32,7 @@ instance HasAnnotation TransferProposal where
   annOptions = baseDaoAnnOptions
 
 customGeneric "TransferProposal" ligoLayout
+
 deriving anyclass instance IsoValue TransferProposal
 
 -- | Helper type for unpack/pack
@@ -55,6 +56,8 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
           flushTokenTransfer checkBalanceEmulator
       , nettestScenarioOnEmulatorCaps "can flush a Xtz transfer proposal" $
           flushXtzTransfer checkBalanceEmulator
+      , nettestScenarioOnEmulatorCaps "can flush a Update_guardian proposal" $
+          flushUpdateGuardian checkGuardianEmulator
       ]
 
   , testGroup "proposal_check:"
@@ -201,6 +204,47 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
 
   -- TODO: check xtz balance
 
+flushUpdateGuardian
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  => CheckGuardianFn m -> m ()
+flushUpdateGuardian checkGuardian = withFrozenCallStack $ do
+  DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
+
+  sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+
+  let
+    proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
+      Update_guardian dodOwner2
+    proposeParams = ProposeParams dodOwner1 (metadataSize $ proposalMeta) $ proposalMeta
+
+  -- Freeze in initial voting stage.
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta))
+
+  withSender dodOwner2 $
+    call dodDao (Call @"Freeze") (#amount .! 10)
+  -- Advance one voting period to a proposing stage.
+  advanceTime dodPeriod
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Propose") proposeParams
+  let key1 = makeProposalKey proposeParams
+
+  let
+    upvote = NoPermit VoteParam
+        { vFrom = dodOwner2
+        , vVoteType = True
+        , vVoteAmount = 1
+        , vProposalKey = key1
+        }
+
+  -- Advance one voting period to a voting stage.
+  advanceTime dodPeriod
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
+  -- Advance one voting period to a proposing stage.
+  advanceTime $ addSec dodPeriod -- meet `proposal_flush_time`
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
+  checkGuardian (unTAddress dodDao) dodOwner2
 
 proposalCheckFailZeroMutez
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)

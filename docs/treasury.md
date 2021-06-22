@@ -8,11 +8,13 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 Treasury is a DAO that holds XTZ and FA2 tokens and lets its users decide how to
 spend its XTZ and tokens. Its extra storage data is empty.
 
-Its `proposal_metadata` contains a proposal type:
+Its `proposal_metadata` contains proposal types:
 - Transfer proposal that includes:
    - a list of items where each item contains:
    `or %transfers (pair (mutez %amount) (address %recipient)) (pair (address %fa2) (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))` specifies what transfer to make. The left part is used for XTZ transfers, the right part is used for FA2 transfers.
    - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and motivation for it.
+- Proposal to update the guardian address in the BaseDAO contract.
+   - This proposal takes an address parameter and use it to update the guardian address in the storage.
 
 ## Configuration lambdas
 
@@ -37,10 +39,12 @@ When a proposal is rejected, the returned amount is computed as `slash_scale_val
 
 ### Decision lambda
 
-The decision lambda makes all requested transfers one by one.
-In case of insufficient balance the decision lambda can fail.
-  + For XTZ transfers it sends `amount` to the `recepient` address with `unit` parameter. I. e. it returns a single `TRANSFER_TOKENS` operation.
-  + For FA2 transfers it calls `transfer` entrypoint of the `fa2` contract with given argument.
+For the Transfer proposal, it makes all requested transfers one by one.
+ - In case of insufficient balance the decision lambda can fail.
+    + For XTZ transfers it sends `amount` to the `recepient` address with `unit` parameter. I. e. it returns a single `TRANSFER_TOKENS` operation.
+    + For FA2 transfers it calls `transfer` entrypoint of the `fa2` contract with given argument.
+
+For the Update guardian proposal, it updates the guardian address in the storage.
 
 # Proposal Check Errors
 

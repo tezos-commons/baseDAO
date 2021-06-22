@@ -214,6 +214,7 @@ These roles apply to the whole contract (hence "global"):
   - Can drop any proposal at any time.
   - Cannot be an implicit address, in other words it must be a contract.
   - There always must be exactly one `guardian`.
+  - Can be updated via a proposal.
 
 
 Additionally, the contract also contains the **delegate** role:
