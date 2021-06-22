@@ -36,6 +36,7 @@ data RegistryDaoProposalMetadata
   = Update_receivers_proposal UpdateReceiverParam
   | Configuration_proposal ConfigProposal
   | Transfer_proposal TransferProposal
+  | Update_guardian Address
 
 instance HasAnnotation RegistryDaoProposalMetadata where
   annOptions = baseDaoAnnOptions

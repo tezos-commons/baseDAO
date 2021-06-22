@@ -85,6 +85,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
         List.iter is_all_transfers_valid tp.transfers
   | Update_receivers_proposal _urp -> unit
   | Configuration_proposal _cp -> unit
+  | Update_guardian _guardian -> unit
 
 (*
  * Proposal rejection return lambda: returns `slash_scale_value * frozen / slash_division_value`
@@ -156,6 +157,7 @@ let registry_DAO_decision_lambda (input : decision_lambda_input)
             update_receivers(current_set, receivers, (fun (c, i : address set * address) -> Set.remove i c))
       in { operations = ops
          ; extras = Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras
+         ; guardian = (None : (address option))
          }
   | Configuration_proposal cp ->
       let new_ce = match cp.frozen_scale_value with
@@ -182,7 +184,7 @@ let registry_DAO_decision_lambda (input : decision_lambda_input)
         | Some (slash_division_value) ->
             Big_map.update "slash_division_value" (Some (Bytes.pack (slash_division_value))) new_ce
         | None -> new_ce
-      in { operations = ops; extras = new_ce }
+      in { operations = ops; extras = new_ce; guardian = (None : (address option)) }
   | Transfer_proposal tp ->
       // handle updates
       let registry_diff = tp.registry_diff in
@@ -192,7 +194,9 @@ let registry_DAO_decision_lambda (input : decision_lambda_input)
       // handle transfers
       let transfers = tp.transfers in
       let ops = List.fold handle_transfer transfers ops in
-      { operations = ops; extras = extras }
+      { operations = ops; extras = extras; guardian = (None : (address option)) }
+  | Update_guardian guardian ->
+      { operations = ops; extras = extras ; guardian = Some(guardian) }
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.

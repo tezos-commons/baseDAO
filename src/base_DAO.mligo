@@ -25,7 +25,7 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Flush (p)              -> flush (p, config, store)
     | Freeze p               -> freeze(p, config, store)
     | Unfreeze p             -> unfreeze(p, config, store)
-    | Update_delegate p      -> update_delegates(p, config, store)
+    | Update_delegate p      -> update_delegates(p, store)
 
 
 (*

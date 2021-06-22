@@ -257,6 +257,7 @@ type decision_lambda_input =
 type decision_lambda_output =
   { operations : operation list
   ; extras : contract_extra
+  ; guardian : address option
   }
 
 // -- Config -- //

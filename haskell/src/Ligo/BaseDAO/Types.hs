@@ -623,6 +623,7 @@ instance HasAnnotation (DecisionLambdaInput BigMap) where
 data DecisionLambdaOutput big_map = DecisionLambdaOutput
   { doOperations :: List Operation
   , doExtra :: ContractExtra' big_map
+  , doGuardian :: Maybe Address
   }
 
 customGeneric "DecisionLambdaOutput" ligoLayout
@@ -682,7 +683,11 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   , cRejectedProposalSlashValue = do
       dropN @2; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
-      toFieldNamed #diExtra ; fromNamed #diExtra; nil ; swap; constructStack @(DecisionLambdaOutput BigMap)
+      toField #diExtra
+      nil
+      swap
+      dip (push Nothing)
+      constructStack @(DecisionLambdaOutput BigMap)
   , cCustomEntrypoints = DynamicRec' $ BigMap $ M.fromList customEps
   , cFixedProposalFee = fixedProposalFee
   , cPeriod = votingPeriod

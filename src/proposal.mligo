@@ -77,7 +77,7 @@ let update_delegate (delegates, param: delegates * update_delegate): delegates =
   let updated_delegates = Big_map.update key delegate_update delegates
   in  updated_delegates
 
-let update_delegates (params, config, store : update_delegate_params * config * storage): return =
+let update_delegates (params, store : update_delegate_params * storage): return =
   ( nil_op
   , { store with delegates = List.fold update_delegate params store.delegates }
   )
@@ -292,8 +292,14 @@ let handle_proposal_is_over
     let (new_ops, store) =
       if cond
       then
-        let dl_out = config.decision_lambda { proposal = proposal; extras = store.extra }
-        in (dl_out.operations, { store with extra = dl_out.extras })
+        let dl_out = config.decision_lambda { proposal = proposal; extras = store.extra } in
+        let guardian = match dl_out.guardian with
+          | Some g -> g
+          | None -> store.guardian
+        in (dl_out.operations,
+              { store with extra = dl_out.extras
+              ; guardian = guardian
+              })
       else (nil_op, store)
     in
     let cons = fun (l, e : operation list * operation) -> e :: l in

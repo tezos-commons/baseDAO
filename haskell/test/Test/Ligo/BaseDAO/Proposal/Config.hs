@@ -225,6 +225,7 @@ instance IsConfigDescExt DAO.Config DecisionLambdaAction where
         dip (dip $ do toField #diExtra)
         framed lam
         swap
+        dip (push Nothing)
         constructStack @(DAO.DecisionLambdaOutput BigMap)
 
     , ..
