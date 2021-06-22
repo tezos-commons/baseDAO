@@ -292,8 +292,8 @@ let handle_proposal_is_over
     let (new_ops, store) =
       if cond
       then
-        let (ops, new_extra) = config.decision_lambda (proposal, store.extra)
-        in (ops, { store with extra = new_extra })
+        let dl_out = config.decision_lambda { proposal = proposal; extras = store.extra }
+        in (dl_out.operations, { store with extra = dl_out.extras })
       else (nil_op, store)
     in
     let cons = fun (l, e : operation list * operation) -> e :: l in

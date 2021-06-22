@@ -40,7 +40,7 @@ let default_config (data : initial_config_data) : config =
     // within bounds.
     proposal_check = (fun (_params, _extras : propose_params * contract_extra) -> unit);
     rejected_proposal_slash_value = (fun (_proposal, _extras : proposal * contract_extra) -> 0n);
-    decision_lambda = (fun (_proposal, extras : proposal * contract_extra) -> (([] : (operation list)), extras));
+    decision_lambda = (fun (dl_input : decision_lambda_input) -> { operations = ([] : (operation list)); extras = dl_input.extras});
     fixed_proposal_fee_in_token = data.fixed_proposal_fee_in_token;
     period = data.period;
     max_proposals = 500n;

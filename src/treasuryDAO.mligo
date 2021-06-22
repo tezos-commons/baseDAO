@@ -66,11 +66,12 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
       | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
     end
 
-let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
-    : operation list * contract_extra =
+let treasury_DAO_decision_lambda (input : decision_lambda_input)
+    : decision_lambda_output =
+  let (proposal, extras) = (input.proposal, input.extras) in
   let pm = unpack_proposal_metadata(proposal.metadata) in
   let ops = List.fold handle_transfer pm.transfers ([] : operation list) in
-  (ops, extras)
+  { operations = ops; extras = extras }
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.

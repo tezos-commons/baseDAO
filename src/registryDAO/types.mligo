@@ -30,6 +30,8 @@ type config_proposal =
   ; max_proposal_size : nat option
   }
 
+type update_guardian = address
+
 // Registry dao `proposal_metadata` contains the type of proposal.
 type registry_dao_proposal_metadata =
   | Update_receivers_proposal of update_receiver_param
