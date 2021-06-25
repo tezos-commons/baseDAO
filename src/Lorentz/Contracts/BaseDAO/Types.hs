@@ -270,8 +270,8 @@ instance Each [IsoValue, TypeHasDoc] [ce, pm] => TypeHasDoc (Storage ce pm) wher
    typeDocMdDescription =
      "Storage type for baseDAO contract"
    typeDocMdReference = poly2TypeDocMdReference
-   typeDocHaskellRep = concreteTypeDocHaskellRep @(Storage Natural MText)
-   typeDocMichelsonRep = concreteTypeDocMichelsonRep @(Storage Natural MText)
+   typeDocHaskellRep = homomorphicTypeDocHaskellRep @(Storage ce pm)
+   typeDocMichelsonRep = homomorphicTypeDocMichelsonRep @(Storage ce pm)
 
 instance HasFieldOfType (Storage ce pm) name field =>
          StoreHasField (Storage ce pm) name field where
