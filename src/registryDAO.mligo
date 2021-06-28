@@ -85,7 +85,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
         List.iter is_all_transfers_valid tp.transfers
   | Update_receivers_proposal _urp -> unit
   | Configuration_proposal _cp -> unit
-
+  | Update_guardian _guardian -> unit
 
 (*
  * Proposal rejection return lambda: returns `slash_scale_value * frozen / slash_division_value`
@@ -137,8 +137,9 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
  * and "slash_division_value". 'None' values are ignored and 'Some' values are
  * used for updating corresponding configuraton.
  *)
-let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
-    : operation list * contract_extra =
+let registry_DAO_decision_lambda (input : decision_lambda_input)
+    : decision_lambda_output =
+  let (proposal, extras) = (input.proposal, input.extras) in
   let propose_param : propose_params = {
     from = proposal.proposer;
     frozen_token = proposal.proposer_frozen_token;
@@ -154,7 +155,10 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
             update_receivers(current_set, receivers, (fun (c, i : address set * address) -> Set.add i c))
         | Remove_receivers receivers ->
             update_receivers(current_set, receivers, (fun (c, i : address set * address) -> Set.remove i c))
-      in (ops, Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras)
+      in { operations = ops
+         ; extras = Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras
+         ; guardian = (None : (address option))
+         }
   | Configuration_proposal cp ->
       let new_ce = match cp.frozen_scale_value with
         | Some (frozen_scale_value) ->
@@ -180,7 +184,7 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
         | Some (slash_division_value) ->
             Big_map.update "slash_division_value" (Some (Bytes.pack (slash_division_value))) new_ce
         | None -> new_ce
-      in (ops, new_ce)
+      in { operations = ops; extras = new_ce; guardian = (None : (address option)) }
   | Transfer_proposal tp ->
       // handle updates
       let registry_diff = tp.registry_diff in
@@ -190,7 +194,9 @@ let registry_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
       // handle transfers
       let transfers = tp.transfers in
       let ops = List.fold handle_transfer transfers ops in
-      (ops, extras)
+      { operations = ops; extras = extras; guardian = (None : (address option)) }
+  | Update_guardian guardian ->
+      { operations = ops; extras = extras ; guardian = Some(guardian) }
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.

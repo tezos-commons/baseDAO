@@ -39,4 +39,6 @@ let unpack_transfer_type_list_safe (bytes_opt: bytes option) : (transfer_type li
   | None -> (None : (transfer_type list) option)
   | Some b -> (Bytes.unpack b : (transfer_type list) option)
 
+type update_guardian = address
+
 #endif

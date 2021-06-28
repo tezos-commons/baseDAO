@@ -8,6 +8,8 @@ module Ligo.BaseDAO.Types
   , baseDaoAnnOptions
 
     -- * Proposals
+  , DecisionLambdaInput
+  , DecisionLambdaOutput
   , ProposalKey
   , ProposeParams(..)
   , GovernanceToken(..)
@@ -605,12 +607,40 @@ newtype FixedFee = FixedFee Natural
   deriving newtype Num
   deriving anyclass IsoValue
 
+data DecisionLambdaInput big_map = DecisionLambdaInput
+  { diProposal :: Proposal
+  , diExtra :: ContractExtra' big_map
+  }
+
+customGeneric "DecisionLambdaInput" ligoLayout
+
+deriving anyclass instance IsoValue (DecisionLambdaInput BigMap)
+deriving anyclass instance IsoValue (DecisionLambdaInput BigMapId)
+deriving stock instance Show (DecisionLambdaInput BigMap)
+
+instance HasAnnotation (DecisionLambdaInput BigMap) where
+  annOptions = baseDaoAnnOptions
+
+data DecisionLambdaOutput big_map = DecisionLambdaOutput
+  { doOperations :: List Operation
+  , doExtra :: ContractExtra' big_map
+  , doGuardian :: Maybe Address
+  }
+
+customGeneric "DecisionLambdaOutput" ligoLayout
+
+deriving anyclass instance IsoValue (DecisionLambdaOutput BigMap)
+deriving anyclass instance IsoValue (DecisionLambdaOutput BigMapId)
+deriving stock instance Show (DecisionLambdaOutput BigMap)
+
+instance HasAnnotation (DecisionLambdaOutput BigMap) where
+  annOptions = baseDaoAnnOptions
+
 data Config' big_map = Config'
   { cProposalCheck :: '[ProposeParams, ContractExtra' big_map] :-> '[()]
   , cRejectedProposalSlashValue :: '[Proposal, ContractExtra' big_map]
       :-> '["slash_amount" :! Natural]
-  , cDecisionLambda :: '[Proposal, ContractExtra' big_map]
-      :-> '[List Operation, ContractExtra' big_map]
+  , cDecisionLambda :: '[DecisionLambdaInput big_map] :-> '[DecisionLambdaOutput big_map]
 
   , cMaxProposals :: Natural
   , cMaxVoters :: Natural
@@ -654,7 +684,11 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   , cRejectedProposalSlashValue = do
       dropN @2; push (0 :: Natural); toNamed #slash_amount
   , cDecisionLambda = do
-      drop; nil
+      toField #diExtra
+      nil
+      swap
+      dip (push Nothing)
+      constructStack @(DecisionLambdaOutput BigMap)
   , cCustomEntrypoints = DynamicRec' $ BigMap $ M.fromList customEps
   , cFixedProposalFee = fixedProposalFee
   , cPeriod = votingPeriod

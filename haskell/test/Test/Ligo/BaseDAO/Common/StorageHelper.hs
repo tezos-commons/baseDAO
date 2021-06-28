@@ -10,7 +10,9 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
   , GetQuorumThresholdAtCycleFn
   , getQtAtCycleEmulator
 
+  , CheckGuardianFn
   , GetProposalFn
+  , checkGuardianEmulator
   , getProposalEmulator
 
   , GetFreezeHistoryFn
@@ -62,6 +64,13 @@ type GetFreezeHistoryFn m = Address -> Address -> m (Maybe AddressFreezeHistory)
 getFreezeHistoryEmulator :: Address -> Address -> EmulatedT PureM (Maybe AddressFreezeHistory)
 getFreezeHistoryEmulator addr owner =
   (M.lookup owner . unBigMap . sFreezeHistory . fsStorage) <$> getFullStorage addr
+
+type CheckGuardianFn m = Address -> Address -> m ()
+
+checkGuardianEmulator :: Address -> Address -> EmulatedT PureM ()
+checkGuardianEmulator addr guardianToChk = do
+  actual <- (sGuardian . fsStorage) <$> (getFullStorage addr)
+  actual @== guardianToChk
 
 type GetQuorumThresholdAtCycleFn m = Address -> m QuorumThresholdAtCycle
 

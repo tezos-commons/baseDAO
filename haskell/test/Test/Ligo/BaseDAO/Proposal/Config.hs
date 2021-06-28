@@ -22,7 +22,7 @@ module Test.Ligo.BaseDAO.Proposal.Config
   ) where
 
 import Lorentz
-import Universum (Constraint, (?:), fromIntegral)
+import Universum (Constraint, fromIntegral, (?:))
 
 import qualified Ligo.BaseDAO.Types as DAO
 import Test.Ligo.BaseDAO.Common.Errors (tooSmallXtzErrMsg)
@@ -219,9 +219,15 @@ instance IsConfigDescExt DAO.Config DecisionLambdaAction where
   fillConfig (DecisionLambdaAction lam) DAO.Config'{..} =
     DAO.Config'
     { cDecisionLambda = do
+        getField #diProposal
         getField #plProposerFrozenToken; toNamed #frozen_tokens
-        dip $ do toField #plProposer; toNamed #proposer
+        dip $ do toField #plProposer; toNamed #proposer;
+        dip (dip $ do toField #diExtra)
         framed lam
+        swap
+        dip (push Nothing)
+        constructStack @(DAO.DecisionLambdaOutput BigMap)
+
     , ..
     }
 

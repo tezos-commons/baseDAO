@@ -32,10 +32,19 @@ instance HasAnnotation TransferProposal where
   annOptions = baseDaoAnnOptions
 
 customGeneric "TransferProposal" ligoLayout
+
 deriving anyclass instance IsoValue TransferProposal
 
 -- | Helper type for unpack/pack
-type TreasuryDaoProposalMetadata = TransferProposal
+data TreasuryDaoProposalMetadata
+  = Transfer_proposal TransferProposal
+  | Update_guardian Address
+
+instance HasAnnotation TreasuryDaoProposalMetadata where
+  annOptions = baseDaoAnnOptions
+
+customGeneric "TreasuryDaoProposalMetadata" ligoLayout
+deriving anyclass instance IsoValue TreasuryDaoProposalMetadata
 
 -- | Testing a Treasury-like DAO. Ex. DNS Treasury
 test_TreasuryDAO :: TestTree
@@ -47,6 +56,8 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
           flushTokenTransfer checkBalanceEmulator
       , nettestScenarioOnEmulatorCaps "can flush a Xtz transfer proposal" $
           flushXtzTransfer checkBalanceEmulator
+      , nettestScenarioOnEmulatorCaps "can flush a Update_guardian proposal" $
+          flushUpdateGuardian checkGuardianEmulator
       ]
 
   , testGroup "proposal_check:"
@@ -68,7 +79,7 @@ validProposal checkBalanceFn = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
-      TransferProposal
+      Transfer_proposal $ TransferProposal
         { tpAgoraPostId = 1
         , tpTransfers = [ tokenTransferType (toAddress dodDao) dodOwner1 dodOwner2 ]
         }
@@ -98,7 +109,7 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
 
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
-      TransferProposal
+      Transfer_proposal $ TransferProposal
         { tpAgoraPostId = 1
         , tpTransfers = [ tokenTransferType (toAddress dodTokenContract) dodOwner2 dodOwner1 ]
         }
@@ -147,7 +158,7 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
 
   let
     proposalMeta amt = lPackValueRaw @TreasuryDaoProposalMetadata $
-      TransferProposal
+      Transfer_proposal $ TransferProposal
         { tpAgoraPostId = 1
         , tpTransfers = [ xtzTransferType amt dodOwner2 ]
         }
@@ -174,7 +185,7 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3)
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 43
+  checkBalanceFn (unTAddress dodDao) dodOwner1 45
 
   let
     upvote = NoPermit VoteParam
@@ -193,6 +204,47 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
 
   -- TODO: check xtz balance
 
+flushUpdateGuardian
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  => CheckGuardianFn m -> m ()
+flushUpdateGuardian checkGuardian = withFrozenCallStack $ do
+  DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
+
+  sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+
+  let
+    proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
+      Update_guardian dodOwner2
+    proposeParams = ProposeParams dodOwner1 (metadataSize $ proposalMeta) $ proposalMeta
+
+  -- Freeze in initial voting stage.
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! (metadataSize $ proposalMeta))
+
+  withSender dodOwner2 $
+    call dodDao (Call @"Freeze") (#amount .! 10)
+  -- Advance one voting period to a proposing stage.
+  advanceTime dodPeriod
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Propose") proposeParams
+  let key1 = makeProposalKey proposeParams
+
+  let
+    upvote = NoPermit VoteParam
+        { vFrom = dodOwner2
+        , vVoteType = True
+        , vVoteAmount = 1
+        , vProposalKey = key1
+        }
+
+  -- Advance one voting period to a voting stage.
+  advanceTime dodPeriod
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
+  -- Advance one voting period to a proposing stage.
+  advanceTime $ addSec dodPeriod -- meet `proposal_flush_time`
+  withSender dodAdmin $ call dodDao (Call @"Flush") 100
+  checkGuardian (unTAddress dodDao) dodOwner2
 
 proposalCheckFailZeroMutez
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -205,7 +257,7 @@ proposalCheckFailZeroMutez = withFrozenCallStack do
 
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
-      TransferProposal
+      Transfer_proposal $ TransferProposal
         { tpAgoraPostId = 1
         , tpTransfers = [ xtzTransferType 0 dodOwner2 ]
         }
@@ -230,7 +282,7 @@ proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
     originateTreasuryDao id defaultQuorumThreshold
   let
     largeProposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
-      TransferProposal 1 $
+      Transfer_proposal $ TransferProposal 1 $
         [tokenTransferType (toAddress dodDao) dodOwner1 dodOwner2 | (_ :: Integer) <- [1..10]]
     largeProposalSize = metadataSize largeProposalMeta
 

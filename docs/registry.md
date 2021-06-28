@@ -41,6 +41,8 @@ registry. This includes:
    - a list of items where each item contains:
    `or %transfers (pair (mutez %amount) (address %recipient)) (pair (address %fa2) (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))` specifies what transfer to make. The left part is used for XTZ transfers, the right part is used for FA2 transfers.
    - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and/or changes and motivation for them.
+4. Proposal to update the guardian address in the BaseDAO contract:
+   - This proposal takes an address parameter and use it to update the guardian address in the storage.
 
 ## Configuration lambdas
 
@@ -67,9 +69,11 @@ One can set them to 1 and 1 by default to always unfreeze all tokens.
 
 ### Decision lambda
 
-It simply applies all updates from the accepted proposal one by one.
-They are applied in the same order as specified in the proposal, the head of the
-list is applied first.
+Except for the Guardian updates, It simply applies all updates from the accepted
+proposal one by one.  They are applied in the same order as specified in the
+proposal, the head of the list is applied first.
+
+For the Update guardian proposal, it updates the guardian address in the storage.
 
 # Proposal Check Errors
 

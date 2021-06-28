@@ -251,7 +251,13 @@ type custom_entrypoints = (string, bytes) big_map
 
 type decision_lambda_input =
   { proposal : proposal
-  ; storage : storage
+  ; extras : contract_extra
+  }
+
+type decision_lambda_output =
+  { operations : operation list
+  ; extras : contract_extra
+  ; guardian : address option
   }
 
 // -- Config -- //
@@ -284,6 +290,8 @@ type initial_data =
   ; config_data : initial_config_data
   }
 
+type decision_lambda = decision_lambda_input -> decision_lambda_output
+
 type config =
   { proposal_check : propose_params * contract_extra -> unit
   // ^ A lambda used to verify whether a proposal can be submitted.
@@ -292,7 +300,7 @@ type config =
   ; rejected_proposal_slash_value : proposal * contract_extra -> nat
   // ^ When a proposal is rejected, the value that voters get back can be slashed.
   // This lambda returns the amount to be slashed.
-  ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
+  ; decision_lambda : decision_lambda
   // ^ The decision lambda is executed based on a successful proposal.
   // It has access to the proposal, can modify `contractExtra` and perform arbitrary
   // operations.

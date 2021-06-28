@@ -36,6 +36,7 @@ data RegistryDaoProposalMetadata
   = Update_receivers_proposal UpdateReceiverParam
   | Configuration_proposal ConfigProposal
   | Transfer_proposal TransferProposal
+  | Update_guardian Address
 
 instance HasAnnotation RegistryDaoProposalMetadata where
   annOptions = baseDaoAnnOptions
@@ -557,6 +558,51 @@ test_RegistryDAO =
             -- Advance one voting period to a proposing stage.
             advanceTime (addSec period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
+
+    , nettestScenarioOnEmulatorCaps "checks it can flush a proposal that updates guardian address" $
+        withOriginated 4
+          (\(admin : _) ->
+            setExtra @Natural [mt|max_proposal_size|] 200 $
+            initialStorageWithExplictRegistryDAOConfig admin) $
+          \[admin, wallet1, wallet2, newGuardian] (toPeriod -> period) baseDao _ -> do
+
+            let
+              proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
+                Update_guardian newGuardian
+
+              proposalSize = metadataSize proposalMeta
+              proposeParams = ProposeParams wallet1 proposalSize proposalMeta
+
+            withSender wallet1 $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+            withSender wallet2 $
+              call baseDao (Call @"Freeze") (#amount .! 20)
+
+            -- Advance one voting period to a proposing stage.
+            advanceTime period
+
+            withSender wallet1 $
+              call baseDao (Call @"Propose") proposeParams
+
+            checkBalanceEmulator (unTAddress baseDao) wallet1 proposalSize
+
+            let
+              key1 = makeProposalKey proposeParams
+              upvote = NoPermit VoteParam
+                  { vFrom = wallet2
+                  , vVoteType = True
+                  , vVoteAmount = 20
+                  , vProposalKey = key1
+                  }
+
+            -- Advance one voting period to a voting stage.
+            advanceTime period
+            withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
+            -- Advance one voting period to a proposing stage.
+            advanceTime (addSec period)
+            withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
+
+            checkGuardianEmulator (unTAddress baseDao) newGuardian
     ]
   ]
   where

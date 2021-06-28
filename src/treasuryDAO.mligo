@@ -24,24 +24,25 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
   let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
 
   let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
-  let pm = unpack_proposal_metadata(params.proposal_metadata) in
-
-  let _ : unit =
-    match check_token_locked_and_proposal_size(params.frozen_token, required_token_lock, proposal_size, max_proposal_size) with
-    | Some err_msg -> fail_proposal_check(err_msg)
-    | None -> unit in
-
-  let is_all_transfers_valid (transfer_type: transfer_type) =
-    match transfer_type with
-    | Token_transfer_type _tt -> unit
-    | Xtz_transfer_type xt ->
-        begin
-          match check_xtz_transfer(xt, min_xtz_amount, max_xtz_amount) with
+  match unpack_proposal_metadata(params.proposal_metadata) with
+    | Update_guardian addr -> unit
+    | Transfer_proposal tpm ->
+        let _ : unit =
+          match check_token_locked_and_proposal_size(params.frozen_token, required_token_lock, proposal_size, max_proposal_size) with
           | Some err_msg -> fail_proposal_check(err_msg)
-          | None -> unit
-        end
-  in
-    List.iter is_all_transfers_valid pm.transfers
+          | None -> unit in
+
+        let is_all_transfers_valid (transfer_type: transfer_type) =
+          match transfer_type with
+          | Token_transfer_type _tt -> unit
+          | Xtz_transfer_type xt ->
+              begin
+                match check_xtz_transfer(xt, min_xtz_amount, max_xtz_amount) with
+                | Some err_msg -> fail_proposal_check(err_msg)
+                | None -> unit
+              end
+        in
+          List.iter is_all_transfers_valid tpm.transfers
 
 let treasury_DAO_rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
   let slash_scale_value = unpack_nat(find_big_map("slash_scale_value", extras)) in
@@ -66,11 +67,17 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
       | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
     end
 
-let treasury_DAO_decision_lambda (proposal, extras : proposal * contract_extra)
-    : operation list * contract_extra =
-  let pm = unpack_proposal_metadata(proposal.metadata) in
-  let ops = List.fold handle_transfer pm.transfers ([] : operation list) in
-  (ops, extras)
+let treasury_DAO_decision_lambda (input : decision_lambda_input)
+    : decision_lambda_output =
+  let (proposal, extras) = (input.proposal, input.extras) in
+  let ops = ([] : operation list) in
+
+  match unpack_proposal_metadata(proposal.metadata) with
+    | Transfer_proposal (tpm) -> let
+        ops = List.fold handle_transfer tpm.transfers ops in
+        { operations = ops; extras = extras; guardian = (None : (address option)) }
+    | Update_guardian guardian ->
+        { operations = ops; extras = extras; guardian = Some(guardian) }
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.

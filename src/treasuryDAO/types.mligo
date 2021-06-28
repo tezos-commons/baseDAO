@@ -20,11 +20,14 @@ type initial_treasuryDAO_storage =
   }
 
 // Treasury dao `proposal_metadata` contains the type of proposal.
-type treasury_dao_proposal_metadata =
+type treasury_dao_transfer_proposal =
   { agora_post_id : nat
   ; transfers : transfer_type list
   }
 
+type treasury_dao_proposal_metadata =
+  | Transfer_proposal of treasury_dao_transfer_proposal
+  | Update_guardian of update_guardian
 
 // -- Unpack Helpers (fail if the unpacked result is none) -- //
 
