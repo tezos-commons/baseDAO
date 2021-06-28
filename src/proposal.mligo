@@ -16,11 +16,17 @@
 let to_proposal_key (propose_params: propose_params): proposal_key =
   Crypto.blake2b (Bytes.pack propose_params)
 
-[@inline]
-let check_if_proposal_exist (proposal_key, store : proposal_key * storage): proposal =
+let fetch_proposal (proposal_key, store : proposal_key * storage): proposal =
   match Map.find_opt proposal_key store.proposals with
   | Some p -> p
   | None -> (failwith("PROPOSAL_NOT_EXIST") : proposal)
+
+[@inline]
+let check_if_proposal_exist (proposal_key, store : proposal_key * storage): proposal =
+  let p = fetch_proposal (proposal_key, store) in
+  if Set.mem (p.start_date, proposal_key) store.proposal_key_list_sort_by_date
+    then p
+    else (failwith("PROPOSAL_NOT_EXIST") : proposal)
 
 // Gets the current stage counting how many `period` s have passed since
 // the 'started_on` timestamp. The stages are zero-indexed.
@@ -276,7 +282,7 @@ let handle_proposal_is_over
       : config * timestamp * proposal_key * storage * operation list * counter
     )
     : (operation list * storage * counter) =
-  let proposal = check_if_proposal_exist (proposal_key, store) in
+  let proposal = fetch_proposal (proposal_key, store) in
 
   if is_time_reached (proposal, config.proposal_expired_time)
   then (failwith("EXPIRED_PROPOSAL") : (operation list * storage * counter))

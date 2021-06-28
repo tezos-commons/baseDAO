@@ -12,6 +12,7 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , insufficientTokenVote
   , nonProposalPeriodProposal
   , nonUniqueProposal
+  , nonUniqueProposalEvenAfterDrop
   , proposalBoundedValue
   , proposerIsReturnedFeeAfterSucceeding
   , rejectProposal
@@ -205,6 +206,22 @@ nonUniqueProposal originateFn = do
   -- Advance one voting period to a proposing stage.
   advanceTime dodPeriod
   _ <- createSampleProposal 1 dodOwner1 dodDao
+  createSampleProposal 1 dodOwner1 dodDao
+    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dodDao
+
+nonUniqueProposalEvenAfterDrop
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+nonUniqueProposalEvenAfterDrop originateFn = do
+  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! 20)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime dodPeriod
+  key1 <- createSampleProposal 1 dodOwner1 dodDao
+  withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   createSampleProposal 1 dodOwner1 dodDao
     & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dodDao
 
@@ -449,6 +466,11 @@ dropProposal originateFn checkBalanceFn = withFrozenCallStack $ do
   -- proposers can delete their proposal
   withSender dodOwner1 $ do
     call dodDao (Call @"Drop_proposal") key3
+
+  -- calling drop proposal again results in an error
+  withSender dodOwner1 $ do
+    call dodDao (Call @"Drop_proposal") key3
+      & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
 
   -- 30 tokens are frozen in total, but only 15 tokens are returned after drop_proposal
   checkBalanceFn (unTAddress dodDao) dodOwner1 15
