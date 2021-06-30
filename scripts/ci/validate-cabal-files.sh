@@ -26,7 +26,7 @@ for file in "${files[@]}"; do
         fi
     done
     if ! $excluded; then
-        mv "$file" "${file}_backup"
+        cp "$file" "${file}_backup"
         files_to_verify+=("$file")
     fi
     excluded=false
