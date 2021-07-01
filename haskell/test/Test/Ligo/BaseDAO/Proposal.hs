@@ -34,6 +34,9 @@ test_BaseDAO_Proposal =
       , nettestScenarioOnEmulatorCaps "cannot propose a non-unique proposal" $
           nonUniqueProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
+      , nettestScenarioOnEmulatorCaps "cannot propose same proposal even after dropping original one" $
+          nonUniqueProposalEvenAfterDrop (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       , nettestScenarioOnEmulatorCaps "cannot propose in a non-proposal period" $
           nonProposalPeriodProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
@@ -43,6 +46,9 @@ test_BaseDAO_Proposal =
       [ nettestScenarioOnEmulatorCaps "can vote on a valid proposal" $
           voteValidProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
             checkBalanceEmulator
+
+      , nettestScenarioOnEmulatorCaps "cannot vote on a deleted proposal" $
+          voteDeletedProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
       , nettestScenarioOnEmulatorCaps "cannot vote non-existing proposal" $
           voteNonExistingProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)

@@ -319,11 +319,11 @@ Here is a summary of all the strings used as error messages.
 | `NOT_TOKEN_OWNER`                    | Trying to configure operators for a different wallet which sender does not own                                           |
 | `FAIL_PROPOSAL_CHECK`                | Throws paired with an additional `string` message when trying to submit a proposal that does not pass `proposal_check`.  |
 | `FROZEN_TOKEN_NOT_TRANSFERABLE`      | Transfer entrypoint is called for frozen token                                                                           |
-| `PROPOSAL_NOT_EXIST`                 | Throws when trying to vote on a proposal that does not exist                                                             |
+| `PROPOSAL_NOT_EXIST`                 | Throws when trying to vote on a proposal that does not exist or is no longer ongoing.                                    |
 | `QUORUM_NOT_MET`                     | A proposal is flushed, but there are not enough votes                                                                    |
 | `VOTING_STAGE_OVER`                  | Throws when trying to vote on a proposal that is already ended                                                           |
 | `MAX_PROPOSALS_REACHED`              | Throws when trying to propose a proposal when proposals max amount is already reached                                    |
-| `MAX_VOTERS_REACHED`                 | Throws when trying to vote on a proposal when the max voter count of that proposal is already reached                   |
+| `MAX_VOTERS_REACHED`                 | Throws when trying to vote on a proposal when the max voter count of that proposal is already reached                    |
 | `FORBIDDEN_XTZ`                      | Throws when some XTZ was received as part of the contract call                                                           |
 | `PROPOSER_NOT_EXIST_IN_LEDGER`       | Expect a proposer address to exist in Ledger but it is not found                                                         |
 | `PROPOSAL_NOT_UNIQUE`                | Trying to propose a proposal that is already existed in the Storage.                                                     |

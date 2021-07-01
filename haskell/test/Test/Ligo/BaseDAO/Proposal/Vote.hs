@@ -6,6 +6,7 @@
 module Test.Ligo.BaseDAO.Proposal.Vote
   ( proposalCorrectlyTrackVotes
   , voteNonExistingProposal
+  , voteDeletedProposal
   , voteMultiProposals
   , voteOutdatedProposal
   , voteValidProposal
@@ -266,6 +267,37 @@ voteValidProposal originateFn checkBalanceFn = do
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
   checkBalanceFn (unTAddress dodDao) dodOwner2 2
   -- TODO [#31]: check if the vote is updated properly
+  --
+voteDeletedProposal
+  :: (MonadNettest caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m)
+  -> m ()
+voteDeletedProposal originateFn = do
+  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
+
+  withSender dodOwner2 $
+    call dodDao (Call @"Freeze") (#amount .! 2)
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! 10)
+
+  -- Advance one voting period to a proposing stage.
+  advanceTime dodPeriod
+
+  -- Create sample proposal (first proposal has id = 0)
+  key1 <- createSampleProposal 1 dodOwner1 dodDao
+  let params = NoPermit VoteParam
+        { vVoteType = True
+        , vVoteAmount = 2
+        , vProposalKey = key1
+        , vFrom = dodOwner2
+        }
+
+  -- Advance one voting period to a voting stage.
+  advanceTime dodPeriod
+  withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
+  withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
+    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
 
 voteWithPermit
   :: (MonadNettest caps base m, HasCallStack)
