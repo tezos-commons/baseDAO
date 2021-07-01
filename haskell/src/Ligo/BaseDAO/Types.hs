@@ -68,10 +68,10 @@ module Ligo.BaseDAO.Types
   , setExtra
   ) where
 
-import Universum (Enum, Integral, Num, One(..), Real, fromIntegral, div, maybe, (*))
+import Universum (Enum, Integral, Num, One(..), Real, div, fromIntegral, maybe, (*))
 
-import Fmt (Buildable, build, genericF)
 import qualified Data.Map as M
+import Fmt (Buildable, build, genericF)
 
 import Lorentz hiding (now)
 import Lorentz.Annotation ()
@@ -80,7 +80,7 @@ import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 import Michelson.Typed.Annotation
 import Michelson.Typed.T (T(TUnit))
 import Michelson.Untyped.Annotation
-import Morley.Client (BigMapId(..))
+import Morley.Nettest.Instances ()
 import Util.Markdown
 
 ------------------------------------------------------------------------
@@ -689,7 +689,7 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
       swap
       dip (push Nothing)
       constructStack @(DecisionLambdaOutput BigMap)
-  , cCustomEntrypoints = DynamicRec' $ BigMap $ M.fromList customEps
+  , cCustomEntrypoints = DynamicRec' $ BigMap Nothing $ M.fromList customEps
   , cFixedProposalFee = fixedProposalFee
   , cPeriod = votingPeriod
   , cProposalFlushTime = (unPeriod votingPeriod) * 2
@@ -757,8 +757,8 @@ mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress cEps = FullStora
 setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
 setExtra key v (s@FullStorage' {..}) = s { fsStorage = newStorage }
   where
-    (BigMap oldExtra) = unDynamic $ sExtra fsStorage
-    newExtra = BigMap $ M.insert key (lPackValueRaw v) oldExtra
+    (BigMap bid oldExtra) = unDynamic $ sExtra fsStorage
+    newExtra = BigMap bid $ M.insert key (lPackValueRaw v) oldExtra
     newStorage = fsStorage { sExtra = DynamicRec' newExtra }
 
 -- Instances
