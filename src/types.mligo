@@ -278,7 +278,7 @@ type initial_storage_data =
   { admin : address
   ; guardian : address
   ; governance_token : governance_token
-  ; current_level : blocks
+  ; start_level : blocks
   ; metadata_map : metadata_map
   ; freeze_history : freeze_history_list
   }
@@ -329,12 +329,10 @@ type config =
   // of new quorum threshold value at each stage.
 
   ; proposal_flush_level : blocks
-  // ^ Determine the minimum number of levels after the proposal is proposed
-  // to allow it to be `flushed`.
+  // ^ The proposal age at (and above) which the proposal is considered flushable.
   // Has to be bigger than `period * 2`
   ; proposal_expired_level : blocks
-  // ^ Determine the minimum number of levels after the proposal is proposed
-  // to be considered as expired.
+  // ^ The proposal age at (and above) which the proposal is considered expired.
   // Has to be bigger than `proposal_flush_time`
 
   ; custom_entrypoints : custom_entrypoints

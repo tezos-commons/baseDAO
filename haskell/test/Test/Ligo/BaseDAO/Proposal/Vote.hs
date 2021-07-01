@@ -282,7 +282,7 @@ voteDeletedProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   -- Create sample proposal (first proposal has id = 0)
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -294,7 +294,7 @@ voteDeletedProposal originateFn = do
         }
 
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
     & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao

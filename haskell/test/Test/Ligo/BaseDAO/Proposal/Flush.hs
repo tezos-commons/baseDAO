@@ -18,8 +18,8 @@ module Test.Ligo.BaseDAO.Proposal.Flush
 
 import Universum
 
-import Lorentz.Test (contractConsumer)
 import Lorentz hiding (assert, (>>))
+import Lorentz.Test (contractConsumer)
 import Morley.Nettest
 import Util.Named
 
@@ -455,7 +455,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  advanceLevel (dodPeriod - 1)
   -- the proposal exists at this point (and has votes), but it can't be flushed
   -- yet, because it needs one more level to meet the `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 1

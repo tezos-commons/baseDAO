@@ -75,7 +75,7 @@ make out/trivialDAO_storage.tz \
   guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
   governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
   governance_token_id=0n \
-  current_level=100n \
+  start_level=100n \
   metadata_map=Big_map.empty \
   freeze_history=[] \
   fixed_proposal_fee_in_token=0n \
@@ -91,9 +91,9 @@ make out/trivialDAO_storage.tz \
   proposal_expired_level=47520n \
 ```
 
-The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
-are required values. The rest of the arguments are optional and will be equal to the
-values above if not specified.
+The `admin_address`, `guardian_address`, `governance_token_address`,
+`start_level` and `governance_token_id` are required values. The rest of the
+arguments are optional and will be equal to the values above if not specified.
 
 You can see the [specification](specification.md) for more info about these
 values.
@@ -115,7 +115,7 @@ make out/registryDAO_storage.tz \
   slash_division_value=0n \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
-  current_level=100n \
+  start_level=100n \
   metadata_map=Big_map.empty \
   freeze_history=[] \
   fixed_proposal_fee_in_token=0n \
@@ -131,9 +131,9 @@ make out/registryDAO_storage.tz \
   governance_total_supply=1000n
 ```
 
-The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
-are required values. The rest of the arguments are optional and will be equal to the
-values above if not specified.
+The `admin_address`, `guardian_address`, `governance_token_address`,
+`start_level`, and `governance_token_id` are required values. The rest of the
+arguments are optional and will be equal to the values above if not specified.
 
 ### TreasuryDAO
 
@@ -152,7 +152,7 @@ make out/treasuryDAO_storage.tz \
   slash_division_value=0n \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
-  current_level=100n \
+  start_level=100n \
   metadata_map=Big_map.empty \
   freeze_history=Big_map.empty \
   fixed_proposal_fee_in_token=0n \
@@ -169,9 +169,9 @@ make out/treasuryDAO_storage.tz \
   governance_total_supply=1000n
 ```
 
-The `admin_address`, `guardian_address`, `governance_token_address`, and `governance_token_id`
-are required values. The rest of the arguments are optional and will be equal to the
-values above if not specified.
+The `admin_address`, `guardian_address`, `governance_token_address`,
+`start_level` and `governance_token_id` are required values. The rest of the
+arguments are optional and will be equal to the values above if not specified.
 
 ## Storage generation checks
 The LIGO functions used by the `Makefile` targets above perform some automatic check, specifically:

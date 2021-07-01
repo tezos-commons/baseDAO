@@ -119,12 +119,10 @@ type config =
   // of new quorum threshold value at each stage.
 
   ; proposal_flush_level : blocks
-  // ^ Determine the minimum amount of blocks after the proposal is proposed
-  // to allow it to be `flushed`.
+  // ^ The proposal age at (and above) which the proposal is considered flushable.
   // Has to be bigger than `period * 2`
   ; proposal_expired_level : blocks
-  // ^ Determine the minimum amount of blocks after the proposal is proposed
-  // to be considered as expired.
+  // ^ The proposal age at (and above) which the proposal is considered expired.
   // Has to be bigger than `proposal_flush_level`
 
   ; custom_entrypoints : custom_entrypoints
@@ -200,6 +198,7 @@ This chapter provides a high-level overview of the contract's logic.
 - The contract stores a list of proposals that can be in one of the states:
   "proposed", "ongoing", "pending flush", "accepted", "rejected", or "expired".
 - The contract forbids transferring XTZ to it on certain entrypoints.
+- The contract tracks 'stages' by counting the blocks.
 
 ## Roles
 
@@ -230,6 +229,15 @@ starting from "voting" for `stage` number `0`.
 A proposing and voting couple of `stage`s is called a `cycle`.
 
 The `period` is specified for the whole smart contract and never changes.
+
+The length of a period is measured by counting blocks as discrete entities. So
+if the configuration value of period is `3`, then the very first period only
+exist for blocks `0`, `1` and `2`.
+
+Similarly a proposal raised in block `100`, with an expiry of `3` blocks will
+remain unexpired for blocks `100`, `101`, `102`, and will be considered expired
+on the `103` th block, because at that block, the proposal will be considered to
+have an age of `3`.
 
 Tokens can be frozen in any `stage`, but they can only be used for voting, proposing
 and unfreezing starting from the one following and onwards.

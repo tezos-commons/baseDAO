@@ -24,7 +24,7 @@ let fetch_proposal (proposal_key, store : proposal_key * storage): proposal =
 [@inline]
 let check_if_proposal_exist (proposal_key, store : proposal_key * storage): proposal =
   let p = fetch_proposal (proposal_key, store) in
-  if Set.mem (p.start_date, proposal_key) store.proposal_key_list_sort_by_date
+  if Set.mem (p.start_level, proposal_key) store.proposal_key_list_sort_by_level
     then p
     else (failwith("PROPOSAL_NOT_EXIST") : proposal)
 
@@ -242,9 +242,8 @@ let unfreeze_proposer_and_voter_token
   Map.fold do_unfreeze proposal.voters store
 
 [@inline]
-let is_level_reached (proposal, target : proposal * blocks): bool =
-  Tezos.level > proposal.start_level.blocks + target.blocks
-
+let is_proposal_age (proposal, target : proposal * blocks): bool =
+  Tezos.level >= proposal.start_level.blocks + target.blocks
 
 [@inline]
 let do_total_vote_meet_quorum_threshold (proposal, store: proposal * storage): bool =
@@ -283,9 +282,9 @@ let handle_proposal_is_over
     : (operation list * storage * counter) =
   let proposal = fetch_proposal (proposal_key, store) in
 
-  if is_level_reached (proposal, config.proposal_expired_level)
+  if is_proposal_age (proposal, config.proposal_expired_level)
   then (failwith("EXPIRED_PROPOSAL") : (operation list * storage * counter))
-  else if is_level_reached (proposal, config.proposal_flush_level)
+  else if is_proposal_age (proposal, config.proposal_flush_level)
        && counter.current < counter.total // not finished
   then
     let counter = { counter with current = counter.current + 1n } in
@@ -336,7 +335,7 @@ let flush(n, config, store : nat * config * storage): return =
 // Removes an accepted and finished proposal by key.
 let drop_proposal (proposal_key, config, store : proposal_key * config * storage): return =
   let proposal = check_if_proposal_exist (proposal_key, store) in
-  let proposal_is_expired = is_level_reached (proposal, config.proposal_expired_level) in
+  let proposal_is_expired = is_proposal_age (proposal, config.proposal_expired_level) in
 
   if   (sender = proposal.proposer)
     || (sender = store.guardian && sender <> source) // Guardian cannot be equal to SOURCE

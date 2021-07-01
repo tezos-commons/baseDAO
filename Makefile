@@ -56,7 +56,6 @@ ifeq ($(OPTIMIZE), true)
 endif
 	#
 
-$(OUT)/trivialDAO_storage.tz : current_level = 100n
 $(OUT)/trivialDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/trivialDAO_storage.tz : freeze_history = []
 $(OUT)/trivialDAO_storage.tz : fixed_proposal_fee_in_token = 0n
@@ -64,12 +63,12 @@ $(OUT)/trivialDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/trivialDAO_storage.tz : min_quorum = 1n
 $(OUT)/trivialDAO_storage.tz : max_quorum = 99n
 $(OUT)/trivialDAO_storage.tz : max_voters = 1000n
-$(OUT)/trivialDAO_storage.tz : period = 15840n # 11 days
+$(OUT)/trivialDAO_storage.tz : period = 15840n
 $(OUT)/trivialDAO_storage.tz : quorum_change = 5n
 $(OUT)/trivialDAO_storage.tz : max_quorum_change = 19n
 $(OUT)/trivialDAO_storage.tz : governance_total_supply = 1000n
-$(OUT)/trivialDAO_storage.tz : proposal_flush_level = 36000n # 22 days
-$(OUT)/trivialDAO_storage.tz : proposal_expired_level = 47520n # 33 days
+$(OUT)/trivialDAO_storage.tz : proposal_flush_level = 36000n
+$(OUT)/trivialDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/trivialDAO_storage.tz: src/**
 	# ============== Compiling TrivialDAO storage ============== #
 	mkdir -p $(OUT)
@@ -82,7 +81,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
             { address = (\"$(call require_defined,governance_token_address)\" : address) \
             ; token_id = ($(call require_defined,governance_token_id) : nat) \
             } \
-          ; current_level = {blocks = $(current_level)} \
+          ; start_level = {blocks = $(call require_defined,start_level)} \
           ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
           ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
           } \
@@ -111,7 +110,6 @@ $(OUT)/registryDAO_storage.tz : slash_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/registryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/registryDAO_storage.tz : max_xtz_amount = 100mutez
-$(OUT)/registryDAO_storage.tz : current_level = 100n
 $(OUT)/registryDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/registryDAO_storage.tz : freeze_history = []
 $(OUT)/registryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
@@ -119,11 +117,11 @@ $(OUT)/registryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/registryDAO_storage.tz : min_quorum = 1n
 $(OUT)/registryDAO_storage.tz : max_quorum = 99n
 $(OUT)/registryDAO_storage.tz : max_voters = 1000n
-$(OUT)/registryDAO_storage.tz : period = 15840n # 11 days
+$(OUT)/registryDAO_storage.tz : period = 15840n
 $(OUT)/registryDAO_storage.tz : quorum_change = 5n
 $(OUT)/registryDAO_storage.tz : max_quorum_change = 19n
-$(OUT)/registryDAO_storage.tz : proposal_flush_level = 36000n # 22 days
-$(OUT)/registryDAO_storage.tz : proposal_expired_level = 47520n # 33 days
+$(OUT)/registryDAO_storage.tz : proposal_flush_level = 36000n
+$(OUT)/registryDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/registryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
@@ -138,7 +136,7 @@ $(OUT)/registryDAO_storage.tz: src/**
               { address = (\"$(call require_defined,governance_token_address)\" : address) \
               ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
-            ; current_level = {blocks = $(current_level)} \
+            ; start_level = {blocks = $(call require_defined,start_level)} \
             ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
             ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
             } \
@@ -174,7 +172,6 @@ $(OUT)/treasuryDAO_storage.tz : slash_scale_value = 0n
 $(OUT)/treasuryDAO_storage.tz : slash_division_value = 0n
 $(OUT)/treasuryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/treasuryDAO_storage.tz : max_xtz_amount = 100mutez
-$(OUT)/treasuryDAO_storage.tz : current_level = 100n
 $(OUT)/treasuryDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/treasuryDAO_storage.tz : freeze_history = []
 $(OUT)/treasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
@@ -182,11 +179,11 @@ $(OUT)/treasuryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/treasuryDAO_storage.tz : min_quorum = 1n
 $(OUT)/treasuryDAO_storage.tz : max_quorum = 99n
 $(OUT)/treasuryDAO_storage.tz : max_voters = 1000n
-$(OUT)/treasuryDAO_storage.tz : period = 15840n # 11 days
+$(OUT)/treasuryDAO_storage.tz : period = 15840n
 $(OUT)/treasuryDAO_storage.tz : quorum_change = 5n
 $(OUT)/treasuryDAO_storage.tz : max_quorum_change = 19n
-$(OUT)/treasuryDAO_storage.tz : proposal_flush_level = 36000n # 22 days
-$(OUT)/treasuryDAO_storage.tz : proposal_expired_level = 47520n # 33 days
+$(OUT)/treasuryDAO_storage.tz : proposal_flush_level = 36000n
+$(OUT)/treasuryDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/treasuryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
@@ -201,7 +198,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
               { address = (\"$(call require_defined,governance_token_address)\" : address) \
               ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
-            ; current_level = {blocks = $(current_level)} \
+            ; start_level = {blocks = $(call require_defined,start_level)} \
             ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
             ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
             } \
@@ -237,19 +234,22 @@ test-storage:
 		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
 		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
 		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
-		governance_token_id=0n
+		governance_token_id=0n \
+		start_level=100n
 
 	make $(OUT)/treasuryDAO_storage.tz \
 		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
 		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
 		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
-		governance_token_id=0n
+		governance_token_id=0n \
+		start_level=100n
 
 	make $(OUT)/registryDAO_storage.tz \
 		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
 		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
 		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
-		governance_token_id=0n
+		governance_token_id=0n \
+		start_level=100n
 
 
 metadata : output = metadata.json

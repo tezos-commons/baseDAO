@@ -7,7 +7,7 @@
 let validate_proposal_flush_expired_level (data : initial_config_data) : unit =
   if data.proposal_expired_level.blocks <= data.proposal_flush_level.blocks then
     failwith("proposal_expired_level needs to be bigger than proposal_flush_level")
-  else if data.proposal_flush_level.blocks <= (data.period.blocks * 2n) then
+  else if data.proposal_flush_level.blocks < (data.period.blocks * 2n) then
     failwith("proposal_flush_level needs to be more than twice the 'period' length.")
   else unit
 
@@ -78,7 +78,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     permits_counter = 0n;
     freeze_history = freeze_history;
     frozen_token_id = frozen_token_id;
-    start_level = data.current_level;
+    start_level = data.start_level;
     quorum_threshold_at_cycle =
       { last_updated_cycle = 1n
       // We use 1 here so that the initial quorum will be used for proposals raised in stage 1

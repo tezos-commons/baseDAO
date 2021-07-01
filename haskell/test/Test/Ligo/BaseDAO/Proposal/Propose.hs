@@ -219,7 +219,7 @@ nonUniqueProposalEvenAfterDrop originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
   withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   createSampleProposal 1 dodOwner1 dodDao
