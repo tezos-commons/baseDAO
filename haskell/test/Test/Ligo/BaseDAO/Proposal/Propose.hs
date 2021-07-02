@@ -67,7 +67,7 @@ validProposal originateFn getFrozenTotalSupplyFn getFreezeHistoryFn = do
     (toVal [[FA2.TransferItem { tiFrom = dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]])
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
 
@@ -96,7 +96,7 @@ validProposalWithFixedFee getFrozenTotalSupplyFn getFreezeHistoryFn = do
   withSender proposer $
     call dodDao (Call @"Freeze") (#amount .! 52)
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   withSender proposer $ call dodDao (Call @"Propose") params
 
@@ -130,10 +130,10 @@ proposerIsReturnedFeeAfterSucceeding checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 proposer dodDao
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   let vote_ =
         NoPermit VoteParam
           { vVoteType = True
@@ -148,7 +148,7 @@ proposerIsReturnedFeeAfterSucceeding checkBalanceFn = do
   checkBalanceFn (unTAddress dodDao) proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
-  advanceTime $ addSec dodPeriod
+  advanceLevel $ dodPeriod + 1
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   checkBalanceFn (unTAddress dodDao) proposer 52
@@ -164,7 +164,7 @@ cannotProposeWithInsufficientTokens = do
   withSender proposer $
     call dodDao (Call @"Freeze") (#amount .! 52)
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   let params = ProposeParams
         { ppFrozenToken = 1
@@ -189,7 +189,7 @@ rejectProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   (withSender dodOwner1 $ call dodDao (Call @"Propose") params)
     & expectCustomError #fAIL_PROPOSAL_CHECK dodDao tooSmallXtzErrMsg
@@ -204,7 +204,7 @@ nonUniqueProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   _ <- createSampleProposal 1 dodOwner1 dodDao
   createSampleProposal 1 dodOwner1 dodDao
     & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE dodDao
@@ -219,7 +219,7 @@ nonUniqueProposalEvenAfterDrop originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
   withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   createSampleProposal 1 dodOwner1 dodDao
@@ -235,7 +235,7 @@ nonProposalPeriodProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance two voting periods to another voting stage.
-  advanceTime (doubleTime dodPeriod)
+  advanceLevel (2 * dodPeriod)
 
   let params = ProposeParams
         { ppFrozenToken = 10
@@ -270,11 +270,11 @@ burnsFeeOnFailure reason checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 proposer dodDao
 
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   case reason of
     Downvoted -> do
       withSender voter $
@@ -285,7 +285,7 @@ burnsFeeOnFailure reason checkBalanceFn = do
   checkBalanceFn (unTAddress dodDao) proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod+1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- Tokens frozen with the proposal are returned as unstaked (but still
@@ -316,11 +316,11 @@ unstakesTokensForMultipleVotes getFhFn = do
     call dodDao (Call @"Freeze") (#amount .! 30)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 proposer dodDao
 
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   let vote_ typ =
         NoPermit VoteParam
           { vVoteType = typ
@@ -344,7 +344,7 @@ unstakesTokensForMultipleVotes getFhFn = do
   assert (fh == expected) "Unexpected freeze history after voting"
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod+1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
   fh_after_flush <- getFhFn (unTAddress dodDao) voter
   let expected_after_flush = Just (AddressFreezeHistory
@@ -383,7 +383,7 @@ insufficientTokenVote originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -402,7 +402,7 @@ insufficientTokenVote originateFn = do
             }
         ]
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
     & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS dodDao
@@ -426,12 +426,12 @@ dropProposal originateFn checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
 
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   let params key = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 20
@@ -440,7 +440,7 @@ dropProposal originateFn checkBalanceFn = withFrozenCallStack $ do
         }
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   key3 <- createSampleProposal 3 dodOwner1 dodDao
 
@@ -453,7 +453,7 @@ dropProposal originateFn checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Drop_proposal") key2
       & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET dodDao
 
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod + 1)
   -- `key2` is expired, so it is possible to `drop_proposal`
   withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key2
@@ -488,7 +488,7 @@ proposalBoundedValue originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   let params = ProposeParams
         { ppFrozenToken = 10

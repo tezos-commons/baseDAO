@@ -51,45 +51,45 @@ test_BaseDAO_Management :: [TestTree]
 test_BaseDAO_Management =
   [ testGroup "Ownership transfer"
     [ nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $ do
-        current_time <- getNow
-        transferOwnership withOriginated (initialStorage current_time)
+        current_level <- getLevel
+        transferOwnership withOriginated (initialStorage current_level)
 
     , nettestScenarioCaps "sets pending owner" $ do
-        current_time <- getNow
-        transferOwnership withOriginated (initialStorage current_time)
+        current_level <- getLevel
+        transferOwnership withOriginated (initialStorage current_level)
 
     , nettestScenarioCaps "does not set administrator" $ do
-        current_time <- getNow
-        notSetAdmin withOriginated (initialStorage current_time)
+        current_level <- getLevel
+        notSetAdmin withOriginated (initialStorage current_level)
 
     , nettestScenarioCaps "rewrite existing pending owner" $ do
-        current_time <- getNow
-        rewritePendingOwner withOriginated (initialStorage current_time)
+        current_level <- getLevel
+        rewritePendingOwner withOriginated (initialStorage current_level)
 
     , nettestScenarioCaps "invalidates pending owner if new owner is current admin" $ do
-        current_time <- getNow
-        invalidatePendingOwner withOriginated (initialStorage current_time)
+        current_level <- getLevel
+        invalidatePendingOwner withOriginated (initialStorage current_level)
 
     , nettestScenarioCaps "bypasses accept_entrypoint if new admin address is self" $ do
-        current_time <- getNow
-        bypassAcceptForSelf withOriginated (initialStorage current_time)
+        current_level <- getLevel
+        bypassAcceptForSelf withOriginated (initialStorage current_level)
     ]
     , testGroup "Accept Ownership"
       [ nettestScenarioCaps "authenticates the sender" $ do
-          current_time <- getNow
-          authenticateSender withOriginated (initialStorage current_time)
+          current_level <- getLevel
+          authenticateSender withOriginated (initialStorage current_level)
 
       , nettestScenarioCaps "changes the administrator to pending owner" $ do
-          current_time <- getNow
-          changeToPendingAdmin withOriginated (initialStorage current_time)
+          current_level <- getLevel
+          changeToPendingAdmin withOriginated (initialStorage current_level)
 
       , nettestScenarioCaps "throws error when there is no pending owner" $ do
-          current_time <- getNow
-          noPendingAdmin withOriginated (initialStorage current_time)
+          current_level <- getLevel
+          noPendingAdmin withOriginated (initialStorage current_level)
 
       , nettestScenarioCaps "throws error when called by current admin, when pending owner is not the same" $ do
-          current_time <- getNow
-          pendingOwnerNotTheSame withOriginated (initialStorage current_time)
+          current_level <- getLevel
+          pendingOwnerNotTheSame withOriginated (initialStorage current_level)
       ]
   ]
 
@@ -104,11 +104,11 @@ test_BaseDAO_Management =
         (L.dip (L.toField #fsStorage) # setField #sAdmin) #
       L.nil # pair
 
-    initialStorage now admin = mkFullStorage
+    initialStorage currentLevel admin = mkFullStorage
       ! #admin admin
       ! #extra dynRecUnsafe
       ! #metadata mempty
-      ! #startTime now
+      ! #level currentLevel
       ! #tokenAddress genesisAddress
       ! #customEps
           [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)

@@ -54,9 +54,9 @@ checkFreezeHistoryTracking originateFn getFreezeHistory = do
   let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! requiredFrozen)
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   withSender dodOwner1 $ call dodDao (Call @"Propose") (ProposeParams dodOwner1 requiredFrozen proposalMeta1)
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   fh <- getFreezeHistory (unTAddress dodDao) dodOwner1 -- TODO [#31]
   let expected = AddressFreezeHistory
@@ -78,7 +78,7 @@ canUnfreezeFromPreviousPeriod originateFn checkBalanceFn = do
   checkBalanceFn (unTAddress dodDao) dodOwner1 10
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 10)
   checkBalanceFn (unTAddress dodDao) dodOwner1 00
@@ -104,7 +104,7 @@ cannotUnfreezeStakedTokens originateFn checkBalanceFn = do
   checkBalanceFn (unTAddress dodDao) dodOwner1 50
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   void $ createSampleProposal 1 dodOwner1 dodDao
 
   -- the frozen tokens are still the same

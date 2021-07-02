@@ -48,12 +48,12 @@ flushAcceptedProposals originateFn getFreezeHistoryFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   -- Accepted Proposals
   key1 <- createSampleProposal 1 dodOwner1 dodDao
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   let upvote' = NoPermit VoteParam
         { vFrom = dodOwner2
@@ -77,7 +77,7 @@ flushAcceptedProposals originateFn getFreezeHistoryFn = do
   fhOwner2 @== Just (AddressFreezeHistory 0 0 2 15)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod+1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -110,11 +110,11 @@ flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
 
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   -- [Proposing]
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
-  advanceTime (sec 1)
+  advanceLevel 1
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   let vote' key = NoPermit VoteParam
@@ -124,7 +124,7 @@ flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
         , vProposalKey = key
         }
 
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   -- [Voting]
   withSender dodOwner2 . inBatch $ do
@@ -132,7 +132,7 @@ flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
       call dodDao (Call @"Vote") [vote' key2]
       pure ()
 
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod + 1)
 
   -- [Proposing]
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
@@ -165,7 +165,7 @@ flushRejectProposalQuorum originateFn checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   -- Rejected Proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -179,11 +179,11 @@ flushRejectProposalQuorum originateFn checkBalanceFn = do
           }
         ]
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -213,7 +213,7 @@ flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   -- Rejected Proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -239,14 +239,14 @@ flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
           }
         ]
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Check proposer balance
   checkBalanceFn (unTAddress dodDao) dodOwner1 10
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -276,7 +276,7 @@ flushWithBadConfig originateFn checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
   let upvote' = NoPermit VoteParam
@@ -286,11 +286,11 @@ flushWithBadConfig originateFn checkBalanceFn = do
         , vFrom = dodOwner2
         }
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote']
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod+1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
@@ -318,7 +318,7 @@ flushDecisionLambda originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
   let upvote' = NoPermit VoteParam
@@ -328,11 +328,11 @@ flushDecisionLambda originateFn = do
         , vFrom = dodOwner2
         }
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote']
 
   -- Advance one voting period to a proposing stage.
-  advanceTime (addSec dodPeriod)
+  advanceLevel (dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   results <- fromVal <$> getStorage (toAddress consumer)
@@ -360,11 +360,11 @@ flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   let params key = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 20
@@ -373,10 +373,10 @@ flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
         }
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   _key2 <- createSampleProposal 2 dodOwner1 dodDao
 
-  advanceTime (addSec $ doubleTime dodPeriod)
+  advanceLevel (2*dodPeriod + 1)
   -- `key1` is now expired, and `key2` is not yet expired.
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
     & expectCustomErrorNoArg #eXPIRED_PROPOSAL dodDao
@@ -405,12 +405,12 @@ flushProposalFlushTimeNotReach originateFn checkBalanceFn = do
     call dodDao (Call @"Freeze") (#amount .! 30)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
 
   (_key1, _key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
   -- Advance two voting period to another proposing stage.
-  advanceTime dodPeriod -- skip voting period
-  advanceTime (addSec dodPeriod)
+  advanceLevel dodPeriod -- skip voting period
+  advanceLevel (dodPeriod + 1)
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
@@ -441,11 +441,11 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   withSender dodOwner2 $ call dodDao (Call @"Freeze") (#amount .! 20)
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   key1 <- createSampleProposal 1 dodOwner1 dodDao
 
   -- Advance one voting period to a voting stage.
-  advanceTime dodPeriod
+  advanceLevel dodPeriod
   let params key = NoPermit VoteParam
         { vVoteType = True
         , vVoteAmount = 20
@@ -455,12 +455,12 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
 
   -- Advance one voting period to a proposing stage.
-  advanceTime dodPeriod
+  advanceLevel (dodPeriod - 1)
   -- the proposal exists at this point (and has votes), but it can't be flushed
   -- yet, because it needs one more level to meet the `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
     & expectCustomErrorNoArg #eMPTY_FLUSH dodDao
 
   -- however after one more level flushing is allowed
-  advanceTime $ sec 1
+  advanceLevel 1
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
