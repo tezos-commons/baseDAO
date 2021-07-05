@@ -304,7 +304,7 @@ flushDecisionLambda
   :: (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushDecisionLambda originateFn = do
-  consumer <- chAddress <$> originateSimple @(["proposer" :! Address]) "consumer" [] contractConsumer
+  consumer <- chAddress <$> originateSimple @("proposer" :! Address) "consumer" [] contractConsumer
   DaoOriginateData{..} <-
     originateFn ((decisionLambdaConfig (TAddress consumer))
       >>- (ConfigDesc $ Period 60)

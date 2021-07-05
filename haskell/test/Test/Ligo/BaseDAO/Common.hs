@@ -44,7 +44,6 @@ import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 type OriginateFn m = QuorumThreshold -> m DaoOriginateData
 
 type instance AsRPC FA2.TransferItem = FA2.TransferItem
-type instance AsRPC (FullStorage' BigMap) = FullStorage' BigMapId
 
 data DaoOriginateData = DaoOriginateData
   { dodOwner1 :: Address
@@ -156,7 +155,7 @@ originateLigoDaoWithConfig extra config qt = do
   tokenContract <- chAddress <$> originateSimple "TokenContract" [] dummyFA2Contract
   guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
-  let fullStorage = FullStorage'
+  let fullStorage = FullStorage
         { fsStorage =
             ( mkStorage
               ! #extra extra

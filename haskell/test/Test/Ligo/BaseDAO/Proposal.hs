@@ -72,10 +72,10 @@ test_BaseDAO_Proposal =
 
   -- Note: When checking storage, we need to split the test into 2 (emulator and network) as demonstrated below:
   , nettestScenarioOnEmulatorCaps "cannot propose with insufficient tokens (emulator) " $
-      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getStorage @FullStorage addr)
+      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getFullStorage @FullStorage addr)
 
   , nettestScenarioOnNetworkCaps "cannot propose with insufficient tokens (network) " $
-      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDate . fsStorage) <$> getStorage @FullStorage addr)
+      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDateRPC . fsStorageRPC) <$> getStorage @FullStorage addr)
 
   , testGroup "Permit:"
       [ nettestScenarioOnEmulatorCaps "can vote from another user behalf" $
