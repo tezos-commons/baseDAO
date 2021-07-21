@@ -10,7 +10,6 @@ module Test.Ligo.RegistryDAO
 
 import Universum
 
-import qualified Data.ByteString as BS
 import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L
@@ -19,7 +18,6 @@ import Lorentz.Test.Consumer
 import Michelson.Text (unsafeMkMText)
 import Michelson.Typed (convertContract)
 import Michelson.Typed.Convert (untypeValue)
-import Michelson.Untyped.Entrypoints (unsafeBuildEpName)
 import Morley.Nettest
 import Morley.Nettest.Tasty (nettestScenarioCaps, nettestScenarioOnEmulatorCaps)
 import Util.Named
@@ -29,57 +27,7 @@ import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
-
--- | Helper type for unpack/pack
-data RegistryDaoProposalMetadata
-  = Update_receivers_proposal UpdateReceiverParam
-  | Configuration_proposal ConfigProposal
-  | Transfer_proposal TransferProposal
-  | Update_guardian Address
-
-instance HasAnnotation RegistryDaoProposalMetadata where
-  annOptions = baseDaoAnnOptions
-
-data UpdateReceiverParam
-  = Add_receivers [Address]
-  | Remove_receivers [Address]
-
-instance HasAnnotation UpdateReceiverParam where
-  annOptions = baseDaoAnnOptions
-
-
-data TransferProposal = TransferProposal
-  { tpAgoraPostId  :: Natural
-  , tpTransfers    :: [TransferType]
-  , tpRegistryDiff :: [(MText, Maybe MText)]
-  }
-
-instance HasAnnotation TransferProposal where
-  annOptions = baseDaoAnnOptions
-
-
-data ConfigProposal = ConfigProposal
-  { cpFrozenScaleValue :: Maybe Natural
-  , cpFrozenExtraValue :: Maybe Natural
-  , cpSlashScaleValue :: Maybe Natural
-  , cpSlashDivisionValue :: Maybe Natural
-  , cpMaxProposalSize :: Maybe Natural
-  }
-
-instance HasAnnotation ConfigProposal where
-  annOptions = baseDaoAnnOptions
-
-customGeneric "RegistryDaoProposalMetadata" ligoLayout
-deriving anyclass instance IsoValue RegistryDaoProposalMetadata
-
-customGeneric "UpdateReceiverParam" ligoLayout
-deriving anyclass instance IsoValue UpdateReceiverParam
-
-customGeneric "ConfigProposal" ligoLayout
-deriving anyclass instance IsoValue ConfigProposal
-
-customGeneric "TransferProposal" ligoLayout
-deriving anyclass instance IsoValue TransferProposal
+import Test.Ligo.RegistryDAO.Types
 
 withOriginated
   :: MonadNettest caps base m
@@ -519,7 +467,7 @@ test_RegistryDAO =
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin) $
           \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
-            sendXtz (toAddress baseDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+            sendXtz baseDao (ep "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
@@ -606,9 +554,6 @@ test_RegistryDAO =
   ]
   where
 
-    metadataSize :: ProposalMetadata -> Natural
-    metadataSize = fromIntegral . BS.length
-
     -- Here we parse the storage value from compiled ligo storage, which
     -- contains the RegistryDAO lambdas implemented in LIGO, and we just use
     -- `fromVal` to convert it to a 'FullStorage'. Then we can set the
@@ -627,8 +572,8 @@ test_RegistryDAO =
       in fs { fsStorage = newStorage
             , fsConfig = oldConfig
                 { cPeriod = 11
-                , cProposalFlushTime = 22
-                , cProposalExpiredTime = 33
+                , cProposalFlushLevel = 22
+                , cProposalExpiredLevel = 33
                 , cGovernanceTotalSupply = 100
                 }
             }

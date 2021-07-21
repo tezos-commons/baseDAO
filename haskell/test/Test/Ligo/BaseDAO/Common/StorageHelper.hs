@@ -31,11 +31,10 @@ import Universum
 
 import qualified Data.Map as M
 import Morley.Nettest
-import Morley.Nettest.Pure (PureM)
 
 import Ligo.BaseDAO.Types
 
-getFullStorage :: Address -> EmulatedT PureM FullStorage
+getFullStorage :: MonadEmulated caps base m => Address -> m FullStorage
 getFullStorage addr =
   fromVal @FullStorage <$> getStorage' @(ToT FullStorage) addr
 
@@ -50,7 +49,7 @@ getFullStorageView addr =
 
 type GetFrozenTotalSupplyFn m = Address -> m Natural
 
-getFrozenTotalSupplyEmulator :: Address -> EmulatedT PureM Natural
+getFrozenTotalSupplyEmulator :: MonadEmulated caps base m => Address -> m Natural
 getFrozenTotalSupplyEmulator addr = do
   fs <- getFullStorage addr
   pure $ sFrozenTotalSupply $ fsStorage fs
@@ -61,25 +60,25 @@ getFrozenTotalSupplyEmulator addr = do
 
 type GetFreezeHistoryFn m = Address -> Address -> m (Maybe AddressFreezeHistory)
 
-getFreezeHistoryEmulator :: Address -> Address -> EmulatedT PureM (Maybe AddressFreezeHistory)
+getFreezeHistoryEmulator :: MonadEmulated caps base m => Address -> Address -> m (Maybe AddressFreezeHistory)
 getFreezeHistoryEmulator addr owner =
   (M.lookup owner . unBigMap . sFreezeHistory . fsStorage) <$> getFullStorage addr
 
 type CheckGuardianFn m = Address -> Address -> m ()
 
-checkGuardianEmulator :: Address -> Address -> EmulatedT PureM ()
+checkGuardianEmulator :: MonadEmulated caps base m => Address -> Address -> m ()
 checkGuardianEmulator addr guardianToChk = do
   actual <- (sGuardian . fsStorage) <$> (getFullStorage addr)
   actual @== guardianToChk
 
 type GetQuorumThresholdAtCycleFn m = Address -> m QuorumThresholdAtCycle
 
-getQtAtCycleEmulator :: Address -> EmulatedT PureM QuorumThresholdAtCycle
+getQtAtCycleEmulator :: MonadEmulated caps base m => Address -> m QuorumThresholdAtCycle
 getQtAtCycleEmulator addr = (sQuorumThresholdAtCycle . fsStorage) <$> getFullStorage addr
 
 type GetProposalFn m = Address -> ProposalKey -> m (Maybe Proposal)
 
-getProposalEmulator :: Address -> ProposalKey -> EmulatedT PureM (Maybe Proposal)
+getProposalEmulator :: MonadEmulated caps base m => Address -> ProposalKey -> m (Maybe Proposal)
 getProposalEmulator addr pKey =
   (M.lookup pKey . unBigMap . sProposals . fsStorage) <$> getFullStorage addr
 
@@ -93,7 +92,7 @@ getProposalEmulator addr pKey =
 
 type CheckBalanceFn m = Address -> Address -> Natural -> m ()
 
-checkBalanceEmulator :: Address -> Address -> Natural -> EmulatedT PureM ()
+checkBalanceEmulator :: MonadEmulated caps base m => Address -> Address -> Natural -> m ()
 checkBalanceEmulator addr owner bal = do
   fh <- getFreezeHistoryEmulator addr owner
   (sumAddressFreezeHistory <$> fh) @== Just bal
@@ -107,7 +106,7 @@ sumAddressFreezeHistory AddressFreezeHistory{..} = fhCurrentUnstaked + fhPastUns
 
 type GetVotePermitsCounterFn m = Address -> m Nonce
 
-getVotePermitsCounterEmulator :: Address -> EmulatedT PureM Nonce
+getVotePermitsCounterEmulator :: MonadEmulated caps base m => Address -> m Nonce
 getVotePermitsCounterEmulator addr = do
   fs <- getFullStorage addr
   pure $ sPermitsCounter (fsStorage fs)

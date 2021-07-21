@@ -179,8 +179,8 @@ instance IsConfigDescExt DAO.Config ConfigConstants where
   fillConfig ConfigConstants{..} DAO.Config'{..} = DAO.Config'
     { cMaxProposals = cmMaxProposals ?: cMaxProposals
     , cMaxVoters = cmMaxVoters ?: cMaxVoters
-    , cProposalFlushTime = cmProposalFlushTime ?: cProposalFlushTime
-    , cProposalExpiredTime = cmProposalExpiredTime ?: cProposalExpiredTime
+    , cProposalFlushLevel = cmProposalFlushTime ?: cProposalFlushLevel
+    , cProposalExpiredLevel = cmProposalExpiredTime ?: cProposalExpiredLevel
     , ..
     }
 

@@ -8,10 +8,12 @@ module Test.Ligo.BaseDAO.Common
   , OriginateFn
 
   , dummyFA2Contract
+  , dummyGuardianContract
   , makeProposalKey
   , addDataToSign
   , permitProtect
   , sendXtz
+  , sendXtzWithAmount
 
   , createSampleProposal
   , createSampleProposals
@@ -20,6 +22,9 @@ module Test.Ligo.BaseDAO.Common
   , originateLigoDaoWithConfigDesc
   , originateLigoDao
 
+  -- * Helper
+  , metadataSize
+
   -- * Re-export
   , module Errors
   , module StorageHelper
@@ -27,6 +32,7 @@ module Test.Ligo.BaseDAO.Common
 
 import Universum hiding (drop, swap)
 
+import qualified Data.ByteString as BS
 import Lorentz hiding (now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Michelson.Typed.Convert (convertContract, untypeValue)
@@ -106,11 +112,23 @@ permitProtect author (toSign, a) = do
 
 sendXtz
   :: (MonadNettest caps base m, HasCallStack, NiceParameter pm)
-  => Address -> EpName -> pm -> m ()
+  => TAddress cp -> EpName -> pm -> m ()
 sendXtz addr epName pm = withFrozenCallStack $ do
   let transferData = TransferData
-        { tdTo = addr
+        { tdTo = toAddress addr
         , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
+        , tdEntrypoint = epName
+        , tdParameter = pm
+        }
+  transfer transferData
+
+sendXtzWithAmount
+  :: (MonadNettest caps base m, HasCallStack, NiceParameter pm)
+  => Mutez -> TAddress cp -> EpName -> pm -> m ()
+sendXtzWithAmount amt addr epName pm = withFrozenCallStack $ do
+  let transferData = TransferData
+        { tdTo = toAddress addr
+        , tdAmount = amt
         , tdEntrypoint = epName
         , tdParameter = pm
         }
@@ -225,3 +243,5 @@ createSampleProposals (counter1, counter2) dodOwner1 dao = do
     return ()
   pure (pk1, pk2)
 
+metadataSize :: ByteString -> Natural
+metadataSize md = fromIntegral $ BS.length md

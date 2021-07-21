@@ -112,7 +112,7 @@ make out/registryDAO_storage.tz \
   frozen_extra_value=0n \
   max_proposal_size=100n \
   slash_scale_value=1n \
-  slash_division_value=0n \
+  slash_division_value=1n \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
   start_level=100n \
@@ -145,11 +145,11 @@ make out/treasuryDAO_storage.tz \
   guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
   governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
   governance_token_id=0n \
-  frozen_scale_value=0n \
+  frozen_scale_value=1n \
   frozen_extra_value=0n \
-  max_proposal_size=0n \
-  slash_scale_value=0n \
-  slash_division_value=0n \
+  max_proposal_size=100n \
+  slash_scale_value=1n \
+  slash_division_value=1n \
   min_xtz_amount=0mutez \
   max_xtz_amount=100mutez \
   start_level=100n \
