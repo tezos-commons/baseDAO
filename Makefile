@@ -107,7 +107,7 @@ $(OUT)/registryDAO_storage.tz : frozen_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : frozen_extra_value = 0n
 $(OUT)/registryDAO_storage.tz : max_proposal_size = 100n
 $(OUT)/registryDAO_storage.tz : slash_scale_value = 1n
-$(OUT)/registryDAO_storage.tz : slash_division_value = 0n
+$(OUT)/registryDAO_storage.tz : slash_division_value = 1n
 $(OUT)/registryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/registryDAO_storage.tz : max_xtz_amount = 100mutez
 $(OUT)/registryDAO_storage.tz : metadata_map = Big_map.empty
@@ -165,11 +165,11 @@ $(OUT)/registryDAO_storage.tz: src/**
 	# See "$(OUT)/registryDAO_storage.tz" for compilation result #
 	#
 
-$(OUT)/treasuryDAO_storage.tz : frozen_scale_value = 0n
+$(OUT)/treasuryDAO_storage.tz : frozen_scale_value = 1n
 $(OUT)/treasuryDAO_storage.tz : frozen_extra_value = 0n
-$(OUT)/treasuryDAO_storage.tz : max_proposal_size = 0n
-$(OUT)/treasuryDAO_storage.tz : slash_scale_value = 0n
-$(OUT)/treasuryDAO_storage.tz : slash_division_value = 0n
+$(OUT)/treasuryDAO_storage.tz : max_proposal_size = 100n
+$(OUT)/treasuryDAO_storage.tz : slash_scale_value = 1n
+$(OUT)/treasuryDAO_storage.tz : slash_division_value = 1n
 $(OUT)/treasuryDAO_storage.tz : min_xtz_amount = 0mutez
 $(OUT)/treasuryDAO_storage.tz : max_xtz_amount = 100mutez
 $(OUT)/treasuryDAO_storage.tz : metadata_map = Big_map.empty

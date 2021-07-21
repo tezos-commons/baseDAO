@@ -7,10 +7,8 @@ module Test.Ligo.TreasuryDAO
 
 import Universum
 
-import qualified Data.ByteString as BS
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Michelson.Untyped.Entrypoints
 import Morley.Nettest
 import Morley.Nettest.Tasty
 import Test.Tasty (TestTree, testGroup)
@@ -20,31 +18,9 @@ import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 import Test.Ligo.BaseDAO.Common
+import Test.Ligo.TreasuryDAO.Types
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
-
-data TransferProposal = TransferProposal
-  { tpAgoraPostId :: Natural
-  , tpTransfers :: [TransferType]
-  }
-
-instance HasAnnotation TransferProposal where
-  annOptions = baseDaoAnnOptions
-
-customGeneric "TransferProposal" ligoLayout
-
-deriving anyclass instance IsoValue TransferProposal
-
--- | Helper type for unpack/pack
-data TreasuryDaoProposalMetadata
-  = Transfer_proposal TransferProposal
-  | Update_guardian Address
-
-instance HasAnnotation TreasuryDaoProposalMetadata where
-  annOptions = baseDaoAnnOptions
-
-customGeneric "TreasuryDaoProposalMetadata" ligoLayout
-deriving anyclass instance IsoValue TreasuryDaoProposalMetadata
 
 -- | Testing a Treasury-like DAO. Ex. DNS Treasury
 test_TreasuryDAO :: TestTree
@@ -67,10 +43,6 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
           proposalCheckBiggerThanMaxProposalSize
       ]
   ]
-
-
-metadataSize :: ByteString -> Natural
-metadataSize md = fromIntegral $ BS.length md
 
 validProposal
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -154,7 +126,7 @@ flushXtzTransfer
 flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
 
-  sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+  sendXtz dodDao (ep "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
   let
     proposalMeta amt = lPackValueRaw @TreasuryDaoProposalMetadata $
@@ -210,7 +182,7 @@ flushUpdateGuardian
 flushUpdateGuardian checkGuardian = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
 
-  sendXtz (toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+  sendXtz dodDao (ep "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
 
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
@@ -342,7 +314,7 @@ originateTreasuryDao modifyStorageFn =
       (fsConfig
         { cMinQuorumThreshold = fromIntegral $ mkQuorumThreshold 1 100
         , cPeriod = 10
-        , cProposalFlushTime = 20
-        , cProposalExpiredTime = 30
+        , cProposalFlushLevel = 20
+        , cProposalExpiredLevel = 30
         }
       )

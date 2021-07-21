@@ -78,6 +78,21 @@ test-suite baseDAO-test
   main-is: Main.hs
   other-modules:
       Ligo.BaseDAO.Contract
+      SMT.BaseDAO
+      SMT.Common.Gen
+      SMT.Common.Helper
+      SMT.Common.Run
+      SMT.Common.Types
+      SMT.Model.BaseDAO.Contract
+      SMT.Model.BaseDAO.Management
+      SMT.Model.BaseDAO.Permit
+      SMT.Model.BaseDAO.Proposal
+      SMT.Model.BaseDAO.Proposal.FreezeHistory
+      SMT.Model.BaseDAO.Proposal.QuorumThreshold
+      SMT.Model.BaseDAO.Token
+      SMT.Model.BaseDAO.Types
+      SMT.RegistryDAO
+      SMT.TreasuryDAO
       Test.Ligo.BaseDAO.Common
       Test.Ligo.BaseDAO.Common.Errors
       Test.Ligo.BaseDAO.Common.StorageHelper
@@ -95,7 +110,9 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Types
       Test.Ligo.RegistryDAO
+      Test.Ligo.RegistryDAO.Types
       Test.Ligo.TreasuryDAO
+      Test.Ligo.TreasuryDAO.Types
       Paths_baseDAO_ligo_meta
   hs-source-dirs:
       test
@@ -110,14 +127,18 @@ test-suite baseDAO-test
     , bytestring
     , cleveland
     , containers
+    , cryptonite
     , fmt
+    , hedgehog
     , lorentz
     , morley
     , morley-ledgers
     , morley-metadata
     , morley-prelude
+    , mtl
     , named
     , tasty
+    , tasty-hedgehog
     , tasty-hunit-compat
     , universum
   default-language: Haskell2010

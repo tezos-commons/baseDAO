@@ -24,14 +24,15 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
   let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
 
   let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
+
+  let _ : unit =
+    match check_token_locked_and_proposal_size(params.frozen_token, required_token_lock, proposal_size, max_proposal_size) with
+    | Some err_msg -> fail_proposal_check(err_msg)
+    | None -> unit in
+
   match unpack_proposal_metadata(params.proposal_metadata) with
     | Update_guardian addr -> unit
     | Transfer_proposal tpm ->
-        let _ : unit =
-          match check_token_locked_and_proposal_size(params.frozen_token, required_token_lock, proposal_size, max_proposal_size) with
-          | Some err_msg -> fail_proposal_check(err_msg)
-          | None -> unit in
-
         let is_all_transfers_valid (transfer_type: transfer_type) =
           match transfer_type with
           | Token_transfer_type _tt -> unit

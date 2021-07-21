@@ -8,8 +8,8 @@ module Ligo.BaseDAO.Types
   , baseDaoAnnOptions
 
     -- * Proposals
-  , DecisionLambdaInput
-  , DecisionLambdaOutput
+  , DecisionLambdaInput (..)
+  , DecisionLambdaOutput (..)
   , ProposalKey
   , ProposeParams(..)
   , GovernanceToken(..)
@@ -46,8 +46,14 @@ module Ligo.BaseDAO.Types
   , ProposalMetadata
   , ContractExtra
   , CustomEntrypoints
+  , CallCustomParam
   , Proposal (..)
-  , Parameter
+  , Parameter (..)
+  , ForbidXTZParam (..)
+  , AllowXTZParam (..)
+  , FreezeParam
+  , UnfreezeParam
+
   , FixedFee (..)
   , Storage' (..)
   , Storage
@@ -59,6 +65,7 @@ module Ligo.BaseDAO.Types
   , FullStorageView
   , AddressFreezeHistory (..)
   , DynamicRec
+  , DynamicRec' (..)
   , dynRecUnsafe
   , mkStorage
   , mkMetadataMap
@@ -68,7 +75,7 @@ module Ligo.BaseDAO.Types
   , setExtra
   ) where
 
-import Universum (Enum, Integral, Num, One(..), Real, fromIntegral, div, maybe, (*))
+import Universum (Enum, Integral, Num, One(..), Real, fromIntegral, div, maybe, (*), show)
 
 import Fmt (Buildable, build, genericF)
 import qualified Data.Map as M
@@ -120,7 +127,7 @@ data ProposeParams = ProposeParams
   -- the proposal accepted
   , ppProposalMetadata :: ProposalMetadata
   }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Eq, Show)
   deriving anyclass IsoValue
 
 instance TypeHasDoc ProposalMetadata => TypeHasDoc ProposeParams where
@@ -132,6 +139,9 @@ instance TypeHasDoc ProposalMetadata => TypeHasDoc ProposeParams where
 
 instance HasAnnotation ProposeParams where
   annOptions = baseDaoAnnOptions
+
+instance Buildable ProposeParams where
+  build = genericF
 
 type ProposalKey = Hash Blake2b $ Packed ProposeParams
 
@@ -164,14 +174,19 @@ mkQuorumThreshold n d = QuorumThreshold $ fromInteger $ div (n * fractionDenomin
 instance HasAnnotation QuorumThreshold where
   annOptions = baseDaoAnnOptions
 
+instance Buildable QuorumThreshold where
+  build = genericF
+
 -- | Stages length, in seconds
 newtype Period = Period { unPeriod :: Natural}
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
   deriving newtype Num
   deriving anyclass IsoValue
 
 instance HasAnnotation Period where
   annOptions = baseDaoAnnOptions
+instance Buildable Period where
+  build = genericF
 
 newtype QuorumFraction = QuorumFraction Integer
   deriving stock (Generic, Show)
@@ -180,15 +195,19 @@ newtype QuorumFraction = QuorumFraction Integer
 
 instance HasAnnotation QuorumFraction where
   annOptions = baseDaoAnnOptions
+instance Buildable QuorumFraction where
+  build = genericF
 
 -- | Voting period in seconds
 newtype GovernanceTotalSupply = GovernanceTotalSupply Natural
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
   deriving newtype Num
   deriving anyclass IsoValue
 
 instance HasAnnotation GovernanceTotalSupply where
   annOptions = baseDaoAnnOptions
+instance Buildable GovernanceTotalSupply where
+  build = genericF
 
 -- | Represents whether a voter has voted against (False) or for (True) a given proposal.
 type VoteType = Bool
@@ -212,7 +231,7 @@ data VoteParam = VoteParam
   , vVoteAmount  :: Natural
   , vFrom        :: Address
   }
-  deriving stock (Show)
+  deriving stock (Eq, Show)
 
 instance TypeHasDoc ProposalMetadata => TypeHasDoc VoteParam where
   typeDocMdDescription = "Describes target proposal id, vote type and vote amount"
@@ -223,6 +242,9 @@ instance TypeHasDoc ProposalMetadata => TypeHasDoc VoteParam where
 instance HasAnnotation VoteParam where
   annOptions = baseDaoAnnOptions
 
+instance Buildable VoteParam where
+  build = genericF
+
 ------------------------------------------------------------------------
 -- Non FA2
 ------------------------------------------------------------------------
@@ -231,7 +253,7 @@ data TransferContractTokensParam = TransferContractTokensParam
   { tcContractAddress :: Address
   , tcParams          :: FA2.TransferParams
   }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Eq, Show)
   deriving anyclass IsoValue
 
 instance TypeHasDoc TransferContractTokensParam where
@@ -240,6 +262,9 @@ instance TypeHasDoc TransferContractTokensParam where
 
 instance HasAnnotation TransferContractTokensParam where
   annOptions = baseDaoAnnOptions
+
+instance Buildable TransferContractTokensParam where
+  build = genericF
 
 ------------------------------------------------------------------------
 -- Delegates
@@ -259,6 +284,12 @@ instance TypeHasDoc Delegate where
 instance HasAnnotation Delegate where
   annOptions = baseDaoAnnOptions
 
+instance Buildable Delegate where
+  build = genericF
+
+instance Buildable () where
+  build = build . show @Text
+
 type Delegates' big_map = big_map Delegate ()
 
 type Delegates = Delegates' BigMap
@@ -268,7 +299,7 @@ data DelegateParam = DelegateParam
   { dpEnable :: Bool
   , dpDelegate :: Address
   }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
   deriving anyclass IsoValue
 
 instance TypeHasDoc ProposalMetadata => TypeHasDoc DelegateParam where
@@ -281,13 +312,20 @@ instance TypeHasDoc ProposalMetadata => TypeHasDoc DelegateParam where
 instance HasAnnotation DelegateParam where
   annOptions = baseDaoAnnOptions
 
+instance Buildable DelegateParam where
+  build = genericF
+
 ------------------------------------------------------------------------
 -- Permissions
 ------------------------------------------------------------------------
 
 newtype Nonce = Nonce { unNonce :: Natural }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
   deriving newtype (IsoValue, HasAnnotation)
+
+instance Buildable Nonce where
+  build = genericF
+
 
 instance TypeHasDoc Nonce where
   typeDocMdDescription =
@@ -302,6 +340,8 @@ data DataToSign d = DataToSign
   , dsData :: d
   } deriving stock (Generic)
     deriving anyclass (IsoValue)
+
+deriving stock instance Eq a => Eq (DataToSign a)
 
 instance HasAnnotation d => HasAnnotation (DataToSign d) where
   annOptions = baseDaoAnnOptions
@@ -337,8 +377,14 @@ data Permit a = Permit
   } deriving stock (Generic, Show)
     deriving anyclass (IsoValue)
 
+deriving stock instance Eq a => Eq (TSignature a)
+deriving stock instance Eq a => Eq (Permit a)
+
 instance HasAnnotation (Permit a) where
   annOptions = baseDaoAnnOptions
+
+instance Buildable (Permit a) where
+  build _ = build @Text "<permit>" -- Unable to set `Buildable` instance for `TSignature`
 
 instance TypeHasDoc a => TypeHasDoc (Permit a) where
   typeDocMdDescription = [md|
@@ -362,6 +408,11 @@ data PermitProtected a = PermitProtected
   , ppPermit :: Maybe (Permit a)
   } deriving stock (Generic, Show)
     deriving anyclass (IsoValue)
+
+deriving stock instance Eq a => Eq (PermitProtected a)
+
+instance (Buildable a) => Buildable (PermitProtected a) where
+  build = genericF
 
 instance HasAnnotation a => HasAnnotation (PermitProtected a) where
   getAnnotation _ =
@@ -395,6 +446,9 @@ instance a `CanCastTo` SomeType
 -- Storage/Parameter
 ------------------------------------------------------------------------
 
+instance Buildable (ByteString) where
+  build = build . show @Text
+
 type TransferOwnershipParam = ("newOwner" :! Address)
 
 -- | Represents a product type with arbitrary fields.
@@ -411,6 +465,8 @@ deriving newtype instance HasAnnotation (DynamicRec n)
 deriving newtype instance Default (DynamicRec n)
 deriving newtype instance One (DynamicRec n)
 deriving newtype instance Semigroup (DynamicRec n)
+instance Buildable (DynamicRec n) where
+  build = genericF
 
 type DynamicRecView = DynamicRec' BigMapId
 deriving stock instance Generic (DynamicRecView n)
@@ -443,7 +499,7 @@ data Proposal = Proposal
   , plVoters                  :: Map (Address, Bool) Natural
   , plQuorumThreshold         :: QuorumThreshold
   }
-  deriving stock (Show)
+  deriving stock (Eq, Show)
 
 -- | Utility type containing an entrypoint name and its packed argument.
 type CallCustomParam = (MText, ByteString)
@@ -467,7 +523,10 @@ data ForbidXTZParam
   | Unfreeze UnfreezeParam
   | Update_delegate [DelegateParam]
   | Vote [PermitProtected VoteParam]
-  deriving stock (Show)
+  deriving stock (Eq, Show)
+
+instance Buildable ForbidXTZParam where
+  build = genericF
 
 data AllowXTZParam
   = CallCustom CallCustomParam
@@ -475,12 +534,18 @@ data AllowXTZParam
   | Transfer_contract_tokens TransferContractTokensParam
   | Transfer_ownership TransferOwnershipParam
   | Accept_ownership ()
-  deriving stock (Show)
+  deriving stock (Eq, Show)
+
+instance Buildable AllowXTZParam where
+  build = genericF
 
 data Parameter
   = XtzAllowed AllowXTZParam
   | XtzForbidden ForbidXTZParam
-  deriving stock (Show)
+  deriving stock (Eq, Show)
+
+instance Buildable Parameter where
+  build = genericF
 
 data AddressFreezeHistory = AddressFreezeHistory
   { fhCurrentUnstaked :: Natural
@@ -497,6 +562,9 @@ data GovernanceToken = GovernanceToken
   , gtTokenId :: FA2.TokenId
   } deriving stock (Eq, Show)
 
+instance Buildable GovernanceToken where
+  build = genericF
+
 customGeneric "GovernanceToken" ligoLayout
 deriving anyclass instance IsoValue GovernanceToken
 
@@ -508,6 +576,9 @@ data QuorumThresholdAtCycle = QuorumThresholdAtCycle
 
 customGeneric "QuorumThresholdAtCycle" ligoLayout
 deriving anyclass instance IsoValue QuorumThresholdAtCycle
+
+instance Buildable QuorumThresholdAtCycle where
+  build = genericF
 
 instance HasAnnotation QuorumThresholdAtCycle where
   annOptions = baseDaoAnnOptions
@@ -534,9 +605,12 @@ customGeneric "Storage'" ligoLayout
 
 type Storage = Storage' BigMap
 deriving stock instance Show Storage
+deriving stock instance Eq Storage
 deriving anyclass instance IsoValue Storage
 instance HasAnnotation Storage where
   annOptions = baseDaoAnnOptions
+instance Buildable Storage where
+  build = genericF
 
 type StorageView = Storage' BigMapId
 deriving stock instance Show StorageView
@@ -551,6 +625,8 @@ instance HasAnnotation Proposal where
 
 instance HasAnnotation FixedFee where
   annOptions = baseDaoAnnOptions
+instance Buildable FixedFee where
+  build = genericF
 
 instance HasAnnotation AddressFreezeHistory where
   annOptions = baseDaoAnnOptions
@@ -603,8 +679,8 @@ mkMetadataMap hostAddress hostChain key =
       (arg #metadataHostAddress hostAddress)
 
 newtype FixedFee = FixedFee Natural
-  deriving stock (Show, Generic)
-  deriving newtype Num
+  deriving stock (Show, Generic, Eq)
+  deriving newtype (Num)
   deriving anyclass IsoValue
 
 data DecisionLambdaInput big_map = DecisionLambdaInput
@@ -652,8 +728,8 @@ data Config' big_map = Config'
   , cMaxQuorumChange :: QuorumFraction
   , cQuorumChange :: QuorumFraction
   , cGovernanceTotalSupply :: GovernanceTotalSupply
-  , cProposalFlushTime :: Natural
-  , cProposalExpiredTime :: Natural
+  , cProposalFlushLevel :: Natural
+  , cProposalExpiredLevel :: Natural
 
   , cCustomEntrypoints :: CustomEntrypoints' big_map
   }
@@ -662,9 +738,12 @@ customGeneric "Config'" ligoLayout
 
 type Config = Config' BigMap
 deriving stock instance Show Config
+deriving stock instance Eq Config
 deriving anyclass instance IsoValue Config
 instance HasAnnotation Config where
   annOptions = baseDaoAnnOptions
+instance Buildable Config where
+  build = genericF
 
 type ConfigView = Config' BigMapId
 deriving stock instance Show ConfigView
@@ -692,8 +771,8 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   , cCustomEntrypoints = DynamicRec' $ BigMap $ M.fromList customEps
   , cFixedProposalFee = fixedProposalFee
   , cPeriod = votingPeriod
-  , cProposalFlushTime = (unPeriod votingPeriod) * 2
-  , cProposalExpiredTime = (unPeriod votingPeriod) * 3
+  , cProposalFlushLevel = (unPeriod votingPeriod) * 2
+  , cProposalExpiredLevel = (unPeriod votingPeriod) * 3
   , cMaxQuorumChange = QuorumFraction $ fromIntegral $ percentageToFractionNumerator maxChangePercent
   , cQuorumChange = QuorumFraction $ fromIntegral $ percentageToFractionNumerator changePercent
   , cGovernanceTotalSupply = governanceTotalSupply
@@ -718,9 +797,13 @@ customGeneric "FullStorage'" ligoCombLayout
 
 type FullStorage = FullStorage' BigMap
 deriving stock instance Show FullStorage
+deriving stock instance Eq FullStorage
 deriving anyclass instance IsoValue FullStorage
 instance HasAnnotation FullStorage where
   annOptions = baseDaoAnnOptions
+
+instance Buildable FullStorage where
+  build = genericF
 
 -- | Represents a storage value retrieved using the Tezos RPC.
 --
@@ -769,6 +852,9 @@ deriving anyclass instance IsoValue Voter
 customGeneric "Voter" ligoLayout
 customGeneric "Proposal" ligoLayout
 deriving anyclass instance IsoValue Proposal
+instance Buildable Proposal where
+  build = genericF
+
 
 customGeneric "ForbidXTZParam" ligoLayout
 deriving anyclass instance IsoValue ForbidXTZParam

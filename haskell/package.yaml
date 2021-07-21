@@ -138,13 +138,17 @@ tests:
     - bytestring
     - cleveland
     - containers
+    - cryptonite
     - fmt
+    - hedgehog
     - lorentz
     - morley
     - morley-ledgers
     - morley-metadata
     - morley-prelude
+    - mtl
     - named
     - tasty
+    - tasty-hedgehog
     - tasty-hunit-compat
     - universum
