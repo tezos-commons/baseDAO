@@ -248,7 +248,7 @@ createSampleProposals (counter1, counter2) dodOwner1 dao = do
   pure (pk1, pk2)
 
 checkStorage
-  :: forall caps base m st.
+  :: forall st caps base m.
       ( AsRPC st ~ st, MonadNettest caps base m
       , HasCallStack, Eq st, NiceStorage st, NiceUnpackedValue st)
   => Address -> st -> m ()

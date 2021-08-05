@@ -7,7 +7,7 @@ module Test.Ligo.BaseDAO.Token
 
 import Universum
 
-import Lorentz hiding ((>>))
+import Lorentz hiding (assert, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Michelson.Runtime.GState (genesisAddress1, genesisAddress2)
 import Morley.Nettest
@@ -48,7 +48,7 @@ transferContractTokensScenario originateFn = do
 
   withSender dodOwner1 $
     call dodDao (Call @"Transfer_contract_tokens") param
-    & expectCustomErrorNoArg #nOT_ADMIN dodDao
+    & expectCustomErrorNoArg #nOT_ADMIN
 
   withSender dodAdmin $
     call dodDao (Call @"Transfer_contract_tokens") param

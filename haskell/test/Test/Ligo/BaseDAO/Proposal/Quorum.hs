@@ -49,9 +49,8 @@ calculateThreshold mcp cp (GovernanceTotalSupply gts) staked oldQt =
 checkQuorumThresholdDynamicUpdate
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> GetQuorumThresholdAtCycleFn m
   -> m ()
-checkQuorumThresholdDynamicUpdate originateFn getQtAtCycle = do
+checkQuorumThresholdDynamicUpdate originateFn = do
   DaoOriginateData{..} <- originateFn
       ((ConfigDesc $ (#changePercent .! (5 :: Natural)))
       >>- (ConfigDesc $ (#maxChangePercent .! (19 :: Natural)))
@@ -67,24 +66,25 @@ checkQuorumThresholdDynamicUpdate originateFn getQtAtCycle = do
   withSender proposer $
     call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
 
-  advanceLevel dodPeriod
+  startLevel <- getOriginationLevel dodDao
+  advanceToLevel (startLevel + dodPeriod)
   -- First proposal period, cycle 0
 
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
-  quorumThresholdActual_ <- getQtAtCycle (unTAddress dodDao)
+  quorumThresholdActual_ <- getQtAtCycle dodDao
   let quorumThresholdExpected_ = QuorumThresholdAtCycle 1 (mkQuorumThreshold 3 10) 10
   assert (quorumThresholdActual_ == quorumThresholdExpected_) "Unexpected quorumThreshold update"
 
   -- skip this proposal period and next voting period to be in next proposal period
-  advanceLevel (2 * dodPeriod + 1)
+  advanceToLevel (startLevel + 3 * dodPeriod + 1)
 
   let proposalMeta2 = "A"
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
 
-  quorumThresholdActual <- getQtAtCycle (unTAddress dodDao)
+  quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 10 and governance total supply as 100
   -- participation = 10/100 = 1/10
   -- so possible_new_quorum = 3/10 * (1 - 0.05)  + (1/10 * 5/100)
@@ -95,9 +95,8 @@ checkQuorumThresholdDynamicUpdate originateFn getQtAtCycle = do
 checkQuorumThresholdDynamicUpdateUpperBound
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> GetQuorumThresholdAtCycleFn m
   -> m ()
-checkQuorumThresholdDynamicUpdateUpperBound originateFn getQtAtCycle = do
+checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   DaoOriginateData{..} <- originateFn
       ((ConfigDesc $ (#changePercent .! (5 :: Natural)))
       >>- (ConfigDesc $ (#maxChangePercent .! (7 :: Natural)))
@@ -113,20 +112,21 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn getQtAtCycle = do
   withSender proposer $
     call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
 
-  advanceLevel dodPeriod
+  startLevel <- getOriginationLevel dodDao
+  advanceToLevel (startLevel + dodPeriod)
   -- First proposal period, cycle 0
 
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
-  advanceLevel (2 * dodPeriod + 1)
+  advanceToLevel (startLevel + 3*dodPeriod + 1)
 
   let proposalMeta2 = "A"
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
 
-  quorumThresholdActual <- getQtAtCycle (unTAddress dodDao)
+  quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 100 and governance total supply as 100
   -- participation = 100/100 = 1
   -- so possible_new_quorum = 3/10 * (1 - 0.05)  + (1 * 5/100)
@@ -140,9 +140,8 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn getQtAtCycle = do
 checkQuorumThresholdDynamicUpdateLowerBound
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> GetQuorumThresholdAtCycleFn m
   -> m ()
-checkQuorumThresholdDynamicUpdateLowerBound originateFn getQtAtCycle = do
+checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   DaoOriginateData{..} <- originateFn
       ((ConfigDesc $ (#changePercent .! (25 :: Natural)))
       >>- (ConfigDesc $ (#maxChangePercent .! (19 :: Natural)))
@@ -158,20 +157,21 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn getQtAtCycle = do
   withSender proposer $
     call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
 
-  advanceLevel dodPeriod
+  startLevel <- getOriginationLevel dodDao
+  advanceToLevel (startLevel + dodPeriod)
   -- First proposal period, cycle 0
 
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
-  advanceLevel (2 * dodPeriod + 1)
+  advanceToLevel (startLevel + 3 * dodPeriod + 1)
 
   let proposalMeta2 = "A"
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
 
-  quorumThresholdActual <- getQtAtCycle (unTAddress dodDao)
+  quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 0 and governance total supply as 100
   -- participation = 100/100 = 1
   -- so possible_new_quorum = 3/10 * (1 - 0.25)  + (0 * 5/100)
@@ -183,11 +183,10 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn getQtAtCycle = do
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkProposalSavesQuorum
-  :: forall caps base m. (MonadEmulated caps base m, HasCallStack)
+  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
-  -> GetProposalFn m
   -> m ()
-checkProposalSavesQuorum originateFn getProposal = do
+checkProposalSavesQuorum originateFn = do
   DaoOriginateData{..} <- originateFn
       ((ConfigDesc $ (#changePercent .! (5 :: Natural)))
       >>- (ConfigDesc $ (#maxChangePercent .! (19 :: Natural)))
@@ -203,14 +202,15 @@ checkProposalSavesQuorum originateFn getProposal = do
   withSender proposer $
     call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
 
-  advanceLevel dodPeriod
+  startLevel <- getOriginationLevel dodDao
+  advanceToLevel (startLevel + dodPeriod)
   -- First proposal period, cycle 0
 
   withSender proposer $
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
-  advanceLevel (2 * dodPeriod + 1)
+  advanceToLevel (startLevel + 3*dodPeriod + 1)
 
   let proposalMeta2 = "A"
   let proposeParams = ProposeParams proposer requiredFrozen proposalMeta2
@@ -218,7 +218,7 @@ checkProposalSavesQuorum originateFn getProposal = do
     call dodDao (Call @"Propose") proposeParams
 
   let proposalKey = makeProposalKey proposeParams
-  proposal <- fromMaybe (error "Proposal not found") <$> getProposal (unTAddress dodDao) proposalKey
+  proposal <- fromMaybe (error "Proposal not found") <$> getProposal dodDao proposalKey
   -- We start with quorumThreshold of 3/10, with participation as 10 and governance total supply as 100
   -- participation = 10/100 = 1/10
   -- so possible_new_quorum = 3/10 * (1 - 0.05)  + (1/10 * 5/100)
@@ -229,9 +229,8 @@ checkProposalSavesQuorum originateFn getProposal = do
 
 proposalIsRejectedIfNoQuorum
   :: (MonadNettest caps base m, HasCallStack)
-  => CheckBalanceFn m
-  -> m ()
-proposalIsRejectedIfNoQuorum checkBalanceFn = do
+  => m ()
+proposalIsRejectedIfNoQuorum = do
   DaoOriginateData{..} <-
     originateLigoDaoWithConfigDesc dynRecUnsafe
       ((ConfigDesc $ Period 60)
@@ -253,10 +252,11 @@ proposalIsRejectedIfNoQuorum checkBalanceFn = do
     call dao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  startLevel <- getOriginationLevel dodDao
+  advanceToLevel (startLevel + dodPeriod)
   key1 <- createSampleProposal 1 proposer dao
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceToLevel (startLevel + 2*dodPeriod)
   let vote_ =
         NoPermit VoteParam
           { vVoteType = True
@@ -272,16 +272,16 @@ proposalIsRejectedIfNoQuorum checkBalanceFn = do
   checkBalance dao proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  proposalStart <- getProposalStartLevel dodDao key1
+  advanceToLevel (proposalStart + 2*dodPeriod)
   withSender admin $ call dao (Call @"Flush") 100
 
-  checkBalanceFn (unTAddress dao) proposer 10 -- We expect 42 tokens to have burned
+  checkBalance dao proposer 10 -- We expect 42 tokens to have burned
 
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum
   :: (MonadNettest caps base m, HasCallStack)
-  => CheckBalanceFn m
-  -> m ()
-proposalSucceedsIfUpVotesGtDownvotesAndQuorum checkBalanceFn = do
+  => m ()
+proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   DaoOriginateData{..} <-
     originateLigoDaoWithConfigDesc dynRecUnsafe
       (testConfig
@@ -304,10 +304,11 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum checkBalanceFn = do
     call dao (Call @"Freeze") (#amount .! 10)
 
   -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  startLevel <- getOriginationLevel dodDao
+  advanceToLevel (startLevel + dodPeriod)
   key1 <- createSampleProposal 1 proposer dao
   -- Advance one voting period to a voting stage.
-  advanceLevel dodPeriod
+  advanceToLevel (startLevel + 2*dodPeriod)
   let vote_ =
         NoPermit VoteParam
           { vVoteType = True
@@ -322,8 +323,8 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum checkBalanceFn = do
   let expectedFrozen = 42 + 10
   checkBalance dao proposer expectedFrozen
 
-  -- Advance one voting period to a proposing stage.
-  advanceLevel dodPeriod
+  proposalStart <- getProposalStartLevel dodDao key1
+  advanceToLevel (proposalStart + 2*dodPeriod)
   withSender admin $ call dao (Call @"Flush") 100
 
   checkBalance dao proposer 52
