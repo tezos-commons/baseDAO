@@ -18,9 +18,8 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import GHC.Natural
 
-import Lorentz hiding (not, cast, get, take, or)
+import Lorentz hiding (cast, get, not, or, take)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import qualified Michelson.Typed as T
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Permit
@@ -36,7 +35,7 @@ checkIfProposalExist key = do
   store <- getStore
 
   let resultMaybe = do
-        p <- Map.lookup key (store & sProposals & T.unBigMap)
+        p <- Map.lookup key (store & sProposals & bmMap)
         if Set.member (p & plStartLevel, key) (store & sProposalKeyListSortByDate) then
           Just p
         else Nothing
@@ -50,7 +49,7 @@ checkDelegate
 checkDelegate from author  = do
   store <- getStore
   let key = Delegate {dOwner = from, dDelegate = author}
-  if (author /= from) && not (Map.member key (store & sDelegates & T.unBigMap)) then
+  if (author /= from) && not (Map.member key (store & sDelegates & bmMap)) then
     throwError NOT_DELEGATE
   else pure from
 
@@ -80,7 +79,7 @@ ensureProposalIsUnique :: ProposeParams -> ModelT ProposalKey
 ensureProposalIsUnique params = do
   store <- getStore
   let proposalKey = makeProposalKey params
-  case Map.member proposalKey (store & sProposals & T.unBigMap) of
+  case Map.member proposalKey (store & sProposals & bmMap) of
     True -> throwError PROPOSAL_NOT_UNIQUE
     False -> pure proposalKey
 
@@ -105,7 +104,7 @@ addProposal params = do
         , plQuorumThreshold = store & sQuorumThresholdAtCycle & qaQuorumThreshold
         }
   modifyStore $ \s -> pure $ s
-    { sProposals = BigMap $ Map.insert proposalKey proposal (T.unBigMap (s & sProposals))
+    { sProposals = BigMap Nothing $ Map.insert proposalKey proposal (bmMap (s & sProposals))
     , sProposalKeyListSortByDate = Set.insert (lvl, proposalKey) (s & sProposalKeyListSortByDate)
     }
 
@@ -205,7 +204,7 @@ submitVote proposal voteParam author = do
                         then proposal_ { plUpvotes = (proposal_ & plUpvotes) + (voteParam & vVoteAmount)}
                         else proposal_ { plDownvotes = (proposal_ & plDownvotes) + (voteParam & vVoteAmount)}
   stakeTk (voteParam & vVoteAmount) author
-  modifyStore $ \s -> pure $ s { sProposals = BigMap $ Map.insert proposalKey updatedProposal (s & sProposals & T.unBigMap)}
+  modifyStore $ \s -> pure $ s { sProposals = BigMap Nothing $ Map.insert proposalKey updatedProposal (s & sProposals & bmMap)}
 
 
 applyVote :: ModelSource -> [PermitProtected VoteParam] -> ModelT ()
@@ -359,8 +358,8 @@ updateDelegate mso delegates param =
 applyUpdateDelegate :: ModelSource -> [DelegateParam] -> ModelT ()
 applyUpdateDelegate mso params =
   modifyStore $ \s ->
-    let delegates = Map.keysSet . T.unBigMap . sDelegates $ s
+    let delegates = Map.keysSet . bmMap . sDelegates $ s
         updatedDelegates = foldl' (updateDelegate mso) delegates params
     in
-      pure $ s { sDelegates = BigMap $ Map.fromSet (const ()) updatedDelegates }
+      pure $ s { sDelegates = BigMap Nothing $ Map.fromSet (const ()) updatedDelegates }
 

@@ -11,11 +11,11 @@ import Control.Monad.Except (throwError)
 import qualified Data.Map as Map
 import Hedgehog
 import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
 import Hedgehog.Gen.Tezos.Address (genAddress)
+import qualified Hedgehog.Range as Range
 import Named (NamedF(..))
 
-import Lorentz hiding (now, (>>), and)
+import Lorentz hiding (and, now, (>>))
 import Michelson.Text (unsafeMkMText)
 
 import Ligo.BaseDAO.Common.Types
@@ -112,7 +112,7 @@ treasuryDaoRejectedProposalSlashValue (p, extras) = do
       slashDivisionValue = unpackWithError @Natural $ findBigMap "slash_division_value" extras
   pure $ (slashScaleValue * (p & plProposerFrozenToken) `div` slashDivisionValue)
 
-treasuryDaoDecisionLambda :: DecisionLambdaInput BigMap -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
+treasuryDaoDecisionLambda :: DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
 treasuryDaoDecisionLambda DecisionLambdaInput{..} = do
   let metadata = (diProposal & plMetadata)
         & lUnpackValueRaw @TreasuryDaoProposalMetadata
