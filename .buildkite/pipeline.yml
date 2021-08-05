@@ -78,7 +78,7 @@ steps:
       - build-haskell
     commands:
     - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
-    - ./result/bin/baseDAO-test --nettest-no-run-network
+    - ./result/bin/baseDAO-test --nettest-mode=disable-network
 
     # Get `known_metadata.json` artifact
     - nix run -f ci.nix
@@ -87,36 +87,21 @@ steps:
     artifact_paths:
       - known_metadata.json
 
-  # TODO #124 uncomment:
-  # - label: ligo-test-local-chain-009
-  #   env:
-  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8734"
-  #   if: *not_scheduled
-  #   depends_on:
-  #     - build-ligo
-  #     - build-haskell
-  #     - ligo-test
-  #     # NOTE ^ this last dependency is not strictly necessary, but it saves us
-  #     # from building the tests twice and 'ligo-test' running time is mostly that.
-  #   commands: &ligo-nettest
-  #   - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
-  #   - export TASTY_NETTEST_DATA_DIR="$(mktemp -d --tmpdir="$$PWD")"
-  #   - nix run -f ci.nix tezos-client -c
-  #     ./result/bin/baseDAO-test --nettest-run-network
-  #       --pattern '\$1 == "On network" || \$NF == "On network" || \$0 ~ /.On network./'
-
-  # TODO #124 uncomment:
-  # - label: ligo-test-local-chain-010
-  #   env:
-  #     TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
-  #   if: *not_scheduled
-  #   depends_on:
-  #     - build-ligo
-  #     - build-haskell
-  #     - ligo-test
-  #     # NOTE ^ this last dependency is not strictly necessary, but it saves us
-  #     # from building the tests twice and 'ligo-test' running time is mostly that.
-  #   commands: *ligo-nettest
+  - label: ligo-test-local-chain-010
+    env:
+      TASTY_NETTEST_NODE_ENDPOINT: "http://localhost:8733"
+    if: *not_scheduled
+    depends_on:
+      - build-ligo
+      - build-haskell
+      - ligo-test
+      # NOTE ^ this last dependency is not strictly necessary, but it saves us
+      # from building the tests twice and 'ligo-test' running time is mostly that.
+    commands: &ligo-nettest
+    - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
+    - export TASTY_NETTEST_DATA_DIR="$(mktemp -d --tmpdir="$$PWD")"
+    - nix run -f ci.nix tezos-client -c
+      ./result/bin/baseDAO-test
 
   - label: check typescript api
     if: *not_scheduled

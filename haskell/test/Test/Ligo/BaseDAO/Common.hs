@@ -137,16 +137,11 @@ sendXtzWithAmount amt addr epName pm = withFrozenCallStack $ do
         }
   transfer transferData
 
--- TODO [#31]: See this ISSUES: https://gitlab.com/morley-framework/morley/-/issues/415#note_435327096
--- Check if certain field in storage
--- checkPropertyOfProposal :: _
--- checkPropertyOfProposal = error "undefined"
-
 defaultQuorumThreshold :: QuorumThreshold
 defaultQuorumThreshold = mkQuorumThreshold 1 100
 
 originateLigoDaoWithConfig
- :: (MonadNettest caps base m)
+ :: MonadNettest caps base m
  => ContractExtra
  -> Config
  -> OriginateFn m
@@ -248,7 +243,7 @@ createSampleProposals (counter1, counter2) dodOwner1 dao = do
   pure (pk1, pk2)
 
 checkStorage
-  :: forall caps base m st.
+  :: forall st caps base m.
       ( AsRPC st ~ st, MonadNettest caps base m
       , HasCallStack, Eq st, NiceStorage st, NiceUnpackedValue st)
   => Address -> st -> m ()
