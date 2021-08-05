@@ -31,8 +31,7 @@ import qualified Data.Map as Map
 import Fmt
 import Text.Show (show)
 
-import Michelson.Text
-import Lorentz hiding (not, cast, get)
+import Lorentz hiding (cast, get, not)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Tezos.Address (ContractHash(..))
 import Tezos.Core
@@ -60,7 +59,7 @@ data ModelState = ModelState
 
   , msProposalCheck :: (ProposeParams, ContractExtra) -> ModelT ()
   , msRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
-  , msDecisionLambda :: DecisionLambdaInput BigMap -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
+  , msDecisionLambda :: DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
   , msCustomEps :: Map MText (ByteString -> ModelT ())
   } deriving stock (Generic, Show)
 
@@ -69,7 +68,7 @@ instance Show ((ProposeParams, ContractExtra) -> ModelT ()) where
   show _ = "<msProposalCheck>"
 instance Show ((Proposal, ContractExtra) -> ModelT Natural) where
   show _ = "<msRejectedProposalSlashValue>"
-instance Show (DecisionLambdaInput BigMap -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)) where
+instance Show (DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)) where
   show _ = "<msDecisionLambda>"
 instance Show (ByteString -> ModelT ()) where
   show _ = "<customEps>"
@@ -229,15 +228,6 @@ instance Buildable ModelError where
 
 instance (Buildable a, Buildable b) => Buildable (Either a b) where
   build = genericF
-
-instance (Buildable a, Buildable b) => Buildable (a, b) where
-  build  = genericF
-
-instance (Buildable a, Buildable b, Buildable c) => Buildable (a, b, c) where
-  build  = genericF
-
-instance (Buildable a, Buildable b, Buildable c, Buildable d) => Buildable (a, b, c, d) where
-  build  = genericF
 
 contractErrorToModelError :: Text -> ModelError
 contractErrorToModelError txtError =

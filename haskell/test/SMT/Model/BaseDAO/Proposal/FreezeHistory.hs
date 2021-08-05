@@ -11,12 +11,11 @@ module SMT.Model.BaseDAO.Proposal.FreezeHistory
 
 import Universum
 
-import qualified Data.Map as Map
 import Control.Monad.Except (throwError)
+import qualified Data.Map as Map
 import GHC.Natural (minusNaturalMaybe)
 
-import Lorentz hiding (not, cast, get, take, or)
-import qualified Michelson.Typed as T
+import Lorentz hiding (cast, get, not, or, take)
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
@@ -133,7 +132,7 @@ updatedFreezeHistory :: Address -> ModelT AddressFreezeHistory
 updatedFreezeHistory addr = do
   currentStage <- getCurrentStageNum
   store <- getStore
-  pure $ case Map.lookup addr (store & sFreezeHistory & T.unBigMap) of
+  pure $ case Map.lookup addr (store & sFreezeHistory & bmMap) of
     Nothing ->
       -- if no freeze history exists, return an "empty" value
       AddressFreezeHistory
@@ -155,4 +154,4 @@ updatedFreezeHistory addr = do
 
 storeFreezeHistory :: Address -> AddressFreezeHistory -> ModelT ()
 storeFreezeHistory addr fh = modifyStore $ \s ->
-  pure $ s { sFreezeHistory = BigMap $ Map.insert addr fh (s & sFreezeHistory & T.unBigMap)}
+  pure $ s { sFreezeHistory = BigMap Nothing $ Map.insert addr fh (s & sFreezeHistory & bmMap)}

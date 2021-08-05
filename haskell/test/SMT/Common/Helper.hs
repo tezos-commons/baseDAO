@@ -12,7 +12,6 @@ import Universum hiding (drop, swap)
 import qualified Data.Map as Map
 
 import Lorentz hiding (now, (>>))
-import qualified Michelson.Typed as T
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
@@ -21,7 +20,7 @@ import SMT.Model.BaseDAO.Types
 
 findBigMap :: MText -> ContractExtra -> ByteString
 findBigMap field extras =
-  Map.lookup field (T.unBigMap $ unDynamic extras)
+  Map.lookup field (bmMap $ unDynamic extras)
     & fromMaybe (error "MISSING_VALUE")
 
 unpackWithError :: forall a. (NiceUnpackedValue a) => ByteString -> a
