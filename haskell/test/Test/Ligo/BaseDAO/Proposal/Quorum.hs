@@ -269,7 +269,7 @@ proposalIsRejectedIfNoQuorum checkBalanceFn = do
     call dao (Call @"Vote") [vote_]
 
   let expectedFrozen = 42 + 10
-  checkBalanceFn (unTAddress dao) proposer expectedFrozen
+  checkBalance dao proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
@@ -320,11 +320,11 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum checkBalanceFn = do
     call dao (Call @"Vote") [vote_]
 
   let expectedFrozen = 42 + 10
-  checkBalanceFn (unTAddress dao) proposer expectedFrozen
+  checkBalance dao proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
   withSender admin $ call dao (Call @"Flush") 100
 
-  checkBalanceFn (unTAddress dao) proposer 52
+  checkBalance dao proposer 52
 

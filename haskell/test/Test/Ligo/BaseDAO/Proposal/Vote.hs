@@ -265,8 +265,10 @@ voteValidProposal originateFn checkBalanceFn = do
   -- Advance one voting period to a voting stage.
   advanceLevel dodPeriod
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-  checkBalanceFn (unTAddress dodDao) dodOwner2 2
-  -- TODO [#31]: check if the vote is updated properly
+  checkBalance dodDao dodOwner2 2
+  getProposal dodDao key1 >>= \case
+    Just proposal -> assert ((plUpvotes proposal) == 2) "Proposal had unexpected votes"
+    Nothing -> error "Did not find proposal"
   --
 voteDeletedProposal
   :: (MonadNettest caps base m, HasCallStack)

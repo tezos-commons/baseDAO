@@ -22,7 +22,6 @@ module Test.Ligo.BaseDAO.Management.TransferOwnership
 import Universum
 
 import Lorentz hiding (assert, (>>))
-import Lorentz hiding ((>>))
 import Morley.Nettest
 import Util.Named
 
@@ -149,8 +148,8 @@ bypassAcceptForSelf
   :: MonadNettest caps base m
   => WithOriginateFn m -> WithStorage -> m ()
 bypassAcceptForSelf withOriginatedFn initialStorage =
-  withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
-    \[owner, wallet1] baseDao -> do
+  withOriginatedFn 1 (\(owner:_) -> initialStorage owner) $
+    \[owner] baseDao -> do
       withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! (unTAddress baseDao))
@@ -158,11 +157,9 @@ bypassAcceptForSelf withOriginatedFn initialStorage =
       withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! (unTAddress baseDao))
-        & expectNotAdmin baseDao
-      -- But this should work
-      withSender (unTAddress baseDao) $ do
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner .! wallet1)
+        & expectNotAdmin
+      currentAdmin <- (sAdminRPC . fsStorageRPC) <$> getStorage @FullStorage (unTAddress baseDao)
+      assert (currentAdmin == (unTAddress baseDao)) "Admin address was not set"
 
 expectNotAdmin
   :: (MonadNettest caps base m)

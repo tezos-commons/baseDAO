@@ -32,13 +32,14 @@ freezeTokens originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 10)
-  checkBalanceFn (unTAddress dodDao) dodOwner1 10
+  checkBalance dodDao dodOwner1 10
   -- Check that the FA2 token got a transfer call as expected.
-  checkStorage (unTAddress dodTokenContract)
-    (toVal [[FA2.TransferItem
+  tcStorage <- getStorage @[[FA2.TransferItem]] (unTAddress dodTokenContract)
+  assert (tcStorage ==
+    ([[FA2.TransferItem
       { tiFrom = dodOwner1
       , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
-      }]])
+      }]])) "Unexpected FA2 transfers"
 
 checkFreezeHistoryTracking
   :: (MonadEmulated caps base m, HasCallStack)
@@ -75,13 +76,13 @@ canUnfreezeFromPreviousPeriod originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 10)
-  checkBalanceFn (unTAddress dodDao) dodOwner1 10
+  checkBalance dodDao dodOwner1 10
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
 
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 10)
-  checkBalanceFn (unTAddress dodDao) dodOwner1 00
+  checkBalance dodDao dodOwner1 00
   -- Check that the FA2 token got a transfer call as expected.
   checkStorage (unTAddress dodTokenContract)
     (toVal
@@ -101,14 +102,14 @@ cannotUnfreezeStakedTokens originateFn checkBalanceFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 50)
-  checkBalanceFn (unTAddress dodDao) dodOwner1 50
+  checkBalance dodDao dodOwner1 50
 
   -- Advance one voting period to a proposing stage.
   advanceLevel dodPeriod
   void $ createSampleProposal 1 dodOwner1 dodDao
 
   -- the frozen tokens are still the same
-  checkBalanceFn (unTAddress dodDao) dodOwner1 50
+  checkBalance dodDao dodOwner1 50
   -- but unfreeze won't let all of them be unfrozen because of the staked tokens
   -- note: 110 tokens are staked here
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount .! 41)
