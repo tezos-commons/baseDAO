@@ -53,7 +53,8 @@ transferContractTokensScenario originateFn = do
   withSender dodAdmin $
     call dodDao (Call @"Transfer_contract_tokens") param
 
-  checkStorage (unTAddress dodTokenContract)
-    (toVal
-      [ [ FA2.TransferItem { tiFrom = target_owner1, tiTxs = [FA2.TransferDestination { tdTo = target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
-      ])
+  tcStorage <- getStorage @[[FA2.TransferItem]] (unTAddress dodTokenContract)
+
+  assert (tcStorage ==
+    ([ [ FA2.TransferItem { tiFrom = target_owner1, tiTxs = [FA2.TransferDestination { tdTo = target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
+      ])) "Unexpected FA2 transfers"

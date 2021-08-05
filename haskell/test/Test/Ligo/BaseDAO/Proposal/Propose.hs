@@ -63,6 +63,10 @@ validProposal originateFn getFrozenTotalSupplyFn getFreezeHistoryFn = do
     call dodDao (Call @"Freeze") (#amount .! 10)
   -- Check the token contract got a transfer call from
   -- baseDAO
+  storage <- getStorage @[[FA2.TransferItem]] (unTAddress dodTokenContract)
+  assert (storage ==
+    ([[FA2.TransferItem { tiFrom = dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]]))
+    "Unexpected Transfers"
   checkStorage (unTAddress dodTokenContract)
     (toVal [[FA2.TransferItem { tiFrom = dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]])
 
@@ -100,9 +104,9 @@ validProposalWithFixedFee getFrozenTotalSupplyFn getFreezeHistoryFn = do
 
   withSender proposer $ call dodDao (Call @"Propose") params
 
-  supply <- getFrozenTotalSupplyFn (unTAddress dodDao)
+  supply <- getFrozenTotalSupply dodDao
   supply @== 52
-  fh <- getFreezeHistoryFn (unTAddress dodDao) dodOwner1
+  fh <- getFreezeHistory dodDao dodOwner1
   fh @== Just (AddressFreezeHistory 0 0 1 52)
 
 proposerIsReturnedFeeAfterSucceeding
@@ -145,13 +149,13 @@ proposerIsReturnedFeeAfterSucceeding checkBalanceFn = do
     call dodDao (Call @"Vote") [vote_]
 
   let expectedFrozen = 42 + 10
-  checkBalanceFn (unTAddress dodDao) proposer expectedFrozen
+  checkBalance dodDao proposer expectedFrozen
 
   -- Advance one voting period to a proposing stage.
   advanceLevel $ dodPeriod + 1
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  checkBalanceFn (unTAddress dodDao) proposer 52
+  checkBalance dodDao proposer 52
 
 cannotProposeWithInsufficientTokens
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -292,7 +296,7 @@ burnsFeeOnFailure reason checkBalanceFn = do
   -- frozen), except for the fee and slash amount. The latter is zero in this
   -- case, so we expect 42 tokens to be burnt
   let expectedBurn = 42
-  checkBalanceFn (unTAddress dodDao) proposer (52 - expectedBurn)
+  checkBalance dodDao proposer (52 - expectedBurn)
 
 unstakesTokensForMultipleVotes
   :: forall caps base m. (MonadNettest caps base m)

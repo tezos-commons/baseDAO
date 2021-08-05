@@ -117,8 +117,8 @@ flushTokenTransfer checkBalanceFn = withFrozenCallStack $ do
   advanceLevel $ dodPeriod + 1 -- meet `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 proposalSize
-  checkBalanceFn (unTAddress dodDao) dodOwner2 20
+  checkBalance dodDao dodOwner1 proposalSize
+  checkBalance dodDao dodOwner2 20
 
 flushXtzTransfer
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -157,7 +157,7 @@ flushXtzTransfer checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3)
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 45
+  checkBalance dodDao dodOwner1 45
 
   let
     upvote = NoPermit VoteParam
@@ -216,7 +216,7 @@ flushUpdateGuardian checkGuardian = withFrozenCallStack $ do
   -- Advance one voting period to a proposing stage.
   advanceLevel $ (dodPeriod + 1) -- meet `proposal_flush_level`
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  checkGuardian (unTAddress dodDao) dodOwner2
+  checkGuardian dodDao dodOwner2
 
 proposalCheckFailZeroMutez
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)

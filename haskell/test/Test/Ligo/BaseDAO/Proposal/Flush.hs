@@ -138,12 +138,12 @@ flushAcceptedProposalsWithAnAmount originateFn checkBalanceFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
 
   -- key1 and key2 are flushed. (Tokens remain the same, because they are all passed)
-  checkBalanceFn (unTAddress dodDao) dodOwner1 30
+  checkBalance dodDao dodOwner1 30
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
 
-  -- key3 is rejected
-  checkBalanceFn (unTAddress dodDao) dodOwner1 25
+  ---- key3 is rejected
+  checkBalance dodDao dodOwner1 25
 
 flushRejectProposalQuorum
   :: (MonadNettest caps base m, HasCallStack)
@@ -187,11 +187,10 @@ flushRejectProposalQuorum originateFn checkBalanceFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 05
-  checkBalanceFn (unTAddress dodDao) dodOwner2 05 -- Since voter tokens are not burned
+  checkBalance dodDao dodOwner1 05
+  checkBalance dodDao dodOwner2 05 -- Since voter tokens are not burned
 
 flushRejectProposalNegativeVotes
   :: (MonadNettest caps base m, HasCallStack)
@@ -251,10 +250,10 @@ flushRejectProposalNegativeVotes originateFn checkBalanceFn = do
 
   -- TODO: [#31]
   -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 05
-  checkBalanceFn (unTAddress dodDao) dodOwner2 03
+  checkBalance dodDao dodOwner1 05
+  checkBalance dodDao dodOwner2 03
 
 flushWithBadConfig
   :: (MonadNettest caps base m, HasCallStack)
@@ -294,11 +293,10 @@ flushWithBadConfig originateFn checkBalanceFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  --   & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST dodDao
+  checkIfAProposalExist key1 dodDao False
 
-  checkBalanceFn (unTAddress dodDao) dodOwner1 0
-  checkBalanceFn (unTAddress dodDao) dodOwner2 3
+  checkBalance dodDao dodOwner1 0
+  checkBalance dodDao dodOwner2 3
 
 flushDecisionLambda
   :: (MonadNettest caps base m, HasCallStack)
@@ -333,9 +331,10 @@ flushDecisionLambda originateFn = do
 
   -- Advance one voting period to a proposing stage.
   advanceLevel (dodPeriod + 1)
+
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  results <- fromVal <$> getStorage (toAddress consumer)
+  results <- getStorage @(["proposer" :! Address]) (toAddress consumer)
   assert (results == (#proposer <.!> [dodOwner1]))
     "Unexpected accepted proposals list"
 
@@ -386,7 +385,7 @@ flushFailOnExpiredProposal originateFn checkBalanceFn = withFrozenCallStack $ do
     call dodDao (Call @"Drop_proposal") key1
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-  checkBalanceFn (unTAddress dodDao) dodOwner1 10
+  checkBalance dodDao dodOwner1 10
 
 flushProposalFlushTimeNotReach
   :: (MonadNettest caps base m, HasCallStack)
@@ -414,11 +413,11 @@ flushProposalFlushTimeNotReach originateFn checkBalanceFn = do
   _key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  checkBalanceFn (unTAddress dodDao) dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
+  checkBalance dodDao dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
 
   -- TODO: [#31]
-  -- checkIfAProposalExist (key1 :: ByteString) dodDao
-  -- checkIfAProposalExist (key2 :: ByteString) dodDao
+  checkIfAProposalExist key1 dodDao False
+  checkIfAProposalExist key2 dodDao False
 
 
 flushNotEmpty
