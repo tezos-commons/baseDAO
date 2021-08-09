@@ -12,8 +12,8 @@ packages:
       f564a0ea3ec66edb3fd074c75a1e9bc5a80f3d35 # master
     subdirs:
       - .
-        #- morley-prelude-0.4.1
-    #- morley-1.15.0
+  - morley-prelude-0.4.2
+  - morley-1.15.1
   - lorentz-0.12.0
   - hex-text-0.1.0.0
   - named-0.3.0.1
@@ -33,12 +33,10 @@ packages:
       https://gitlab.com/morley-framework/morley.git
     # ^ CI cannot use ssh, so we use http clone here
     commit:
-      eed1e504b2c8f65eaaf82384db0a12f237aaca27 # master
+      a726d42f89f83aa794f381b5332a542b634ba057 # master
     subdirs:
       - code/cleveland
       - code/morley-client
-      - code/morley
-      - code/morley-prelude
   - git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
   - git: https://gitlab.com/morley-framework/morley-ledgers.git
