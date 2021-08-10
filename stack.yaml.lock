@@ -131,12 +131,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
       size: 13652
-      sha256: 95baa2a6746a50a6852d11232a2f3a1f538003a7d77d28893029f6b6091fb3a4
-    commit: a726d42f89f83aa794f381b5332a542b634ba057
+      sha256: d52b7fe8d90b3e2122ca9336c43f323bc950fa6f0c64214e42b19bcce1ee3532
+    commit: 6d38aa21e725c1146d8172aa4572896dd31cc457
   original:
     subdir: code/cleveland
     git: https://gitlab.com/morley-framework/morley.git
-    commit: a726d42f89f83aa794f381b5332a542b634ba057
+    commit: 6d38aa21e725c1146d8172aa4572896dd31cc457
 - completed:
     subdir: code/morley-client
     name: morley-client
@@ -145,11 +145,11 @@ packages:
     pantry-tree:
       size: 3314
       sha256: 1cf2c71f2b01798aa8e61a195788b4674b43ee637b7ab623539fefbcfac2778e
-    commit: a726d42f89f83aa794f381b5332a542b634ba057
+    commit: 6d38aa21e725c1146d8172aa4572896dd31cc457
   original:
     subdir: code/morley-client
     git: https://gitlab.com/morley-framework/morley.git
-    commit: a726d42f89f83aa794f381b5332a542b634ba057
+    commit: 6d38aa21e725c1146d8172aa4572896dd31cc457
 - completed:
     name: caps
     version: '0'

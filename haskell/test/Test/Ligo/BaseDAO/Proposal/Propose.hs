@@ -19,18 +19,22 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , validProposal
   , validProposalWithFixedFee
   , unstakesTokensForMultipleVotes
+  , proposalCreationUnderStorageLimit
   ) where
 
 import Universum
 
 import Lorentz hiding (assert, (>>))
+import Morley.Client.TezosClient (Alias(..))
 import Morley.Nettest
+import Morley.Nettest.Caps
 import Util.Named
 
 import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
+import Tezos.Address (parseAddress)
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
@@ -521,3 +525,123 @@ proposalBoundedValue originateFn = do
     call dodDao (Call @"Propose") params
       & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
 
+proposalCreationUnderStorageLimit
+  :: forall caps base m.
+    ( MonadNettest caps base m
+    , HasCallStack
+    )
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+proposalCreationUnderStorageLimit originateFn = do
+
+  addr2 <- resolveAddress $ Alias "addr2"
+  dodOwner1 <- resolveAddress $ Alias "owner1"
+  let dodDao = case parseAddress "KT1G8AzguRNXATWgbzzQBw9MHAaiKwBRijwa" of
+        Right x -> (TAddress x :: TAddress Parameter)
+        _ -> error "contract address lookup failed"
+  runIO $ putTextLn $ show addr2
+  let dodPeriod = 100
+  let params = ProposeParams
+        { ppFrozenToken = 10
+        , ppProposalMetadata = lPackValueRaw (1 :: Natural)
+        , ppFrom = dodOwner1
+        }
+
+  let voteParam = NoPermit VoteParam
+        { vVoteType = True
+        , vVoteAmount = 1
+        , vProposalKey = makeProposalKey params
+        , vFrom = addr2
+        }
+
+  originLevel <- getOriginationLevel dodDao
+  nowLevel <- getLevel
+  runIO $ putTextLn $ ("Level= " <> (show nowLevel))
+
+  let periodNum = div (nowLevel - originLevel) dodPeriod
+  runIO $ putTextLn $ show ("In level", originLevel, nowLevel, periodNum)
+
+  -- when (mod periodNum 2 == 1) $ do
+  --   let waitTill = originLevel + (periodNum + 1)*dodPeriod
+  --   runIO $ putTextLn $ show ("In proposal period, waiting till", waitTill)
+  --   advanceToLevel waitTill
+
+  withSender addr2 $
+    call dodDao (Call @"Freeze") (#amount .! 1)
+  -- withSender addr2 $ call dodDao (Call @"Vote") [voteParam]
+
+  {-# runIO $ putTextLn ("Originating...")
+  DaoOriginateData {..} <- originateFn ((ConfigDesc $ configConsts { cmProposalExpiredTime = Just 1000000 }) >>- (ConfigDesc $ Period 100) >>- testConfig) defaultQuorumThreshold
+
+  let totalTokens = 100000
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! totalTokens)
+
+  addresses <- mapM id $ (\(s :: Text) -> do
+    runIO $ putTextLn ("Creating address:" <> show s)
+    na <- newAddress $ fromString $ toString s
+    transfer $ TransferData na (toMutez 5000000) DefEpName ()
+    pure na
+    ) <$> ((\s -> "addr" <> (show s)) <$> [1..1000])
+
+  mapM_ id $ ((\s -> do
+    runIO $ putTextLn ("Freezing for " <> show s)
+    withSender s $
+      call dodDao (Call @"Freeze") (#amount .! 1)
+    ) <$> addresses)
+
+  nowLevel <- getLevel
+  advanceToLevel (nowLevel + dodPeriod + 5)
+
+
+  originLevel <- getOriginationLevel dodDao
+  nowLevel <- getLevel
+  runIO $ putTextLn $ ("Level= " <> (show nowLevel))
+
+  let periodNum = div (nowLevel - originLevel) dodPeriod
+  when (mod periodNum 2 == 0) $ do
+    let waitTill = originLevel + (periodNum + 1)*dodPeriod
+    runIO $ putTextLn $ show ("Not proposal period, waiting till", waitTill)
+    advanceToLevel waitTill
+
+  runIO $ putTextLn $ ("Creating proposal")
+
+  let params = ProposeParams
+        { ppFrozenToken = 10
+        , ppProposalMetadata = lPackValueRaw (1 :: Natural)
+        , ppFrom = dodOwner1
+        }
+
+  withSender dodOwner1 $ call dodDao (Call @"Propose") params
+
+  advanceToLevel (originLevel + 2*dodPeriod)
+
+  forM_ addresses $ \n -> do
+
+    runIO $ putTextLn $ show ("Voting for", n)
+    getFreezeHistory dodDao n >>= \case
+      Just fh -> runIO $ putTextLn $ show fh
+      Nothing -> runIO $ putTextLn "No freeze history"
+
+    let voteParam = NoPermit VoteParam
+          { vVoteType = True
+          , vVoteAmount = 1
+          , vProposalKey = makeProposalKey params
+          , vFrom = n
+          }
+
+    nowLevel <- getLevel
+    runIO $ putTextLn $ ("Level= " <> (show nowLevel))
+
+    let periodNum = div (nowLevel - originLevel) dodPeriod
+    runIO $ putTextLn $ show ("In level", originLevel, nowLevel, periodNum)
+
+    when (mod periodNum 2 == 1) $ do
+      let waitTill = originLevel + (periodNum + 1)*dodPeriod
+      runIO $ putTextLn $ show ("In proposal period, waiting till", waitTill)
+      advanceToLevel waitTill
+
+    withSender n $ call dodDao (Call @"Vote") [voteParam]
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! 1)
+  #-}

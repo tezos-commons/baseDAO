@@ -109,6 +109,9 @@ test_BaseDAO_Proposal =
       , nettestScenarioCaps "can drop proposals, only when allowed" $
           dropProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
+      , nettestScenarioCaps "proposal endpoint stress test" $
+          proposalCreationUnderStorageLimit (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       ]
 
   , testGroup "Bounded Value"

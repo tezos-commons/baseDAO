@@ -33,7 +33,7 @@ packages:
       https://gitlab.com/morley-framework/morley.git
     # ^ CI cannot use ssh, so we use http clone here
     commit:
-      a726d42f89f83aa794f381b5332a542b634ba057 # master
+      6d38aa21e725c1146d8172aa4572896dd31cc457 # sras/add-nettest-concurrently
     subdirs:
       - code/cleveland
       - code/morley-client

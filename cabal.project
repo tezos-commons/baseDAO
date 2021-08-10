@@ -51,7 +51,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley.git
-    tag: a726d42f89f83aa794f381b5332a542b634ba057
+    tag: 6d38aa21e725c1146d8172aa4572896dd31cc457
     subdir: code/cleveland
             code/morley-client
 

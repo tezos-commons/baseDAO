@@ -39,9 +39,10 @@ let get_current_stage_num(start, vp : blocks * period) : nat =
 [@inline]
 let ensure_proposal_voting_stage (proposal, period, store : proposal * period * storage): storage =
   let current_stage = get_current_stage_num(store.start_level, period) in
-  if current_stage = proposal.voting_stage_num
-  then store
-  else (failwith("VOTING_STAGE_OVER") : storage)
+  store
+  // if current_stage = proposal.voting_stage_num
+  // then store
+  // else (failwith("VOTING_STAGE_OVER") : storage)
 
 // Checks that a given stage number is a proposing stage
 // Only odd stage numbers are proposing stages, in which a proposal can be

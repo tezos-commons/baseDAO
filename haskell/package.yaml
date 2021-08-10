@@ -147,6 +147,7 @@ tests:
     - morley-ledgers
     - morley-metadata
     - morley-prelude
+    - morley-client
     - mtl
     - named
     - tasty
