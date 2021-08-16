@@ -36,7 +36,7 @@ verification:
     - .gitlab/issue_templates/
 
     # This file is ignored because it refers to
-    # https://github.com/tqtezos/baseDAO/issues/new
+    # https://github.com/tezos-commons/baseDAO/issues/new
     # which requires a github account with access to the repo
     # (xrefcheck itself doesn't have it)
     - .github/CONTRIBUTING.md

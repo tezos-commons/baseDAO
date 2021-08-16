@@ -250,7 +250,7 @@ callLigoEntrypoint mc dao = withSender (mc & mcSource & msoSender) $ case mc & m
 
 
 -- TODO: Use `fromExpression` instead when new morley version is updated.
--- More detail: https://github.com/tqtezos/baseDAO/pull/282#discussion_r669572842
+-- More detail: https://github.com/tezos-commons/baseDAO/pull/282#discussion_r669572842
 parseNettestError :: Either NettestFailure a -> Maybe ModelError
 parseNettestError = \case
   Right _ -> Nothing
