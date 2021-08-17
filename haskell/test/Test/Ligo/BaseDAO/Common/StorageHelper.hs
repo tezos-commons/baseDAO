@@ -1,120 +1,103 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 module Test.Ligo.BaseDAO.Common.StorageHelper
-  ( getFullStorage
-  , getFullStorageView
-
-  , GetFrozenTotalSupplyFn
-  , getFrozenTotalSupplyEmulator
-
-  , GetQuorumThresholdAtCycleFn
-  , getQtAtCycleEmulator
-
-  , CheckGuardianFn
-  , GetProposalFn
-  , checkGuardianEmulator
-  , getProposalEmulator
-
-  , GetFreezeHistoryFn
-  , getFreezeHistoryEmulator
-
-  , CheckBalanceFn
-  , checkBalanceEmulator
-
-  , GetVotePermitsCounterFn
-  , getVotePermitsCounterEmulator
-  -- , getVotePermitsCounterNetwork
+  ( checkBalance
+  , checkGuardian
+  , checkIfAProposalExist
+  , checkIfDelegateExists
+  , getFreezeHistory
+  , getFrozenTotalSupply
+  , getFullStorage
+  , getProposal
+  , getProposalStartLevel
+  , getQtAtCycle
+  , getStorageRPC
+  , getVotePermitsCounter
+  , getOriginationLevel
   ) where
 
 import Lorentz hiding (assert, (>>))
 import Universum
 
-import qualified Data.Map as M
+import qualified Data.Set as S
 import Morley.Nettest
 
 import Ligo.BaseDAO.Types
 
-getFullStorage :: MonadEmulated caps base m => Address -> m FullStorage
-getFullStorage addr =
-  fromVal @FullStorage <$> getStorage' @(ToT FullStorage) addr
 
-getFullStorageView :: (Monad m) => Address -> NettestT m FullStorageView
-getFullStorageView addr =
-  fromVal @FullStorageView <$> getStorage @(ToT FullStorageView) addr
+getStorageRPC :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m FullStorageRPC
+getStorageRPC addr = getStorage @FullStorage (unTAddress addr)
 
+getFrozenTotalSupply :: forall p base caps m. MonadNettest caps base m => TAddress p -> m Natural
+getFrozenTotalSupply addr = (sFrozenTotalSupplyRPC . fsStorageRPC) <$> (getStorageRPC addr)
 
-------------------------------------------------------------------------
--- GetFrozenTotalSupplyFn
-------------------------------------------------------------------------
+getFreezeHistory :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m (Maybe AddressFreezeHistory)
+getFreezeHistory addr owner = do
+  freezeHistoryBmId <- (sFreezeHistoryRPC . fsStorageRPC) <$> (getStorageRPC addr)
+  getBigMapValueMaybe freezeHistoryBmId owner
 
-type GetFrozenTotalSupplyFn m = Address -> m Natural
+getQtAtCycle :: forall p base caps m. MonadNettest caps base m => TAddress p -> m QuorumThresholdAtCycle
+getQtAtCycle addr = (sQuorumThresholdAtCycleRPC . fsStorageRPC) <$> getStorageRPC addr
 
-getFrozenTotalSupplyEmulator :: MonadEmulated caps base m => Address -> m Natural
-getFrozenTotalSupplyEmulator addr = do
-  fs <- getFullStorage addr
-  pure $ sFrozenTotalSupply $ fsStorage fs
+getProposal
+  :: forall p base caps m. MonadNettest caps base m
+  => TAddress p
+  -> ProposalKey
+  -> m (Maybe Proposal)
+getProposal addr pKey = do
+  bId <- (sProposalsRPC . fsStorageRPC) <$> getStorageRPC addr
+  getBigMapValueMaybe bId pKey
 
-------------------------------------------------------------------------
--- GetFreezeHistoryFn
-------------------------------------------------------------------------
+getProposalStartLevel
+  :: forall p base caps m. MonadNettest caps base m
+  => TAddress p
+  -> ProposalKey
+  -> m Natural
+getProposalStartLevel addr pKey =
+   plStartLevel . fromMaybe (error "proposal not found") <$> getProposal addr pKey
 
-type GetFreezeHistoryFn m = Address -> Address -> m (Maybe AddressFreezeHistory)
+checkIfDelegateExists
+  :: forall p base caps m. MonadNettest caps base m
+  => TAddress p
+  -> Delegate
+  -> m Bool
+checkIfDelegateExists addr delegate = do
+  bId <- (sDelegatesRPC . fsStorageRPC) <$> getStorageRPC addr
+  isJust <$> getBigMapValueMaybe bId delegate
 
-getFreezeHistoryEmulator :: MonadEmulated caps base m => Address -> Address -> m (Maybe AddressFreezeHistory)
-getFreezeHistoryEmulator addr owner =
-  (M.lookup owner . unBigMap . sFreezeHistory . fsStorage) <$> getFullStorage addr
+checkIfAProposalExist
+  :: forall p base caps m. MonadNettest caps base m
+  => ProposalKey -> TAddress p -> Bool -> m ()
+checkIfAProposalExist proposalKey dodDao expected = do
+  found <- getProposal dodDao proposalKey >>= \case
+    Nothing -> pure False
+    Just p -> do
+      proposalSet <- (sProposalKeyListSortByDateRPC . fsStorageRPC) <$> getStorageRPC dodDao
+      pure $ S.member (plStartLevel p, proposalKey) proposalSet
+  assert (found == expected) $
+    "Unexpected proposal status, expected:" <> (show expected) <> ", found: " <> (show found)
 
-type CheckGuardianFn m = Address -> Address -> m ()
-
-checkGuardianEmulator :: MonadEmulated caps base m => Address -> Address -> m ()
-checkGuardianEmulator addr guardianToChk = do
-  actual <- (sGuardian . fsStorage) <$> (getFullStorage addr)
+checkGuardian :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m ()
+checkGuardian addr guardianToChk = do
+  actual <- (sGuardianRPC . fsStorageRPC) <$> (getStorageRPC addr)
   actual @== guardianToChk
 
-type GetQuorumThresholdAtCycleFn m = Address -> m QuorumThresholdAtCycle
-
-getQtAtCycleEmulator :: MonadEmulated caps base m => Address -> m QuorumThresholdAtCycle
-getQtAtCycleEmulator addr = (sQuorumThresholdAtCycle . fsStorage) <$> getFullStorage addr
-
-type GetProposalFn m = Address -> ProposalKey -> m (Maybe Proposal)
-
-getProposalEmulator :: MonadEmulated caps base m => Address -> ProposalKey -> m (Maybe Proposal)
-getProposalEmulator addr pKey =
-  (M.lookup pKey . unBigMap . sProposals . fsStorage) <$> getFullStorage addr
-
-
--- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
--- anyway. Commented due to weeder.
-
-------------------------------------------------------------------------
--- CheckBalanceFn
-------------------------------------------------------------------------
-
-type CheckBalanceFn m = Address -> Address -> Natural -> m ()
-
-checkBalanceEmulator :: MonadEmulated caps base m => Address -> Address -> Natural -> m ()
-checkBalanceEmulator addr owner bal = do
-  fh <- getFreezeHistoryEmulator addr owner
+checkBalance
+  :: forall p base caps m. MonadNettest caps base m
+  => TAddress p
+  -> Address
+  -> Natural
+  -> m ()
+checkBalance addr owner bal = do
+  fh <- getFreezeHistory addr owner
   (sumAddressFreezeHistory <$> fh) @== Just bal
 
 sumAddressFreezeHistory :: AddressFreezeHistory -> Natural
 sumAddressFreezeHistory AddressFreezeHistory{..} = fhCurrentUnstaked + fhPastUnstaked + fhStaked
 
-------------------------------------------------------------------------
--- GetVotePermitsCounter
-------------------------------------------------------------------------
+getVotePermitsCounter :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m Nonce
+getVotePermitsCounter addr =
+  (sPermitsCounterRPC . fsStorageRPC) <$> getStorageRPC addr
 
-type GetVotePermitsCounterFn m = Address -> m Nonce
-
-getVotePermitsCounterEmulator :: MonadEmulated caps base m => Address -> m Nonce
-getVotePermitsCounterEmulator addr = do
-  fs <- getFullStorage addr
-  pure $ sPermitsCounter (fsStorage fs)
-
--- | Note: Not needed at the moment, due to all the tests that uses this run only in emulator
--- anyway. Commented due to weeder.
-
--- getVotePermitsCounterNetwork :: (Monad m) => Address -> NettestT m Nonce
--- getVotePermitsCounterNetwork addr = do
---   fs <- getFullStorageView addr
---   pure $ sPermitsCounter (fsStorage fs)
+getOriginationLevel :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m Natural
+getOriginationLevel dodDao = (sStartLevelRPC . fsStorageRPC) <$> (getStorageRPC dodDao)

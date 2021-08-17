@@ -16,10 +16,10 @@ import Lorentz hiding (now, (>>))
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
-import SMT.Common.Run
-import SMT.Model.BaseDAO.Types
-import SMT.Common.Types
 import Ligo.BaseDAO.Types
+import SMT.Common.Run
+import SMT.Common.Types
+import SMT.Model.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common (makeProposalKey, metadataSize)
 
 
@@ -85,7 +85,7 @@ addBaseDaoConfig fs = fs
         # nil
         # swap
         # dip (push Nothing)
-        # constructStack @(DecisionLambdaOutput BigMap)
+        # constructStack @(DecisionLambdaOutput)
       }
   }
 

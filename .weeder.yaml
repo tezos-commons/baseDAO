@@ -7,3 +7,11 @@
   - depends:
     - base-noprelude
     - morley-prelude
+
+- message:
+  - name: Weeds exported
+  - module:
+    - name: Tree
+    - identifier:
+      - ingredients
+      - main

@@ -12,22 +12,22 @@ import Universum hiding (drop, swap)
 
 import Crypto.Random (drgNewSeed, seedFromInteger, withDRG)
 import qualified Data.Map as Map
-import Hedgehog.Gen.Tezos.Address (genAddress)
 import qualified Hedgehog.Gen as Gen
+import Hedgehog.Gen.Tezos.Address (genAddress)
 import qualified Hedgehog.Range as Range
 
-import Lorentz hiding (not, cast, concat, get)
+import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
+import Lorentz hiding (cast, concat, get, not)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Michelson.Test.Dummy
-import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
-import Tezos.Address (Address(..), unsafeParseContractHash, mkKeyAddress)
-import Tezos.Crypto (SecretKey, toPublic, sign)
+import Tezos.Address (Address(..), mkKeyAddress, unsafeParseContractHash)
+import Tezos.Crypto (SecretKey, sign, toPublic)
 import Util.Named ((.!))
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
-import SMT.Model.BaseDAO.Types
 import SMT.Common.Types
+import SMT.Model.BaseDAO.Types
 
 genMkModelInput :: SmtOption -> GeneratorT MkModelInput
 genMkModelInput option@SmtOption{..} = do
@@ -72,10 +72,10 @@ genStorage = do
   let staked = getStaked freezeHistory
   quorumThresholdAtCycle <- genQuorumThresholdAtCycle staked
 
-  pure $ \guardAddr govAddr -> Storage'
+  pure $ \guardAddr govAddr -> Storage
         { sFrozenTotalSupply = getTotalSupply freezeHistory
-        , sDelegates = BigMap delegates
-        , sFreezeHistory = BigMap freezeHistory
+        , sDelegates = BigMap Nothing delegates
+        , sFreezeHistory = BigMap Nothing freezeHistory
         , sAdmin = admin
         , sGuardian = guardAddr
         , sGovernanceToken = GovernanceToken
@@ -84,7 +84,7 @@ genStorage = do
               }
         , sStartLevel = startLevel
         , sQuorumThresholdAtCycle = quorumThresholdAtCycle
-        , sProposals = BigMap mempty
+        , sProposals = BigMap Nothing mempty
         , sProposalKeyListSortByDate = mempty
         , sExtra = DynamicRec' mempty
 
@@ -101,7 +101,7 @@ genConfig = do
   let maxChangePercent = 0
   let changePercent = 19
   let governanceTotalSupply = 500
-  pure $ Config'
+  pure $ Config
     { cProposalCheck = do
         dropN @2 # push ()
     , cRejectedProposalSlashValue = do
@@ -111,7 +111,7 @@ genConfig = do
         nil #
         swap #
         dip (push Nothing) #
-        constructStack @(DecisionLambdaOutput BigMap)
+        constructStack @DecisionLambdaOutput
     , cCustomEntrypoints = DynamicRec' $ mempty
     , cFixedProposalFee = fixedProposalFee
     , cPeriod = votingPeriod
@@ -173,7 +173,7 @@ genModelState SmtOption{..} = do
 
   mkStore <- genStorage
   config <- genConfig
-  let mkFs = \guardian gov -> FullStorage' (mkStore guardian gov) config
+  let mkFs = \guardian gov -> FullStorage (mkStore guardian gov) config
 
   selfAddrPlaceholder <- genAddress
   pure $ \guardian gov ->
