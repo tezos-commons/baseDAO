@@ -8,7 +8,7 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 ## Reporting Issues
 
-Please [open an issue](https://github.com/tqtezos/baseDAO/issues/new)
+Please [open an issue](https://github.com/tezos-commons/baseDAO/issues/new)
 if you find a bug or have a feature request.
 Before submitting a bug report or feature request, check to make sure it hasn't already been submitted.
 

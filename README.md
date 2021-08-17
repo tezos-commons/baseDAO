@@ -20,7 +20,7 @@ well, there are also the [included DAOs](#included-daos) below.
 
 BaseDAO is implemented in [LIGO](https://ligolang.org), you can obtain the
 compiled contract as well as the initial storage for all the [included DAOs](#included-daos)
-from the [latest release](https://github.com/tqtezos/baseDAO/releases/latest)
+from the [latest release](https://github.com/tezos-commons/baseDAO/releases/latest)
 or build them from source by following the [building instructions](docs/building.md).
 
 ## Included DAOs

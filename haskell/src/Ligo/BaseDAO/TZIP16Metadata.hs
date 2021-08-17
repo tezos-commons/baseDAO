@@ -60,7 +60,7 @@ knownBaseDAOMetadata settings = mconcat
   [ version . fromString $ showVersion Paths.version
   , license $ License "MIT" Nothing
   , authors [Author "Serokell", Author "Tocqueville Group"]
-  , homepage "https://github.com/tqtezos/baseDAO"
+  , homepage "https://github.com/tezos-commons/baseDAO"
   , interfaces [tzip 17]
   , views (baseDAOViews settings)
   ]
