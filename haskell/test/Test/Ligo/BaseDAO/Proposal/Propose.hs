@@ -569,7 +569,6 @@ proposalCreationUnderStorageLimit originateFn = do
     call dodDao (Call @"Freeze") (#amount .! 1)
   -- withSender addr2 $ call dodDao (Call @"Vote") [voteParam]
 
-  -- Test
   {-# runIO $ putTextLn ("Originating...")
   DaoOriginateData {..} <- originateFn ((ConfigDesc $ configConsts { cmProposalExpiredTime = Just 1000000 }) >>- (ConfigDesc $ Period 100) >>- testConfig) defaultQuorumThreshold
 
