@@ -532,6 +532,7 @@ proposalCreationUnderStorageLimit
     )
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 proposalCreationUnderStorageLimit originateFn = do
+  {-#
 
   addr2 <- resolveAddress $ Alias "addr2"
   dodOwner1 <- resolveAddress $ Alias "owner1"
@@ -568,81 +569,49 @@ proposalCreationUnderStorageLimit originateFn = do
   withSender addr2 $
     call dodDao (Call @"Freeze") (#amount .! 1)
   -- withSender addr2 $ call dodDao (Call @"Vote") [voteParam]
+  --
+  #-}
 
   -- Test
-  {-# runIO $ putTextLn ("Originating...")
-  DaoOriginateData {..} <- originateFn ((ConfigDesc $ configConsts { cmProposalExpiredTime = Just 1000000 }) >>- (ConfigDesc $ Period 100) >>- testConfig) defaultQuorumThreshold
+  runIO $ putTextLn ("Originating...")
+  DaoOriginateData {..} <- originateFn ((ConfigDesc $ configConsts { cmMaxProposals = Just 1000 }) >>- (ConfigDesc $ configConsts { cmProposalExpiredTime = Just 1000000 }) >>- (ConfigDesc $ Period 100) >>- testConfig) defaultQuorumThreshold
 
   let totalTokens = 100000
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! totalTokens)
 
-  addresses <- mapM id $ (\(s :: Text) -> do
-    runIO $ putTextLn ("Creating address:" <> show s)
-    na <- newAddress $ fromString $ toString s
-    transfer $ TransferData na (toMutez 5000000) DefEpName ()
-    pure na
-    ) <$> ((\s -> "addr" <> (show s)) <$> [1..1000])
-
-  mapM_ id $ ((\s -> do
-    runIO $ putTextLn ("Freezing for " <> show s)
-    withSender s $
-      call dodDao (Call @"Freeze") (#amount .! 1)
-    ) <$> addresses)
+  runIO $ putTextLn ("Freezing for " <> show dodOwner1)
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! 1)
 
   nowLevel <- getLevel
   advanceToLevel (nowLevel + dodPeriod + 5)
 
-
   originLevel <- getOriginationLevel dodDao
-  nowLevel <- getLevel
-  runIO $ putTextLn $ ("Level= " <> (show nowLevel))
 
-  let periodNum = div (nowLevel - originLevel) dodPeriod
-  when (mod periodNum 2 == 0) $ do
-    let waitTill = originLevel + (periodNum + 1)*dodPeriod
-    runIO $ putTextLn $ show ("Not proposal period, waiting till", waitTill)
-    advanceToLevel waitTill
-
-  runIO $ putTextLn $ ("Creating proposal")
-
-  let params = ProposeParams
-        { ppFrozenToken = 10
-        , ppProposalMetadata = lPackValueRaw (1 :: Natural)
-        , ppFrom = dodOwner1
-        }
-
-  withSender dodOwner1 $ call dodDao (Call @"Propose") params
-
-  advanceToLevel (originLevel + 2*dodPeriod)
-
-  forM_ addresses $ \n -> do
-
-    runIO $ putTextLn $ show ("Voting for", n)
-    getFreezeHistory dodDao n >>= \case
-      Just fh -> runIO $ putTextLn $ show fh
-      Nothing -> runIO $ putTextLn "No freeze history"
-
-    let voteParam = NoPermit VoteParam
-          { vVoteType = True
-          , vVoteAmount = 1
-          , vProposalKey = makeProposalKey params
-          , vFrom = n
-          }
+  forM_ [1..(1000 :: Natural)] $ \count -> do
 
     nowLevel <- getLevel
     runIO $ putTextLn $ ("Level= " <> (show nowLevel))
 
-    let periodNum = div (nowLevel - originLevel) dodPeriod
-    runIO $ putTextLn $ show ("In level", originLevel, nowLevel, periodNum)
-
-    when (mod periodNum 2 == 1) $ do
+    let periodNum = div ((nowLevel + 10) - originLevel) dodPeriod
+    runIO $ putTextLn $ ("Period= " <> (show periodNum))
+    when (mod periodNum 2 == 0) $ do
       let waitTill = originLevel + (periodNum + 1)*dodPeriod
-      runIO $ putTextLn $ show ("In proposal period, waiting till", waitTill)
+      runIO $ putTextLn $ show ("Not proposal period, waiting till", waitTill)
       advanceToLevel waitTill
 
-    withSender n $ call dodDao (Call @"Vote") [voteParam]
+    runIO $ putTextLn $ ("Creating proposal")
+
+    let params = ProposeParams
+          { ppFrozenToken = 10
+          , ppProposalMetadata = lPackValueRaw count
+          , ppFrom = dodOwner1
+          }
+
+    withSender dodOwner1 $ call dodDao (Call @"Propose") params
+
+  advanceToLevel (originLevel + 2*dodPeriod)
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 1)
-  #-}
