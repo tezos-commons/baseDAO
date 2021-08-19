@@ -2,6 +2,7 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE NumericUnderscores #-}
 -- | Contains tests on @propose@ entrypoint logic for testing the Ligo contract.
 module Test.Ligo.BaseDAO.Proposal.Propose
   ( FailureReason(..)
@@ -15,6 +16,7 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , nonUniqueProposalEvenAfterDrop
   , proposalBoundedValue
   , proposerIsReturnedFeeAfterSucceeding
+  , proposalStressTest
   , rejectProposal
   , validProposal
   , validProposalWithFixedFee
@@ -521,3 +523,49 @@ proposalBoundedValue originateFn = do
     call dodDao (Call @"Propose") params
       & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
 
+proposalStressTest
+  :: forall caps base m.
+    ( MonadNettest caps base m
+    , HasCallStack
+    )
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+proposalStressTest originateFn = do
+  DaoOriginateData {..} <- originateFn
+    ((ConfigDesc $ configConsts { cmMaxProposals = Just 1000 }) >>-
+     (ConfigDesc $ Period 100) >>- testConfig) defaultQuorumThreshold
+
+  owner1Balance <- getBalance dodOwner1
+  when (owner1Balance < 1_e6) $ do
+    transfer $ TransferData dodOwner1 (toMutez 1_e6) DefEpName ()
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! 100000)
+
+  originLevel <- getOriginationLevel dodDao
+
+  -- Ensure that we are in a proposal period, or wait, if we are not yet there.
+  let ensureProposalPeriod = do
+        nowLevel <- getLevel
+        let periodNum = div ((nowLevel + 10) - originLevel) dodPeriod
+        when (even periodNum) $ do
+          let waitTill = originLevel + (periodNum + 1)*dodPeriod
+          advanceToLevel waitTill
+
+  -- Create a thousand proposals in batchs of 100
+  forM_ [0..(99 :: Natural)] $ \count -> do
+    let multiplier = 10
+    let range = [( count * multiplier + 1 ) .. ((count+1) * multiplier )]
+    ensureProposalPeriod
+
+    runIO $ putTextLn $ show ("creating proposals" :: Text, count*multiplier + 1, multiplier)
+    withSender dodOwner1 $ inBatch $ do
+      traverse_ (\c ->
+        let params = ProposeParams
+              { ppFrozenToken = 10
+              , ppProposalMetadata = lPackValueRaw c
+              , ppFrom = dodOwner1
+              }
+        in call dodDao (Call @"Propose") params) range
+
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount .! 1)

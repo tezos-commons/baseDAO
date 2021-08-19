@@ -173,4 +173,10 @@ test_BaseDAO_Proposal =
       , nettestScenarioCaps "proposal saves quorum for cycle" $
           checkProposalSavesQuorum (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
+
+  , testGroup "Stress tests:"
+      [ nettestScenarioCaps "proposals creation scales adequetly" $
+          proposalStressTest (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      ]
+
   ]
