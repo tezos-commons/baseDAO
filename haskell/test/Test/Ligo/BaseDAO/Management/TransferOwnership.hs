@@ -72,6 +72,8 @@ changeToPendingAdmin withOriginatedFn initialStorage =
       withSender owner $ call baseDao (Call @"Transfer_ownership")
         (#newOwner .! wallet1)
       withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
+      administrator <- (sAdminRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
+      assert (administrator == wallet1) "Administrator was not set from pending owner"
 
 noPendingAdmin
   :: MonadNettest caps base m
@@ -121,11 +123,8 @@ rewritePendingOwner withOriginatedFn initialStorage =
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! wallet2)
         pure ()
-      -- Make the accept ownership call from wallet1 and see that it fails
-      withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
-      -- Make the accept ownership call from wallet1 and see that it works
-      withSender wallet2 $ call baseDao (Call @"Accept_ownership") ()
+      pendingOwner <- (sPendingOwnerRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
+      assert (pendingOwner == wallet2) "Pending owner from earlier call was not re-written"
 
 invalidatePendingOwner
   :: MonadNettest caps base m
@@ -139,10 +138,8 @@ invalidatePendingOwner withOriginatedFn initialStorage =
           call baseDao (Call @"Transfer_ownership")
             (#newOwner .! owner)
           pure ()
-      -- Make the accept ownership call from wallet1 and see that it fails
-      -- with 'not pending owner' error
-      withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
-        & expectNotPendingOwner
+      administrator <- (sAdminRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
+      assert (administrator == owner) "Pending owner from earlier call was not re-written"
 
 bypassAcceptForSelf
   :: MonadNettest caps base m
@@ -153,11 +150,6 @@ bypassAcceptForSelf withOriginatedFn initialStorage =
       withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner .! (unTAddress baseDao))
-      -- Same call should return error, because admin has been changed
-      withSender owner $ do
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner .! (unTAddress baseDao))
-        & expectNotAdmin
       currentAdmin <- (sAdminRPC . fsStorageRPC) <$> getStorage @FullStorage (unTAddress baseDao)
       assert (currentAdmin == (unTAddress baseDao)) "Admin address was not set"
 
