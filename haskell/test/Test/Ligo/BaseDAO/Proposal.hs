@@ -9,7 +9,7 @@ module Test.Ligo.BaseDAO.Proposal
 import Lorentz hiding (assert, (>>))
 import Universum
 
-import Morley.Nettest.Tasty (nettestScenarioCaps)
+import Morley.Nettest.Tasty (nettestScenarioCaps, nettestScenarioOnEmulatorCaps)
 import Test.Tasty (TestTree, testGroup)
 
 import Ligo.BaseDAO.Types
@@ -175,8 +175,11 @@ test_BaseDAO_Proposal =
       ]
 
   , testGroup "Stress tests:"
-      [ nettestScenarioCaps "proposals creation scales adequetly" $
+      [ nettestScenarioOnEmulatorCaps "proposals creation scales adequetly" $
+          proposalStressTest_ (originateLigoDaoWithConfigDesc dynRecUnsafe)
+      , nettestScenarioCaps "proposals creation scales adequetly using preloaded storage" $
           proposalStressTest (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
       ]
 
   ]

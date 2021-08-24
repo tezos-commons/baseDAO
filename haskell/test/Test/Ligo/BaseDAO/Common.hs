@@ -43,6 +43,7 @@ import Named ((!))
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
+import Ligo.Util
 import Test.Ligo.BaseDAO.Common.Errors as Errors
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
 import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
@@ -164,6 +165,7 @@ originateLigoDaoWithConfig extra config qt = do
   tokenContract <- chAddress <$> originateSimple "TokenContract" [] dummyFA2Contract
   guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
+
   let fullStorage = FullStorage
         { fsStorage =
             ( mkStorage
@@ -182,6 +184,7 @@ originateLigoDaoWithConfig extra config qt = do
             }
         , fsConfig = config
         }
+  --let fullStorage'' = fromVal @FullStorage ($(fetchValue @FullStorage "/tmp/storage-1.tz" "__"))
   let
     originateData = UntypedOriginateData
       { uodName = "BaseDAO"

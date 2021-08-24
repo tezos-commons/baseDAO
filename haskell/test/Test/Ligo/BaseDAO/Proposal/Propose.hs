@@ -17,6 +17,7 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , proposalBoundedValue
   , proposerIsReturnedFeeAfterSucceeding
   , proposalStressTest
+  , proposalStressTest_
   , rejectProposal
   , validProposal
   , validProposalWithFixedFee
@@ -26,10 +27,14 @@ module Test.Ligo.BaseDAO.Proposal.Propose
 import Universum
 
 import Lorentz hiding (assert, (>>))
+import Michelson.Printer
+import Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Nettest
 import Util.Named
 
+import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
+import Ligo.Util
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
@@ -523,13 +528,13 @@ proposalBoundedValue originateFn = do
     call dodDao (Call @"Propose") params
       & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
 
-proposalStressTest
+proposalStressTest_
   :: forall caps base m.
-    ( MonadNettest caps base m
+    ( MonadEmulated caps base m
     , HasCallStack
     )
   => (ConfigDesc Config -> OriginateFn m) -> m ()
-proposalStressTest originateFn = do
+proposalStressTest_ originateFn = do
   DaoOriginateData {..} <- originateFn
     ((ConfigDesc $ configConsts { cmMaxProposals = Just 1000 }) >>-
      (ConfigDesc $ Period 100) >>- testConfig) defaultQuorumThreshold
@@ -567,5 +572,28 @@ proposalStressTest originateFn = do
               }
         in call dodDao (Call @"Propose") params) range
 
+  storage <- getFullStorage @FullStorage (unTAddress dodDao)
+
+  runIO $ putTextLn $ toText $ printTypedValue True (toVal storage)
+
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount .! 1)
+
+proposalStressTest
+  :: forall caps base m.
+    ( MonadNettest caps base m
+    , HasCallStack
+    )
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+proposalStressTest originateFn = do
+  let fullStorage = fromVal @FullStorage ($(fetchValue @FullStorage "/tmp/storage.tz" "__"))
+  let
+    originateData = UntypedOriginateData
+      { uodName = "BaseDAO"
+      , uodBalance = toMutez 0
+      , uodStorage = untypeValue $ toVal $ fullStorage
+      , uodContract = convertContract baseDAOContractLigo
+      }
+
+  daoUntyped <- originateUntyped originateData
+  pure ()
