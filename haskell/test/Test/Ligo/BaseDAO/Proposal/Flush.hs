@@ -73,9 +73,19 @@ flushAcceptedProposals originateFn = do
 
   -- Checking freezing histories of proposer and voters
   fhOwner1 <- getFreezeHistory dodDao dodOwner1
-  fhOwner1 @== Just (AddressFreezeHistory 0 0 1 10)
+  fhOwner1 @== Just AddressFreezeHistory
+    { fhCurrentStageNum = 1
+    , fhStaked = 10
+    , fhCurrentUnstaked = 0
+    , fhPastUnstaked = 0
+    }
   fhOwner2 <- getFreezeHistory dodDao dodOwner2
-  fhOwner2 @== Just (AddressFreezeHistory 0 0 2 15)
+  fhOwner2 @== Just AddressFreezeHistory
+    { fhCurrentStageNum  = 2
+    , fhStaked = 15
+    , fhCurrentUnstaked = 0
+    , fhPastUnstaked = 0
+    }
 
   -- Advance one voting period to a proposing stage.
   proposalStart <- getProposalStartLevel dodDao key1
@@ -85,9 +95,19 @@ flushAcceptedProposals originateFn = do
   checkIfAProposalExist key1 dodDao False
 
   fhOwner1' <- getFreezeHistory dodDao dodOwner1
-  fhOwner1' @== Just (AddressFreezeHistory 0 10 3 0)
+  fhOwner1' @== Just AddressFreezeHistory
+    { fhCurrentStageNum = 3
+    , fhStaked = 0
+    , fhCurrentUnstaked = 0
+    , fhPastUnstaked = 10
+    }
   fhOwner2' <- getFreezeHistory dodDao dodOwner2
-  fhOwner2' @== Just (AddressFreezeHistory 0 15 3 0)
+  fhOwner2' @== Just AddressFreezeHistory
+    { fhCurrentStageNum = 3
+    , fhStaked = 0
+    , fhCurrentUnstaked = 0
+    , fhPastUnstaked = 15
+    }
 
 flushAcceptedProposalsWithAnAmount
   :: (MonadNettest caps base m, HasCallStack)

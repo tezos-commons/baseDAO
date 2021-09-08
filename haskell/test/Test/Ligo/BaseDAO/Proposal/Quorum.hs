@@ -74,7 +74,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
     call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
 
   quorumThresholdActual_ <- getQtAtCycle dodDao
-  let quorumThresholdExpected_ = QuorumThresholdAtCycle 1 (mkQuorumThreshold 3 10) 10
+  let quorumThresholdExpected_ = QuorumThresholdAtCycle (mkQuorumThreshold 3 10) 1 10
   assert (quorumThresholdActual_ == quorumThresholdExpected_) "Unexpected quorumThreshold update"
 
   -- skip this proposal period and next voting period to be in next proposal period
@@ -89,7 +89,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
   -- participation = 10/100 = 1/10
   -- so possible_new_quorum = 3/10 * (1 - 0.05)  + (1/10 * 5/100)
   -- so 3/10 * (19/20) + (5/1000) = 57/200 + 1/200 = 58/200 = 29/100
-  let quorumThresholdExpected = QuorumThresholdAtCycle 2 (calculateThreshold 19 5 100 10 $ mkQuorumThreshold 3 10) 10
+  let quorumThresholdExpected = QuorumThresholdAtCycle (calculateThreshold 19 5 100 10 $ mkQuorumThreshold 3 10) 2 10
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkQuorumThresholdDynamicUpdateUpperBound
@@ -134,7 +134,7 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   --
   -- min_quorum = (3/10) / 1.07 = 0.28
   -- max_quorum = (3/10) * (107/100) = 321/1000 = 0.321
-  let quorumThresholdExpected = QuorumThresholdAtCycle 2 (calculateThreshold 7 5 100 100 $ mkQuorumThreshold 3 10) 100
+  let quorumThresholdExpected = QuorumThresholdAtCycle (calculateThreshold 7 5 100 100 $ mkQuorumThreshold 3 10) 2 100
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkQuorumThresholdDynamicUpdateLowerBound
@@ -179,7 +179,7 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   --
   -- min_quorum = (3/10) / (119/100) = 300/1190 = 0.2521
   -- let expected = QuorumThresholdAtCycle 2 (mkQuorumThreshold 300 1190) 100
-  let quorumThresholdExpected = QuorumThresholdAtCycle 2 (calculateThreshold 19 25 100 100 $ mkQuorumThreshold 3 10) 100
+  let quorumThresholdExpected = QuorumThresholdAtCycle (calculateThreshold 19 25 100 100 $ mkQuorumThreshold 3 10) 2 100
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkProposalSavesQuorum
