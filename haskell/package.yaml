@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 name:                baseDAO-ligo-meta
-version:             0.3.1.0
+version:             0.4.0.0
 license:             MIT
 license-file:        LICENSE
 author:              Serokell, Tocqueville Group
