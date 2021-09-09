@@ -7,9 +7,13 @@
 #include "types.mligo"
 #include "proposal.mligo"
 #include "helper/unpack.mligo"
-#include "base_DAO.mligo"
 
 #include "treasuryDAO/types.mligo"
+
+// The following include is required so that we have a function with an
+// entrypoint type to use with `compile-storage` command to make Michelson
+// storage expression.
+#include "base_DAO.mligo"
 
 // -------------------------------------
 // Configuration Lambdas
@@ -31,7 +35,7 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
     | None -> unit in
 
   match unpack_proposal_metadata(params.proposal_metadata) with
-    | Update_guardian addr -> unit
+    | Update_guardian _addr -> unit
     | Transfer_proposal tpm ->
         let is_all_transfers_valid (transfer_type: transfer_type) =
           match transfer_type with

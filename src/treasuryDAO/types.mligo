@@ -7,7 +7,6 @@
 (*
  * Contract Extra
  *)
-
 type initial_treasuryDAO_storage =
   { base_data : initial_data
   ; frozen_scale_value : nat
@@ -19,18 +18,17 @@ type initial_treasuryDAO_storage =
   ; max_xtz_amount : tez
   }
 
-// Treasury dao `proposal_metadata` contains the type of proposal.
 type treasury_dao_transfer_proposal =
   { agora_post_id : nat
   ; transfers : transfer_type list
   }
 
+// Treasury dao `proposal_metadata`, defining the type of its proposals.
 type treasury_dao_proposal_metadata =
   | Transfer_proposal of treasury_dao_transfer_proposal
   | Update_guardian of update_guardian
 
-// -- Unpack Helpers (fail if the unpacked result is none) -- //
-
+// Unpack proposal metadata (fail if the unpacked result is none).
 let unpack_proposal_metadata (pm: proposal_metadata) : treasury_dao_proposal_metadata =
   match ((Bytes.unpack pm) : (treasury_dao_proposal_metadata option)) with
   | Some (v) -> v

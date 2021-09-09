@@ -49,7 +49,7 @@ let bound_qt (qt, min_qt, max_qt : quorum_fraction * quorum_fraction * quorum_fr
   else qt
 
 [@inline]
-// Returns the 'cycle' number of which the given 'stage' number is part of.
+// Returns the `cycle` number of which the given `stage` number is part of.
 let stage_to_cycle (p: nat): nat = (p + 1n) / 2n
 
 [@inline]

@@ -29,7 +29,7 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
     else (failwith("PROPOSAL_NOT_EXIST") : proposal)
 
 // Gets the current stage counting how many `period` s have passed since
-// the 'start_level`. The stages are zero-index.
+// the `start`. The stages are zero-index.
 let get_current_stage_num(start, vp : blocks * period) : nat =
   match is_nat((Tezos.level - start.blocks) : int) with
   | Some (elapsed_levels) -> elapsed_levels/vp.blocks
@@ -255,7 +255,7 @@ let do_total_vote_meet_quorum_threshold (proposal, store: proposal * storage): b
   let reached_quorum = (votes_placed * quorum_denominator) / total_supply in
   (reached_quorum >= proposal.quorum_threshold.numerator)
 
-// Delete a proposal from 'proposal_key_list_sort_by_level'
+// Delete a proposal from `proposal_key_list_sort_by_level`
 [@inline]
 let delete_proposal
     (level, proposal_key, store : blocks * proposal_key * storage): storage =
