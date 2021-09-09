@@ -9,8 +9,12 @@ author:              Serokell, Tocqueville Group
 git:                 git@github.com:tezos-commons/baseDAO.git
 copyright:           2021 TQ Tezos
 
-extra-source-files:
+extra-doc-files:
 - README.md
+extra-source-files:
+- resources/baseDAO.tz
+- resources/registryDAO_storage.tz
+- resources/treasuryDAO_storage.tz
 
 description:         Tools and tests for the LIGO baseDAO contract.
 
@@ -94,7 +98,7 @@ library:
   dependencies:
     - containers
     - cleveland
-    - directory
+    - file-embed
     - filepath
     - text
     - fmt
@@ -107,6 +111,7 @@ library:
     - named
     - template-haskell
     - universum
+    - with-utf8
 
 executables:
   baseDAO-ligo-meta:

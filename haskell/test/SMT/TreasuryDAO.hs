@@ -17,10 +17,11 @@ import Named (NamedF(..))
 
 import Lorentz hiding (and, now, (>>))
 import Michelson.Text (unsafeMkMText)
+import Util.Named ((.!))
 
 import Ligo.BaseDAO.Common.Types
+import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
 import Ligo.BaseDAO.Types
-import Ligo.Util
 import SMT.Common.Gen
 import SMT.Common.Helper
 import SMT.Common.Run
@@ -33,7 +34,7 @@ import Test.Ligo.TreasuryDAO.Types
 hprop_TreasuryDaoSMT :: Property
 hprop_TreasuryDaoSMT =
   let
-    treasuryFs = fromVal ($(fetchValue @FullStorage "haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
+    treasuryFs = #treasuryFs .! baseDAOTreasuryStorageLigo
     option = SmtOption
       { soMkPropose = genProposeTreasuryDao
       , soMkCustomCalls = genCustomCallsTreasuryDao

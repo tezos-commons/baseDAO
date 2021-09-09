@@ -6,6 +6,9 @@
 # Build output
 out
 
+# Haskell library resources
+/haskell/resources
+
 # npm
 /typescript/baseDAO/node_modules
 /typescript/baseDAO/yarn-error.log

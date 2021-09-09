@@ -26,7 +26,6 @@ import Util.Named
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
-import Ligo.Util
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.RegistryDAO.Types
 
@@ -673,7 +672,7 @@ test_RegistryDAO =
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
     initialStorage :: Address -> FullStorage
     initialStorage admin = let
-      fs = fromVal ($(fetchValue @FullStorage "haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
+      fs = baseDAORegistryStorageLigo
       oldStorage = fsStorage fs
       oldConfig = fsConfig fs
 
