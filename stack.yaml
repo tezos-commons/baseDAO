@@ -1,9 +1,56 @@
 # SPDX-FileCopyrightText: 2021 TQ Tezos
 # SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-resolver: haskell/snapshot.yaml
+# To update hackage and stackage indexes used by CI run:
+# $ niv update hackage.nix; niv update stackage.nix
+resolver: lts-17.3
 
 packages:
   - haskell
 
-# See extra-deps in haskell/snapshot.yaml
+extra-deps:
+# Stable parts of morley available from Hackage
+- morley-prelude-0.4.2
+- morley-1.15.1
+- lorentz-0.12.1
+
+- git: https://gitlab.com/morley-framework/morley.git
+  # ^ CI cannot use ssh, so we use http clone here
+  commit: a726d42f89f83aa794f381b5332a542b634ba057 # master
+  subdirs:
+    - code/cleveland
+    - code/morley-client
+- git: https://gitlab.com/morley-framework/indigo.git
+  commit: 3812248243e58ed7eae4579c777751fbe32f897a # master
+  subdirs:
+    - .
+- git: https://gitlab.com/morley-framework/morley-ledgers.git
+  commit: 2c9c23d50b5cef62d71572573ea760a01b44d7cf # master
+  subdirs:
+    - code/morley-ledgers
+- git: https://gitlab.com/morley-framework/morley-metadata.git
+  commit: fecdf4db63a49412a750564119f2f94aa04afd80 # master
+  subdirs:
+    - code/morley-metadata
+
+- git: https://github.com/serokell/base-noprelude.git
+  commit: 87df0899801dcdffd08ef7c3efd3c63e67e623c2
+- git: https://github.com/serokell/galois-field.git
+  commit: 576ba98ec947370835a1f308895037c7aa7f8b71
+- git: https://github.com/serokell/elliptic-curve.git
+  commit: b8a3d0cf8f7bacfed77dc3b697f5d08bd33396a8
+- git: https://github.com/serokell/pairing.git
+  commit: cf86cf1f6b03f478a439703b050c520a9d455353
+- git: https://github.com/int-index/caps.git
+  commit: c5d61837eb358989b581ed82b1e79158c4823b1b
+
+- hex-text-0.1.0.0
+- named-0.3.0.1
+- show-type-0.1.1
+- summoner-2.0.1.1
+- generic-data-0.8.3.0
+- neat-interpolation-0.3.2.6
+- megaparsec-8.0.0
+# we need https://github.com/feuerbach/tasty/pull/279 which is included in tasty-1.4
+- tasty-1.4
+- tasty-ant-xml-1.1.8

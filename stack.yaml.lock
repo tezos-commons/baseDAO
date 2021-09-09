@@ -5,19 +5,6 @@
 
 packages:
 - completed:
-    subdir: .
-    name: indigo
-    version: 0.5.0
-    git: https://gitlab.com/morley-framework/indigo.git
-    pantry-tree:
-      size: 14359
-      sha256: d7c8a427f2c1929c1042b6e931eb60516e56de92a8c6150e03f829d666d966c0
-    commit: f564a0ea3ec66edb3fd074c75a1e9bc5a80f3d35
-  original:
-    subdir: .
-    git: https://gitlab.com/morley-framework/indigo.git
-    commit: f564a0ea3ec66edb3fd074c75a1e9bc5a80f3d35
-- completed:
     hackage: morley-prelude-0.4.2@sha256:cd8ce21852fadc521865d9611adac23809e6193471691b2879fb2436c81ca0ea,2216
     pantry-tree:
       size: 340
@@ -32,54 +19,77 @@ packages:
   original:
     hackage: morley-1.15.1
 - completed:
-    hackage: lorentz-0.12.0@sha256:45ce6de9577d9e186d5d89e1517d4fbc907de3ee7be825a10f37758299073b5e,3874
+    hackage: lorentz-0.12.1@sha256:cf59b2767048b6ad95c02f882963ace35b989583aa02babf97efa980f2776d61,3874
     pantry-tree:
       size: 3472
-      sha256: 9292d4914016ed23333bc214c7fe6af5f2116050d2574387ab61f57f6a353cd9
+      sha256: 192a4e14eef17e7af18f2938b9a044b391f44736bffaeb08dbbdfab3f6aaca67
   original:
-    hackage: lorentz-0.12.0
+    hackage: lorentz-0.12.1
 - completed:
-    hackage: hex-text-0.1.0.0@sha256:abda1204c93d7d2c272088876eacd1de9bb9bf9adaaaa23ed32ac232a8436252,1139
+    subdir: code/cleveland
+    name: cleveland
+    version: 0.1.0
+    git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 314
-      sha256: 3a5b60f43c0dc4c3d5db342e23fded691065abd316af6124c8c55973367a4ef4
+      size: 13652
+      sha256: 95baa2a6746a50a6852d11232a2f3a1f538003a7d77d28893029f6b6091fb3a4
+    commit: a726d42f89f83aa794f381b5332a542b634ba057
   original:
-    hackage: hex-text-0.1.0.0
+    subdir: code/cleveland
+    git: https://gitlab.com/morley-framework/morley.git
+    commit: a726d42f89f83aa794f381b5332a542b634ba057
 - completed:
-    hackage: named-0.3.0.1@sha256:2975d50c9c5d88095026ffc1303d2d9be52e5f588a8f8bcb7003a04b79f10a06,2312
+    subdir: code/morley-client
+    name: morley-client
+    version: 0.1.0
+    git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 426
-      sha256: e0df5f146ecd48ef129dd74f868e8d2d754f0a11b36c5d0e56bd4b1947433c9f
+      size: 3314
+      sha256: 1cf2c71f2b01798aa8e61a195788b4674b43ee637b7ab623539fefbcfac2778e
+    commit: a726d42f89f83aa794f381b5332a542b634ba057
   original:
-    hackage: named-0.3.0.1
+    subdir: code/morley-client
+    git: https://gitlab.com/morley-framework/morley.git
+    commit: a726d42f89f83aa794f381b5332a542b634ba057
 - completed:
-    hackage: show-type-0.1.1@sha256:24f681a3481b3f9630e619d816054804ba1bd6cc05b5978ddd2cece8499ff2fa,1154
+    subdir: .
+    name: indigo
+    version: 0.5.0
+    git: https://gitlab.com/morley-framework/indigo.git
     pantry-tree:
-      size: 214
-      sha256: c07e39492e0b8da34f87b3f7516f7739d60543013e7f22bc7db0dbe99eb57540
+      size: 14359
+      sha256: bf088b3584128578f723c641ab2a19d664880e021ac261d3f1ab29f7325ac487
+    commit: 3812248243e58ed7eae4579c777751fbe32f897a
   original:
-    hackage: show-type-0.1.1
+    subdir: .
+    git: https://gitlab.com/morley-framework/indigo.git
+    commit: 3812248243e58ed7eae4579c777751fbe32f897a
 - completed:
-    hackage: summoner-2.0.1.1@sha256:8ced26ff256e012447e2c6a49a20102511adbea605624f00a059e1e85c366719,6993
+    subdir: code/morley-ledgers
+    name: morley-ledgers
+    version: 0.2.0.1
+    git: https://gitlab.com/morley-framework/morley-ledgers.git
     pantry-tree:
-      size: 6092
-      sha256: d4650b53899bda375f27f2b82a3729f7f5a235e4dd732cb50b22a4e838a3d45d
+      size: 1524
+      sha256: 767fbe67235401ded651e699621485939a02e1d8c477ab8d08378557e0cd4ff8
+    commit: 2c9c23d50b5cef62d71572573ea760a01b44d7cf
   original:
-    hackage: summoner-2.0.1.1
+    subdir: code/morley-ledgers
+    git: https://gitlab.com/morley-framework/morley-ledgers.git
+    commit: 2c9c23d50b5cef62d71572573ea760a01b44d7cf
 - completed:
-    hackage: tasty-1.4@sha256:6b28c0512f83255dc07cc2ef6a1fc7922076c1d9ba03a1083f3e66b672ce9388,2518
+    subdir: code/morley-metadata
+    name: morley-metadata
+    version: '0'
+    git: https://gitlab.com/morley-framework/morley-metadata.git
     pantry-tree:
-      size: 1804
-      sha256: c19b7e4e10627e5102309ea3a65c9ba8ad9c1e3416f8dcc2ae6bbee9fddf1507
+      size: 1216
+      sha256: 87818bf5771022af48857f1af99f94f84633038c5f3e7bfdda24eb78c7042f6e
+    commit: fecdf4db63a49412a750564119f2f94aa04afd80
   original:
-    hackage: tasty-1.4
-- completed:
-    hackage: tasty-ant-xml-1.1.8@sha256:562a52a7a61235f1a3e87ccf4476f6055d56a1dde3d044be21d661c74a79dea4,916
-    pantry-tree:
-      size: 278
-      sha256: b3d05f4eb2542fed1d66b36156f5ae8c1b5e64e42f879146ae7bc8e2daa28452
-  original:
-    hackage: tasty-ant-xml-1.1.8
+    subdir: code/morley-metadata
+    git: https://gitlab.com/morley-framework/morley-metadata.git
+    commit: fecdf4db63a49412a750564119f2f94aa04afd80
 - completed:
     name: base-noprelude
     version: 4.14.1.0
@@ -125,32 +135,6 @@ packages:
     git: https://github.com/serokell/pairing.git
     commit: cf86cf1f6b03f478a439703b050c520a9d455353
 - completed:
-    subdir: code/cleveland
-    name: cleveland
-    version: 0.1.0
-    git: https://gitlab.com/morley-framework/morley.git
-    pantry-tree:
-      size: 13652
-      sha256: 95baa2a6746a50a6852d11232a2f3a1f538003a7d77d28893029f6b6091fb3a4
-    commit: a726d42f89f83aa794f381b5332a542b634ba057
-  original:
-    subdir: code/cleveland
-    git: https://gitlab.com/morley-framework/morley.git
-    commit: a726d42f89f83aa794f381b5332a542b634ba057
-- completed:
-    subdir: code/morley-client
-    name: morley-client
-    version: 0.1.0
-    git: https://gitlab.com/morley-framework/morley.git
-    pantry-tree:
-      size: 3314
-      sha256: 1cf2c71f2b01798aa8e61a195788b4674b43ee637b7ab623539fefbcfac2778e
-    commit: a726d42f89f83aa794f381b5332a542b634ba057
-  original:
-    subdir: code/morley-client
-    git: https://gitlab.com/morley-framework/morley.git
-    commit: a726d42f89f83aa794f381b5332a542b634ba057
-- completed:
     name: caps
     version: '0'
     git: https://github.com/int-index/caps.git
@@ -162,31 +146,68 @@ packages:
     git: https://github.com/int-index/caps.git
     commit: c5d61837eb358989b581ed82b1e79158c4823b1b
 - completed:
-    subdir: code/morley-ledgers
-    name: morley-ledgers
-    version: 0.2.0.1
-    git: https://gitlab.com/morley-framework/morley-ledgers.git
+    hackage: hex-text-0.1.0.0@sha256:abda1204c93d7d2c272088876eacd1de9bb9bf9adaaaa23ed32ac232a8436252,1139
     pantry-tree:
-      size: 1524
-      sha256: b388c3530d489008951db1a4aed025186559aba43be3f0ecaccba85b8fb8a8ed
-    commit: 129df0364df17127941efe1beed052bf5c320d3b
+      size: 314
+      sha256: 3a5b60f43c0dc4c3d5db342e23fded691065abd316af6124c8c55973367a4ef4
   original:
-    subdir: code/morley-ledgers
-    git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 129df0364df17127941efe1beed052bf5c320d3b
+    hackage: hex-text-0.1.0.0
 - completed:
-    subdir: code/morley-metadata
-    name: morley-metadata
-    version: '0'
-    git: https://gitlab.com/morley-framework/morley-metadata.git
+    hackage: named-0.3.0.1@sha256:2975d50c9c5d88095026ffc1303d2d9be52e5f588a8f8bcb7003a04b79f10a06,2312
     pantry-tree:
-      size: 1216
-      sha256: 9e218842c831b9f72be24e8e6319ffe29df0a99ec3c2dc57d3681a5865ad55bc
-    commit: cf434b81bd54939855541abc320552adcefd1715
+      size: 426
+      sha256: e0df5f146ecd48ef129dd74f868e8d2d754f0a11b36c5d0e56bd4b1947433c9f
   original:
-    subdir: code/morley-metadata
-    git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: cf434b81bd54939855541abc320552adcefd1715
+    hackage: named-0.3.0.1
+- completed:
+    hackage: show-type-0.1.1@sha256:24f681a3481b3f9630e619d816054804ba1bd6cc05b5978ddd2cece8499ff2fa,1154
+    pantry-tree:
+      size: 214
+      sha256: c07e39492e0b8da34f87b3f7516f7739d60543013e7f22bc7db0dbe99eb57540
+  original:
+    hackage: show-type-0.1.1
+- completed:
+    hackage: summoner-2.0.1.1@sha256:8ced26ff256e012447e2c6a49a20102511adbea605624f00a059e1e85c366719,6993
+    pantry-tree:
+      size: 6092
+      sha256: d4650b53899bda375f27f2b82a3729f7f5a235e4dd732cb50b22a4e838a3d45d
+  original:
+    hackage: summoner-2.0.1.1
+- completed:
+    hackage: generic-data-0.8.3.0@sha256:fef21320697370fa1fadc14f72ac3ad8092b021f5371b315be3c9f3bde44c274,3710
+    pantry-tree:
+      size: 2061
+      sha256: bac628a423a6f86675d062f513278285b2a370f8f4a350c65a880b7043b6fb86
+  original:
+    hackage: generic-data-0.8.3.0
+- completed:
+    hackage: neat-interpolation-0.3.2.6@sha256:05a7516f4ffc86ba1ca4e9c1cddda5a062131ae518e1d423d6f162c214be4cc1,3066
+    pantry-tree:
+      size: 514
+      sha256: f8f5b320c436ee1316fa1b7c38235af8f0a3d11cbba714d57e3ffeedeb05ed7a
+  original:
+    hackage: neat-interpolation-0.3.2.6
+- completed:
+    hackage: megaparsec-8.0.0@sha256:362f85e243ecbcb550e1de6e5c74ba5a50c09edaa1208c99bc5b9fd242227fc6,3808
+    pantry-tree:
+      size: 1446
+      sha256: 955117c00a86970f2d0c215f33cf5293b16589c04678a0a790c03368ab6fd0aa
+  original:
+    hackage: megaparsec-8.0.0
+- completed:
+    hackage: tasty-1.4@sha256:6b28c0512f83255dc07cc2ef6a1fc7922076c1d9ba03a1083f3e66b672ce9388,2518
+    pantry-tree:
+      size: 1804
+      sha256: c19b7e4e10627e5102309ea3a65c9ba8ad9c1e3416f8dcc2ae6bbee9fddf1507
+  original:
+    hackage: tasty-1.4
+- completed:
+    hackage: tasty-ant-xml-1.1.8@sha256:562a52a7a61235f1a3e87ccf4476f6055d56a1dde3d044be21d661c74a79dea4,916
+    pantry-tree:
+      size: 278
+      sha256: b3d05f4eb2542fed1d66b36156f5ae8c1b5e64e42f879146ae7bc8e2daa28452
+  original:
+    hackage: tasty-ant-xml-1.1.8
 snapshots:
 - completed:
     size: 563099
