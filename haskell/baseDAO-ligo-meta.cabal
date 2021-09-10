@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           baseDAO-ligo-meta
-version:        0.3.1.0
+version:        0.4.0.0
 description:    Tools and tests for the LIGO baseDAO contract.
 author:         Serokell, Tocqueville Group
 maintainer:     Serokell, Tocqueville Group
@@ -14,6 +14,10 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
+    resources/baseDAO.tz
+    resources/registryDAO_storage.tz
+    resources/treasuryDAO_storage.tz
+extra-doc-files:
     README.md
 
 source-repository head
@@ -39,7 +43,7 @@ library
       base-noprelude >=4.7 && <5
     , cleveland
     , containers
-    , directory
+    , file-embed
     , filepath
     , fmt
     , lorentz
@@ -52,6 +56,7 @@ library
     , template-haskell
     , text
     , universum
+    , with-utf8
   default-language: Haskell2010
 
 executable baseDAO-ligo-meta

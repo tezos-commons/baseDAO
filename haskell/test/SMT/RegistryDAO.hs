@@ -19,10 +19,11 @@ import Hedgehog.Gen.Michelson (genMText)
 import Hedgehog.Gen.Tezos.Address (genAddress)
 import Lorentz hiding (and, now, (>>))
 import Michelson.Text (unsafeMkMText)
+import Util.Named ((.!))
 
 import Ligo.BaseDAO.Common.Types
+import Ligo.BaseDAO.Contract (baseDAORegistryStorageLigo)
 import Ligo.BaseDAO.Types
-import Ligo.Util
 import SMT.Common.Gen
 import SMT.Common.Helper
 import SMT.Common.Run
@@ -35,7 +36,7 @@ import Test.Ligo.RegistryDAO.Types
 hprop_RegistryDaoSMT :: Property
 hprop_RegistryDaoSMT =
   let
-    registryFs = fromVal ($(fetchValue @FullStorage "haskell/test/registryDAO_storage.tz" "REGISTRY_STORAGE_PATH"))
+    registryFs = #registryFs .! baseDAORegistryStorageLigo
     option = SmtOption
       { soMkPropose = genProposeRegistryDao
       , soMkCustomCalls = genCustomCallsRegistryDao

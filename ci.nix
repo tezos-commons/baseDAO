@@ -67,8 +67,8 @@ rec {
         };
         packages.baseDAO-ligo-meta = {
           preBuild = ''
-            mkdir -p ./haskell/test
-            cp -r ${build-ligo}/* ./haskell/test
+            mkdir -p ./resources
+            cp ${build-ligo}/* ./resources
           '';
         };
       }

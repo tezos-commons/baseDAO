@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-// Corresponds to Token.hs module
-
 #include "common.mligo"
 #include "types.mligo"
 

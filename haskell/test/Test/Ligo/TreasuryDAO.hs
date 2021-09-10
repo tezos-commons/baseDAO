@@ -15,8 +15,8 @@ import Test.Tasty (TestTree, testGroup)
 import Util.Named
 
 import Ligo.BaseDAO.Common.Types
+import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
 import Ligo.BaseDAO.Types
-import Ligo.Util
 import Michelson.Untyped.Entrypoints
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.TreasuryDAO.Types
@@ -308,7 +308,7 @@ originateTreasuryDao
  => (FullStorage -> FullStorage)
  -> OriginateFn m
 originateTreasuryDao modifyStorageFn =
-  let fs = fromVal ($(fetchValue @FullStorage "haskell/test/treasuryDAO_storage.tz" "TREASURY_STORAGE_PATH"))
+  let fs = baseDAOTreasuryStorageLigo
       FullStorage{..} = fs
         & setExtra @Natural [mt|frozen_scale_value|] 1
         & setExtra @Natural [mt|frozen_extra_value|] 0

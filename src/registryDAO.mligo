@@ -128,13 +128,13 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
  * proposal.
  *
  * For 'normal' proposals, the contract_extra is expected to contain the bigmap
- * for registry and bigmap for key update tracking under keys 'registry' and
- * 'registry_affected' keys.
+ * for registry and bigmap for key update tracking under keys `registry` and
+ * `registry_affected`.
  *
  * For 'configuration' proposal, the code expects all the configuration keys
  * included in the proposal (or it throws an error). The expected keys are
- * "frozen_scale_value", "frozen_extra_value", "max_proposal_size", "slash_scale_value"
- * and "slash_division_value". 'None' values are ignored and 'Some' values are
+ * `frozen_scale_value`, `frozen_extra_value`, `max_proposal_size`, `slash_scale_value`
+ * and `slash_division_value`. `None` values are ignored and `Some` values are
  * used for updating corresponding configuraton.
  *)
 let registry_DAO_decision_lambda (input : decision_lambda_input)

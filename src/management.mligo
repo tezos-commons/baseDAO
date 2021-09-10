@@ -6,7 +6,7 @@
 
 (*
  * Auth checks for admin and store the address in parameter to the
- * 'pending_owner' field in storage.
+ * `pending_owner` field in storage.
  *)
 let transfer_ownership (param, store : transfer_ownership_param * storage) : return =
   let store = authorize_admin(store) in
@@ -18,8 +18,8 @@ let transfer_ownership (param, store : transfer_ownership_param * storage) : ret
   in (nil_op, store)
 
 (*
- * Auth check for pending admin and copies the value in 'pending_owner' field
- * to 'admin' field. The 'pending_owner' field is left with the address of the
+ * Auth check for pending admin and copies the value in `pending_owner` field
+ * to `admin` field. The `pending_owner` field is left with the address of the
  * new admin.
  *)
 let accept_ownership(store : storage) : return =

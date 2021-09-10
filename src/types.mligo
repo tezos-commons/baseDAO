@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-// Corresponds to Types.hs module
-
 #if !TYPES_H
 #define TYPES_H
 
@@ -10,7 +8,7 @@
 type token_id = nat
 
 // Frozen token history for an address.
-// This track the stage number in which it was last updated and differentiates between
+// This tracks the stage number in which it was last updated and differentiates between
 // tokens that were frozen during that stage and the ones frozen in any other before.
 // It does so because only tokens that were frozen in the past can be staked, which is
 // also why it tracks staked tokens in a single field.
@@ -23,8 +21,6 @@ type address_freeze_history =
 
 // Frozen token history for all addresses
 type freeze_history = (address, address_freeze_history) big_map
-
-type freeze_history_list = (address * nat) list
 
 // FA2 transfer types
 type transfer_destination =
@@ -55,16 +51,18 @@ type nonce = nat
 // Represents whether a voter has voted against (false) or for (true) a given proposal.
 type vote_type = bool
 
-type voter_map_key = (address * vote_type)
-
-type voter_map = (voter_map_key, nat) map
+// Stores all voter data for a proposal
+type voter_map = (address * vote_type, nat) map
 
 // Amount of blocks.
 type blocks = { blocks : nat }
+
+// Length of a stage, in number of blocks
 type period = blocks
 
-// For efficiency, we only keep a `nat` for the numerator, whereas the
-// denominator is not stored and has a fixed value of `1000000`.
+// Representation of a quorum fraction. For efficiency, we only keep a `nat`
+// for the numerator, whereas the denominator is not stored and has a fixed value
+// of `quorum_denominator`.
 type quorum_fraction = { numerator : int }
 let quorum_denominator = 1000000n
 
@@ -75,7 +73,7 @@ type unsigned_quorum_fraction = { numerator : nat }
 // Quorum threshold that a proposal needs to meet in order to be accepted,
 // expressed as a fraction of the total_supply of frozen tokens, only
 // storing the numerator while denominator is assumed to be
-// fraction_denominator.
+// `quorum_denominator`.
 type quorum_threshold = unsigned_quorum_fraction
 
 // Types to store info of a proposal
@@ -126,7 +124,7 @@ type governance_token =
 // update quorum_threshold_at_cycle will reset the staked count to zero. And
 // since this procedure is called from a `propose` call, which starts the
 // staking of tokens for the cycle, and we increment `staked` count at each
-// 'propose' or 'vote' call, the `staked` field will contain the tokens staked
+// `propose` or `vote` call, the `staked` field will contain the tokens staked
 // in that particular cycle. And the very first `propose` call in a cycle will
 // see the staked tokens from the past cycle, and thus can use it to update the
 // quorum threshold for the current cycle.
@@ -136,8 +134,7 @@ type quorum_threshold_at_cycle =
   ; staked : nat
   }
 
-// A 'delegate' has the permission to `vote` and `propose` on behalf of an address
-
+// A `delegate` has the permission to `vote` and `propose` on behalf of an address
 type delegate =
   [@layout:comb]
   { owner : address
@@ -259,6 +256,8 @@ type decision_lambda_output =
   }
 
 // -- Config -- //
+
+type freeze_history_list = (address * nat) list
 
 type initial_config_data =
   { max_quorum : quorum_threshold

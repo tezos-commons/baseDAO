@@ -6,7 +6,10 @@
 
 #include "../types.mligo"
 
-(* Required version of `Big_map.find_opt`. Fail immediately if the required key does not exist  *)
+(*
+ * Required version of `Big_map.find_opt`.
+ * Fails immediately if the required key does not exist.
+ *)
 let find_big_map (key_name, ce : string * ((string, bytes) big_map)) : (string * bytes) =
   match Big_map.find_opt key_name ce with
   | Some (packed_b) -> (key_name, packed_b)
@@ -17,7 +20,6 @@ let find_big_map (key_name, ce : string * ((string, bytes) big_map)) : (string *
 (*
  * Unpack Helpers
  *
- * All the `unpack_<type>` functions are required version of `Bytes.unpack`.
  * They each fail immediately if the unpacked result is `None`.
  *)
 

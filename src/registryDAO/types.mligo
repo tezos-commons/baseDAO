@@ -30,7 +30,7 @@ type config_proposal =
   ; max_proposal_size : nat option
   }
 
-// Registry dao `proposal_metadata` contains the type of proposal.
+// Registry dao `proposal_metadata`, defining the type its proposals.
 type registry_dao_proposal_metadata =
   | Update_receivers_proposal of update_receiver_param
   | Configuration_proposal of config_proposal
