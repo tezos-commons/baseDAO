@@ -166,7 +166,7 @@ genQuorumThresholdAtCycle :: Natural -> GeneratorT QuorumThresholdAtCycle
 genQuorumThresholdAtCycle staked = do
   quorumThreshold <- Gen.integral (Range.constant 1 3)
   lvl <- get <&> gsLevel
-  pure $ QuorumThresholdAtCycle lvl quorumThreshold staked
+  pure $ QuorumThresholdAtCycle quorumThreshold lvl staked
 
 genModelState :: SmtOption -> GeneratorT (Address -> Address -> ModelState)
 genModelState SmtOption{..} = do

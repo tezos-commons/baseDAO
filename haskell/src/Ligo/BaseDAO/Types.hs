@@ -509,19 +509,13 @@ type CustomEntrypoint = (MText, ByteString)
 type FreezeParam = ("amount" :! Natural)
 type UnfreezeParam = ("amount" :! Natural)
 
--- NOTE: Constructors of the parameter types should remain sorted for the
---'ligoLayout' custom derivation to work.
---
--- TODO #259: The comment above should no longer be the case since the following
--- issue has been fixed:
--- https://gitlab.com/morley-framework/morley/-/issues/527
 data ForbidXTZParam
   = Drop_proposal ProposalKey
+  | Vote [PermitProtected VoteParam]
   | Flush Natural
   | Freeze FreezeParam
   | Unfreeze UnfreezeParam
   | Update_delegate [DelegateParam]
-  | Vote [PermitProtected VoteParam]
   deriving stock (Eq, Show)
 
 instance Buildable ForbidXTZParam where
@@ -547,10 +541,10 @@ instance Buildable Parameter where
   build = genericF
 
 data AddressFreezeHistory = AddressFreezeHistory
-  { fhCurrentUnstaked :: Natural
-  , fhPastUnstaked :: Natural
-  , fhCurrentStageNum :: Natural
+  { fhCurrentStageNum :: Natural
   , fhStaked :: Natural
+  , fhCurrentUnstaked :: Natural
+  , fhPastUnstaked :: Natural
   } deriving stock (Eq, Show)
 
 instance Buildable AddressFreezeHistory where
@@ -568,8 +562,8 @@ customGeneric "GovernanceToken" ligoLayout
 deriving anyclass instance IsoValue GovernanceToken
 
 data QuorumThresholdAtCycle = QuorumThresholdAtCycle
-  { qaLastUpdatedCycle :: Natural
-  , qaQuorumThreshold :: QuorumThreshold
+  { qaQuorumThreshold :: QuorumThreshold
+  , qaLastUpdatedCycle :: Natural
   , qaStaked :: Natural
   } deriving stock (Eq, Show)
 
@@ -663,7 +657,7 @@ mkStorage admin extra metadata lvl tokenAddress qt =
     , sFreezeHistory = mempty
     , sStartLevel = arg #level lvl
     , sFrozenTokenId = frozenTokenId
-    , sQuorumThresholdAtCycle = QuorumThresholdAtCycle 1 (arg #quorumThreshold qt) 0
+    , sQuorumThresholdAtCycle = QuorumThresholdAtCycle (arg #quorumThreshold qt) 1 0
     , sFrozenTotalSupply = 0
     , sDelegates = mempty
     }

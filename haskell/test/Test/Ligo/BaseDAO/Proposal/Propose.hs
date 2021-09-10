@@ -82,7 +82,12 @@ validProposal originateFn = do
 
   -- Check freeze history
   fh <- getFreezeHistory dodDao dodOwner1
-  fh @== Just (AddressFreezeHistory 0 0 1 10)
+  fh @== Just AddressFreezeHistory
+    { fhCurrentStageNum = 1
+    , fhStaked = 10
+    , fhCurrentUnstaked = 0
+    , fhPastUnstaked = 0
+    }
 
 validProposalWithFixedFee
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
@@ -108,7 +113,12 @@ validProposalWithFixedFee = do
   supply <- getFrozenTotalSupply dodDao
   supply @== 52
   fh <- getFreezeHistory dodDao dodOwner1
-  fh @== Just (AddressFreezeHistory 0 0 1 52)
+  fh @== Just AddressFreezeHistory
+    { fhCurrentStageNum = 1
+    , fhStaked = 52
+    , fhCurrentUnstaked = 0
+    , fhPastUnstaked = 0
+    }
 
 proposerIsReturnedFeeAfterSucceeding
   :: forall caps base m. (MonadNettest caps base m, HasCallStack)
