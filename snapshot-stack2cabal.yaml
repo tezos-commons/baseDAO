@@ -8,6 +8,5 @@ name: stack2cabal-snapshot
 resolver: lts-17.3
 packages:
   # the versions must be the same that ci uses, to make sure `stack2cabal` output is identical
-  - git: https://github.com/hasufell/stack2cabal.git
-    commit: afa113beb77569ff21f03fade6ce39edc109598d
-  - hpack-0.34.3
+  - stack2cabal-1.0.12
+  - hpack-0.34.4

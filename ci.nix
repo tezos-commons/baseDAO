@@ -143,14 +143,9 @@ rec {
     local-packages = local-packages;
   };
 
-  # stack2cabal in nixpkgs is broken because fixes for ghc 8.10 have not
-  # been released to hackage yet, take sources from github
-  stack2cabal = pkgs.haskellPackages.stack2cabal.overrideAttrs (o: {
-    src = pkgs.fetchFromGitHub {
-      owner = "hasufell";
-      repo = "stack2cabal";
-      rev = "afa113beb77569ff21f03fade6ce39edc109598d";
-      sha256 = "1zwg1xkqxn5b9mmqafg87rmgln47zsmpgdkly165xdzg38smhmng";
-    };
+  # stack2cabal is broken because of strict constraints, set 'jailbreak' to ignore them
+  stack2cabal = pkgs.haskell.lib.overrideCabal pkgs.haskellPackages.stack2cabal (drv: {
+    jailbreak = true;
+    broken = false;
   });
 }
