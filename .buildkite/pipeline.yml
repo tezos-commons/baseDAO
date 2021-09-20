@@ -136,7 +136,7 @@ steps:
   - label: scheduled granadanet ligo test
     if: build.source == "schedule"
     env:
-      TASTY_NETTEST_NODE_ENDPOINT: "http://granada.testnet.tezos.serokell.team:8732"
+      TASTY_NETTEST_NODE_ENDPOINT: "https://granada.testnet.tezos.serokell.team"
     depends_on:
       - build-ligo
       - build-haskell
