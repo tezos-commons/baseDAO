@@ -18,20 +18,19 @@ import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Hedgehog.Gen.Michelson (genMText)
 import Hedgehog.Gen.Tezos.Address (genAddress)
 import Lorentz hiding (and, div, now, (>>))
-import Morley.Michelson.Text (unsafeMkMText)
 import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAORegistryStorageLigo)
+import Ligo.BaseDAO.RegistryDAO.Types
 import Ligo.BaseDAO.Types
 import SMT.Common.Gen
 import SMT.Common.Helper
 import SMT.Common.Run
 import SMT.Common.Types
 import SMT.Model.BaseDAO.Types
-import Test.Ligo.BaseDAO.Common (makeProposalKey, metadataSize)
+import Test.Ligo.BaseDAO.Common (ContractType(..), makeProposalKey, metadataSize)
 import Test.Ligo.RegistryDAO.Types
-
 
 hprop_RegistryDaoSMT :: Property
 hprop_RegistryDaoSMT =
@@ -46,28 +45,22 @@ hprop_RegistryDaoSMT =
       , soProposalCheck = registryDaoProposalCheck
       , soRejectedProposalSlashValue = registryDaoRejectedProposalSlashValue
       , soDecisionLambda = registryDaoDecisionLambda
-      , soCustomEps = Map.fromList
-          [ ( unsafeMkMText "lookup_registry", lookupRegistryEntrypoint)
-          ]
+      , soCustomEps = \case
+          Lookup_registry p -> lookupRegistryEntrypoint p
+          _ -> pass
       }
   in
     withTests 30 $ property $ do
-      runBaseDaoSMT option
+      runBaseDaoSMT @RegistryCustomEpParam option
 
 addRegistryDaoConfig :: ("registryFs" :! FullStorage) -> FullStorage -> FullStorage
 addRegistryDaoConfig (Arg registryFs) fs =
   let registryStore = registryFs & fsStorage
-      registryConfig = registryFs & fsConfig
   in fs
       { fsStorage = (fs & fsStorage)
           { sExtra = registryStore & sExtra
           }
       , fsConfig = (fs & fsConfig)
-          { cProposalCheck = registryConfig & cProposalCheck
-          , cRejectedProposalSlashValue = registryConfig & cRejectedProposalSlashValue
-          , cDecisionLambda = registryConfig & cDecisionLambda
-          , cCustomEntrypoints = registryConfig & cCustomEntrypoints
-          }
       }
 
 
@@ -75,7 +68,7 @@ addRegistryDaoConfig (Arg registryFs) fs =
 -- Lambdas
 -------------------------------------------------------------------------------
 
-registryDaoProposalCheck :: (ProposeParams, ContractExtra) -> ModelT ()
+registryDaoProposalCheck :: (ProposeParams, ContractExtra) -> ModelT cep ()
 registryDaoProposalCheck (params, extras) = do
   let proposalSize = metadataSize (params & ppProposalMetadata)
       frozenScaleValue = unpackWithError @Natural $ findBigMap "frozen_scale_value" extras
@@ -112,14 +105,14 @@ registryDaoProposalCheck (params, extras) = do
     Update_guardian _ -> pure ()
     Update_contract_delegate _ -> pure ()
 
-registryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
+registryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT cep Natural
 registryDaoRejectedProposalSlashValue (p, extras) = do
   let slashScaleValue = unpackWithError @Natural $ findBigMap "slash_scale_value" extras
       slashDivisionValue = unpackWithError @Natural $ findBigMap "slash_division_value" extras
 
   pure $ (slashScaleValue * (p & plProposerFrozenToken) `div` slashDivisionValue)
 
-registryDaoDecisionLambda :: DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
+registryDaoDecisionLambda :: DecisionLambdaInput -> ModelT cep ([SimpleOperation], ContractExtra, Maybe Address)
 registryDaoDecisionLambda DecisionLambdaInput{..} = do
   let metadata = (diProposal & plMetadata)
         & lUnpackValueRaw @RegistryDaoProposalMetadata
@@ -200,19 +193,18 @@ applyDiffRegistry diffs registry =
 -- Custom entrypoints
 -------------------------------------------------------------------------------
 
-lookupRegistryEntrypoint :: ByteString -> ModelT ()
-lookupRegistryEntrypoint packedParam  = do
+lookupRegistryEntrypoint :: LookupRegistryParam -> ModelT cep ()
+lookupRegistryEntrypoint (LookupRegistryParam key addr)  = do
   store <- getStore
-  let (unpackVal :: Either ModelError (MText, Address, Map MText MText)) = do
-        (key, addr) <- first (const UNPACKING_FAILED) $ lUnpackValueRaw @LookupRegistryParam packedParam
+  let (unpackVal :: Either ModelError (Map MText MText)) = do
 
         packedRegistry <- case Map.lookup "registry" (store & sExtra & unDynamic & bmMap) of
           Just val -> Right val
           Nothing -> Left MISSING_VALUE
         registry <- first (const UNPACKING_FAILED) $ lUnpackValueRaw @(Map MText MText) packedRegistry
-        Right (key, addr, registry)
+        Right registry
   case unpackVal of
-    Right (key, addr, registry) -> do
+    Right registry -> do
       let val = Map.lookup key registry
       let consumerParam :: (MText, (Maybe MText)) = (key, val)
 
@@ -225,7 +217,7 @@ lookupRegistryEntrypoint packedParam  = do
 -- Gen Functions
 -------------------------------------------------------------------------------
 
-genProposeRegistryDao :: MkGenPropose
+genProposeRegistryDao :: MkGenPropose RegistryCustomEpParam
 genProposeRegistryDao senderInput delegate1 invalidFrom = do
   from <- Gen.element [senderInput, invalidFrom, delegate1]
   mkMetadata <- genRegistryDaoProposalMetadata
@@ -239,21 +231,22 @@ genProposeRegistryDao senderInput delegate1 invalidFrom = do
           , ppProposalMetadata = proposalMeta
           }
         proposalKey = makeProposalKey param
-    in (XtzAllowed $ Propose param, metaSize, proposalKey)
+    in (XtzAllowed $ ConcreteEp $ Propose param, metaSize, proposalKey)
 
-genCustomCallsRegistryDao :: MkGenCustomCalls
+genCustomCallsRegistryDao :: MkGenCustomCalls RegistryCustomEpParam
 genCustomCallsRegistryDao = do
   mkLookupRegistryParam <- genLookupRegistryParam
   pure
-    [ \ModelInputArg{..} -> ([mt|lookup_registry|], lPackValueRaw @LookupRegistryParam (mkLookupRegistryParam miaViewContractAddr))
+    [ \ModelInputArg{..} ->
+          Lookup_registry (mkLookupRegistryParam miaViewContractAddr)
     ]
 
-genLookupRegistryParam :: GeneratorT (TAddress (MText, Maybe MText) -> LookupRegistryParam)
+genLookupRegistryParam :: GeneratorT RegistryCustomEpParam (TAddress (MText, Maybe MText) -> LookupRegistryParam)
 genLookupRegistryParam = do
   key <- genMText
-  pure $ \viewContractAddr -> (key, (unTAddress viewContractAddr))
+  pure $ \viewContractAddr -> (LookupRegistryParam key (unTAddress viewContractAddr))
 
-genRegistryDaoProposalMetadata :: GeneratorT (Address -> Address -> RegistryDaoProposalMetadata)
+genRegistryDaoProposalMetadata :: GeneratorT RegistryCustomEpParam (Address -> Address -> RegistryDaoProposalMetadata)
 genRegistryDaoProposalMetadata = do
   guardAddr <- genAddress
   Gen.choice
@@ -261,7 +254,7 @@ genRegistryDaoProposalMetadata = do
     , pure $ \_ _ -> Update_guardian guardAddr
     ]
 
-genConfigProposal :: GeneratorT (Address -> Address -> RegistryDaoProposalMetadata)
+genConfigProposal :: GeneratorT RegistryCustomEpParam (Address -> Address -> RegistryDaoProposalMetadata)
 genConfigProposal = do
   valMaybe <- Gen.maybe $ Gen.integral (Range.constant 1 10)
   pure $ \_ _ -> Configuration_proposal $ ConfigProposal
@@ -272,7 +265,7 @@ genConfigProposal = do
     , cpMaxProposalSize = valMaybe
     }
 
-genTransferProposal :: GeneratorT (Address -> Address -> RegistryDaoProposalMetadata)
+genTransferProposal :: GeneratorT RegistryCustomEpParam (Address -> Address -> RegistryDaoProposalMetadata)
 genTransferProposal = do
   agoraId <- Gen.integral (Range.constant 1 10)
   registryDiff <- Gen.list (Range.linear 1 3) do
@@ -291,7 +284,7 @@ genTransferProposal = do
         , tpRegistryDiff = registryDiff
         }
 
-genUpdateReceiverParam :: GeneratorT (Address -> Address -> RegistryDaoProposalMetadata)
+genUpdateReceiverParam :: GeneratorT RegistryCustomEpParam (Address -> Address -> RegistryDaoProposalMetadata)
 genUpdateReceiverParam = do
   amt <- Gen.integral (Range.constant 1 5)
   updateParams <-  Gen.list (Range.linear 1 amt) genAddress

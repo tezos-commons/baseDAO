@@ -29,9 +29,10 @@ import Test.Ligo.BaseDAO.Proposal.Config
 
 voteNonExistingProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteNonExistingProposal originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
+  DaoOriginateData{..} <-
+    originateFn testContractExtra testConfig defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
 
   withSender dodOwner2 $
@@ -58,7 +59,7 @@ voteNonExistingProposal originateFn = do
 
 voteMultiProposals
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteMultiProposals originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
@@ -103,7 +104,7 @@ voteMultiProposals originateFn = do
 
 proposalCorrectlyTrackVotes
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 proposalCorrectlyTrackVotes originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -207,7 +208,7 @@ proposalCorrectlyTrackVotes originateFn = do
 
 voteOutdatedProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteOutdatedProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
@@ -244,7 +245,7 @@ voteOutdatedProposal originateFn = do
 
 voteValidProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 voteValidProposal originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -281,7 +282,7 @@ voteValidProposal originateFn = do
   --
 voteDeletedProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 voteDeletedProposal originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -313,7 +314,7 @@ voteDeletedProposal originateFn = do
 
 voteWithPermit
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteWithPermit originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner1 $
@@ -342,7 +343,7 @@ voteWithPermit originateFn = do
 
 voteWithPermitNonce
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteWithPermitNonce originateFn = do
 
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold

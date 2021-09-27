@@ -10,6 +10,7 @@ module Test.Ligo.RegistryDAO
 
 import Universum
 
+import qualified Data.Map as M
 import qualified Data.Set as S
 import Test.Tasty (TestTree, testGroup)
 
@@ -27,14 +28,16 @@ import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
+import Ligo.BaseDAO.RegistryDAO.Types
 import Test.Ligo.BaseDAO.Common
+import Test.Ligo.BaseDAO.Proposal.Config (testContractExtra)
 import Test.Ligo.RegistryDAO.Types
 
 withOriginated
   :: MonadCleveland caps base m
   => Integer
   -> ([Address] -> FullStorage)
-  -> ([Address] -> FullStorage -> TAddress Parameter -> TAddress FA2.Parameter -> m a)
+  -> ([Address] -> FullStorage -> TAddress (Parameter' RegistryCustomEpParam) -> TAddress FA2.Parameter -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
@@ -55,7 +58,7 @@ withOriginated addrCount storageFn tests = do
     { uodName = "BaseDAO - RegistryDAO Test Contract"
     , uodBalance = zeroMutez
     , uodStorage = untypeValue $ toVal storage
-    , uodContract = convertContract baseDAOContractLigo
+    , uodContract = convertContract baseDAORegistryLigo
     }
   tests addresses storage (TAddress baseDao) (TAddress dodTokenContract)
 
@@ -305,7 +308,7 @@ test_RegistryDAO =
             consumer <- chAddress <$> originateSimple "consumer" [] (contractConsumer @(MText, (Maybe MText)))
 
             withSender voter1 $
-              call baseDao (Call @"CallCustom") ([mt|lookup_registry|], lPackValueRaw ([mt|key|], consumer))
+              call baseDao (Call @"Lookup_registry") (LookupRegistryParam [mt|key|] consumer)
 
             checkStorage @[(MText, (Maybe MText))] consumer ([([mt|key|], Just [mt|testVal|])])
 
@@ -451,8 +454,7 @@ test_RegistryDAO =
 
             -- check the registry update
             consumer <- chAddress <$> originateSimple "consumer" [] (contractConsumer @(MText, (Maybe MText)))
-            withSender wallet2 $ call baseDao (Call @"CallCustom")
-              ([mt|lookup_registry|], lPackValueRaw ([mt|testKey|], consumer))
+            withSender wallet2 $ call baseDao (Call @"Lookup_registry") (LookupRegistryParam [mt|testKey|] consumer)
             checkStorage consumer ([([mt|testKey|], Just [mt|testValue|])])
 
             -- check the balance
@@ -721,7 +723,7 @@ test_RegistryDAO =
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
     initialStorage :: Address -> FullStorage
     initialStorage admin = let
-      fs = baseDAORegistryStorageLigo
+      fs = baseDAOStorageLigo { fsStorage = (fsStorage baseDAOStorageLigo) { sExtra = testContractExtra } }
       oldStorage = fsStorage fs
       oldConfig = fsConfig fs
 
@@ -739,6 +741,10 @@ test_RegistryDAO =
 
     initialStorageWithExplictRegistryDAOConfig :: Address -> FullStorage
     initialStorageWithExplictRegistryDAOConfig admin =
+      setExtra @(M.Map MText MText) [mt|registry|] M.empty $
+      setExtra @(M.Map MText ProposalKey) [mt|registry_affected|] M.empty $
+      setExtra @(S.Set Address) [mt|proposal_receivers|] S.empty $
+
       setExtra @Natural [mt|frozen_scale_value|] 1 $
       setExtra @Natural [mt|frozen_extra_value|] 0 $
       setExtra @Natural [mt|slash_scale_value|] 1 $
@@ -746,7 +752,6 @@ test_RegistryDAO =
       setExtra @Natural [mt|min_xtz_amount|] 2 $
       setExtra @Natural [mt|max_xtz_amount|] 5 $
       setExtra @Natural [mt|max_proposal_size|] 100 (initialStorage admin)
-
 
 expectFailProposalCheck
   :: (MonadCleveland caps base m)

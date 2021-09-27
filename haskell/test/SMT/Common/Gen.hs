@@ -30,7 +30,7 @@ import Ligo.BaseDAO.Types
 import SMT.Common.Types
 import SMT.Model.BaseDAO.Types
 
-genMkModelInput :: SmtOption -> GeneratorT MkModelInput
+genMkModelInput :: SmtOption cep -> GeneratorT cep (MkModelInput cep)
 genMkModelInput option@SmtOption{..} = do
 
   -- Initial
@@ -55,12 +55,12 @@ genMkModelInput option@SmtOption{..} = do
     groupCallAmount = 5
 
 -- | Generate a list of BaseDAO contract calls that works together.
-genContractCallGroup :: GeneratorT ([ModelInputArg -> ModelCall])
+genContractCallGroup :: GeneratorT cep ([ModelInputArg -> ModelCall cep])
 genContractCallGroup = do
   Gen.choice [genProposingProcess, genRandomCalls]
 
 
-genStorage :: GeneratorT (Address -> Address -> Storage)
+genStorage :: GeneratorT cep (Address -> Address -> Storage)
 genStorage = do
   userPool <- get <&> gsAddresses
   admin <- userPool <&> fst & Gen.element
@@ -96,7 +96,7 @@ genStorage = do
         , sPermitsCounter = Nonce 0
         }
 
-genConfig :: GeneratorT Config
+genConfig :: GeneratorT cep Config
 genConfig = do
   let votingPeriod = Period 1
   let fixedProposalFee = FixedFee fixedFee
@@ -104,18 +104,7 @@ genConfig = do
   let changePercent = 19
   let governanceTotalSupply = 500
   pure $ Config
-    { cProposalCheck = do
-        dropN @2 # push ()
-    , cRejectedProposalSlashValue = do
-        dropN @2 # push (0 :: Natural) # toNamed #slash_amount
-    , cDecisionLambda =
-        toField #diExtra #
-        nil #
-        swap #
-        dip (push Nothing) #
-        constructStack @DecisionLambdaOutput
-    , cCustomEntrypoints = DynamicRec' $ mempty
-    , cFixedProposalFee = fixedProposalFee
+    { cFixedProposalFee = fixedProposalFee
     , cPeriod = votingPeriod
     , cProposalFlushLevel = (unPeriod votingPeriod) * 2
     , cProposalExpiredLevel = (unPeriod votingPeriod) * 3
@@ -126,13 +115,13 @@ genConfig = do
     , cMinQuorumThreshold = percentageToFractionNumerator 1 -- 1%
     }
 
-genDelegates :: GeneratorT (Map Delegate ())
+genDelegates :: GeneratorT cep (Map Delegate ())
 genDelegates = do
   userPool <- get <&> gsAddresses <<&>> fst
   delegateList <- (Gen.shuffle $ (uncurry Delegate) <$> zip userPool userPool) >>= Gen.subsequence
   pure $ Map.fromList $ zip delegateList $ repeat ()
 
-genDelegateParams :: GeneratorT [DelegateParam]
+genDelegateParams :: GeneratorT cep [DelegateParam]
 genDelegateParams = do
   userPool <- get <&> gsAddresses <<&>> fst
   isEnable <- Gen.bool
@@ -141,7 +130,7 @@ genDelegateParams = do
      &  Gen.shuffle
     >>= Gen.subsequence
 
-genAddressFreezeHistory :: GeneratorT AddressFreezeHistory
+genAddressFreezeHistory :: GeneratorT cep AddressFreezeHistory
 genAddressFreezeHistory = do
   lvl <- get <&> gsLevel
   currentUnstaked <- Gen.integral (Range.constant 0 30)
@@ -154,20 +143,20 @@ genAddressFreezeHistory = do
         , fhStaked = staked
         }
 
-genFreezeHistory :: GeneratorT (Map Address AddressFreezeHistory)
+genFreezeHistory :: GeneratorT cep (Map Address AddressFreezeHistory)
 genFreezeHistory = do
   addrs <- get <&> gsAddresses <<&>> fst
   addrFreezeHistoryList <- vectorOf poolSize genAddressFreezeHistory
   let freezeHistory = zip addrs addrFreezeHistoryList
   pure $ Map.fromList freezeHistory
 
-genQuorumThresholdAtCycle :: Natural -> GeneratorT QuorumThresholdAtCycle
+genQuorumThresholdAtCycle :: Natural -> GeneratorT cep QuorumThresholdAtCycle
 genQuorumThresholdAtCycle staked = do
   quorumThreshold <- Gen.integral (Range.constant 1 3)
   lvl <- get <&> gsLevel
   pure $ QuorumThresholdAtCycle quorumThreshold lvl staked
 
-genModelState :: SmtOption -> GeneratorT (Address -> Address -> ModelState)
+genModelState :: SmtOption cep -> GeneratorT cep (Address -> Address -> ModelState cep)
 genModelState SmtOption{..} = do
 
   mkStore <- genStorage
@@ -197,13 +186,13 @@ genModelState SmtOption{..} = do
 -------------------------------------------------------------
 
 -- | Generate completely random calls
-genRandomCalls :: GeneratorT ([ModelInputArg -> ModelCall])
+genRandomCalls :: forall cep. GeneratorT cep ([ModelInputArg -> ModelCall cep])
 genRandomCalls = do
   addrs <- get <&> gsAddresses <<&>> fst
   sender1 <- Gen.element addrs
 
   -- gen entrypoints
-  calls <- genProposingProcess
+  calls <- genProposingProcess @cep
   updateDelegateCall <- genUpdateDelegate <&> mkSimpleContractCall sender1
   transferOwnershipCall <- genTransferOwnership <&> mkSimpleContractCall sender1
   acceptOwnershipCall <- genAcceptOwnership <&> mkSimpleContractCall sender1
@@ -219,13 +208,13 @@ genRandomCalls = do
   >>= Gen.subsequence
 
   where
-    genTransferContractTokensCall :: Address -> GeneratorT (Address -> ModelCall)
+    genTransferContractTokensCall :: Address -> GeneratorT cep (Address -> ModelCall cep)
     genTransferContractTokensCall sender1 = do
-      f <- genTransferContractTokens
+      f <- genTransferContractTokens @cep
       pure $ \govAddr -> mkSimpleContractCall sender1 $ f govAddr
 
 
-mkSimpleContractCall :: Address -> Parameter -> ModelCall
+mkSimpleContractCall :: Address -> Parameter' cep -> ModelCall cep
 mkSimpleContractCall sender1 param = do
   ModelCall
     { mcAdvanceLevel = Nothing
@@ -237,7 +226,7 @@ mkSimpleContractCall sender1 param = do
     }
 
 -- TODO [#295]: Generated entrypoint calls are too rigid.
-genProposingProcess :: GeneratorT ([ModelInputArg -> ModelCall])
+genProposingProcess :: GeneratorT cep ([ModelInputArg -> ModelCall cep])
 genProposingProcess = do
   userAddrs <- get <&> gsAddresses
   sender1 <- fst <$> Gen.element userAddrs
@@ -257,7 +246,9 @@ genProposingProcess = do
   mkUnstakeVote <- genUnstakeVote
 
   -- | `advanceLvl` is provided precisely to ensure the order of operations results in successful proposal.
-  let mkCall param advanceLvl = ModelCall
+  let
+    mkCall :: Parameter' cep -> Maybe Natural -> ModelCall cep
+    mkCall param advanceLvl = ModelCall
         { mcAdvanceLevel = advanceLvl
         , mcParameter = param
         , mcSource = ModelSource
@@ -300,20 +291,22 @@ genProposingProcess = do
       , \args ->
           let (_, _, _, _, dropProposalAction, _) = applyArgs args
           in mkCall dropProposalAction Nothing
-      ] <> (
-        mkCustomCalls
-          <&> (\f args -> mkCall (XtzAllowed $ CallCustom $ f args) Nothing)
-      )
+      ]
+       <> (
+
+         mkCustomCalls
+           <&> (\f args -> mkCall (XtzAllowed $ CustomEp $ f args) Nothing)
+       )
   where
     getVoteFreezeAmt permitProtecteds =
       foldl' (\i (PermitProtected voteParam _) -> (voteParam & vVoteAmount) + i) 0 permitProtecteds
 
-genVote :: GeneratorT (ProposalKey -> Natural -> [PermitProtected VoteParam])
+genVote :: GeneratorT cep (ProposalKey -> Natural -> [PermitProtected VoteParam])
 genVote = do
   mkGenVoteParams <- vectorOf 5 $ genVoteParams
   pure $ \proposalKey correctVoteAmt -> (\f -> f proposalKey correctVoteAmt) <$> mkGenVoteParams
   where
-    genVoteParams :: GeneratorT (ProposalKey -> Natural -> PermitProtected VoteParam)
+    genVoteParams :: GeneratorT cep (ProposalKey -> Natural -> PermitProtected VoteParam)
     genVoteParams = do
       userPool <- get <&> gsAddresses
       from <- Gen.element userPool
@@ -347,52 +340,52 @@ genVote = do
           in PermitProtected voteParam (mkMaybe $ mkPermit signed)
 
 -- | A version of `Tezos.Crypto.sign` to be run in `MonadGen`
-sign' :: SecretKey -> GeneratorT ( ByteString -> Signature)
+sign' :: SecretKey -> GeneratorT cep ( ByteString -> Signature)
 sign' addr = do
   seed <- drgNewSeed . seedFromInteger <$> Gen.integral (Range.linearFrom 0 -1000 1000)
   pure $ \bytes -> fst $ withDRG seed $ do
     sign addr bytes
 
-genFlush :: GeneratorT Parameter
+genFlush :: GeneratorT cep (Parameter' cep)
 genFlush = do
   amt <- Gen.integral (Range.constant 0 100)
   pure $ XtzForbidden $ Flush amt
 
-genDropProposal :: GeneratorT (ProposalKey -> Parameter)
+genDropProposal :: GeneratorT cep (ProposalKey -> (Parameter' cep))
 genDropProposal = do
   pure $ \key -> XtzForbidden $ Drop_proposal key
 
-genUnstakeVote :: GeneratorT (ProposalKey -> Parameter)
+genUnstakeVote :: GeneratorT cep (ProposalKey -> Parameter' cep)
 genUnstakeVote = do
   pure $ \key -> XtzForbidden $ Unstake_vote [key]
 
-genUpdateDelegate :: GeneratorT Parameter
+genUpdateDelegate :: GeneratorT cep (Parameter' cep)
 genUpdateDelegate = do
   params <- genDelegateParams
   pure $ XtzForbidden $ Update_delegate params
 
-genTransferContractTokens :: GeneratorT (Address -> Parameter)
+genTransferContractTokens :: GeneratorT cep (Address -> Parameter' cep)
 genTransferContractTokens = do
   transfers <- genFa2TransferItems
-  pure $ \govAddr -> XtzAllowed $ Transfer_contract_tokens $ TransferContractTokensParam govAddr transfers
+  pure $ \govAddr -> XtzAllowed $ ConcreteEp $ Transfer_contract_tokens $ TransferContractTokensParam govAddr transfers
 
 
-genTransferOwnership :: GeneratorT Parameter
+genTransferOwnership :: GeneratorT cep (Parameter' cep)
 genTransferOwnership = do
   userAddrs <- get <&> gsAddresses
   newOwner <- fst <$> Gen.element userAddrs
-  pure $ XtzAllowed $ Transfer_ownership $ (#newOwner :! newOwner)
+  pure $ XtzAllowed $ ConcreteEp $ Transfer_ownership $ (#newOwner :! newOwner)
 
 -- Nothing to randomize, simply for consistency
-genAcceptOwnership :: GeneratorT Parameter
+genAcceptOwnership :: GeneratorT cep (Parameter' cep)
 genAcceptOwnership = do
-  pure $ XtzAllowed $ Accept_ownership ()
+  pure $ XtzAllowed $ ConcreteEp $ Accept_ownership ()
 
 -------------------------------------------------------------
 -- Shared
 -------------------------------------------------------------
 
-genXtzTransferType :: GeneratorT (Address -> TransferType)
+genXtzTransferType :: GeneratorT cep (Address -> TransferType)
 genXtzTransferType = do
   amt <- Gen.integral (Range.constant 0 10)
   pure $ \contractAddr -> Xtz_transfer_type XtzTransfer
@@ -400,7 +393,7 @@ genXtzTransferType = do
     , xtRecipient = contractAddr
     }
 
-genTokenTransferType :: GeneratorT (Address -> TransferType)
+genTokenTransferType :: GeneratorT cep (Address -> TransferType)
 genTokenTransferType = do
   transfers <- genFa2TransferItems
 
@@ -409,7 +402,7 @@ genTokenTransferType = do
     , ttTransferList = transfers
     }
 
-genFa2TransferItem :: GeneratorT FA2.TransferItem
+genFa2TransferItem :: GeneratorT cep FA2.TransferItem
 genFa2TransferItem = do
   amt <- Gen.integral (Range.constant 0 10)
   userAddrs <- get <&> gsAddresses
@@ -424,7 +417,7 @@ genFa2TransferItem = do
         } ]
     }
 
-genFa2TransferItems :: GeneratorT [FA2.TransferItem]
+genFa2TransferItems :: GeneratorT cep [FA2.TransferItem]
 genFa2TransferItems =
   Gen.list (Range.linear 0 10) genFa2TransferItem
 
@@ -435,7 +428,7 @@ genFa2TransferItems =
 -- | Generate a list of items using given generator of a single item.
 -- Takes a size parameter. Unlike QuickCheck's @vectorOf@, this function
 -- can generate a smaller list (always non-empty).
-vectorOf :: Int -> GeneratorT x -> GeneratorT [x]
+vectorOf :: Int -> GeneratorT cep x -> GeneratorT cep [x]
 vectorOf n = Gen.list (Range.linear 1 n)
 
 -- Size of the random address pool

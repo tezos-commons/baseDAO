@@ -26,12 +26,13 @@ import Morley.Tezos.Crypto (SecretKey)
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
+import Test.Ligo.BaseDAO.Common (ContractType(..))
 
 
 -- | A type that will be the inputs to the (Haskell) Model.
 -- This contains a list of entrypoint calls and the `ModelState`.
-newtype ModelInput =
-  ModelInput ([ModelCall], ModelState)
+newtype ModelInput cep =
+  ModelInput ([ModelCall cep], ModelState cep)
   deriving stock Show
 
 -- | A type needed to pass to `MkModelInput` to get `ModelInput`
@@ -45,26 +46,26 @@ data ModelInputArg = ModelInputArg
 -- We cannot generate just the `ModelInput`, since it is not possible get the address of guardian
 -- and governance contract until they are originated in the nettest.
 -- As a result, we generate functions that accepts those addresses instead.
-type MkModelInput = ModelInputArg -> ModelInput
+type MkModelInput cep = ModelInputArg -> ModelInput cep
 
 -- | Instance Needed by Hedgehog `forall`
-instance Show (ModelInputArg -> ModelInput) where
+instance Show (ModelInputArg -> ModelInput cep) where
   show _ = "<MkModelInput>"
 
 -- | A type for `genPropose` which is used by registry/treasury dao
-type MkGenPropose =
+type MkGenPropose cep =
      Address
   -> Address
   -> Address
-  -> GeneratorT (Address -> Address -> (Parameter, Natural, ProposalKey))
+  -> GeneratorT cep (Address -> Address -> (Parameter' cep, Natural, ProposalKey))
 
-type MkGenCustomCalls = GeneratorT ([ModelInputArg -> CallCustomParam])
+type MkGenCustomCalls cep = GeneratorT cep ([ModelInputArg -> cep])
 
 -- | A data type that is used to configure the generator, initial storage
 -- how the SMT behaves. Mostly used by Registry/Treasury SMT.
-data SmtOption = SmtOption
-  { soMkPropose :: MkGenPropose
-  , soMkCustomCalls :: MkGenCustomCalls
+data SmtOption cep = SmtOption
+  { soMkPropose :: MkGenPropose cep
+  , soMkCustomCalls :: MkGenCustomCalls cep
 
   , soModifyFs :: (FullStorage -> FullStorage)
     -- ^ Used by `registry/treasury` dao to add their configurations (sExtra, cProposalCheck ..)
@@ -73,29 +74,29 @@ data SmtOption = SmtOption
   , soContractType :: ContractType
     -- ^ Track which dao the smt used. Mainly needed to run some pre-cond (sendXtz when registry/treasury)
 
-  , soProposalCheck :: (ProposeParams, ContractExtra) -> ModelT ()
-  , soRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
-  , soDecisionLambda :: DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
-  , soCustomEps :: Map MText (ByteString -> ModelT ())
+  , soProposalCheck :: (ProposeParams, ContractExtra) -> ModelT cep ()
+  , soRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT cep Natural
+  , soDecisionLambda :: DecisionLambdaInput -> ModelT cep ([SimpleOperation], ContractExtra, Maybe Address)
+  , soCustomEps :: cep -> ModelT cep ()
   }
 
 -- | Generator state, contains commonly used value that shared between generators.
-data GeneratorState = GeneratorState
+data GeneratorState cep = GeneratorState
   { gsAddresses :: [(Address, SecretKey)]
   , gsLevel :: Natural
-  , gsMkGenPropose :: MkGenPropose
-  , gsMkCustomCalls :: MkGenCustomCalls
+  , gsMkGenPropose :: MkGenPropose cep
+  , gsMkCustomCalls :: MkGenCustomCalls cep
   }
 
 -- | Generator transformer containing `GeneratorState`
-newtype GeneratorT a = GeneratorT
-  { unGeneratorT :: StateT GeneratorState Gen a
-  } deriving newtype (Functor, Applicative, Monad, MonadState GeneratorState, MonadGen)
+newtype GeneratorT cep a = GeneratorT
+  { unGeneratorT :: StateT (GeneratorState cep) Gen a
+  } deriving newtype (Functor, Applicative, Monad, MonadState (GeneratorState cep), MonadGen)
 
-initGeneratorState :: MkGenPropose -> GeneratorState
+initGeneratorState :: MkGenPropose cep -> GeneratorState cep
 initGeneratorState mkGenPropose = GeneratorState [] 0 mkGenPropose (pure [])
 
-runGeneratorT :: GeneratorT a -> GeneratorState -> Gen a
+runGeneratorT :: GeneratorT cep a -> GeneratorState cep -> Gen a
 runGeneratorT genAction st = do
   evalStateT (unGeneratorT genAction) st
 

@@ -17,7 +17,6 @@ module SMT.Model.BaseDAO.Types
   , modifyStore
   , execOperation
 
-  , ContractType (..)
   , ModelCall (..)
   , ModelSource (..)
   , ModelError (..)
@@ -40,12 +39,12 @@ import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.ErrorCodes
 
 -- | Transformer used in haskell implementation of BaseDAO
-newtype ModelT a = ModelT
-  { unModelT :: (ExceptT ModelError $ State ModelState) a
-  } deriving newtype (Functor, Applicative, Monad, MonadState ModelState, MonadError ModelError)
+newtype ModelT cep a = ModelT
+  { unModelT :: (ExceptT ModelError $ State (ModelState cep)) a
+  } deriving newtype (Functor, Applicative, Monad, MonadState (ModelState cep), MonadError ModelError)
 
 -- | A type that keep track of blockchain state
-data ModelState = ModelState
+data ModelState cep = ModelState
   { msFullStorage :: FullStorage
   , msMutez :: Mutez
   -- ^ Dao balance
@@ -58,23 +57,23 @@ data ModelState = ModelState
   -- ^ Keep track of originated contract in the blockchain.
   -- See `SimpleContractType` for detail.
 
-  , msProposalCheck :: (ProposeParams, ContractExtra) -> ModelT ()
-  , msRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
-  , msDecisionLambda :: DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
-  , msCustomEps :: Map MText (ByteString -> ModelT ())
+  , msProposalCheck :: (ProposeParams, ContractExtra) -> ModelT cep ()
+  , msRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT cep Natural
+  , msDecisionLambda :: DecisionLambdaInput -> ModelT cep ([SimpleOperation], ContractExtra, Maybe Address)
+  , msCustomEps :: cep -> ModelT cep ()
   } deriving stock (Generic, Show)
 
 -- Needed by `forall`
-instance Show ((ProposeParams, ContractExtra) -> ModelT ()) where
-  show _ = "<msProposalCheck>"
-instance Show ((Proposal, ContractExtra) -> ModelT Natural) where
+instance Show ((ProposeParams, ContractExtra) -> ModelT cep ()) where
+  show _ = "<lambda>"
+instance Show ((Proposal, ContractExtra) -> ModelT cep Natural) where
   show _ = "<msRejectedProposalSlashValue>"
-instance Show (DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)) where
+instance Show (DecisionLambdaInput -> ModelT cep ([SimpleOperation], ContractExtra, Maybe Address)) where
   show _ = "<msDecisionLambda>"
-instance Show (ByteString -> ModelT ()) where
-  show _ = "<customEps>"
+instance {-# INCOHERENT #-} Show (cep -> ModelT cep ()) where
+  show _ = "<lambda>"
 
-runModelT :: ModelT a -> ModelState -> (Either ModelError ModelState)
+runModelT :: ModelT cep a -> ModelState cep -> (Either ModelError (ModelState cep))
 runModelT (ModelT model) initState =
   runExceptT model
     & (`runState` initState)
@@ -83,7 +82,7 @@ runModelT (ModelT model) initState =
           Right _ -> Right updatedMs
       )
 
-execOperation :: SimpleOperation -> ModelT ()
+execOperation :: SimpleOperation -> ModelT cep ()
 execOperation op = do
   contracts <- get <&> msContracts
 
@@ -117,13 +116,13 @@ execOperation op = do
 
   modify $ \ms -> ms { msContracts = updatedContracts, msMutez = newBal }
 
-getStore :: ModelT Storage
+getStore :: ModelT cep Storage
 getStore = get <&> msFullStorage <&> fsStorage
 
-getConfig :: ModelT Config
+getConfig :: ModelT cep Config
 getConfig = get <&> msFullStorage <&> fsConfig
 
-modifyStore :: (Storage -> ModelT Storage) -> ModelT ()
+modifyStore :: (Storage -> ModelT cep Storage) -> ModelT cep ()
 modifyStore f = do
   ms <- get
   updatedStorage <- f (ms & msFullStorage & fsStorage)
@@ -171,16 +170,16 @@ instance Buildable OtherContract where
   build = genericF
 
 -- | Definition of an entrypoint call to emulate in the SMTs
-data ModelCall = ModelCall
+data ModelCall cep = ModelCall
   { mcAdvanceLevel :: Maybe Natural -- Advance level before calling the entrypoint
-  , mcParameter :: Parameter
+  , mcParameter :: Parameter' cep
   , mcSource :: ModelSource
   } deriving stock (Eq, Show, Generic)
 
 instance Buildable ContractHash where
   build = genericF
 
-instance Buildable ModelCall where
+instance Buildable (Parameter' cep) => Buildable (ModelCall cep) where
   build = genericF
 
 -- | Definition of an @source@ and @sender@ for a call to emulate in the SMTs
@@ -191,14 +190,6 @@ data ModelSource = ModelSource
 
 instance Buildable ModelSource where
   build = genericF
-
--- | We need this type since we need to do certain things for specific dao
--- Ex. `CallCustom`, Needed to `sendXtz` for treasury/registry dao
-data ContractType
-  = BaseDaoContract
-  | RegistryDaoContract
-  | TreasuryDaoContract
-  deriving stock Eq
 
 -- | The possible contract errors for the models
 data ModelError
@@ -215,7 +206,6 @@ data ModelError
   | NOT_ADMIN
   | NOT_PENDING_ADMIN
   | BAD_TOKEN_CONTRACT
-  | ENTRYPOINT_NOT_FOUND
   | UNPACKING_FAILED
   | FAIL_PROPOSAL_CHECK
   | MISSING_VALUE
@@ -244,7 +234,6 @@ contractErrorToModelError errorCode
   | (errorCode == toInteger notAdmin) = NOT_ADMIN
   | (errorCode == toInteger notPendingAdmin) = NOT_PENDING_ADMIN
   | (errorCode == toInteger badTokenContract) = BAD_TOKEN_CONTRACT
-  | (errorCode == toInteger entrypointNotFound) = ENTRYPOINT_NOT_FOUND
   | (errorCode == toInteger unpackingFailed) = UNPACKING_FAILED
   | (errorCode == toInteger failProposalCheck) = FAIL_PROPOSAL_CHECK
   | (errorCode == toInteger unstakeInvalidProposal) = UNSTAKE_INVALID_PROPOSAL

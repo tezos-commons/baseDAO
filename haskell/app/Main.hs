@@ -15,7 +15,9 @@ import Paths_baseDAO_ligo_meta (version)
 
 import Morley.Util.Main
 
-import Ligo.BaseDAO.Types (Parameter)
+import Ligo.BaseDAO.Types (Parameter, Parameter')
+import Ligo.BaseDAO.RegistryDAO.Types (RegistryCustomEpParam)
+import Ligo.BaseDAO.TreasuryDAO.Types (TreasuryCustomEpParam)
 import Ligo.Typescript
 import Morley.Util.CLI
 import Morley.Util.Named
@@ -25,8 +27,10 @@ main :: IO ()
 main = wrapMain $ do
   cmdLnArgs <- Opt.execParser programInfo
   case cmdLnArgs of
-    GenerateTypescript fp ->
+    GenerateTypescript fp -> do
       void $ generateTs @Parameter fp
+      void $ generateTs @(Parameter' RegistryCustomEpParam) fp
+      void $ generateTs @(Parameter' TreasuryCustomEpParam) fp
     PrintMetadata mc ->
       putTextLn . decodeUtf8 . encodePretty $
         knownBaseDAOMetadata (mkMetadataSettings mc)

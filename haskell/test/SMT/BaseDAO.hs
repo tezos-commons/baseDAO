@@ -20,8 +20,8 @@ import Ligo.BaseDAO.Types
 import SMT.Common.Run
 import SMT.Common.Types
 import SMT.Model.BaseDAO.Types
-import Test.Ligo.BaseDAO.Common (makeProposalKey, metadataSize)
-
+import Test.Ligo.BaseDAO.Common (ContractType(..), makeProposalKey, metadataSize)
+import Test.Ligo.BaseDAO.Proposal.Config
 
 hprop_SMT :: Property
 hprop_SMT =
@@ -46,52 +46,22 @@ hprop_SMT =
       , soDecisionLambda = \DecisionLambdaInput{..} -> do
         pure $ ([], diExtra, Nothing)
 
-      , soCustomEps = mempty
+      , soCustomEps = \_ -> pure ()
       }
   in
     withTests 30 $ property $ do
-      runBaseDaoSMT option
+      runBaseDaoSMT @() option
 
 addBaseDaoConfig :: FullStorage -> FullStorage
 addBaseDaoConfig fs = fs
-  { fsConfig = (fs & fsConfig)
-      { cProposalCheck =
-        -- Implemented from `proposalFrozenTokensMinBound 10`
-          dip drop
-        # toFieldNamed #ppFrozenToken
-        # push 10
-        # toNamed #requireValue
-        # (if #requireValue <=. #ppFrozenToken then
-              push ()
-          else
-              push ("" :: MText)
-            # push failProposalCheck
-            # pair
-            # failWith
-          )
-      , cRejectedProposalSlashValue =
-        -- Implemented from `divideOnRejectionBy 2`
-          dip drop
-        # toField #plProposerFrozenToken
-        # toNamed #proposerFrozenToken
-        # fromNamed #proposerFrozenToken
-        # push (2 :: Natural)
-        # swap
-        # ediv
-        # ( ifSome car $
-              push (0 :: Natural)
-          )
-        # toNamed #slash_amount
-      , cDecisionLambda =
-          toField #diExtra
-        # nil
-        # swap
-        # dip (push Nothing)
-        # constructStack @(DecisionLambdaOutput)
-      }
+  { fsStorage = (fsStorage fs) { sExtra = ce }
   }
+  where
+    ce = fillConfig dummyDecisionLambda $
+      fillConfig (divideOnRejectionBy 2) $
+        fillConfig (proposalFrozenTokensMinBound 10) dynRecUnsafe
 
-genPropose :: MkGenPropose
+genPropose :: MkGenPropose ()
 genPropose senderInput delegate1 invalidFrom = do
   from <- Gen.element [senderInput, invalidFrom, delegate1]
   metadata <- Gen.integral (Range.constant 1 100)
@@ -105,4 +75,4 @@ genPropose senderInput delegate1 invalidFrom = do
           }
       proposalKey = makeProposalKey param
 
-  pure $ (\_ _ -> (XtzAllowed $ Propose param, metaSize, proposalKey))
+  pure $ (\_ _ -> (XtzAllowed $ ConcreteEp $ Propose param, metaSize, proposalKey))

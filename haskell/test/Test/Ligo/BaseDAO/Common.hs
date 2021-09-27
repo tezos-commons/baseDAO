@@ -4,7 +4,8 @@
 {-# LANGUAGE NumericUnderscores #-}
 
 module Test.Ligo.BaseDAO.Common
-  ( DaoOriginateData(..)
+  ( ContractType(..)
+  , DaoOriginateData(..)
   , OriginateFn
 
   , dummyFA2Contract
@@ -44,18 +45,24 @@ import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common.Errors as Errors
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
-import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
+import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig, testContractExtra)
 
-type OriginateFn m = QuorumThreshold -> m DaoOriginateData
+type OriginateFn a m = QuorumThreshold -> m (DaoOriginateData a)
 
 type instance AsRPC FA2.TransferItem = FA2.TransferItem
 
-data DaoOriginateData = DaoOriginateData
+data ContractType
+  = BaseDaoContract
+  | RegistryDaoContract
+  | TreasuryDaoContract
+  deriving stock Eq
+
+data DaoOriginateData a = DaoOriginateData
   { dodOwner1 :: Address
   , dodOperator1 :: Address
   , dodOwner2 :: Address
   , dodOperator2 :: Address
-  , dodDao :: TAddress Parameter
+  , dodDao :: TAddress (Parameter' (CustomEpToParam a))
   , dodTokenContract :: TAddress FA2.Parameter
   , dodAdmin :: Address
   , dodGuardian :: TAddress (Address, ProposalKey)
@@ -140,10 +147,10 @@ defaultQuorumThreshold :: QuorumThreshold
 defaultQuorumThreshold = mkQuorumThreshold 1 100
 
 originateLigoDaoWithConfig
- :: MonadCleveland caps base m
+ :: forall cep caps base m. (Typeable cep, MonadCleveland caps base m)
  => ContractExtra
  -> Config
- -> OriginateFn m
+ -> OriginateFn cep m
 originateLigoDaoWithConfig extra config qt = do
 
   owner1 :: Address <- newAddress "owner1"
@@ -183,32 +190,33 @@ originateLigoDaoWithConfig extra config qt = do
         , fsConfig = config
         }
   let
+
     originateData = UntypedOriginateData
       { uodName = "BaseDAO"
       , uodBalance = toMutez 0
       , uodStorage = untypeValue $ toVal $ fullStorage
-      , uodContract = convertContract baseDAOContractLigo
+      , uodContract = convertContract $ getBaseDAOContract @cep
       }
 
   daoUntyped <- originateUntyped originateData
   advanceToLevel (currentLevel + originationOffset)
 
-  let dao = TAddress @Parameter daoUntyped
+  let dao = TAddress @(Parameter' (CustomEpToParam cep)) daoUntyped
 
   pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao (TAddress tokenContract)
       admin (TAddress guardianContract) (unPeriod $ cPeriod config)
 
 originateLigoDaoWithConfigDesc
- :: MonadCleveland caps base m
+ :: forall cep caps base m. (Typeable cep, MonadCleveland caps base m)
  => ContractExtra
  -> ConfigDesc Config
- -> OriginateFn m
+ -> OriginateFn cep m
 originateLigoDaoWithConfigDesc extra config =
-  originateLigoDaoWithConfig extra (fillConfig config defaultConfig)
+  originateLigoDaoWithConfig @cep extra (fillConfig config defaultConfig)
 
-originateLigoDao :: MonadCleveland caps base m => OriginateFn m
+originateLigoDao :: forall cep caps base m. (Typeable cep, MonadCleveland caps base m) => OriginateFn cep m
 originateLigoDao =
-  originateLigoDaoWithConfig dynRecUnsafe defaultConfig
+  originateLigoDaoWithConfig @cep testContractExtra defaultConfig
 
 createSampleProposal
   :: (MonadCleveland caps base m, HasCallStack)

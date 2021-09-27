@@ -23,6 +23,7 @@ import Test.Cleveland
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Management.TransferOwnership
+import Test.Ligo.BaseDAO.Proposal.Config (testContractExtra)
 
 -- | Function that originates the contract and also make a bunch of
 -- address (the `addrCount` arg determines the count) for use within
@@ -93,23 +94,11 @@ test_BaseDAO_Management =
   ]
 
   where
-    testCustomEntrypoint :: ('[(ByteString, FullStorage)] :-> '[([Operation], Storage)])
-    testCustomEntrypoint =
-      -- Unpack an address from packed bytes and set it as admin
-      L.unpair #
-      L.unpackRaw @Address #
-      L.ifNone
-        (L.unit # L.failWith)
-        (L.dip (L.toField #fsStorage) # setField #sAdmin) #
-      L.nil # pair
 
     initialStorage currentLevel admin = mkFullStorage
       ! #admin admin
-      ! #extra dynRecUnsafe
+      ! #extra testContractExtra
       ! #metadata mempty
       ! #level currentLevel
       ! #tokenAddress genesisAddress
-      ! #customEps
-          [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)
-          ]
       ! defaults

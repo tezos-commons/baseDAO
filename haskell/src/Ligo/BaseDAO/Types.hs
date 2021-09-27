@@ -4,7 +4,9 @@
 
 -- | Types mirrored from LIGO implementation.
 module Ligo.BaseDAO.Types
-  ( frozenTokenId
+  ( CustomEpToParam
+  , Variants(..)
+  , frozenTokenId
   , baseDaoAnnOptions
 
     -- * Proposals
@@ -50,8 +52,10 @@ module Ligo.BaseDAO.Types
   , CustomEntrypoints
   , CallCustomParam
   , Proposal (..)
-  , Parameter (..)
+  , Parameter
+  , Parameter' (..)
   , ForbidXTZParam (..)
+  , AllowXTZParamContract (..)
   , AllowXTZParam (..)
   , FreezeParam
   , UnfreezeParam
@@ -78,7 +82,7 @@ module Ligo.BaseDAO.Types
   , next
   ) where
 
-import Universum (Enum, Integral, Num, One(..), Real, div, fromIntegral, maybe, show, (*))
+import Universum (Enum, Integral, Num, One(..), Real, Type, div, fromIntegral, maybe, show, (*))
 
 import qualified Data.Map as M
 import Fmt (Buildable, build, genericF)
@@ -95,6 +99,19 @@ import Morley.Michelson.Untyped.Annotation
 import Morley.Util.Markdown
 import Morley.Util.Named
 import Test.Cleveland.Instances ()
+
+-- | A data type to track and specify the different DAO variants in existence
+-- This became necessary as the custom entrypoints became undynamic (ie no
+-- longer decoded from a bytestring), and hence the different variants ended up
+-- with slightly different parameters.
+data Variants
+  = Registry
+  | Treasury
+  | Base
+
+-- | A type family to map a variant to the type that represents it's custom entrypoints.
+type family CustomEpToParam (v :: Variants) :: Type
+type instance CustomEpToParam 'Base = ()
 
 ------------------------------------------------------------------------
 -- Orphans
@@ -499,9 +516,6 @@ data Proposal = Proposal
 -- | Utility type containing an entrypoint name and its packed argument.
 type CallCustomParam = (MText, ByteString)
 
--- | Utility type containing an entrypoint name and its packed lambda.
-type CustomEntrypoint = (MText, ByteString)
-
 type FreezeParam = ("amount" :! Natural)
 type UnfreezeParam = ("amount" :! Natural)
 type UnstakeVoteParam = [ProposalKey]
@@ -519,24 +533,33 @@ data ForbidXTZParam
 instance Buildable ForbidXTZParam where
   build = genericF
 
-data AllowXTZParam
-  = CallCustom CallCustomParam
-  | Propose ProposeParams
+data AllowXTZParamContract
+  = Propose ProposeParams
   | Transfer_contract_tokens TransferContractTokensParam
   | Transfer_ownership TransferOwnershipParam
   | Accept_ownership ()
   | Default ()
   deriving stock (Eq, Show)
 
-instance Buildable AllowXTZParam where
+instance Buildable AllowXTZParamContract where
   build = genericF
 
-data Parameter
-  = XtzAllowed AllowXTZParam
+data AllowXTZParam cep
+  = ConcreteEp AllowXTZParamContract
+  | CustomEp cep
+  deriving stock (Eq, Show)
+
+instance Buildable cep => Buildable (AllowXTZParam cep) where
+  build = genericF
+
+data Parameter' cep
+  = XtzAllowed (AllowXTZParam cep)
   | XtzForbidden ForbidXTZParam
   deriving stock (Eq, Show)
 
-instance Buildable Parameter where
+type Parameter = Parameter' ()
+
+instance Buildable cep => Buildable (Parameter' cep) where
   build = genericF
 
 data AddressFreezeHistory = AddressFreezeHistory
@@ -612,6 +635,7 @@ data Storage = Storage
   , sExtra :: ContractExtra' BigMap
   , sFrozenTokenId :: FA2.TokenId
   , sMetadata :: TZIP16.MetadataMap BigMap
+  , sOngoingProposalsDlist :: Maybe ProposalDoublyLinkedList
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
   , sProposals :: BigMap ProposalKey Proposal
@@ -734,12 +758,7 @@ instance HasAnnotation DecisionLambdaOutput where
   annOptions = baseDaoAnnOptions
 
 data Config = Config
-  { cProposalCheck :: '[ProposeParams, ContractExtra] :-> '[()]
-  , cRejectedProposalSlashValue :: '[Proposal, ContractExtra]
-      :-> '["slash_amount" :! Natural]
-  , cDecisionLambda :: '[DecisionLambdaInput] :-> '[DecisionLambdaOutput]
-
-  , cMaxQuorumThreshold :: QuorumFraction
+  { cMaxQuorumThreshold :: QuorumFraction
   , cMinQuorumThreshold :: QuorumFraction
 
   , cFixedProposalFee :: FixedFee
@@ -749,8 +768,6 @@ data Config = Config
   , cGovernanceTotalSupply :: GovernanceTotalSupply
   , cProposalFlushLevel :: Natural
   , cProposalExpiredLevel :: Natural
-
-  , cCustomEntrypoints :: CustomEntrypoints
   }
 
 customGeneric "Config" ligoLayout
@@ -766,26 +783,14 @@ instance Buildable Config where
 deriveRPCWithStrategy "Config" ligoLayout
 
 mkConfig
-  :: [CustomEntrypoint]
-  -> Period
+  :: Period
   -> FixedFee
   -> Natural
   -> Natural
   -> GovernanceTotalSupply
   -> Config
-mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent governanceTotalSupply = Config
-  { cProposalCheck = do
-      dropN @2; push ()
-  , cRejectedProposalSlashValue = do
-      dropN @2; push (0 :: Natural); toNamed #slash_amount
-  , cDecisionLambda = do
-      toField #diExtra
-      nil
-      swap
-      dip (push Nothing)
-      constructStack @DecisionLambdaOutput
-  , cCustomEntrypoints = DynamicRec' $ mkBigMap customEps
-  , cFixedProposalFee = fixedProposalFee
+mkConfig votingPeriod fixedProposalFee maxChangePercent changePercent governanceTotalSupply = Config
+  { cFixedProposalFee = fixedProposalFee
   , cPeriod = votingPeriod
   , cProposalFlushLevel = (unPeriod votingPeriod) * 2
   , cProposalExpiredLevel = (unPeriod votingPeriod) * 3
@@ -797,7 +802,7 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   }
 
 defaultConfig :: Config
-defaultConfig = mkConfig [] (Period 20) (FixedFee 0) 19 5 (GovernanceTotalSupply 500)
+defaultConfig = mkConfig (Period 20) (FixedFee 0) 19 5 (GovernanceTotalSupply 500)
 
 data FullStorage = FullStorage
   { fsStorage :: Storage
@@ -830,11 +835,10 @@ mkFullStorage
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "level" :! Natural
   -> "tokenAddress" :! Address
-  -> "customEps" :? [CustomEntrypoint]
   -> FullStorage
-mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress cEps = FullStorage
+mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress = FullStorage
   { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
-  , fsConfig  = mkConfig (argDef #customEps [] cEps)
+  , fsConfig  = mkConfig
       (argDef #votingPeriod votingPeriodDef vp) (FixedFee 0) (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply (GovernanceTotalSupply 100) gts)
   }
   where
@@ -855,21 +859,29 @@ customGeneric "Proposal" ligoLayout
 deriving anyclass instance IsoValue Proposal
 instance Buildable Proposal where
   build = genericF
-
 customGeneric "ForbidXTZParam" ligoLayout
 deriving anyclass instance IsoValue ForbidXTZParam
 instance ParameterHasEntrypoints ForbidXTZParam where
   type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
 
-customGeneric "AllowXTZParam" ligoLayout
-deriving anyclass instance IsoValue AllowXTZParam
-instance ParameterHasEntrypoints AllowXTZParam where
-  type ParameterEntrypointsDerivation AllowXTZParam = EpdDelegate
+customGeneric "AllowXTZParamContract" ligoLayout
+deriving anyclass instance IsoValue AllowXTZParamContract
+instance ParameterHasEntrypoints AllowXTZParamContract where
+  type ParameterEntrypointsDerivation AllowXTZParamContract = EpdDelegate
 
-customGeneric "Parameter" ligoLayout
-deriving anyclass instance IsoValue Parameter
-instance ParameterHasEntrypoints Parameter where
-  type ParameterEntrypointsDerivation Parameter = EpdDelegate
+instance HasAnnotation AllowXTZParamContract where
+  annOptions = baseDaoAnnOptions
+
+customGeneric "AllowXTZParam" ligoLayout
+deriving anyclass instance IsoValue cep => IsoValue (AllowXTZParam cep)
+
+instance ParameterHasEntrypoints (AllowXTZParam ()) where
+  type ParameterEntrypointsDerivation (AllowXTZParam ()) = EpdDelegate
+
+customGeneric "Parameter'" ligoLayout
+deriving anyclass instance IsoValue cep => IsoValue (Parameter' cep)
+instance ParameterHasEntrypoints (Parameter' ()) where
+  type ParameterEntrypointsDerivation (Parameter' ()) = EpdDelegate
 
 customGeneric "AddressFreezeHistory" ligoLayout
 deriving anyclass instance IsoValue AddressFreezeHistory
