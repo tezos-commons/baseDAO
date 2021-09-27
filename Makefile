@@ -27,6 +27,9 @@ escape_double_quote = $(subst $\",$\\",$(1))
 # Utility function to require a variable to be defined
 require_defined = $(if $(value $1),$(value $1),$(error "$1 needs to be defined"))
 
+# What implementation to build
+VARIANT ?= trivialDAO
+
 # Where to put build files
 OUT ?= out
 # Where to put typescript files
@@ -34,26 +37,149 @@ TS_OUT ?= typescript
 
 .PHONY: all clean test typescript
 
-all: \
-	$(OUT)/baseDAO.tz
+trivialDAO: VARIANT = trivialDAO
+trivialDAO: \
+	$(OUT)/trivialDAO.tz
+
+registryDAO: VARIANT = registryDAO
+registryDAO: \
+	$(OUT)/registryDAO.tz
+
+treasuryDAO: VARIANT = treasuryDAO
+treasuryDAO: \
+	$(OUT)/treasuryDAO.tz
+
+testDAO: VARIANT = testDAO
+testDAO: \
+	$(OUT)/testDAO.tz
+
+all: trivialDAO registryDAO treasuryDAO testDAO
 
 # Compile LIGO contract into its michelson representation.
-$(OUT)/baseDAO.tz: src/**
+$(OUT)/trivialDAO.tz: src/**
+	cp src/trivialDAO.mligo src/implementation.mligo
 	mkdir -p $(OUT)
 	# ============== Compiling contract ============== #
-	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/baseDAO.tz
+	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/trivialDAO.tz
 	# ============== Compilation successful ============== #
-	# See "$(OUT)/baseDAO.tz" for compilation result #
+	# See "$(OUT)/trivialDAO.tz" for compilation result #
 
 	# strip the surrounding braces and indentation,
 	# note that dollar char is escaped as part of Makefile
-	sed -i '/^ *$$/d' $(OUT)/baseDAO.tz
-	sed -i 's/^[{ ] //g' $(OUT)/baseDAO.tz
-	sed -i '$$s/[}] *$$//' $(OUT)/baseDAO.tz
+	sed -i '/^ *$$/d' $(OUT)/trivialDAO.tz
+	sed -i 's/^[{ ] //g' $(OUT)/trivialDAO.tz
+	sed -i '$$s/[}] *$$//' $(OUT)/trivialDAO.tz
 ifeq ($(OPTIMIZE), true)
 	# ============== Optimizing contract ============== #
-	$(MORLEY) optimize --contract $(OUT)/baseDAO.tz --output $(OUT)/baseDAO.tz
+	$(MORLEY) optimize --contract $(OUT)/trivialDAO.tz --output $(OUT)/trivialDAO.tz
 endif
+	#
+
+# Compile LIGO contract into its michelson representation.
+$(OUT)/registryDAO.tz: src/**
+	cp src/registryDAO.mligo src/implementation.mligo
+	mkdir -p $(OUT)
+	# ============== Compiling contract ============== #
+	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/registryDAO.tz
+	# ============== Compilation successful ============== #
+	# See "$(OUT)/registryDAO.tz" for compilation result #
+
+	# strip the surrounding braces and indentation,
+	# note that dollar char is escaped as part of Makefile
+	sed -i '/^ *$$/d' $(OUT)/registryDAO.tz
+	sed -i 's/^[{ ] //g' $(OUT)/registryDAO.tz
+	sed -i '$$s/[}] *$$//' $(OUT)/registryDAO.tz
+ifeq ($(OPTIMIZE), true)
+	# ============== Optimizing contract ============== #
+	$(MORLEY) optimize --contract $(OUT)/registryDAO.tz --output $(OUT)/registryDAO.tz
+endif
+	#
+
+# Compile LIGO contract into its michelson representation.
+$(OUT)/treasuryDAO.tz: src/**
+	cp src/treasuryDAO.mligo src/implementation.mligo
+	mkdir -p $(OUT)
+	# ============== Compiling contract ============== #
+	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/treasuryDAO.tz
+	# ============== Compilation successful ============== #
+	# See "$(OUT)/treasuryDAO.tz" for compilation result #
+
+	# strip the surrounding braces and indentation,
+	# note that dollar char is escaped as part of Makefile
+	sed -i '/^ *$$/d' $(OUT)/treasuryDAO.tz
+	sed -i 's/^[{ ] //g' $(OUT)/treasuryDAO.tz
+	sed -i '$$s/[}] *$$//' $(OUT)/treasuryDAO.tz
+ifeq ($(OPTIMIZE), true)
+	# ============== Optimizing contract ============== #
+	$(MORLEY) optimize --contract $(OUT)/treasuryDAO.tz --output $(OUT)/treasuryDAO.tz
+endif
+	#
+
+# Compile LIGO contract into its michelson representation.
+$(OUT)/testDAO.tz: src/**
+	cp src/testDAO.mligo src/implementation.mligo
+	mkdir -p $(OUT)
+	# ============== Compiling contract ============== #
+	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/testDAO.tz
+	# ============== Compilation successful ============== #
+	# See "$(OUT)/testDAO.tz" for compilation result #
+
+	# strip the surrounding braces and indentation,
+	# note that dollar char is escaped as part of Makefile
+	sed -i '/^ *$$/d' $(OUT)/testDAO.tz
+	sed -i 's/^[{ ] //g' $(OUT)/testDAO.tz
+	sed -i '$$s/[}] *$$//' $(OUT)/testDAO.tz
+ifeq ($(OPTIMIZE), true)
+	# ============== Optimizing contract ============== #
+	$(MORLEY) optimize --contract $(OUT)/testDAO.tz --output $(OUT)/testDAO.tz
+endif
+	#
+
+$(OUT)/baseDAO_storage.tz : metadata_map = Big_map.empty
+$(OUT)/baseDAO_storage.tz : freeze_history = []
+$(OUT)/baseDAO_storage.tz : fixed_proposal_fee_in_token = 0n
+$(OUT)/baseDAO_storage.tz : quorum_threshold = 10n
+$(OUT)/baseDAO_storage.tz : min_quorum = 1n
+$(OUT)/baseDAO_storage.tz : max_quorum = 99n
+$(OUT)/baseDAO_storage.tz : max_voters = 1000n
+$(OUT)/baseDAO_storage.tz : period = 15840n
+$(OUT)/baseDAO_storage.tz : quorum_change = 5n
+$(OUT)/baseDAO_storage.tz : max_quorum_change = 19n
+$(OUT)/baseDAO_storage.tz : governance_total_supply = 1000n
+$(OUT)/baseDAO_storage.tz : proposal_flush_level = 36000n
+$(OUT)/baseDAO_storage.tz : proposal_expired_level = 47520n
+$(OUT)/baseDAO_storage.tz: src/**
+	# ============== Compiling TrivialDAO storage ============== #
+	mkdir -p $(OUT)
+	$(BUILD_STORAGE) --output-file $(OUT)/baseDAO_storage.tz \
+      src/base_DAO.mligo base_DAO_contract "default_full_storage( \
+        { storage_data = \
+          { admin = (\"$(call require_defined,admin_address)\" : address) \
+          ; guardian = (\"$(call require_defined,guardian_address)\" : address) \
+          ; governance_token = \
+            { address = (\"$(call require_defined,governance_token_address)\" : address) \
+            ; token_id = ($(call require_defined,governance_token_id) : nat) \
+            } \
+          ; start_level = {blocks = $(call require_defined,start_level)} \
+          ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+          ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
+          } \
+        ; config_data = \
+          { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
+          ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
+          ; max_voters = ($(max_voters) : nat) \
+          ; period = { blocks = ($(period) : nat) } \
+          ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
+          ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) }\
+          ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
+          ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
+          ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
+          ; max_quorum_change = { numerator = (($(max_quorum_change) : nat) * quorum_denominator)/100n } \
+          ; governance_total_supply = ($(governance_total_supply) : nat) \
+          } \
+        })"
+	# ================= Compilation successful ================= #
+	# See "$(OUT)/baseDAO_storage.tz" for compilation result	#
 	#
 
 $(OUT)/trivialDAO_storage.tz : metadata_map = Big_map.empty
@@ -70,6 +196,7 @@ $(OUT)/trivialDAO_storage.tz : proposal_flush_level = 36000n
 $(OUT)/trivialDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/trivialDAO_storage.tz: src/**
 	# ============== Compiling TrivialDAO storage ============== #
+	cp src/trivialDAO.mligo src/implementation.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/trivialDAO_storage.tz \
       src/base_DAO.mligo base_DAO_contract "default_full_storage( \
@@ -122,9 +249,10 @@ $(OUT)/registryDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/registryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
+	cp src/registryDAO.mligo src/implementation.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz \
-      src/registryDAO.mligo base_DAO_contract "default_registry_DAO_full_storage( \
+      src/base_DAO.mligo base_DAO_contract "default_registry_DAO_full_storage( \
         { base_data = \
           { storage_data = \
             { admin = (\"$(call require_defined,admin_address)\" : address) \
@@ -182,9 +310,10 @@ $(OUT)/treasuryDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/treasuryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
+	cp src/treasuryDAO.mligo src/implementation.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz \
-       src/treasuryDAO.mligo base_DAO_contract "default_treasury_DAO_full_storage( \
+       src/base_DAO.mligo base_DAO_contract "default_treasury_DAO_full_storage( \
         { base_data = \
           { storage_data = \
             { admin = (\"$(call require_defined,admin_address)\" : address) \
@@ -221,10 +350,9 @@ $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compilation successful ============== #
 	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
 	#
-
 # For development and testing purpose
 test-storage:
-	make $(OUT)/trivialDAO_storage.tz \
+	make $(OUT)/baseDAO_storage.tz \
 		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
 		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
 		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
@@ -245,7 +373,7 @@ test-storage:
 		governance_token_id=0n \
 		start_level=100n
 
-haskell-resources: test-storage all
+haskell-resources: all test-storage
 	# ============== Copying resources for Haskell library ============== #
 	mkdir -p haskell/resources
 	cp $(OUT)/* haskell/resources
