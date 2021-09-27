@@ -22,7 +22,7 @@ import SMT.Model.BaseDAO.Types
 findBigMap :: MText -> ContractExtra -> ByteString
 findBigMap field extras =
   Map.lookup field (bmMap $ unDynamic extras)
-    & fromMaybe (error "MISSING_VALUE")
+    & fromMaybe (error $ "MISSING_VALUE" <> show field)
 
 unpackWithError :: forall a. (NiceUnpackedValue a) => ByteString -> a
 unpackWithError packed =

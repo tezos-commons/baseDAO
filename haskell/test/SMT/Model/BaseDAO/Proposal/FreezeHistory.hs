@@ -21,7 +21,7 @@ import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
 
-getCurrentStageNum :: ModelT Natural
+getCurrentStageNum :: ModelT cep Natural
 getCurrentStageNum = do
   (Period vp) <- getConfig <&> cPeriod
   startLvl <- getStore <&> sStartLevel
@@ -34,7 +34,7 @@ getCurrentStageNum = do
 -- | Add/substract an amount of tokens from unstaked depending on positive/negative `amt`
 -- Postive `amt` will trigger the addition to current unstaked
 -- Negative `amt` will trigger the substraction from past unstaked
-freezingUpdateFh :: Address -> Integer -> ModelT ()
+freezingUpdateFh :: Address -> Integer -> ModelT cep ()
 freezingUpdateFh senderAddr amt = do
   if amt < 0 then
     -- `amt` is negative, we substract from past unstaked.
@@ -57,7 +57,7 @@ freezingUpdateFh senderAddr amt = do
 -- | Move an amount of tokens from unstake to stake / stake to unstake depending on amt
 -- Postive `amt` will trigger moving unstake to stake
 -- Negative `amt` will trigger stake to unstake
-stakingUpdateFh :: Address -> Integer -> ModelT ()
+stakingUpdateFh :: Address -> Integer -> ModelT cep ()
 stakingUpdateFh senderAddr amt = do
   if amt == 0 then
     updatedFreezeHistory senderAddr
@@ -89,7 +89,7 @@ stakingUpdateFh senderAddr amt = do
 
 
 -- | Delete an amount of token from stake tokens
-burnUpdateFh :: Address -> Natural -> ModelT ()
+burnUpdateFh :: Address -> Natural -> ModelT cep ()
 burnUpdateFh senderAddr amtToBurn =
   updatedFreezeHistory senderAddr
   >>= modifyStaked (\val ->
@@ -106,30 +106,30 @@ burnUpdateFh senderAddr amtToBurn =
 -----------------------------------------------------------------------------------
 
 modifyCurrentUnstaked
-  ::(Natural -> ModelT Natural)
+  ::(Natural -> ModelT cep Natural)
   -> AddressFreezeHistory
-  -> ModelT AddressFreezeHistory
+  -> ModelT cep AddressFreezeHistory
 modifyCurrentUnstaked fn fh = do
   newVal <- fn $ fhCurrentUnstaked fh
   return $ fh { fhCurrentUnstaked = newVal }
 
 modifyPastUnstaked
-  ::(Natural -> ModelT Natural)
+  ::(Natural -> ModelT cep Natural)
   -> AddressFreezeHistory
-  -> ModelT AddressFreezeHistory
+  -> ModelT cep AddressFreezeHistory
 modifyPastUnstaked fn fh = do
   newVal <- fn $ fhPastUnstaked fh
   return $ fh { fhPastUnstaked = newVal }
 
 modifyStaked
-  ::(Natural -> ModelT Natural)
+  ::(Natural -> ModelT cep Natural)
   -> AddressFreezeHistory
-  -> ModelT AddressFreezeHistory
+  -> ModelT cep AddressFreezeHistory
 modifyStaked fn fh = do
   newVal <- fn $ fhStaked fh
   return $ fh { fhStaked = newVal }
 
-updatedFreezeHistory :: Address -> ModelT AddressFreezeHistory
+updatedFreezeHistory :: Address -> ModelT cep AddressFreezeHistory
 updatedFreezeHistory addr = do
   currentStage <- getCurrentStageNum
   store <- getStore
@@ -153,6 +153,6 @@ updatedFreezeHistory addr = do
           }
       else freezeHistory
 
-storeFreezeHistory :: Address -> AddressFreezeHistory -> ModelT ()
+storeFreezeHistory :: Address -> AddressFreezeHistory -> ModelT cep ()
 storeFreezeHistory addr fh = modifyStore $ \s ->
   pure $ s { sFreezeHistory = BigMap Nothing $ Map.insert addr fh (s & sFreezeHistory & bmMap)}

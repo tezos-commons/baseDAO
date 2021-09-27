@@ -105,11 +105,11 @@ failDecisionLambda = 121
 
 -- | Cannot call `unstake_vote` on the proposal that is not flushed or dropped.
 unstakeInvalidProposal :: Natural
-unstakeInvalidProposal = 123
+unstakeInvalidProposal = 122
 
 -- | The sender did not vote on the proposal or already unstaked tokens from the proposal.
 voterDoesNotExist :: Natural
-voterDoesNotExist = 124
+voterDoesNotExist = 123
 
 
 

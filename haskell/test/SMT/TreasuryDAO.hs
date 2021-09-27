@@ -8,7 +8,6 @@ module SMT.TreasuryDAO
 import Universum hiding (drop, swap)
 
 import Control.Monad.Except (throwError)
-import qualified Data.Map as Map
 import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
@@ -19,13 +18,14 @@ import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
+import Ligo.BaseDAO.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
 import SMT.Common.Gen
 import SMT.Common.Helper
 import SMT.Common.Run
 import SMT.Common.Types
 import SMT.Model.BaseDAO.Types
-import Test.Ligo.BaseDAO.Common (makeProposalKey, metadataSize)
+import Test.Ligo.BaseDAO.Common (ContractType(..), makeProposalKey, metadataSize)
 import Test.Ligo.TreasuryDAO.Types
 
 
@@ -42,11 +42,11 @@ hprop_TreasuryDaoSMT =
       , soProposalCheck = treasuryDaoProposalCheck
       , soRejectedProposalSlashValue = treasuryDaoRejectedProposalSlashValue
       , soDecisionLambda = treasuryDaoDecisionLambda
-      , soCustomEps = Map.empty
+      , soCustomEps = \_ -> pure ()
       }
   in
     withTests 30 $ property $ do
-      runBaseDaoSMT option
+      runBaseDaoSMT @TreasuryCustomEpParam option
 
 
 addTreasuryDaoConfig :: ("treasuryFs" :! FullStorage) -> FullStorage -> FullStorage
@@ -57,12 +57,7 @@ addTreasuryDaoConfig (Arg treasuryFs) fs =
       { fsStorage = (fs & fsStorage)
           { sExtra = treasuryStore & sExtra
           }
-      , fsConfig = (fs & fsConfig)
-          { cProposalCheck = treasuryConfig & cProposalCheck
-          , cRejectedProposalSlashValue = treasuryConfig & cRejectedProposalSlashValue
-          , cDecisionLambda = treasuryConfig & cDecisionLambda
-          , cCustomEntrypoints = treasuryConfig & cCustomEntrypoints
-          }
+      , fsConfig = treasuryConfig
       }
 
 
@@ -70,7 +65,7 @@ addTreasuryDaoConfig (Arg treasuryFs) fs =
 -- Lambdas
 -------------------------------------------------------------------------------
 
-treasuryDaoProposalCheck :: (ProposeParams, ContractExtra) -> ModelT ()
+treasuryDaoProposalCheck :: (ProposeParams, ContractExtra) -> ModelT cep ()
 treasuryDaoProposalCheck (params, extras) = do
   let proposalSize = metadataSize (params & ppProposalMetadata)
       frozenScaleValue = unpackWithError @Natural $ findBigMap "frozen_scale_value" extras
@@ -106,13 +101,13 @@ treasuryDaoProposalCheck (params, extras) = do
     Update_contract_delegate _ -> pure ()
 
 
-treasuryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
+treasuryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT cep Natural
 treasuryDaoRejectedProposalSlashValue (p, extras) = do
   let slashScaleValue = unpackWithError @Natural $ findBigMap "slash_scale_value" extras
       slashDivisionValue = unpackWithError @Natural $ findBigMap "slash_division_value" extras
   pure $ (slashScaleValue * (p & plProposerFrozenToken) `div` slashDivisionValue)
 
-treasuryDaoDecisionLambda :: DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
+treasuryDaoDecisionLambda :: DecisionLambdaInput -> ModelT cep ([SimpleOperation], ContractExtra, Maybe Address)
 treasuryDaoDecisionLambda DecisionLambdaInput{..} = do
   let metadata = (diProposal & plMetadata)
         & lUnpackValueRaw @TreasuryDaoProposalMetadata
@@ -131,7 +126,7 @@ treasuryDaoDecisionLambda DecisionLambdaInput{..} = do
 -- Gen Functions
 -------------------------------------------------------------------------------
 
-genProposeTreasuryDao :: MkGenPropose
+genProposeTreasuryDao :: MkGenPropose TreasuryCustomEpParam
 genProposeTreasuryDao senderInput delegate1 invalidFrom = do
   from <- Gen.element [senderInput, invalidFrom, delegate1]
   mkMetadata <- genTreasuryDaoProposalMetadata
@@ -145,13 +140,13 @@ genProposeTreasuryDao senderInput delegate1 invalidFrom = do
           , ppProposalMetadata = proposalMeta
           }
         proposalKey = makeProposalKey param
-    in (XtzAllowed $ Propose param, metaSize, proposalKey)
+    in (XtzAllowed $ ConcreteEp $ Propose param, metaSize, proposalKey)
 
-genCustomCallsTreasuryDao :: MkGenCustomCalls
+genCustomCallsTreasuryDao :: MkGenCustomCalls TreasuryCustomEpParam
 genCustomCallsTreasuryDao =
   pure []
 
-genTransferProposal :: GeneratorT (Address -> Address -> TreasuryDaoProposalMetadata)
+genTransferProposal :: GeneratorT TreasuryCustomEpParam (Address -> Address -> TreasuryDaoProposalMetadata)
 genTransferProposal = do
   agoraId <- Gen.integral (Range.constant 1 10)
 
@@ -165,7 +160,7 @@ genTransferProposal = do
         , tpTransfers    = transfers
         }
 
-genTreasuryDaoProposalMetadata :: GeneratorT (Address -> Address -> TreasuryDaoProposalMetadata)
+genTreasuryDaoProposalMetadata :: GeneratorT TreasuryCustomEpParam (Address -> Address -> TreasuryDaoProposalMetadata)
 genTreasuryDaoProposalMetadata = do
   guardianAddr <- genAddress
   Gen.choice [genTransferProposal, pure $ \_ _ -> Update_guardian guardianAddr]

@@ -15,7 +15,7 @@ import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
 
 import Ligo.BaseDAO.Common.Types
-import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
+import Ligo.BaseDAO.Contract (baseDAOStorageLigo)
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
@@ -354,9 +354,9 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
 originateTreasuryDao
  :: forall caps base m. (MonadCleveland caps base m)
  => (FullStorage -> FullStorage)
- -> OriginateFn m
+ -> OriginateFn 'Treasury m
 originateTreasuryDao modifyStorageFn =
-  let fs = baseDAOTreasuryStorageLigo
+  let fs = baseDAOStorageLigo
       FullStorage{..} = fs
         & setExtra @Natural [mt|frozen_scale_value|] 1
         & setExtra @Natural [mt|frozen_extra_value|] 0
@@ -367,7 +367,7 @@ originateTreasuryDao modifyStorageFn =
         & setExtra @Natural [mt|max_xtz_amount|] 5
         & modifyStorageFn
 
-  in originateLigoDaoWithConfig (sExtra fsStorage)
+  in originateLigoDaoWithConfig @'Treasury (sExtra fsStorage)
       (fsConfig
         { cMinQuorumThreshold = fromIntegral $ mkQuorumThreshold 1 100
         , cPeriod = 10

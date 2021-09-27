@@ -10,14 +10,13 @@ module SMT.Model.BaseDAO.Management
 import Universum
 
 import Control.Monad.Except (throwError)
-import qualified Data.Map as Map
 
 import Morley.Util.Named
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
 
-applyTransferOwnership :: ModelSource -> TransferOwnershipParam -> ModelT ()
+applyTransferOwnership :: ModelSource -> TransferOwnershipParam -> ModelT cep ()
 applyTransferOwnership mso (N param) = do
   selfAddr <- get <&> msSelfAddress
 
@@ -32,17 +31,13 @@ applyTransferOwnership mso (N param) = do
     else
       pure $ s { sPendingOwner = newOwner}
 
-applyAcceptOwnership :: ModelSource -> ModelT ()
+applyAcceptOwnership :: ModelSource -> ModelT cep ()
 applyAcceptOwnership mso = modifyStore $ \s ->
   if (s & sPendingOwner) == (mso & msoSender) then
     pure $ s { sAdmin = (mso & msoSender)}
   else throwError NOT_PENDING_ADMIN
 
-applyCallCustom :: ModelSource -> CallCustomParam -> ModelT ()
-applyCallCustom _ (epName, packedParam) = do
+applyCallCustom :: ModelSource -> cep -> ModelT cep ()
+applyCallCustom _ cep = do
   customEps <- get <&> msCustomEps
-  case Map.lookup epName customEps of
-    Just f ->
-      f packedParam
-    Nothing ->
-      throwError ENTRYPOINT_NOT_FOUND
+  customEps cep

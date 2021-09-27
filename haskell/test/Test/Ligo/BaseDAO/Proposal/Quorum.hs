@@ -48,7 +48,7 @@ calculateThreshold mcp cp (GovernanceTotalSupply gts) staked oldQt =
 
 checkQuorumThresholdDynamicUpdate
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkQuorumThresholdDynamicUpdate originateFn = do
   DaoOriginateData{..} <- originateFn
@@ -94,7 +94,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
 
 checkQuorumThresholdDynamicUpdateUpperBound
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   DaoOriginateData{..} <- originateFn
@@ -139,7 +139,7 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
 
 checkQuorumThresholdDynamicUpdateLowerBound
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   DaoOriginateData{..} <- originateFn
@@ -184,7 +184,7 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
 
 checkProposalSavesQuorum
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkProposalSavesQuorum originateFn = do
   DaoOriginateData{..} <- originateFn
@@ -232,7 +232,7 @@ proposalIsRejectedIfNoQuorum
   => m ()
 proposalIsRejectedIfNoQuorum = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc dynRecUnsafe
+    originateLigoDaoWithConfigDesc @'Base testContractExtra
       ((ConfigDesc $ Period 60)
       >>- (ConfigDesc (FixedFee 42))
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 1800 })
@@ -283,7 +283,7 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum
   => m ()
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc dynRecUnsafe
+    originateLigoDaoWithConfigDesc @'Base testContractExtra
       (testConfig
       >>- (ConfigDesc $ Period 60)
       >>- (ConfigDesc (FixedFee 42))

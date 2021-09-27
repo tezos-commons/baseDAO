@@ -15,7 +15,7 @@ import Morley.Tezos.Crypto (checkSignature)
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
 
-verifyPermitProtectedVote :: ModelSource -> PermitProtected VoteParam -> ModelT (VoteParam, Address)
+verifyPermitProtectedVote :: ModelSource -> PermitProtected VoteParam -> ModelT cep (VoteParam, Address)
 verifyPermitProtectedVote mso permited = do
   let voteParam = permited & ppArgument
   case (permited & ppPermit) of

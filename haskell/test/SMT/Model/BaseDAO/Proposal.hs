@@ -33,7 +33,7 @@ import SMT.Model.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 
 checkIfProposalExist
-  :: ProposalKey -> ModelT Proposal
+  :: ProposalKey -> ModelT cep Proposal
 checkIfProposalExist key = do
   store <- getStore
 
@@ -49,7 +49,7 @@ checkIfProposalExist key = do
 
 
 checkDelegate
-  :: Address -> Address -> ModelT Address
+  :: Address -> Address -> ModelT cep Address
 checkDelegate from author  = do
   store <- getStore
   let key = Delegate {dOwner = from, dDelegate = author}
@@ -57,14 +57,14 @@ checkDelegate from author  = do
     throwError NOT_DELEGATE
   else pure from
 
-checkProposalLimitReached :: ModelT ()
+checkProposalLimitReached :: ModelT cep ()
 checkProposalLimitReached = do
   proposalKeyListSortByDate <- getStore <&> sProposalKeyListSortByDate
   maxProposal <- getConfig <&> cMaxProposals
   when (maxProposal <= (fromIntegral $ length proposalKeyListSortByDate)) $
     throwError MAX_PROPOSALS_REACHED
 
-stakeTk :: Natural -> Address -> ModelT ()
+stakeTk :: Natural -> Address -> ModelT cep ()
 stakeTk tokenAmount addr = do
   stakingUpdateFh addr $ fromIntegral tokenAmount
   modifyStore $ \s -> do
@@ -73,13 +73,13 @@ stakeTk tokenAmount addr = do
       { sQuorumThresholdAtCycle = (s & sQuorumThresholdAtCycle) { qaStaked = newCycleStaked}
       }
 
-ensureProposingStage :: Natural -> ModelT ()
+ensureProposingStage :: Natural -> ModelT cep ()
 ensureProposingStage stageNum = do
   unless (stageNum `mod` 2 == 1) $
     throwError NOT_PROPOSING_STAGE
 
 
-ensureProposalIsUnique :: ProposeParams -> ModelT ProposalKey
+ensureProposalIsUnique :: ProposeParams -> ModelT cep ProposalKey
 ensureProposalIsUnique params = do
   store <- getStore
   let proposalKey = makeProposalKey params
@@ -88,7 +88,7 @@ ensureProposalIsUnique params = do
     False -> pure proposalKey
 
 
-addProposal :: ProposeParams -> ModelT ()
+addProposal :: ProposeParams -> ModelT cep ()
 addProposal params = do
   lvl <- get <&> msLevel
   proposalKey <- ensureProposalIsUnique params
@@ -111,7 +111,7 @@ addProposal params = do
     , sProposalKeyListSortByDate = Set.insert (lvl, proposalKey) (s & sProposalKeyListSortByDate)
     }
 
-unstakeTk :: Natural -> Natural -> Address -> ModelT ()
+unstakeTk :: Natural -> Natural -> Address -> ModelT cep ()
 unstakeTk tokenAmount burnAmount addr = do
   store <- getStore
 
@@ -135,7 +135,7 @@ doTotalVoteMeetQuorumThreshold proposal store =
   in  (reachedQuorum >= (proposal & plQuorumThreshold))
 
 unstakeProposerToken
-  :: Bool -> Proposal -> ModelT ()
+  :: Bool -> Proposal -> ModelT cep ()
 unstakeProposerToken isAccepted proposal = do
   store <- getStore
   (FixedFee fixedFee) <- getConfig <&> cFixedProposalFee
@@ -153,11 +153,11 @@ unstakeProposerToken isAccepted proposal = do
   unstakeTk tokens burnAmount (proposal & plProposer)
 
 
-removeFromProposalSortByLevel :: Natural -> ProposalKey -> ModelT ()
+removeFromProposalSortByLevel :: Natural -> ProposalKey -> ModelT cep ()
 removeFromProposalSortByLevel pLevel proposalKey = modifyStore $ \s ->
   pure $ s { sProposalKeyListSortByDate = Set.delete (pLevel, proposalKey) (s & sProposalKeyListSortByDate)}
 
-applyPropose :: ModelSource -> ProposeParams -> ModelT ()
+applyPropose :: ModelSource -> ProposeParams -> ModelT cep ()
 applyPropose mso param@ProposeParams{..} = do
 
   config <- getConfig
@@ -176,13 +176,13 @@ applyPropose mso param@ProposeParams{..} = do
   stakeTk amountToFreeze validFrom
   addProposal param
 
-ensureProposalVotingStage :: Proposal -> ModelT ()
+ensureProposalVotingStage :: Proposal -> ModelT cep ()
 ensureProposalVotingStage proposal = do
   currentStage <- getCurrentStageNum
   unless (currentStage == (proposal & plVotingStageNum)) $
     throwError VOTING_STAGE_OVER
 
-submitVote :: Proposal -> VoteParam -> Address -> ModelT ()
+submitVote :: Proposal -> VoteParam -> Address -> ModelT cep ()
 submitVote proposal voteParam author = do
   store <- getStore
   let proposalKey = voteParam & vProposalKey
@@ -201,10 +201,10 @@ submitVote proposal voteParam author = do
     , sStakedVotes = BigMap Nothing $ Map.insert (author, proposalKey) newStakeAmt (s & sStakedVotes & bmMap)
     }
 
-applyVote :: ModelSource -> [PermitProtected VoteParam] -> ModelT ()
+applyVote :: ModelSource -> [PermitProtected VoteParam] -> ModelT cep ()
 applyVote mso = mapM_ acceptVote
   where
-    acceptVote :: PermitProtected VoteParam -> ModelT ()
+    acceptVote :: PermitProtected VoteParam -> ModelT cep ()
     acceptVote pp = do
       (voteParam, author) <- verifyPermitProtectedVote mso pp
 
@@ -213,7 +213,7 @@ applyVote mso = mapM_ acceptVote
       ensureProposalVotingStage proposal
       submitVote proposal voteParam validFrom
 
-applyFreeze :: ModelSource -> FreezeParam -> ModelT ()
+applyFreeze :: ModelSource -> FreezeParam -> ModelT cep ()
 applyFreeze mso (N param) = do
   let senderAddr = mso & msoSender
   let amt = param
@@ -225,7 +225,7 @@ applyFreeze mso (N param) = do
             }
 
 
-lockGovernanceTokens :: Natural -> Address -> ModelT Natural
+lockGovernanceTokens :: Natural -> Address -> ModelT cep Natural
 lockGovernanceTokens tokens addr = do
   frozenTotalSupply <- getStore <&> sFrozenTotalSupply
   governanceToken <- getStore <&> sGovernanceToken
@@ -241,7 +241,7 @@ lockGovernanceTokens tokens addr = do
   _ <- makeTransferOnToken [param] (governanceToken & gtAddress)
   pure (frozenTotalSupply + tokens)
 
-unlockGovernanceTokens :: Natural -> Address -> ModelT Natural
+unlockGovernanceTokens :: Natural -> Address -> ModelT cep Natural
 unlockGovernanceTokens tokens addr = do
   frozenTotalSupply <- getStore <&> sFrozenTotalSupply
   governanceToken <- getStore <&> sGovernanceToken
@@ -260,7 +260,7 @@ unlockGovernanceTokens tokens addr = do
     Nothing -> error "BAD_STATE: Unlocking more `frozenTotalSupply`."
 
 
-applyUnfreeze :: ModelSource -> UnfreezeParam -> ModelT ()
+applyUnfreeze :: ModelSource -> UnfreezeParam -> ModelT cep ()
 applyUnfreeze mso (N amt) = do
   let senderAddr = mso & msoSender
 
@@ -271,12 +271,12 @@ applyUnfreeze mso (N amt) = do
             { sFrozenTotalSupply = frozenTotalSupply }
 
 
-isLevelReached :: Proposal -> Natural -> ModelT Bool
+isLevelReached :: Proposal -> Natural -> ModelT cep Bool
 isLevelReached proposal target = do
   lvl <- get <&> msLevel
   pure (lvl >= (proposal & plStartLevel) + target)
 
-handleProposalIsOver :: (Natural, ProposalKey) -> ModelT Bool
+handleProposalIsOver :: (Natural, ProposalKey) -> ModelT cep Bool
 handleProposalIsOver (proposalLvl, proposalKey) = do
   proposal <- checkIfProposalExist proposalKey
 
@@ -306,7 +306,7 @@ handleProposalIsOver (proposalLvl, proposalKey) = do
   else
     pure False
 
-applyFlush :: ModelSource -> Natural -> ModelT ()
+applyFlush :: ModelSource -> Natural -> ModelT cep ()
 applyFlush _ param = do
   when (param == 0) $
     throwError EMPTY_FLUSH
@@ -319,7 +319,7 @@ applyFlush _ param = do
 
   unless anyFlushedProposal $ throwError EMPTY_FLUSH
 
-applyDropProposal :: ModelSource -> ProposalKey -> ModelT ()
+applyDropProposal :: ModelSource -> ProposalKey -> ModelT cep ()
 applyDropProposal mso proposalKey = do
 
   proposal <- checkIfProposalExist proposalKey
@@ -347,7 +347,7 @@ updateDelegate mso delegates param =
   where
     delegate = Delegate { dOwner = mso & msoSender, dDelegate = param & dpDelegate }
 
-applyUpdateDelegate :: ModelSource -> [DelegateParam] -> ModelT ()
+applyUpdateDelegate :: ModelSource -> [DelegateParam] -> ModelT cep ()
 applyUpdateDelegate mso params =
   modifyStore $ \s ->
     let delegates = Map.keysSet . bmMap . sDelegates $ s
@@ -359,7 +359,7 @@ applyUpdateDelegate mso params =
 -- Unstake_vote
 ---------------------------------------------------------------
 
-applyUnstakeVoteOne :: ModelSource -> ProposalKey -> ModelT ()
+applyUnstakeVoteOne :: ModelSource -> ProposalKey -> ModelT cep ()
 applyUnstakeVoteOne mso key = do
   store <- getStore
 
@@ -383,6 +383,6 @@ applyUnstakeVoteOne mso key = do
 
   pure ()
 
-applyUnstakeVote :: ModelSource -> UnstakeVoteParam -> ModelT ()
+applyUnstakeVote :: ModelSource -> UnstakeVoteParam -> ModelT cep ()
 applyUnstakeVote mso params =
   mapM_ (applyUnstakeVoteOne mso) params
