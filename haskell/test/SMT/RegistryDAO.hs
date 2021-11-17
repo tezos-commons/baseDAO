@@ -111,7 +111,7 @@ registryDaoProposalCheck (params, extras) = do
     Update_receivers_proposal _ -> pure ()
     Configuration_proposal _ -> pure ()
     Update_guardian _ -> pure ()
-
+    Update_contract_delegate _ -> pure ()
 
 registryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
 registryDaoRejectedProposalSlashValue (p, extras) = do
@@ -165,6 +165,8 @@ registryDaoDecisionLambda DecisionLambdaInput{..} = do
       pure $ (ops, extras, Nothing)
     Update_guardian guardian ->
       pure $ ([], diExtra, Just guardian)
+    Update_contract_delegate _ ->
+      pure $ ([], diExtra, Nothing)
 
 applyDiffAffected :: ProposalKey -> [(MText, Maybe MText)] -> ContractExtra -> ContractExtra
 applyDiffAffected proposalKey diffs ce =

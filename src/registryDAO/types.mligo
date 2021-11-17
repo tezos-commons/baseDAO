@@ -36,6 +36,7 @@ type registry_dao_proposal_metadata =
   | Configuration_proposal of config_proposal
   | Transfer_proposal of transfer_proposal
   | Update_guardian of update_guardian
+  | Update_contract_delegate of update_contract_delegate
 
 type lookup_registry_param =
   [@layout:comb]

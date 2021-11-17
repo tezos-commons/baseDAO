@@ -86,6 +86,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
   | Update_receivers_proposal _urp -> unit
   | Configuration_proposal _cp -> unit
   | Update_guardian _guardian -> unit
+  | Update_contract_delegate _ -> unit
 
 (*
  * Proposal rejection return lambda: returns `slash_scale_value * frozen / slash_division_value`
@@ -197,6 +198,9 @@ let registry_DAO_decision_lambda (input : decision_lambda_input)
       { operations = ops; extras = extras; guardian = (None : (address option)) }
   | Update_guardian guardian ->
       { operations = ops; extras = extras ; guardian = Some(guardian) }
+  | Update_contract_delegate mdelegate ->
+      { operations = ((Tezos.set_delegate mdelegate) :: ops); extras = extras ; guardian = (None : (address option))}
+
 
 // A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
 // prohibit non-zero xtz transfer.
