@@ -43,6 +43,8 @@ registry. This includes:
    - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and/or changes and motivation for them.
 4. Proposal to update the guardian address in the BaseDAO contract:
    - This proposal takes an address parameter and use it to update the guardian address in the storage.
+5. Proposal to update the contract delegate:
+   - This proposal takes a `keyhash` `option` parameter and usees it to update the delegate address of the contract. Please note that this different from the `Update_delegate` entrypoint which updates the delegates of an account.
 
 ## Configuration lambdas
 

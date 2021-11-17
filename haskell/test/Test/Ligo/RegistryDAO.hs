@@ -556,6 +556,52 @@ test_RegistryDAO =
 
             checkGuardian baseDao newGuardian
 
+    , nettestScenarioCaps "checks it can flush a proposal that updates contract delegate address" $
+        withOriginated 3
+          (\(admin : _) ->
+            setExtra @Natural [mt|max_proposal_size|] 200 $
+            initialStorageWithExplictRegistryDAOConfig admin) $
+          \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
+
+            let
+              proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
+                Update_contract_delegate Nothing
+
+              proposalSize = metadataSize proposalMeta
+              proposeParams = ProposeParams wallet1 proposalSize proposalMeta
+
+            withSender wallet1 $
+              call baseDao (Call @"Freeze") (#amount .! proposalSize)
+            withSender wallet2 $
+              call baseDao (Call @"Freeze") (#amount .! 20)
+
+            -- Advance one voting period to a proposing stage.
+            startLevel <- getOriginationLevel baseDao
+            advanceToLevel (startLevel + period)
+
+            withSender wallet1 $
+              call baseDao (Call @"Propose") proposeParams
+
+            checkBalance baseDao wallet1 proposalSize
+
+            let
+              key1 = makeProposalKey proposeParams
+              upvote = NoPermit VoteParam
+                  { vFrom = wallet2
+                  , vVoteType = True
+                  , vVoteAmount = 20
+                  , vProposalKey = key1
+                  }
+
+            -- Advance one voting period to a voting stage.
+            advanceToLevel (startLevel + 2*period)
+            withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
+            proposalStart <- getProposalStartLevel baseDao key1
+            advanceToLevel (proposalStart + 2*period)
+            withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
+
+            -- TODO #697: Add check after we have a way to ensure delegate
+
     , nettestScenarioCaps "checks it can flush an Update_receivers_proposal" $
         withOriginated 3
           (\(admin : _) ->

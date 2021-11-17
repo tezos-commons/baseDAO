@@ -22,6 +22,7 @@ data RegistryDaoProposalMetadata
   | Transfer_proposal TransferProposal
   | Update_receivers_proposal UpdateReceiverParam
   | Update_guardian Address
+  | Update_contract_delegate (Maybe KeyHash)
 
 instance HasAnnotation RegistryDaoProposalMetadata where
   annOptions = baseDaoAnnOptions

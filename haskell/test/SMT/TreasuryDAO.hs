@@ -105,6 +105,7 @@ treasuryDaoProposalCheck (params, extras) = do
       unless isValid $
         throwError FAIL_PROPOSAL_CHECK
     Update_guardian _ -> pure ()
+    Update_contract_delegate _ -> pure ()
 
 
 treasuryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
@@ -125,7 +126,8 @@ treasuryDaoDecisionLambda DecisionLambdaInput{..} = do
       pure $ (ops, diExtra, Nothing)
     Update_guardian guardian ->
       pure $ ([], diExtra, Just guardian)
-
+    Update_contract_delegate _ ->
+      pure $ ([], diExtra, Nothing)
 
 -------------------------------------------------------------------------------
 -- Gen Functions

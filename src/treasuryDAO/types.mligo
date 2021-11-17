@@ -27,6 +27,7 @@ type treasury_dao_transfer_proposal =
 type treasury_dao_proposal_metadata =
   | Transfer_proposal of treasury_dao_transfer_proposal
   | Update_guardian of update_guardian
+  | Update_contract_delegate of update_contract_delegate
 
 // Unpack proposal metadata (fail if the unpacked result is none).
 let unpack_proposal_metadata (pm: proposal_metadata) : treasury_dao_proposal_metadata =
