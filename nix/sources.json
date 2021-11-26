@@ -90,10 +90,10 @@
         "homepage": "",
         "owner": "serokell",
         "repo": "tezos-packaging",
-        "rev": "70a3a56799b40ffa4133021cf5ab2e57404a1658",
-        "sha256": "08nxyf7pi8lganzq9pb6f7ba8h34kwz5iv6ri68s9pj81a8ni1km",
+        "rev": "2fd958106fc9cd318b68c3a8eef5091bcb0877ba",
+        "sha256": "0j5jb5vyvfjzwcb0giz8as3aafd2gn1n78is92s3yjz05zqdgjsg",
         "type": "tarball",
-        "url": "https://github.com/serokell/tezos-packaging/archive/70a3a56799b40ffa4133021cf5ab2e57404a1658.tar.gz",
+        "url": "https://github.com/serokell/tezos-packaging/archive/2fd958106fc9cd318b68c3a8eef5091bcb0877ba.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xrefcheck": {
