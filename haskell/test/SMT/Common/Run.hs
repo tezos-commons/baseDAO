@@ -77,7 +77,7 @@ runBaseDaoSMT option@SmtOption{..} = do
         newBal <-
           if (soContractType == RegistryDaoContract || soContractType == TreasuryDaoContract) then do
             let bal = toMutez 500
-            sendXtzWithAmount bal (TAddress $ chAddress dao) (ep "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+            sendXtzWithAmount bal (TAddress $ chAddress dao)
             pure bal
           else pure (toMutez 0)
 
@@ -246,6 +246,7 @@ callLigoEntrypoint mc dao = withSender (mc & mcSource & msoSender) $ case mc & m
   XtzAllowed (Transfer_contract_tokens p) -> call dao (Call @"Transfer_contract_tokens") p
   XtzAllowed (Transfer_ownership p) -> call dao (Call @"Transfer_ownership") p
   XtzAllowed (Accept_ownership p) -> call dao (Call @"Accept_ownership") p
+  XtzAllowed (Default _) -> call dao CallDefault ()
 
   XtzForbidden (Vote p) -> call dao (Call @"Vote") p
   XtzForbidden (Flush p) -> call dao (Call @"Flush") p

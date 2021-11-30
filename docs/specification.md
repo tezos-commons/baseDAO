@@ -353,6 +353,7 @@ Here is a summary of all the strings used as error messages.
 # Entrypoints
 
 Full list:
+* [`default`](#default)
 * [`transfer_contract_tokens`](#transfer_contract_tokens)
 * [`transfer_ownership`](#transfer_ownership)
 * [`accept_ownership`](#accept_ownership)
@@ -383,6 +384,20 @@ Note: CameLIGO definitions are provided only for readability.
 If Michelson type contradicts what's written in CameLIGO definition, the Michelson definition takes precedence.
 
 ## Token Entrypoints
+
+### **default**
+
+```ocaml
+default of unit
+```
+
+Parameter (in Michelson):
+```
+(unit %default)
+```
+
+- This is the default entrypoint of the contract. This is provided as a way to transfer XTZ funds to the contract
+  easily.
 
 Functions related to token transfers.
 

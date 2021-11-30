@@ -233,6 +233,7 @@ type allow_xtz_params =
   | Transfer_contract_tokens of transfer_contract_tokens_param
   | Transfer_ownership of transfer_ownership_param
   | Accept_ownership of unit
+  | Default of unit
 
 (*
  * Full parameter of the contract.

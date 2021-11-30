@@ -470,7 +470,7 @@ test_RegistryDAO =
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin) $
           \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
-            sendXtz baseDao (ep "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+            sendXtz baseDao
 
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
