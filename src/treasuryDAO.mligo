@@ -87,11 +87,6 @@ let treasury_DAO_decision_lambda (input : decision_lambda_input)
     | Update_contract_delegate mdelegate ->
         { operations = ((Tezos.set_delegate mdelegate) :: ops); extras = extras ; guardian = (None : (address option))}
 
-// A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
-// prohibit non-zero xtz transfer.
-let receive_xtz_entrypoint (_params, full_store : bytes * full_storage) : return =
-  (nil_op, full_store.0)
-
 // -------------------------------------
 // Storage Generator
 // -------------------------------------
@@ -113,6 +108,6 @@ let default_treasury_DAO_full_storage (data : initial_treasuryDAO_storage) : ful
     proposal_check = treasury_DAO_proposal_check;
     rejected_proposal_slash_value = treasury_DAO_rejected_proposal_slash_value;
     decision_lambda = treasury_DAO_decision_lambda;
-    custom_entrypoints = Big_map.literal [("receive_xtz", Bytes.pack (receive_xtz_entrypoint))];
+    custom_entrypoints = (Big_map.empty : custom_entrypoints);
     }
   in (new_storage, new_config)

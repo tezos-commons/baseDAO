@@ -96,8 +96,3 @@ Here is a summary of all the strings used as error messages thrown by `proposal_
 A custom entrypoint `lookup_registry` is included in the registryDAO contract
 to lookup values in the registry. The parameter of this entrypoint is `(pair k address)`
 where `address` is the address of a callback contract of type `(k, v option)`.
-
-### Receive XTZ
-
-A `receive_xtz` with `unit` argument is present only to allow the tranfer of XTZs
-to the contract, which is not allowed by most entrypoints.

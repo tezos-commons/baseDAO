@@ -114,26 +114,26 @@ permitProtect author (toSign, a) = do
     }
 
 sendXtz
-  :: (MonadNettest caps base m, HasCallStack, NiceParameter pm)
-  => TAddress cp -> EpName -> pm -> m ()
-sendXtz addr epName pm = withFrozenCallStack $ do
+  :: (MonadNettest caps base m, HasCallStack)
+  => TAddress cp -> m ()
+sendXtz addr = withFrozenCallStack $ do
   let transferData = TransferData
         { tdTo = toAddress addr
         , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
-        , tdEntrypoint = epName
-        , tdParameter = pm
+        , tdEntrypoint = DefEpName
+        , tdParameter = ()
         }
   transfer transferData
 
 sendXtzWithAmount
-  :: (MonadNettest caps base m, HasCallStack, NiceParameter pm)
-  => Mutez -> TAddress cp -> EpName -> pm -> m ()
-sendXtzWithAmount amt addr epName pm = withFrozenCallStack $ do
+  :: (MonadNettest caps base m, HasCallStack)
+  => Mutez -> TAddress cp -> m ()
+sendXtzWithAmount amt addr = withFrozenCallStack $ do
   let transferData = TransferData
         { tdTo = toAddress addr
         , tdAmount = amt
-        , tdEntrypoint = epName
-        , tdParameter = pm
+        , tdEntrypoint = DefEpName
+        , tdParameter = ()
         }
   transfer transferData
 

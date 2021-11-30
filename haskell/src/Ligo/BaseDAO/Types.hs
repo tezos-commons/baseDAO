@@ -527,6 +527,7 @@ data AllowXTZParam
   | Transfer_contract_tokens TransferContractTokensParam
   | Transfer_ownership TransferOwnershipParam
   | Accept_ownership ()
+  | Default ()
   deriving stock (Eq, Show)
 
 instance Buildable AllowXTZParam where

@@ -47,8 +47,7 @@ hprop_RegistryDaoSMT =
       , soRejectedProposalSlashValue = registryDaoRejectedProposalSlashValue
       , soDecisionLambda = registryDaoDecisionLambda
       , soCustomEps = Map.fromList
-          [ ( unsafeMkMText "receive_xtz", \_ -> pure () )
-          , ( unsafeMkMText "lookup_registry", lookupRegistryEntrypoint)
+          [ ( unsafeMkMText "lookup_registry", lookupRegistryEntrypoint)
           ]
       }
   in
@@ -246,8 +245,7 @@ genCustomCallsRegistryDao :: MkGenCustomCalls
 genCustomCallsRegistryDao = do
   mkLookupRegistryParam <- genLookupRegistryParam
   pure
-    [ \_ -> ([mt|receive_xtz|], lPackValueRaw ())
-    , \ModelInputArg{..} -> ([mt|lookup_registry|], lPackValueRaw @LookupRegistryParam (mkLookupRegistryParam miaViewContractAddr))
+    [ \ModelInputArg{..} -> ([mt|lookup_registry|], lPackValueRaw @LookupRegistryParam (mkLookupRegistryParam miaViewContractAddr))
     ]
 
 genLookupRegistryParam :: GeneratorT (TAddress (MText, Maybe MText) -> LookupRegistryParam)

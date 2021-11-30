@@ -23,6 +23,8 @@ test_BaseDAO_Token :: TestTree
 test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   [ nettestScenario "can call transfer tokens entrypoint"
       $ uncapsNettest $ transferContractTokensScenario originateLigoDao
+  ,  nettestScenario "can transfer funds to the contract"
+      $ uncapsNettest $ ensureXtzTransfer originateLigoDao
   ]
 
 transferContractTokensScenario
@@ -58,3 +60,10 @@ transferContractTokensScenario originateFn = do
   assert (tcStorage ==
     ([ [ FA2.TransferItem { tiFrom = target_owner1, tiTxs = [FA2.TransferDestination { tdTo = target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
       ])) "Unexpected FA2 transfers"
+
+ensureXtzTransfer
+  :: MonadNettest caps base m
+  => OriginateFn m -> m ()
+ensureXtzTransfer originateFn = do
+  DaoOriginateData{..} <- originateFn defaultQuorumThreshold
+  sendXtz dodDao

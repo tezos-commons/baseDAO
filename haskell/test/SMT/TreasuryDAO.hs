@@ -16,7 +16,6 @@ import qualified Hedgehog.Range as Range
 import Named (NamedF(..))
 
 import Lorentz hiding (and, now, (>>))
-import Michelson.Text (unsafeMkMText)
 import Util.Named ((.!))
 
 import Ligo.BaseDAO.Common.Types
@@ -44,7 +43,7 @@ hprop_TreasuryDaoSMT =
       , soProposalCheck = treasuryDaoProposalCheck
       , soRejectedProposalSlashValue = treasuryDaoRejectedProposalSlashValue
       , soDecisionLambda = treasuryDaoDecisionLambda
-      , soCustomEps = Map.fromList [(unsafeMkMText "receive_xtz", \_ -> pure ())]
+      , soCustomEps = Map.empty
       }
   in
     withTests 30 $ property $ do
@@ -151,7 +150,7 @@ genProposeTreasuryDao senderInput delegate1 invalidFrom = do
 
 genCustomCallsTreasuryDao :: MkGenCustomCalls
 genCustomCallsTreasuryDao =
-  pure [ \_ -> ([mt|receive_xtz|], lPackValueRaw ()) ]
+  pure []
 
 genTransferProposal :: GeneratorT (Address -> Address -> TreasuryDaoProposalMetadata)
 genTransferProposal = do

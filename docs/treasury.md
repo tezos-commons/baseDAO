@@ -62,8 +62,3 @@ Here is a summary of all the strings used as error messages thrown by `proposal_
 | `LARGE_PROPOSAL`                 | Proposal size is bigger than 'max_proposal_size'                                                            |
 
 ## Custom entrypoints
-
-### Receive XTZ
-
-A `receive_xtz` with `unit` argument is present only to allow the tranfer of XTZs
-to the contract, which is not allowed by most entrypoints.

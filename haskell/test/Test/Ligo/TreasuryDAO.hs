@@ -17,7 +17,6 @@ import Util.Named
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
 import Ligo.BaseDAO.Types
-import Michelson.Untyped.Entrypoints
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.TreasuryDAO.Types
 
@@ -148,7 +147,7 @@ flushXtzTransfer = withFrozenCallStack $ do
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
   -- Advance one voting period to a proposing stage.
-  sendXtz (TAddress $ toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+  sendXtz (TAddress $ toAddress dodDao)
   advanceToLevel (originationLevel + dodPeriod)
 
   withSender dodOwner1 $ do
@@ -200,7 +199,7 @@ flushUpdateGuardian = withFrozenCallStack $ do
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
-  sendXtz (TAddress $ toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+  sendXtz (TAddress $ toAddress dodDao)
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
@@ -243,7 +242,7 @@ flushUpdateContractDelegate = withFrozenCallStack $ do
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount .! 10)
-  sendXtz (TAddress $ toAddress dodDao) (unsafeBuildEpName "callCustom") ([mt|receive_xtz|], lPackValueRaw ())
+  sendXtz (TAddress $ toAddress dodDao)
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
