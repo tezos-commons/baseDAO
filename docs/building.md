@@ -32,7 +32,11 @@ You can generate the known metadata, but you'll need the `stack` tool installed,
 [The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial for instructions on how to obtain it.
 
 ```bash
-make metadata --output=metadata.json
+make metadata \
+    frozen_token_symbol=frozen_token \
+    frozen_token_name="BaseDAO Frozen Token" \
+    frozen_token_thumbnail_uri="ipfs://QmV3a1TAdCncfs84Gi9msDsDJVQBDt6Wb5gJRVuFRfrgtG" \
+    output=metadata.json
 ```
 You can then modify the produced `metadata.json` if you want to add more information.
 

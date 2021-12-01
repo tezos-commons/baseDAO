@@ -9,12 +9,10 @@ module Main
 import Universum
 
 import Data.Aeson.Encode.Pretty (encodePretty)
-import Fmt (pretty)
 import Data.Version (showVersion)
 import qualified Options.Applicative as Opt
 import Paths_baseDAO_ligo_meta (version)
 
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Util.Main
 
 import Ligo.BaseDAO.Types (Parameter)
@@ -68,22 +66,21 @@ tokenMetadataParser
   :: String
   -> Text
   -> Text
-  -> Word16
-  -> Opt.Parser FA2.TokenMetadata
-tokenMetadataParser prefix defSymbol defName defDecimals = do
+  -> Text
+  -> Opt.Parser MetadataConfig
+tokenMetadataParser prefix defSymbol defName defThumbnailUri = do
   symbol <-
     mkCLOptionParser (Just defSymbol) (#name .! (prefix <> "-token-symbol"))
     (#help .! "Symbol of the token (according to TZIP-12)")
   name <-
     mkCLOptionParser (Just defName) (#name .! (prefix <> "-token-name"))
     (#help .! "Name of the token (according to TZIP-12)")
-  decimals <-
-    mkCLOptionParser (Just defDecimals) (#name .! (prefix <> "-token-decimals"))
-    (#help .! "Decimals field of the token (according to TZIP-12)")
-  return $ FA2.mkTokenMetadata name symbol (pretty decimals)
+  thumbnailUri <-
+    mkCLOptionParser (Just defThumbnailUri) (#name .! (prefix <> "-token-thumbnail-uri"))
+    (#help .! "Thumbnail URI of the token (according to TZIP-21)")
+
+  return $ MetadataConfig name symbol 0 (if thumbnailUri == "" then Nothing else Just thumbnailUri)
 
 metadataConfigParser :: Opt.Parser MetadataConfig
-metadataConfigParser = do
-  mcFrozenTokenMetadata <-
-    tokenMetadataParser "frozen" "frozen_token" "Frozen Token" 8
-  return MetadataConfig{..}
+metadataConfigParser =
+  tokenMetadataParser "frozen" "frozen_token" "BaseDAO Frozen Token" ""

@@ -256,14 +256,20 @@ haskell-resources: test-storage all
 	mkdir -p haskell/resources
 	cp $(OUT)/* haskell/resources
 
+metadata : frozen_token_symbol = frozen_token
+metadata : frozen_token_name = Frozen Token
+metadata : frozen_token_thumbnail_uri =
 metadata : output = metadata.json
 metadata: haskell-resources
 	$(MAKE) -C haskell build PACKAGE=baseDAO-ligo-meta \
 		STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn"
 
 	$(MAKE) -C haskell exec PACKAGE=baseDAO-ligo-meta \
-		EXEC_ARGUMENTS=print-metadata \
-		EXEC_OUTPUT=$(output)
+		EXEC_ARGUMENTS="print-metadata \
+		--frozen-token-symbol $(frozen_token_symbol) \
+		--frozen-token-name \"$(call escape_double_quote,$(frozen_token_name))\" \
+		--frozen-token-thumbnail-uri \"$(call escape_double_quote,$(frozen_token_thumbnail_uri))\" \
+		" EXEC_OUTPUT=$(output)
 
 test: haskell-resources
 	$(MAKE) -C haskell test PACKAGE=baseDAO-ligo-meta

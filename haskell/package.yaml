@@ -96,6 +96,7 @@ library:
   generated-other-modules:
     - Paths_baseDAO_ligo_meta
   dependencies:
+    - aeson
     - containers
     - cleveland
     - file-embed
@@ -120,9 +121,7 @@ executables:
     dependencies:
     - aeson-pretty
     - baseDAO-ligo-meta
-    - fmt
     - morley
-    - morley-ledgers
     - morley-prelude
     - optparse-applicative
     - universum
