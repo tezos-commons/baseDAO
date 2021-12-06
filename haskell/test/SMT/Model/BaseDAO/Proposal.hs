@@ -18,8 +18,10 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import GHC.Natural
 
-import Lorentz hiding (cast, get, not, or, take)
+import Lorentz hiding (cast, div, get, not, or, take)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
+import Morley.Util.Named
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Permit
@@ -221,9 +223,9 @@ applyVote mso = mapM_ acceptVote
       submitVote proposal voteParam validFrom
 
 applyFreeze :: ModelSource -> FreezeParam -> ModelT ()
-applyFreeze mso param = do
+applyFreeze mso (N param) = do
   let senderAddr = mso & msoSender
-  let amt = arg #amount param
+  let amt = param
 
   freezingUpdateFh senderAddr (toInteger amt)
   lockGovernanceTokens amt senderAddr
@@ -268,9 +270,8 @@ unlockGovernanceTokens tokens addr = do
 
 
 applyUnfreeze :: ModelSource -> UnfreezeParam -> ModelT ()
-applyUnfreeze mso param = do
+applyUnfreeze mso (N amt) = do
   let senderAddr = mso & msoSender
-  let amt = arg #amount param
 
   freezingUpdateFh senderAddr (negate $ fromIntegral amt)
 
@@ -362,4 +363,3 @@ applyUpdateDelegate mso params =
         updatedDelegates = foldl' (updateDelegate mso) delegates params
     in
       pure $ s { sDelegates = BigMap Nothing $ Map.fromSet (const ()) updatedDelegates }
-

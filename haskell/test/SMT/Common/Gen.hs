@@ -19,10 +19,11 @@ import qualified Hedgehog.Range as Range
 import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
 import Lorentz hiding (cast, concat, get, not)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Michelson.Test.Dummy
-import Tezos.Address (Address(..), mkKeyAddress, unsafeParseContractHash)
-import Tezos.Crypto (SecretKey, sign, toPublic)
-import Util.Named ((.!))
+import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
+import Morley.Tezos.Address (Address(..), mkKeyAddress, unsafeParseContractHash)
+import Morley.Tezos.Core (dummyChainId)
+import Morley.Tezos.Crypto (SecretKey, sign, toPublic)
+import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
@@ -279,10 +280,10 @@ genProposingProcess = do
       [ \_ -> mkCall (XtzForbidden $ Update_delegate [DelegateParam True delegate1]) Nothing
       , \args ->
           let (freezeAmt, _, _, _, _) = applyArgs args
-          in mkCall (XtzForbidden $ Freeze (#amount .! (freezeAmt)) ) Nothing
+          in mkCall (XtzForbidden $ Freeze (#amount :! (freezeAmt)) ) Nothing
       , \args ->
           let (_, voterFreezeAmt, _, _, _) = applyArgs args
-          in mkCall (XtzForbidden $ Freeze (#amount .! voterFreezeAmt) ) Nothing
+          in mkCall (XtzForbidden $ Freeze (#amount :! voterFreezeAmt) ) Nothing
       , \args ->
           let (_, _, _, proposeAction, _) = applyArgs args
           in mkCall proposeAction (Just 1)
@@ -292,7 +293,7 @@ genProposingProcess = do
       , \_ -> mkCall flushAction (Just 2)
       , \args ->
           let (freezeAmt, _, _, _, _) = applyArgs args
-          in mkCall (XtzForbidden $ Unfreeze (#amount .! (freezeAmt)) ) Nothing
+          in mkCall (XtzForbidden $ Unfreeze (#amount :! (freezeAmt)) ) Nothing
       , \args ->
           let (_, _, _, _, dropProposalAction) = applyArgs args
           in mkCall dropProposalAction Nothing
@@ -373,7 +374,7 @@ genTransferOwnership :: GeneratorT Parameter
 genTransferOwnership = do
   userAddrs <- get <&> gsAddresses
   newOwner <- fst <$> Gen.element userAddrs
-  pure $ XtzAllowed $ Transfer_ownership $ (#newOwner .! newOwner)
+  pure $ XtzAllowed $ Transfer_ownership $ (#newOwner :! newOwner)
 
 -- Nothing to randomize, simply for consistency
 genAcceptOwnership :: GeneratorT Parameter

@@ -14,9 +14,9 @@ module Test.Ligo.BaseDAO.Proposal.Quorum
 
 import Universum
 
-import Lorentz hiding (assert, (>>))
-import Morley.Nettest
-import Util.Named
+import Lorentz hiding (assert, div, (>>))
+import Test.Cleveland
+import Morley.Util.Named
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
@@ -47,14 +47,14 @@ calculateThreshold mcp cp (GovernanceTotalSupply gts) staked oldQt =
     fractionToNumerator = mkQuorumThreshold
 
 checkQuorumThresholdDynamicUpdate
-  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 checkQuorumThresholdDynamicUpdate originateFn = do
   DaoOriginateData{..} <- originateFn
-      ((ConfigDesc $ (#changePercent .! (5 :: Natural)))
-      >>- (ConfigDesc $ (#maxChangePercent .! (19 :: Natural)))
-      >>- (ConfigDesc $ (#governanceTotalSupply .! (100 :: Natural)))
+      ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
+      >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
+      >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
       >>- (ConfigDesc $ Period 10)
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
@@ -64,7 +64,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
   let proposalMeta1 = ""
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
+    call dao (Call @"Freeze") (#amount :! (2 * requiredFrozen))
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
@@ -93,14 +93,14 @@ checkQuorumThresholdDynamicUpdate originateFn = do
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkQuorumThresholdDynamicUpdateUpperBound
-  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   DaoOriginateData{..} <- originateFn
-      ((ConfigDesc $ (#changePercent .! (5 :: Natural)))
-      >>- (ConfigDesc $ (#maxChangePercent .! (7 :: Natural)))
-      >>- (ConfigDesc $ (#governanceTotalSupply .! (100 :: Natural)))
+      ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
+      >>- (ConfigDesc $ (#maxChangePercent :! (7 :: Natural)))
+      >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
       >>- (ConfigDesc $ Period 10)
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
@@ -110,7 +110,7 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   let proposalMeta1 = ""
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
+    call dao (Call @"Freeze") (#amount :! (2 * requiredFrozen))
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
@@ -138,14 +138,14 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkQuorumThresholdDynamicUpdateLowerBound
-  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   DaoOriginateData{..} <- originateFn
-      ((ConfigDesc $ (#changePercent .! (25 :: Natural)))
-      >>- (ConfigDesc $ (#maxChangePercent .! (19 :: Natural)))
-      >>- (ConfigDesc $ (#governanceTotalSupply .! (100 :: Natural)))
+      ((ConfigDesc $ (#changePercent :! (25 :: Natural)))
+      >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
+      >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
       >>- (ConfigDesc $ Period 10)
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
@@ -155,7 +155,7 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   let proposalMeta1 = ""
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
+    call dao (Call @"Freeze") (#amount :! (2 * requiredFrozen))
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
@@ -183,14 +183,14 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkProposalSavesQuorum
-  :: forall caps base m. (MonadNettest caps base m, HasCallStack)
+  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 checkProposalSavesQuorum originateFn = do
   DaoOriginateData{..} <- originateFn
-      ((ConfigDesc $ (#changePercent .! (5 :: Natural)))
-      >>- (ConfigDesc $ (#maxChangePercent .! (19 :: Natural)))
-      >>- (ConfigDesc $ (#governanceTotalSupply .! (100 :: Natural)))
+      ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
+      >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
+      >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
       >>- (ConfigDesc $ Period 10)
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
@@ -200,7 +200,7 @@ checkProposalSavesQuorum originateFn = do
   let proposalMeta1 = ""
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount .! (2 * requiredFrozen))
+    call dao (Call @"Freeze") (#amount :! (2 * requiredFrozen))
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
@@ -228,7 +228,7 @@ checkProposalSavesQuorum originateFn = do
     "BaseDAO contract did not store quorum threshold in proposal as expected"
 
 proposalIsRejectedIfNoQuorum
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => m ()
 proposalIsRejectedIfNoQuorum = do
   DaoOriginateData{..} <-
@@ -243,13 +243,13 @@ proposalIsRejectedIfNoQuorum = do
   let admin = dodAdmin
 
   withSender voter $
-    call dao (Call @"Freeze") (#amount .! 28)
+    call dao (Call @"Freeze") (#amount :! 28)
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount .! 42)
+    call dao (Call @"Freeze") (#amount :! 42)
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount .! 10)
+    call dao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -279,7 +279,7 @@ proposalIsRejectedIfNoQuorum = do
   checkBalance dao proposer 10 -- We expect 42 tokens to have burned
 
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => m ()
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   DaoOriginateData{..} <-
@@ -295,13 +295,13 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   let admin = dodAdmin
 
   withSender voter $
-    call dao (Call @"Freeze") (#amount .! 28)
+    call dao (Call @"Freeze") (#amount :! 28)
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount .! 42)
+    call dao (Call @"Freeze") (#amount :! 42)
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount .! 10)
+    call dao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao

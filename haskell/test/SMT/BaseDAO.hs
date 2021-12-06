@@ -11,7 +11,7 @@ import Universum hiding (drop, swap)
 
 import Control.Monad.Except (throwError)
 import Hedgehog
-import Lorentz hiding (now, (>>))
+import Lorentz hiding (div, fromInteger, now, (>>))
 
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range

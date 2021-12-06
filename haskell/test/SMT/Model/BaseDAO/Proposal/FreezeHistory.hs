@@ -15,7 +15,8 @@ import Control.Monad.Except (throwError)
 import qualified Data.Map as Map
 import GHC.Natural (minusNaturalMaybe)
 
-import Lorentz hiding (cast, get, not, or, take)
+import Lorentz hiding (cast, div, fromInteger, get, not, or, take)
+import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types

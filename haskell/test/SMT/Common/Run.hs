@@ -13,12 +13,14 @@ import Hedgehog hiding (assert)
 
 import Lorentz hiding (assert, now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Lorentz.Test.Consumer (contractConsumer)
-import Michelson.Runtime.Dummy (dummyLevel)
 import qualified Morley.Micheline as MM
-import Morley.Nettest
-import Morley.Nettest.Abstract
-import Morley.Nettest.Pure
+import Morley.Michelson.Runtime.Dummy (dummyLevel)
+import Morley.Michelson.Text (MText(..))
+import qualified Morley.Michelson.Typed as T
+import qualified Morley.Michelson.Untyped as U
+import Test.Cleveland
+import Test.Cleveland.Internal.Abstract (ExpressionOrTypedValue(..), TransferFailure(..))
+import Test.Cleveland.Lorentz (contractConsumer)
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
@@ -42,8 +44,8 @@ runBaseDaoSMT option@SmtOption{..} = do
   -- Run the generator to get a function that will generate a list of entrypoint calls.
   mkModelInput <- forAll (runGeneratorT (genMkModelInput option) $ initGeneratorState soMkPropose)
 
-  nettestTestProp $
-    (uncapsNettestEmulated $ do
+  testScenarioProps $
+    (scenarioEmulated $ do
         -- Originate auxiliary contracts
         guardianContract <- (TAddress . toAddress) <$> originateSimple "guardian" () dummyGuardianContract
         tokenContract <- (TAddress . toAddress) <$> originateSimple "TokenContract" [] dummyFA2Contract
@@ -97,7 +99,6 @@ runBaseDaoSMT option@SmtOption{..} = do
         handleCallLoop (TAddress $ chAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
 
     )
-    emulatedImplIntegrational
 
 -- | For each generated entrypoint calls, this function does 3 things:
 -- 1. Run haskell model against the call.
@@ -240,7 +241,7 @@ handleCallViaLigo (dao, gov, viewC) mc = do
   pure (fsE, daoBalance, govStore, govBalance, show <$> viewStorage)
 
 
-callLigoEntrypoint :: MonadNettest caps base m => ModelCall -> TAddress Parameter -> m ()
+callLigoEntrypoint :: MonadCleveland caps base m => ModelCall -> TAddress Parameter -> m ()
 callLigoEntrypoint mc dao = withSender (mc & mcSource & msoSender) $ case mc & mcParameter of
   XtzAllowed (Propose p) -> call dao (Call @"Propose") p
   XtzAllowed (Transfer_contract_tokens p) -> call dao (Call @"Transfer_contract_tokens") p
@@ -263,10 +264,12 @@ callLigoEntrypoint mc dao = withSender (mc & mcSource & msoSender) $ case mc & m
 parseNettestError :: Either TransferFailure a -> Maybe ModelError
 parseNettestError = \case
   Right _ -> Nothing
-  Left (FailedWith _ (MM.ExpressionString tval)) ->
+  Left (FailedWith _ (EOTVExpression expr)) -> case MM.fromExpression @U.Value expr of
+    Right (U.ValueString err) -> Just $ contractErrorToModelError $ unMText err
+    Right (U.ValuePair (U.ValueString err) _) -> Just $ contractErrorToModelError $ unMText err
+    err -> error $ "Unexpected error:" <> show err
+  Left (FailedWith _ (EOTVTypedValue (T.VString (unMText -> tval)))) ->
     Just $ contractErrorToModelError tval
-  Left (FailedWith _ (MM.ExpressionSeq ((MM.ExpressionString tval):_))) ->
-    Just $ contractErrorToModelError tval
-  Left (FailedWith _ (MM.ExpressionPrim (MM.MichelinePrimAp (MM.MichelinePrimitive "Pair") ([MM.ExpressionString tval]) _))) ->
+  Left (FailedWith _ (EOTVTypedValue (T.VPair (T.VString (unMText -> tval), _)))) ->
     Just $ contractErrorToModelError tval
   Left err -> error $ "Unexpected error:" <> show err

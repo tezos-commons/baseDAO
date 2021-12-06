@@ -78,16 +78,18 @@ import Universum (Enum, Integral, Num, One(..), Real, div, fromIntegral, maybe, 
 import qualified Data.Map as M
 import Fmt (Buildable, build, genericF)
 
-import Lorentz hiding (now)
+import Lorentz hiding (div, now)
 import Lorentz.Annotation ()
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
-import Michelson.Typed.Annotation
-import Michelson.Typed.T (T(TUnit))
-import Michelson.Untyped.Annotation
 import Morley.Client
-import Morley.Nettest.Instances ()
-import Util.Markdown
+import Morley.Michelson.Typed.Annotation
+import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
+import Morley.Michelson.Typed.T (T(TUnit))
+import Morley.Michelson.Untyped.Annotation
+import Morley.Util.Markdown
+import Morley.Util.Named
+import Test.Cleveland.Instances ()
 
 ------------------------------------------------------------------------
 -- Orphans
@@ -164,7 +166,7 @@ newtype QuorumThreshold = QuorumThreshold
 fractionDenominator :: Integer
 fractionDenominator = 1000000
 
-percentageToFractionNumerator :: Num p => p -> p
+percentageToFractionNumerator :: Integral p => p -> p
 percentageToFractionNumerator p = p * (fromInteger $ div fractionDenominator 100)
 
 mkQuorumThreshold :: Integer -> Integer -> QuorumThreshold
@@ -641,24 +643,24 @@ mkStorage
   -> "tokenAddress" :! Address
   -> "quorumThreshold" :! QuorumThreshold
   -> Storage
-mkStorage admin extra metadata lvl tokenAddress qt =
+mkStorage (N admin) (N extra) (N metadata) (N lvl) (N tokenAddress) (N qt) =
   Storage
-    { sAdmin = arg #admin admin
-    , sGuardian = arg #admin admin
-    , sExtra = arg #extra extra
-    , sMetadata = arg #metadata metadata
-    , sPendingOwner = arg #admin admin
+    { sAdmin = admin
+    , sGuardian = admin
+    , sExtra = extra
+    , sMetadata = metadata
+    , sPendingOwner = admin
     , sPermitsCounter = Nonce 0
     , sProposals = mempty
     , sProposalKeyListSortByDate = mempty
     , sGovernanceToken = GovernanceToken
-        { gtAddress = arg #tokenAddress tokenAddress
+        { gtAddress = tokenAddress
         , gtTokenId = FA2.theTokenId
         }
     , sFreezeHistory = mempty
-    , sStartLevel = arg #level lvl
+    , sStartLevel = lvl
     , sFrozenTokenId = frozenTokenId
-    , sQuorumThresholdAtCycle = QuorumThresholdAtCycle (arg #quorumThreshold qt) 1 0
+    , sQuorumThresholdAtCycle = QuorumThresholdAtCycle qt 1 0
     , sFrozenTotalSupply = 0
     , sDelegates = mempty
     }
@@ -668,14 +670,14 @@ mkMetadataMap
   -> "metadataHostChain" :? TZIP16.ExtChainId
   -> "metadataKey" :! MText
   -> TZIP16.MetadataMap BigMap
-mkMetadataMap hostAddress hostChain key =
-  TZIP16.metadataURI . TZIP16.tezosStorageUri host $ arg #metadataKey key
+mkMetadataMap (N hostAddress) (M hostChain) (N key) =
+  TZIP16.metadataURI . TZIP16.tezosStorageUri host $ key
   where
     host = maybe
       TZIP16.contractHost
       TZIP16.foreignContractHost
-      (argF #metadataHostChain hostChain)
-      (arg #metadataHostAddress hostAddress)
+      hostChain
+      hostAddress
 
 newtype FixedFee = FixedFee Natural
   deriving stock (Show, Generic, Eq)
@@ -780,7 +782,7 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   }
 
 defaultConfig :: Config
-defaultConfig = mkConfig [] 10 0 19 5 500
+defaultConfig = mkConfig [] (Period 10) (FixedFee 0) 19 5 (GovernanceTotalSupply 500)
 
 data FullStorage = FullStorage
   { fsStorage :: Storage
@@ -818,11 +820,11 @@ mkFullStorage
 mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress cEps = FullStorage
   { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig (argDef #customEps [] cEps)
-      (argDef #votingPeriod votingPeriodDef vp) 0 (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply 100 gts)
+      (argDef #votingPeriod votingPeriodDef vp) (FixedFee 0) (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply (GovernanceTotalSupply 100) gts)
   }
   where
     quorumThresholdDef = mkQuorumThreshold 1 10 -- 10% of frozen total supply
-    votingPeriodDef = 60 * 60 * 24 * 7  -- 7 days
+    votingPeriodDef = Period $ 60 * 60 * 24 * 7  -- 7 days
 
 setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
 setExtra key v (s@FullStorage {..}) = s { fsStorage = newStorage }

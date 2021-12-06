@@ -22,10 +22,10 @@ import qualified Fmt
 import System.FilePath
 
 import Lorentz.Entrypoints
-import Michelson.Typed.Annotation
-import Michelson.Typed.Entrypoints (pnNotes)
-import qualified Michelson.Untyped as U
-import Michelson.Untyped.Annotation
+import Morley.Michelson.Typed.Annotation
+import Morley.Michelson.Typed.Entrypoints (pnNotes)
+import qualified Morley.Michelson.Untyped as U
+import Morley.Michelson.Untyped.Annotation
 
 data AnnotatedField = AnnotatedField
   { afNote :: FieldAnn
