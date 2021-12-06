@@ -25,7 +25,7 @@ extra-deps:
   subdirs:
     - .
 - git: https://gitlab.com/morley-framework/morley-ledgers.git
-  commit: caeb731960d0a4e15657e405364275895fd5c86c # sras/chore-bump-morley-1.16
+  commit: 53c772f9bbeb4fc4ae2922e96d39ef126d0e933c # master
   subdirs:
     - code/morley-ledgers
 - git: https://gitlab.com/morley-framework/morley-metadata.git

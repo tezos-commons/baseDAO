@@ -439,8 +439,8 @@ dropProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
       ) (mkQuorumThreshold 1 50)
 
   startLevel <- getOriginationLevel dodDao
@@ -481,7 +481,7 @@ dropProposal originateFn = withFrozenCallStack $ do
     call dodDao (Call @"Drop_proposal") key2
       & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET
 
-  advanceToLevel (proposalStart2 + 30)
+  advanceToLevel (proposalStart2 + 50)
   -- `key2` is expired, so it is possible to `drop_proposal`
   withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key2
@@ -491,7 +491,7 @@ dropProposal originateFn = withFrozenCallStack $ do
     call dodDao (Call @"Drop_proposal") key3
       & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET
 
-  advanceToLevel (proposalStart3 + 30)
+  advanceToLevel (proposalStart3 + 50)
   -- proposers can delete their proposal
   withSender dodOwner1 $ do
     call dodDao (Call @"Drop_proposal") key3

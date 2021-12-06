@@ -9,9 +9,10 @@ import Universum
 
 import Lorentz
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Morley.Tezos.Address
+import Morley.Util.Named
 import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
-import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
@@ -229,43 +230,46 @@ flushUpdateContractDelegate
   => m ()
 flushUpdateContractDelegate = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
+  registerDelegate dodOperator2
+  case dodOperator2 of
+    KeyAddress delegate -> do
+      let
+        proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
+          Update_contract_delegate $ Just delegate
+        proposeParams = ProposeParams dodOwner1 (metadataSize $ proposalMeta) $ proposalMeta
 
-  let
-    proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
-      Update_contract_delegate Nothing
-    proposeParams = ProposeParams dodOwner1 (metadataSize $ proposalMeta) $ proposalMeta
+      -- Freeze in initial voting stage.
+      withSender dodOwner1 $
+        call dodDao (Call @"Freeze") (#amount :! (metadataSize $ proposalMeta))
 
-  -- Freeze in initial voting stage.
-  withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! (metadataSize $ proposalMeta))
+      withSender dodOwner2 $
+        call dodDao (Call @"Freeze") (#amount :! 10)
+      sendXtz (TAddress $ toAddress dodDao)
+      -- Advance one voting period to a proposing stage.
+      startLevel <- getOriginationLevel dodDao
+      advanceToLevel (startLevel + dodPeriod)
 
-  withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
-  sendXtz (TAddress $ toAddress dodDao)
-  -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
-  advanceToLevel (startLevel + dodPeriod)
+      withSender dodOwner1 $
+        call dodDao (Call @"Propose") proposeParams
+      let key1 = makeProposalKey proposeParams
 
-  withSender dodOwner1 $
-    call dodDao (Call @"Propose") proposeParams
-  let key1 = makeProposalKey proposeParams
+      let
+        upvote = NoPermit VoteParam
+            { vFrom = dodOwner2
+            , vVoteType = True
+            , vVoteAmount = 1
+            , vProposalKey = key1
+            }
 
-  let
-    upvote = NoPermit VoteParam
-        { vFrom = dodOwner2
-        , vVoteType = True
-        , vVoteAmount = 1
-        , vProposalKey = key1
-        }
-
-  -- Advance one voting period to a voting stage.
-  advanceToLevel (startLevel + 2*dodPeriod)
-  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
-  -- Advance one voting period to a proposing stage.
-  proposalStart <- getProposalStartLevel dodDao key1
-  advanceToLevel (proposalStart + 2*dodPeriod + 1)
-  withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  -- TODO #697: Add check after we have a way to ensure delegate
+      -- Advance one voting period to a voting stage.
+      advanceToLevel (startLevel + 2*dodPeriod)
+      withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
+      -- Advance one voting period to a proposing stage.
+      proposalStart <- getProposalStartLevel dodDao key1
+      advanceToLevel (proposalStart + 2*dodPeriod + 1)
+      withSender dodAdmin $ call dodDao (Call @"Flush") 100
+      getDelegate dodDao @@== (Just delegate)
+    _ -> error "impossible"
 
 proposalCheckFailZeroMutez
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
