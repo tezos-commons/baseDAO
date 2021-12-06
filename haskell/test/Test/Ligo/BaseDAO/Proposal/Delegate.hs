@@ -38,10 +38,10 @@ addRemoveDelegate originateFn = do
         }
 
   withSender dodOwner1 $
-    call dodDao (Call @"Update_delegate") [param True]
+    call dodDao (Call @"Freeze") (#amount :! 100)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 100)
+    call dodDao (Call @"Update_delegate") [param True]
 
   advanceToLevel (startLevel + dodPeriod)
   let params counter = ProposeParams

@@ -55,7 +55,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
       ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
       >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
       >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
-      >>- (ConfigDesc $ Period 10)
+      >>- (ConfigDesc $ Period 20)
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1
@@ -101,7 +101,7 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
       ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
       >>- (ConfigDesc $ (#maxChangePercent :! (7 :: Natural)))
       >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
-      >>- (ConfigDesc $ Period 10)
+      >>- (ConfigDesc $ Period 20)
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1
@@ -146,7 +146,7 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
       ((ConfigDesc $ (#changePercent :! (25 :: Natural)))
       >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
       >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
-      >>- (ConfigDesc $ Period 10)
+      >>- (ConfigDesc $ Period 20)
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1
@@ -191,7 +191,7 @@ checkProposalSavesQuorum originateFn = do
       ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
       >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
       >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
-      >>- (ConfigDesc $ Period 10)
+      >>- (ConfigDesc $ Period 20)
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1

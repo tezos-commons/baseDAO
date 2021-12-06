@@ -39,7 +39,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley-ledgers.git
-    tag: caeb731960d0a4e15657e405364275895fd5c86c
+    tag: 53c772f9bbeb4fc4ae2922e96d39ef126d0e933c
     subdir: code/morley-ledgers
 
 source-repository-package

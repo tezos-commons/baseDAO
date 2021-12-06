@@ -163,6 +163,7 @@ originateLigoDaoWithConfig extra config qt = do
   tokenContract <- chAddress <$> originateSimple "TokenContract" [] dummyFA2Contract
   guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
+  let originationOffset = 12
   let fullStorage = FullStorage
         { fsStorage =
             ( mkStorage
@@ -170,8 +171,8 @@ originateLigoDaoWithConfig extra config qt = do
               ! #admin admin
               ! #metadata mempty
               ! #tokenAddress tokenContract
-              ! #level (currentLevel + 6)
-                -- We add 6 levels to offset for the delay caused by the origination function
+              ! #level (currentLevel + originationOffset)
+                -- We add some levels to offset for the delay caused by the origination function
                 -- So the expectation is that by the time origination has finished, we will be closer
                 -- to the actual block that includes origination so that the tests have a lesser chance
                 -- to fail due to this difference.
@@ -190,7 +191,7 @@ originateLigoDaoWithConfig extra config qt = do
       }
 
   daoUntyped <- originateUntyped originateData
-  advanceToLevel (currentLevel + 6)
+  advanceToLevel (currentLevel + originationOffset)
 
   let dao = TAddress @Parameter daoUntyped
 

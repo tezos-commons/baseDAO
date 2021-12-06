@@ -18,9 +18,10 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Morley.Michelson.Text (unsafeMkMText)
 import Morley.Michelson.Typed (convertContract)
 import Morley.Michelson.Typed.Convert (untypeValue)
+import Morley.Tezos.Address
+import Morley.Util.Named
 import Test.Cleveland
 import Test.Cleveland.Lorentz (contractConsumer)
-import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract
@@ -463,13 +464,12 @@ test_RegistryDAO =
                 , [ FA2.TransferItem { tiFrom = wallet1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = proposalSize }] } ] -- governance token transfer for freeze
               ]
 
-    , testScenario "checks it can transfer with receive_xtz_entrypoint (#66)" $ scenario $
+    , testScenario "checks it can flush a transfer proposal" $ scenario $
         withOriginated 3
           (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin) $
           \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
-            sendXtz baseDao
 
             let
               proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
@@ -482,6 +482,7 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount :! proposalSize)
             withSender wallet2 $
               call baseDao (Call @"Freeze") (#amount :! 10)
+            sendXtz baseDao
             startLevel <- getOriginationLevel baseDao
 
             -- Advance one voting period to a proposing stage.
@@ -556,50 +557,52 @@ test_RegistryDAO =
             checkGuardian baseDao newGuardian
 
     , testScenario "checks it can flush a proposal that updates contract delegate address" $ scenario $
-        withOriginated 3
+        withOriginated 4
           (\(admin : _) ->
             setExtra @Natural [mt|max_proposal_size|] 200 $
             initialStorageWithExplictRegistryDAOConfig admin) $
-          \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
+          \[admin, wallet1, wallet2, delegateAddr] (toPeriod -> period) baseDao _ -> do
+            registerDelegate delegateAddr
+            case delegateAddr of
+              KeyAddress delegate -> do
+                let
+                  proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
+                    Update_contract_delegate $ Just delegate
 
-            let
-              proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
-                Update_contract_delegate Nothing
+                  proposalSize = metadataSize proposalMeta
+                  proposeParams = ProposeParams wallet1 proposalSize proposalMeta
 
-              proposalSize = metadataSize proposalMeta
-              proposeParams = ProposeParams wallet1 proposalSize proposalMeta
+                withSender wallet1 $
+                  call baseDao (Call @"Freeze") (#amount :! proposalSize)
+                withSender wallet2 $
+                  call baseDao (Call @"Freeze") (#amount :! 20)
 
-            withSender wallet1 $
-              call baseDao (Call @"Freeze") (#amount :! proposalSize)
-            withSender wallet2 $
-              call baseDao (Call @"Freeze") (#amount :! 20)
+                -- Advance one voting period to a proposing stage.
+                startLevel <- getOriginationLevel baseDao
+                advanceToLevel (startLevel + period)
 
-            -- Advance one voting period to a proposing stage.
-            startLevel <- getOriginationLevel baseDao
-            advanceToLevel (startLevel + period)
+                withSender wallet1 $
+                  call baseDao (Call @"Propose") proposeParams
 
-            withSender wallet1 $
-              call baseDao (Call @"Propose") proposeParams
+                checkBalance baseDao wallet1 proposalSize
 
-            checkBalance baseDao wallet1 proposalSize
+                let
+                  key1 = makeProposalKey proposeParams
+                  upvote = NoPermit VoteParam
+                      { vFrom = wallet2
+                      , vVoteType = True
+                      , vVoteAmount = 20
+                      , vProposalKey = key1
+                      }
 
-            let
-              key1 = makeProposalKey proposeParams
-              upvote = NoPermit VoteParam
-                  { vFrom = wallet2
-                  , vVoteType = True
-                  , vVoteAmount = 20
-                  , vProposalKey = key1
-                  }
-
-            -- Advance one voting period to a voting stage.
-            advanceToLevel (startLevel + 2*period)
-            withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
-            proposalStart <- getProposalStartLevel baseDao key1
-            advanceToLevel (proposalStart + 2*period)
-            withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
-
-            -- TODO #697: Add check after we have a way to ensure delegate
+                -- Advance one voting period to a voting stage.
+                advanceToLevel (startLevel + 2*period)
+                withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
+                proposalStart <- getProposalStartLevel baseDao key1
+                advanceToLevel (proposalStart + 2*period)
+                withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
+                getDelegate baseDao @@== (Just delegate)
+              _ -> error "impossible"
 
     , testScenario "checks it can flush an Update_receivers_proposal" $ scenario $
         withOriginated 3

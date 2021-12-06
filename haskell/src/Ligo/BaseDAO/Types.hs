@@ -782,7 +782,7 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   }
 
 defaultConfig :: Config
-defaultConfig = mkConfig [] (Period 10) (FixedFee 0) 19 5 (GovernanceTotalSupply 500)
+defaultConfig = mkConfig [] (Period 20) (FixedFee 0) 19 5 (GovernanceTotalSupply 500)
 
 data FullStorage = FullStorage
   { fsStorage :: Storage

@@ -365,8 +365,8 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
       ) (mkQuorumThreshold 1 50)
   originationLevel <- getOriginationLevel dodDao
 
@@ -413,7 +413,7 @@ flushProposalFlushTimeNotReach originateFn = do
   DaoOriginateData{..} <-
     originateFn (testConfig
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
         ) defaultQuorumThreshold
 
   withSender dodOwner1 $
@@ -444,8 +444,8 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 120 })
       ) (mkQuorumThreshold 1 50)
 
   originationLevel <- getOriginationLevel dodDao
@@ -479,5 +479,5 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
     & expectCustomErrorNoArg #eMPTY_FLUSH
 
   -- however after enough levels are past flushing is allowed
-  advanceToLevel (proposalStart + 21)
+  advanceToLevel (proposalStart + 42)
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
