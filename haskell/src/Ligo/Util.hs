@@ -14,8 +14,8 @@ import Fmt (pretty)
 import Language.Haskell.TH (ExpQ)
 import Language.Haskell.TH.Syntax (qAddDependentFile)
 
-import Michelson.Runtime.Import (readValue)
-import Michelson.Typed
+import Morley.Michelson.Runtime.Import (MichelsonSource(..), readValue)
+import Morley.Michelson.Typed
 
 -- TODO morley/659 replace this with embedValue
 --
@@ -28,7 +28,7 @@ fetchValue rawPath = do
   qAddDependentFile path
   valueLiteral <- Utf8.readFile path
 
-  case readValue @(ToT st) path valueLiteral of
+  case readValue @(ToT st) (MSFile path) valueLiteral of
     Left e ->
       -- Emit a compiler error if the value cannot be read.
       fail (pretty e)
@@ -39,4 +39,3 @@ fetchValue rawPath = do
         -- value can be parsed+typechecked.
         either (error . pretty) fromVal $ readValue "" valueLiteral
       |]
-

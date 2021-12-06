@@ -13,10 +13,9 @@ import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
 import qualified Hedgehog.Range as Range
-import Named (NamedF(..))
 
-import Lorentz hiding (and, now, (>>))
-import Util.Named ((.!))
+import Lorentz hiding (and, div, now, (>>))
+import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
@@ -33,7 +32,7 @@ import Test.Ligo.TreasuryDAO.Types
 hprop_TreasuryDaoSMT :: Property
 hprop_TreasuryDaoSMT =
   let
-    treasuryFs = #treasuryFs .! baseDAOTreasuryStorageLigo
+    treasuryFs = #treasuryFs :! baseDAOTreasuryStorageLigo
     option = SmtOption
       { soMkPropose = genProposeTreasuryDao
       , soMkCustomCalls = genCustomCallsTreasuryDao
@@ -170,4 +169,3 @@ genTreasuryDaoProposalMetadata :: GeneratorT (Address -> Address -> TreasuryDaoP
 genTreasuryDaoProposalMetadata = do
   guardianAddr <- genAddress
   Gen.choice [genTransferProposal, pure $ \_ _ -> Update_guardian guardianAddr]
-

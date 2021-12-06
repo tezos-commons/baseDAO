@@ -24,6 +24,8 @@ module Test.Ligo.BaseDAO.Proposal.Config
 import Lorentz
 import Universum (Constraint, fromIntegral, (?:))
 
+import Morley.Util.Named
+
 import qualified Ligo.BaseDAO.Types as DAO
 import Test.Ligo.BaseDAO.Common.Errors (tooSmallXtzErrMsg)
 
@@ -232,21 +234,21 @@ instance IsConfigDescExt DAO.Config DecisionLambdaAction where
     }
 
 instance IsConfigDescExt DAO.Config ("changePercent" :! Natural) where
-  fillConfig (arg #changePercent -> cp) DAO.Config{..} =
+  fillConfig (N cp) DAO.Config{..} =
     DAO.Config
     { cQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
     , ..
     }
 
 instance IsConfigDescExt DAO.Config ("maxChangePercent" :! Natural) where
-  fillConfig (arg #maxChangePercent -> cp) DAO.Config{..} =
+  fillConfig (N cp) DAO.Config{..} =
     DAO.Config
     { cMaxQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
     , ..
     }
 
 instance IsConfigDescExt DAO.Config ("governanceTotalSupply" :! Natural) where
-  fillConfig (arg #governanceTotalSupply -> ts) DAO.Config{..} =
+  fillConfig (N ts) DAO.Config{..} =
     DAO.Config
     { cGovernanceTotalSupply = DAO.GovernanceTotalSupply ts
     , ..

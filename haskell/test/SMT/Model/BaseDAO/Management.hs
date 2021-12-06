@@ -12,17 +12,17 @@ import Universum
 import Control.Monad.Except (throwError)
 import qualified Data.Map as Map
 
-import Lorentz hiding (not, cast, checkSignature, get)
+import Morley.Util.Named
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
 
 applyTransferOwnership :: ModelSource -> TransferOwnershipParam -> ModelT ()
-applyTransferOwnership mso param = do
+applyTransferOwnership mso (N param) = do
   selfAddr <- get <&> msSelfAddress
 
   modifyStore $ \s -> do
-    let newOwner = arg #newOwner param
+    let newOwner = param
 
     unless (msoSender mso == sAdmin s) $
       throwError NOT_ADMIN

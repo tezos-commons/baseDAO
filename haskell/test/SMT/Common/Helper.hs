@@ -12,6 +12,7 @@ import Universum hiding (drop, swap)
 import qualified Data.Map as Map
 
 import Lorentz hiding (now, (>>))
+import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types

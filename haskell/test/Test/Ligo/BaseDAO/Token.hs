@@ -9,9 +9,8 @@ import Universum
 
 import Lorentz hiding (assert, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Michelson.Runtime.GState (genesisAddress1, genesisAddress2)
-import Morley.Nettest
-import Morley.Nettest.Tasty (nettestScenario)
+import Morley.Michelson.Runtime.GState (genesisAddress1, genesisAddress2)
+import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
 
 import Ligo.BaseDAO.Types
@@ -21,14 +20,14 @@ import Test.Ligo.BaseDAO.Common
 
 test_BaseDAO_Token :: TestTree
 test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
-  [ nettestScenario "can call transfer tokens entrypoint"
-      $ uncapsNettest $ transferContractTokensScenario originateLigoDao
-  ,  nettestScenario "can transfer funds to the contract"
-      $ uncapsNettest $ ensureXtzTransfer originateLigoDao
+  [ testScenario "can call transfer tokens entrypoint" $ scenario
+      $ transferContractTokensScenario originateLigoDao
+  ,  testScenario "can transfer funds to the contract" $ scenario
+      $ ensureXtzTransfer originateLigoDao
   ]
 
 transferContractTokensScenario
-  :: MonadNettest caps base m
+  :: MonadCleveland caps base m
   => OriginateFn m -> m ()
 transferContractTokensScenario originateFn = do
   DaoOriginateData{..} <- originateFn defaultQuorumThreshold
@@ -62,7 +61,7 @@ transferContractTokensScenario originateFn = do
       ])) "Unexpected FA2 transfers"
 
 ensureXtzTransfer
-  :: MonadNettest caps base m
+  :: MonadCleveland caps base m
   => OriginateFn m -> m ()
 ensureXtzTransfer originateFn = do
   DaoOriginateData{..} <- originateFn defaultQuorumThreshold

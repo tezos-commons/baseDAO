@@ -13,13 +13,13 @@ import qualified Data.Set as Set
 import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Named (NamedF(..))
 
+import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Hedgehog.Gen.Michelson (genMText)
 import Hedgehog.Gen.Tezos.Address (genAddress)
-import Lorentz hiding (and, now, (>>))
-import Michelson.Text (unsafeMkMText)
-import Util.Named ((.!))
+import Lorentz hiding (and, div, now, (>>))
+import Morley.Michelson.Text (unsafeMkMText)
+import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAORegistryStorageLigo)
@@ -36,7 +36,7 @@ import Test.Ligo.RegistryDAO.Types
 hprop_RegistryDaoSMT :: Property
 hprop_RegistryDaoSMT =
   let
-    registryFs = #registryFs .! baseDAORegistryStorageLigo
+    registryFs = #registryFs :! baseDAORegistryStorageLigo
     option = SmtOption
       { soMkPropose = genProposeRegistryDao
       , soMkCustomCalls = genCustomCallsRegistryDao

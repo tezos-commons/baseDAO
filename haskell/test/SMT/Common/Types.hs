@@ -22,7 +22,7 @@ import Hedgehog
 import Text.Show (show)
 
 import Lorentz hiding (cast, not)
-import Tezos.Crypto (SecretKey)
+import Morley.Tezos.Crypto (SecretKey)
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types

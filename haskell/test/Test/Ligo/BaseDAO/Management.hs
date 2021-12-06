@@ -15,11 +15,10 @@ import Named (defaults, (!))
 import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (now, (>>))
-import Michelson.Runtime.GState (genesisAddress)
-import Michelson.Typed (convertContract)
-import Michelson.Typed.Convert (untypeValue)
-import Morley.Nettest
-import Morley.Nettest.Tasty (nettestScenarioCaps)
+import Morley.Michelson.Runtime.GState (genesisAddress)
+import Morley.Michelson.Typed (convertContract)
+import Morley.Michelson.Typed.Convert (untypeValue)
+import Test.Cleveland
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
@@ -30,7 +29,7 @@ import Test.Ligo.BaseDAO.Management.TransferOwnership
 -- the tests. It is not pretty, but IMO it makes the test a bit less
 -- verbose.
 withOriginated
-  :: MonadNettest caps base m
+  :: MonadCleveland caps base m
   => Integer
   -> ([Address] -> FullStorage)
   -> ([Address] -> TAddress Parameter -> m a)
@@ -50,44 +49,44 @@ withOriginated addrCount storageFn tests = do
 test_BaseDAO_Management :: [TestTree]
 test_BaseDAO_Management =
   [ testGroup "Ownership transfer"
-    [ nettestScenarioCaps "transfer ownership entrypoint authenticates sender" $ do
+    [ testScenario "transfer ownership entrypoint authenticates sender" $ scenario $ do
         current_level <- getLevel
         transferOwnership withOriginated (initialStorage current_level)
 
-    , nettestScenarioCaps "sets pending owner" $ do
+    , testScenario "sets pending owner" $ scenario $ do
         current_level <- getLevel
         transferOwnershipSetsPendingOwner withOriginated (initialStorage current_level)
 
-    , nettestScenarioCaps "does not set administrator" $ do
+    , testScenario "does not set administrator" $ scenario $ do
         current_level <- getLevel
         notSetAdmin withOriginated (initialStorage current_level)
 
-    , nettestScenarioCaps "rewrite existing pending owner" $ do
+    , testScenario "rewrite existing pending owner" $ scenario $ do
         current_level <- getLevel
         rewritePendingOwner withOriginated (initialStorage current_level)
 
-    , nettestScenarioCaps "invalidates pending owner if new owner is current admin" $ do
+    , testScenario "invalidates pending owner if new owner is current admin" $ scenario $ do
         current_level <- getLevel
         invalidatePendingOwner withOriginated (initialStorage current_level)
 
-    , nettestScenarioCaps "bypasses accept_entrypoint if new admin address is self" $ do
+    , testScenario "bypasses accept_entrypoint if new admin address is self" $ scenario $ do
         current_level <- getLevel
         bypassAcceptForSelf withOriginated (initialStorage current_level)
     ]
     , testGroup "Accept Ownership"
-      [ nettestScenarioCaps "authenticates the sender" $ do
+      [ testScenario "authenticates the sender" $ scenario $ do
           current_level <- getLevel
           authenticateSender withOriginated (initialStorage current_level)
 
-      , nettestScenarioCaps "changes the administrator to pending owner" $ do
+      , testScenario "changes the administrator to pending owner" $ scenario $ do
           current_level <- getLevel
           changeToPendingAdmin withOriginated (initialStorage current_level)
 
-      , nettestScenarioCaps "throws error when there is no pending owner" $ do
+      , testScenario "throws error when there is no pending owner" $ scenario $ do
           current_level <- getLevel
           noPendingAdmin withOriginated (initialStorage current_level)
 
-      , nettestScenarioCaps "throws error when called by current admin, when pending owner is not the same" $ do
+      , testScenario "throws error when called by current admin, when pending owner is not the same" $ scenario $ do
           current_level <- getLevel
           pendingOwnerNotTheSame withOriginated (initialStorage current_level)
       ]

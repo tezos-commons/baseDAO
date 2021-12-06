@@ -8,10 +8,9 @@ module Test.Ligo.BaseDAO.Proposal.Delegate
 import Universum
 
 import Lorentz hiding (assert, (>>))
-import Morley.Nettest
-import Morley.Nettest.Tasty (nettestScenarioCaps)
+import Morley.Util.Named
+import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
-import Util.Named
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
@@ -20,14 +19,14 @@ import Test.Ligo.BaseDAO.Proposal.Config
 test_UpdateDelegates :: TestTree
 test_UpdateDelegates =
   testGroup "Update_delegates:"
-    [ nettestScenarioCaps "add/remove a delgate" $
+    [ testScenario "add/remove a delgate" $ scenario $
         addRemoveDelegate (originateLigoDaoWithConfigDesc dynRecUnsafe)
-    , nettestScenarioCaps "update multiple delegates" $
+    , testScenario "update multiple delegates" $ scenario $
         updateDelegates (originateLigoDaoWithConfigDesc dynRecUnsafe) checkIfDelegateExists
     ]
 
 addRemoveDelegate
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 addRemoveDelegate originateFn = do
@@ -42,7 +41,7 @@ addRemoveDelegate originateFn = do
     call dodDao (Call @"Update_delegate") [param True]
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 100)
+    call dodDao (Call @"Freeze") (#amount :! 100)
 
   advanceToLevel (startLevel + dodPeriod)
   let params counter = ProposeParams
@@ -72,7 +71,7 @@ addRemoveDelegate originateFn = do
 
 
 updateDelegates
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> (TAddress Parameter -> Delegate -> m Bool)
   -> m ()
