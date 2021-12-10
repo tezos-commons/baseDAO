@@ -16,20 +16,24 @@ module Ligo.BaseDAO.TZIP16Metadata
 
 import qualified Universum as U
 
+import Data.Aeson.TH (deriveJSON)
 import Data.Version (showVersion)
 
 import Lorentz hiding (View)
 import Lorentz.Contracts.Spec.TZIP16Interface
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Morley.Metadata
+import Morley.Metadata.Util.Aeson (aesonOptions)
 
 import Ligo.BaseDAO.Types
 import qualified Paths_baseDAO_ligo_meta as Paths
 
 -- | Piece of metadata defined by user.
 data MetadataConfig = MetadataConfig
-  { mcFrozenTokenMetadata :: FA2.TokenMetadata
-  }
+  { mcName :: Text
+  , mcSymbol :: Text
+  , mcDecimals :: Integer
+  , mcThumbnailUri :: Maybe Text
+  } deriving stock (Eq, Show)
 
 -- | All the information for instantiating metadata.
 --
@@ -43,9 +47,12 @@ data MetadataSettings = MetadataSettings
 defaultMetadataConfig :: MetadataConfig
 defaultMetadataConfig =
   MetadataConfig
-    { mcFrozenTokenMetadata =
-        FA2.mkTokenMetadata "frozen_token" "Frozen Token" "8"
+    { mcName = "BaseDAO Frozen Token"
+    , mcSymbol = "frozen_token"
+    , mcDecimals = 0
+    , mcThumbnailUri = Nothing
     }
+
 
 -- | Construct MetadataSetting for the contract.
 mkMetadataSettings :: MetadataConfig -> MetadataSettings
@@ -56,13 +63,21 @@ mkMetadataSettings msConfig = MetadataSettings
 -- | Parts of metadata that can be filled just knowing the contract,
 -- without user's input.
 knownBaseDAOMetadata :: MetadataSettings -> Metadata (ToT Storage)
-knownBaseDAOMetadata settings = mconcat
-  [ version . fromString $ showVersion Paths.version
+knownBaseDAOMetadata settings@MetadataSettings{..} = mconcat
+  [ name "Base DAO"
+  , description "A generic smart contract on Tezos that enables a community to collectively govern resources, registries, or rules."
+  , version . fromString $ showVersion Paths.version
   , license $ License "MIT" Nothing
   , authors [Author "Serokell", Author "Tocqueville Group"]
   , homepage "https://github.com/tezos-commons/baseDAO"
-  , interfaces [tzip 17]
+  , interfaces
+      [ tzip 16
+      , tzip 21 -- 1728fcfe0ac90463ef15e6a994b6d6a15357e373
+      ]
   , views (baseDAOViews settings)
+  , keyValue @[MetadataConfig] "assets"
+      [ msConfig
+      ]
   ]
 
 ------------------------------------------------------------------------
@@ -107,3 +122,9 @@ permitsCounterView MetadataSettings{} = View
               stToField #sPermitsCounter
       ]
   }
+
+----------------------------------------------------------------------------
+-- JSON serializers/deserializers
+----------------------------------------------------------------------------
+
+deriveJSON aesonOptions ''MetadataConfig

@@ -87,7 +87,8 @@ library
       RebindableSyntax
   ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-unused-packages -Wno-prepositive-qualified-module -Wno-missing-safe-haskell-mode -Wno-unused-do-bind
   build-depends:
-      base-noprelude >=4.7 && <5
+      aeson
+    , base-noprelude >=4.7 && <5
     , cleveland
     , containers
     , file-embed
@@ -164,9 +165,7 @@ executable baseDAO-ligo-meta
       aeson-pretty
     , base-noprelude >=4.7 && <5
     , baseDAO-ligo-meta
-    , fmt
     , morley
-    , morley-ledgers
     , morley-prelude
     , optparse-applicative
     , universum
