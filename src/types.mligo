@@ -51,8 +51,7 @@ type nonce = nat
 // Represents whether a voter has voted against (false) or for (true) a given proposal.
 type vote_type = bool
 
-// Stores all voter data for a proposal
-type voter_map = (address * vote_type, nat) map
+type staked_vote = nat
 
 // Amount of blocks.
 type blocks = { blocks : nat }
@@ -94,8 +93,6 @@ type proposal =
   // ^ address of the proposer
   ; proposer_frozen_token : nat
   // ^ amount of frozen tokens used by the proposer, exluding the fixed fee
-  ; voters : voter_map
-  // ^ voter data
   ; quorum_threshold: quorum_threshold
   // ^ quorum threshold at the cycle in which proposal was raised
   }
@@ -151,6 +148,7 @@ type storage =
   ; extra : contract_extra
   ; proposals : (proposal_key, proposal) big_map
   ; proposal_key_list_sort_by_level : (blocks * proposal_key) set
+  ; staked_votes : (address * proposal_key, staked_vote) big_map
   ; permits_counter : nonce
   ; freeze_history : freeze_history
   ; frozen_token_id : token_id
@@ -164,6 +162,7 @@ type storage =
 
 type freeze_param = nat
 type unfreeze_param = nat
+type unstake_vote_param = proposal_key list
 
 type transfer_ownership_param = address
 
@@ -223,6 +222,7 @@ type forbid_xtz_params =
   | Freeze of freeze_param
   | Unfreeze of unfreeze_param
   | Update_delegate of update_delegate_params
+  | Unstake_vote of unstake_vote_param
 
 (*
  * Entrypoints that allow Tz transfers
@@ -264,7 +264,6 @@ type initial_config_data =
   { max_quorum : quorum_threshold
   ; min_quorum : quorum_threshold
   ; quorum_threshold : quorum_threshold
-  ; max_voters : nat
   ; period : period
   ; proposal_flush_level: blocks
   ; proposal_expired_level: blocks
@@ -305,8 +304,6 @@ type config =
 
   ; max_proposals : nat
   // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
-  ; max_voters : nat
-  // ^ Determine the maximum number of voters allowed to vote in the context of a proposal.
   ; max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction

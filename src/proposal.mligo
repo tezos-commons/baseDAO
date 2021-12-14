@@ -58,6 +58,23 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
     then (failwith proposal_not_unique: proposal_key)
     else proposal_key
 
+let unstake_tk(token_amount, burn_amount, addr, period, store : nat * nat * address * period * storage): storage =
+  let current_stage = get_current_stage_num(store.start_level, period) in
+  match Big_map.find_opt addr store.freeze_history with
+    | Some(fh) ->
+        let fh = update_fh(current_stage, fh) in
+        let fh = unstake_frozen_fh(token_amount, burn_amount, fh) in
+        let new_freeze_history = Big_map.update addr (Some(fh)) store.freeze_history in
+        let new_total_supply =
+          match Michelson.is_nat (store.frozen_total_supply - burn_amount) with
+            Some new_total_supply -> new_total_supply
+          | None -> (failwith bad_state : nat) in
+        { store with
+            freeze_history = new_freeze_history
+          ; frozen_total_supply = new_total_supply
+        }
+    | None -> (failwith bad_state : storage)
+
 // -----------------------------------------------------------------
 // Delegate
 // -----------------------------------------------------------------
@@ -86,6 +103,37 @@ let update_delegate (delegates, param: delegates * update_delegate): delegates =
 let update_delegates (params, store : update_delegate_params * storage): return =
   ( nil_op
   , { store with delegates = List.fold update_delegate params store.delegates }
+  )
+
+
+// Unstake voter's tokens on a proposal that has already been flushed or dropped.
+// Fail if the voter did not vote on that proposal, or voter has already unfreezed, or
+// the proposal was not yet flushed nor dropped.
+let unstake_vote_one (config: config) (store , proposal_key : storage * proposal_key): storage =
+
+  // Ensure proposal is already flushed or dropped.
+  let p = fetch_proposal (proposal_key, store) in
+  let _ = if Set.mem (p.start_level, proposal_key) store.proposal_key_list_sort_by_level
+            then (failwith unstake_invalid_proposal : unit)
+            else unit in
+
+  // Check if voter exist.
+  let staked_vote_amount = match Big_map.find_opt (Tezos.sender, proposal_key) store.staked_votes with
+      | Some v -> v
+      | None -> (failwith voter_does_not_exist : staked_vote) in
+
+  // Do the unstake
+  let store = unstake_tk(staked_vote_amount, 0n, Tezos.sender, config.period, store) in
+
+  // Remove voter's vote from staked amounts
+  { store with
+      staked_votes = Big_map.remove (Tezos.sender, proposal_key) store.staked_votes
+  }
+
+// Unstake voter's tokens on multiple proposals. Fail if an error occurred in one of the calls.
+let unstake_vote (params, config, store : unstake_vote_param * config * storage): return =
+  ( nil_op
+  , List.fold (unstake_vote_one config) params store
   )
 
 // -----------------------------------------------------------------
@@ -145,7 +193,6 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
     ; metadata = propose_params.proposal_metadata
     ; proposer = propose_params.from
     ; proposer_frozen_token = propose_params.frozen_token
-    ; voters = (Map.empty : voter_map)
     ; quorum_threshold = store.quorum_threshold_at_cycle.quorum_threshold
     } in
   { store with
@@ -161,62 +208,43 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
 
 let submit_vote (proposal, vote_param, author, period, store : proposal * vote_param * address * period * storage): storage =
   let proposal_key = vote_param.proposal_key in
-  let proposal =
-        let map_key = (author, vote_param.vote_type) in
-        let new_votes = match Map.find_opt map_key proposal.voters with
-          | Some votes -> votes + vote_param.vote_amount
-          | None -> vote_param.vote_amount in
-        { proposal with voters = Map.add map_key new_votes proposal.voters } in
+
+  // Check if voter is already existed or not.
+  let staked_vote = match Big_map.find_opt (author, proposal_key) store.staked_votes with
+        | Some v -> (v : staked_vote)
+        | None -> 0n in
+
+  // Update staked vote amount
+  let new_staked_vote = staked_vote + vote_param.vote_amount in
+
   let proposal =
         if vote_param.vote_type
           then { proposal with upvotes = proposal.upvotes + vote_param.vote_amount }
           else { proposal with downvotes = proposal.downvotes + vote_param.vote_amount } in
-  let store = stake_tk(vote_param.vote_amount, author, period, store) in
-  { store with proposals = Map.add proposal_key proposal store.proposals }
 
-[@inline]
-let check_vote_limit_reached
-    (config, proposal, vote_param : config * proposal * vote_param): vote_param =
-  if config.max_voters <= Map.size(proposal.voters)
-      // We use <= because this function is called before the voter is added to the proposal.voters
-      // map.
-  then (failwith max_voters_reached : vote_param)
-  else vote_param
+  let store = stake_tk(vote_param.vote_amount, author, period, store) in
+
+  { store with
+      proposals = Big_map.add proposal_key proposal store.proposals
+  ;   staked_votes = Big_map.add (author, proposal_key) new_staked_vote store.staked_votes
+  }
+
 
 let vote(votes, config, store : vote_param_permited list * config * storage): return =
   let accept_vote = fun (store, pp : storage * vote_param_permited) ->
     let (param, author, store) = verify_permit_protected_vote (pp, store) in
     let valid_from = check_delegate (pp.argument.from, author, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
-    let vote_param = check_vote_limit_reached (config, proposal, param) in
     let store = ensure_proposal_voting_stage (proposal, config.period, store) in
-    let store = submit_vote (proposal, vote_param, valid_from, config.period, store) in
+    let store = submit_vote (proposal, param, valid_from, config.period, store) in
     store
   in
   (nil_op, List.fold accept_vote votes store)
 
-
-let unstake_tk(token_amount, burn_amount, addr, period, store : nat * nat * address * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, period) in
-  match Big_map.find_opt addr store.freeze_history with
-    | Some(fh) ->
-        let fh = update_fh(current_stage, fh) in
-        let fh = unstake_frozen_fh(token_amount, burn_amount, fh) in
-        let new_freeze_history = Big_map.update addr (Some(fh)) store.freeze_history in
-        let new_total_supply =
-          match Michelson.is_nat (store.frozen_total_supply - burn_amount) with
-            Some new_total_supply -> new_total_supply
-          | None -> (failwith bad_state : nat) in
-        { store with
-            freeze_history = new_freeze_history
-          ; frozen_total_supply = new_total_supply
-        }
-    | None -> (failwith bad_state : storage)
-
-let unfreeze_proposer_and_voter_token
+let unstake_proposer_token
   (rejected_proposal_slash, is_accepted, proposal, period, fixed_fee, store :
     (proposal * contract_extra -> nat) * bool * proposal * period * nat * storage): storage =
-  // unfreeze_proposer_token
+  // Get proposer token and burn amount
   let (tokens, burn_amount) =
     if is_accepted
     then (proposal.proposer_frozen_token + fixed_fee, 0n)
@@ -231,14 +259,9 @@ let unfreeze_proposer_and_voter_token
             in
       (tokens, desired_burn_amount)
     in
-  let store = unstake_tk(tokens, burn_amount, proposal.proposer, period, store) in
 
-  // unfreeze_voter_token
-  let do_unfreeze = fun
-        ( store, voter_with_vote : storage * ((address * vote_type) * nat))
-          -> unstake_tk(voter_with_vote.1, 0n, voter_with_vote.0.0, period, store) in
-
-  Map.fold do_unfreeze proposal.voters store
+  // Do the unstake for the proposer
+  unstake_tk(tokens, burn_amount, proposal.proposer, period, store)
 
 [@inline]
 let is_proposal_age (proposal, target : proposal * blocks): bool =
@@ -256,7 +279,7 @@ let do_total_vote_meet_quorum_threshold (proposal, store: proposal * storage): b
 
 // Delete a proposal from `proposal_key_list_sort_by_level`
 [@inline]
-let delete_proposal
+let remove_from_proposal_sort_by_level
     (level, proposal_key, store : blocks * proposal_key * storage): storage =
   { store with proposal_key_list_sort_by_level =
     Set.remove (level, proposal_key) store.proposal_key_list_sort_by_level
@@ -290,7 +313,7 @@ let handle_proposal_is_over
     let cond =    do_total_vote_meet_quorum_threshold(proposal, store)
               && proposal.upvotes > proposal.downvotes
     in
-    let store = unfreeze_proposer_and_voter_token
+    let store = unstake_proposer_token
           (config.rejected_proposal_slash_value, cond, proposal, config.period, config.fixed_proposal_fee_in_token, store) in
     let (new_ops, store) =
       if cond
@@ -307,7 +330,7 @@ let handle_proposal_is_over
     in
     let cons = fun (l, e : operation list * operation) -> e :: l in
     let ops = List.fold cons ops new_ops in
-    let store = delete_proposal (start_level, proposal_key, store) in
+    let store = remove_from_proposal_sort_by_level (start_level, proposal_key, store) in
     (ops, store, counter)
   else (ops, store, counter)
 
@@ -340,7 +363,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
     || (sender = store.guardian && sender <> source) // Guardian cannot be equal to SOURCE
     || proposal_is_expired
   then
-    let store = unfreeze_proposer_and_voter_token
+    let store = unstake_proposer_token
           ( config.rejected_proposal_slash_value
           , false // A dropped proposal is treated as rejected regardless of its actual votes
           , proposal
@@ -348,7 +371,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
           , config.fixed_proposal_fee_in_token
           , store
           ) in
-    let store = delete_proposal (proposal.start_level, proposal_key, store) in
+    let store = remove_from_proposal_sort_by_level (proposal.start_level, proposal_key, store) in
     (nil_op, store)
   else
     (failwith drop_proposal_condition_not_met : return)

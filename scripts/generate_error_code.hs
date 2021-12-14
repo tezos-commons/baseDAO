@@ -65,8 +65,7 @@ invalidInputErrors = errorsEnumerate 100
     :? ("The proposal voting stage has already ended.", NoArg)
   , "max_proposals_reached"
     :? ("The maximum amount of ongoing proposals has been reached.", NoArg)
-  , "max_voters_reached"
-    :? ("The maximum amount of voters has been reached for the proposal.", NoArg)
+  , removedError
   , "forbidden_xtz"
     :? ("Transfer of XTZ is forbidden on this entrypoint.", NoArg)
   , "proposal_not_unique"
@@ -99,6 +98,10 @@ invalidInputErrors = errorsEnumerate 100
     :? ("Executing the proposal's decision lambda results in failure.", NoArg)
   , "entrypoint_not_found"
     :? ("The chosen custom entrypoint does not exist.", NoArg)
+  , "unstake_invalid_proposal"
+    :? ("Cannot call `unstake_vote` on the proposal that is not flushed or dropped.", NoArg)
+  , "voter_does_not_exist"
+    :? ("The sender did not vote on the proposal or already unstaked tokens from the proposal.", NoArg)
   ]
 
 invalidConfigErrors :: [ErrorItem]

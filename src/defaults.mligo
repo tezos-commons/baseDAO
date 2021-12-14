@@ -35,9 +35,6 @@ let freeze_history_constructor (acc, param : (freeze_history * nat) * (address *
 let default_config (data : initial_config_data) : config =
   let _ : unit = validate_proposal_flush_expired_level(data) in
   let _ : unit = validate_quorum_threshold_bound(data) in {
-    // TODO [#271] We have to find a safe value for max_voters
-    // and check if the value contained in the `data` is
-    // within bounds.
     proposal_check = (fun (_params, _extras : propose_params * contract_extra) -> unit);
     rejected_proposal_slash_value = (fun (_proposal, _extras : proposal * contract_extra) -> 0n);
     decision_lambda = (fun (dl_input : decision_lambda_input) ->
@@ -45,7 +42,6 @@ let default_config (data : initial_config_data) : config =
     fixed_proposal_fee_in_token = data.fixed_proposal_fee_in_token;
     period = data.period;
     max_proposals = 500n;
-    max_voters = data.max_voters;
     max_quorum_threshold = to_signed(data.max_quorum);
     min_quorum_threshold = to_signed(data.min_quorum);
     max_quorum_change = to_signed(data.max_quorum_change);
@@ -75,6 +71,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     extra = (Big_map.empty : (string, bytes) big_map);
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     proposal_key_list_sort_by_level = (Set.empty : (blocks * proposal_key) set);
+    staked_votes = (Big_map.empty : (address * proposal_key, staked_vote) big_map);
     permits_counter = 0n;
     freeze_history = freeze_history;
     frozen_token_id = frozen_token_id;
