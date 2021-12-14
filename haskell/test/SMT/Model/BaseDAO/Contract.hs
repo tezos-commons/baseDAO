@@ -41,3 +41,4 @@ handleCallViaHaskell mc ms =
         XtzForbidden (Unfreeze p) -> applyUnfreeze (mc & mcSource) p
         XtzForbidden (Update_delegate p) -> applyUpdateDelegate (mc & mcSource) p
         XtzForbidden (Drop_proposal p) -> applyDropProposal (mc & mcSource) p
+        XtzForbidden (Unstake_vote p) -> applyUnstakeVote (mc & mcSource) p

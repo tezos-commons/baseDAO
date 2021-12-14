@@ -254,6 +254,7 @@ callLigoEntrypoint mc dao = withSender (mc & mcSource & msoSender) $ case mc & m
   XtzForbidden (Unfreeze p) -> call dao (Call @"Unfreeze") p
   XtzForbidden (Update_delegate p) -> call dao (Call @"Update_delegate") p
   XtzForbidden (Drop_proposal p) -> call dao (Call @"Drop_proposal") p
+  XtzForbidden (Unstake_vote p) -> call dao (Call @"Unstake_vote") p
 
   XtzAllowed (CallCustom p) -> call dao (Call @"CallCustom") p
 

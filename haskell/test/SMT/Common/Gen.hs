@@ -87,6 +87,7 @@ genStorage = do
         , sQuorumThresholdAtCycle = quorumThresholdAtCycle
         , sProposals = BigMap Nothing mempty
         , sProposalKeyListSortByDate = mempty
+        , sStakedVotes = BigMap Nothing mempty
         , sExtra = DynamicRec' mempty
 
         , sFrozenTokenId = FA2.theTokenId
@@ -124,7 +125,6 @@ genConfig = do
     , cMaxQuorumThreshold = percentageToFractionNumerator 99 -- 99%
     , cMinQuorumThreshold = percentageToFractionNumerator 1 -- 1%
 
-    , cMaxVoters = 1000
     , cMaxProposals = 500
     }
 
@@ -256,6 +256,7 @@ genProposingProcess = do
   flushAction <- genFlush
   mkVote <- genVote
   mkDropProposal <- genDropProposal
+  mkUnstakeVote <- genUnstakeVote
 
   -- | `advanceLvl` is provided precisely to ensure the order of operations results in successful proposal.
   let mkCall param advanceLvl = ModelCall
@@ -274,28 +275,32 @@ genProposingProcess = do
           permitProtecteds = mkVote key freezeAmt
           voterFreezeAmt = getVoteFreezeAmt permitProtecteds
           dropProposalAction = mkDropProposal key
-        in (freezeAmt, voterFreezeAmt, permitProtecteds, proposeAction, dropProposalAction)
+          unstakeVoteAction = mkUnstakeVote key
+        in (freezeAmt, voterFreezeAmt, permitProtecteds, proposeAction, dropProposalAction, unstakeVoteAction)
 
   pure $
       [ \_ -> mkCall (XtzForbidden $ Update_delegate [DelegateParam True delegate1]) Nothing
       , \args ->
-          let (freezeAmt, _, _, _, _) = applyArgs args
+          let (freezeAmt, _, _, _, _, _) = applyArgs args
           in mkCall (XtzForbidden $ Freeze (#amount :! (freezeAmt)) ) Nothing
       , \args ->
-          let (_, voterFreezeAmt, _, _, _) = applyArgs args
+          let (_, voterFreezeAmt, _, _, _, _) = applyArgs args
           in mkCall (XtzForbidden $ Freeze (#amount :! voterFreezeAmt) ) Nothing
       , \args ->
-          let (_, _, _, proposeAction, _) = applyArgs args
+          let (_, _, _, proposeAction, _, _) = applyArgs args
           in mkCall proposeAction (Just 1)
       , \args ->
-          let (_, _, permitProtecteds, _, _) = applyArgs args
+          let (_, _, permitProtecteds, _, _, _) = applyArgs args
           in mkCall (XtzForbidden $ Vote permitProtecteds) (Just 1)
       , \_ -> mkCall flushAction (Just 2)
       , \args ->
-          let (freezeAmt, _, _, _, _) = applyArgs args
+          let (_, _, _, _, _, unstakeVoteAction) = applyArgs args
+          in mkCall unstakeVoteAction Nothing
+      , \args ->
+          let (freezeAmt, _, _, _, _, _) = applyArgs args
           in mkCall (XtzForbidden $ Unfreeze (#amount :! (freezeAmt)) ) Nothing
       , \args ->
-          let (_, _, _, _, dropProposalAction) = applyArgs args
+          let (_, _, _, _, dropProposalAction, _) = applyArgs args
           in mkCall dropProposalAction Nothing
       ] <> (
         mkCustomCalls
@@ -358,6 +363,10 @@ genFlush = do
 genDropProposal :: GeneratorT (ProposalKey -> Parameter)
 genDropProposal = do
   pure $ \key -> XtzForbidden $ Drop_proposal key
+
+genUnstakeVote :: GeneratorT (ProposalKey -> Parameter)
+genUnstakeVote = do
+  pure $ \key -> XtzForbidden $ Unstake_vote [key]
 
 genUpdateDelegate :: GeneratorT Parameter
 genUpdateDelegate = do

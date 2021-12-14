@@ -114,10 +114,6 @@ test_BaseDAO_Proposal =
   , testGroup "Bounded Value"
       [ testScenario "bounded value on proposals" $ scenario $
           proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
-
-      , testScenario "bounded value on votes" $ scenario $
-          votesBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
-
       ]
 
   , testGroup "Freeze-Unfreeze"
@@ -135,6 +131,9 @@ test_BaseDAO_Proposal =
 
       , testScenario "correctly track freeze history" $ scenario $
           checkFreezeHistoryTracking (originateLigoDaoWithConfigDesc dynRecUnsafe)
+
+      , testScenario "tokens are unstaked correctly, only when possible" $ scenario $
+          unstakeVote (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
  , testGroup "LIGO-specific proposal tests:"

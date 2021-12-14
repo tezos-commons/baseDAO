@@ -3,7 +3,7 @@
 
 module SMT.TreasuryDAO
   ( hprop_TreasuryDaoSMT
-  )  where
+  ) where
 
 import Universum hiding (drop, swap)
 

@@ -9,6 +9,7 @@ module SMT.Model.BaseDAO.Proposal
   , applyFlush
   , applyDropProposal
   , applyUpdateDelegate
+  , applyUnstakeVote
   ) where
 
 import Universum
@@ -45,6 +46,7 @@ checkIfProposalExist key = do
   case resultMaybe of
     Just p -> pure p
     Nothing -> throwError PROPOSAL_NOT_EXIST
+
 
 checkDelegate
   :: Address -> Address -> ModelT Address
@@ -102,7 +104,6 @@ addProposal params = do
         , plMetadata = params & ppProposalMetadata
         , plProposer = params & ppFrom
         , plProposerFrozenToken = params & ppFrozenToken
-        , plVoters = mempty
         , plQuorumThreshold = store & sQuorumThresholdAtCycle & qaQuorumThreshold
         }
   modifyStore $ \s -> pure $ s
@@ -133,9 +134,9 @@ doTotalVoteMeetQuorumThreshold proposal store =
       reachedQuorum = QuorumThreshold $ (votesPlaced * fromIntegral fractionDenominator) `div` totalSupply
   in  (reachedQuorum >= (proposal & plQuorumThreshold))
 
-unfreezeProposerAndVoterToken
+unstakeProposerToken
   :: Bool -> Proposal -> ModelT ()
-unfreezeProposerAndVoterToken isAccepted proposal = do
+unstakeProposerToken isAccepted proposal = do
   store <- getStore
   (FixedFee fixedFee) <- getConfig <&> cFixedProposalFee
   (tokens, burnAmount) <-
@@ -151,14 +152,9 @@ unfreezeProposerAndVoterToken isAccepted proposal = do
 
   unstakeTk tokens burnAmount (proposal & plProposer)
 
-  mapM_ doUnfreeze (Map.toList (proposal & plVoters))
-  where
-    doUnfreeze :: ((Address, Bool), Natural) -> ModelT ()
-    doUnfreeze ((addr, _), voteAmount) = do
-      unstakeTk voteAmount 0 addr
 
-deleteProposal :: Natural -> ProposalKey -> ModelT ()
-deleteProposal pLevel proposalKey = modifyStore $ \s ->
+removeFromProposalSortByLevel :: Natural -> ProposalKey -> ModelT ()
+removeFromProposalSortByLevel pLevel proposalKey = modifyStore $ \s ->
   pure $ s { sProposalKeyListSortByDate = Set.delete (pLevel, proposalKey) (s & sProposalKeyListSortByDate)}
 
 applyPropose :: ModelSource -> ProposeParams -> ModelT ()
@@ -180,12 +176,6 @@ applyPropose mso param@ProposeParams{..} = do
   stakeTk amountToFreeze validFrom
   addProposal param
 
-checkVoteLimitReached :: Proposal -> ModelT ()
-checkVoteLimitReached pl = do
-  maxVoters <- getConfig <&> cMaxVoters
-  when (maxVoters <= (fromIntegral $ length (pl & plVoters))) $
-    throwError MAX_VOTERS_REACHED
-
 ensureProposalVotingStage :: Proposal -> ModelT ()
 ensureProposalVotingStage proposal = do
   currentStage <- getCurrentStageNum
@@ -194,20 +184,22 @@ ensureProposalVotingStage proposal = do
 
 submitVote :: Proposal -> VoteParam -> Address -> ModelT ()
 submitVote proposal voteParam author = do
+  store <- getStore
   let proposalKey = voteParam & vProposalKey
-      proposal_ =
-        let mapKey = (author, voteParam & vVoteType)
-            newVotes = case Map.lookup mapKey (proposal & plVoters) of
-              Just votes -> votes + (voteParam & vVoteAmount)
-              Nothing -> voteParam & vVoteAmount
-        in proposal { plVoters = Map.insert mapKey newVotes (proposal & plVoters) }
+      stakeAmt = case Map.lookup (author, proposalKey) (store & sStakedVotes & bmMap) of
+        Just vs -> vs
+        Nothing -> 0
+
+      newStakeAmt = stakeAmt + (voteParam & vVoteAmount)
 
       updatedProposal = if (voteParam & vVoteType)
-                        then proposal_ { plUpvotes = (proposal_ & plUpvotes) + (voteParam & vVoteAmount)}
-                        else proposal_ { plDownvotes = (proposal_ & plDownvotes) + (voteParam & vVoteAmount)}
+                        then proposal { plUpvotes = (proposal & plUpvotes) + (voteParam & vVoteAmount)}
+                        else proposal { plDownvotes = (proposal & plDownvotes) + (voteParam & vVoteAmount)}
   stakeTk (voteParam & vVoteAmount) author
-  modifyStore $ \s -> pure $ s { sProposals = BigMap Nothing $ Map.insert proposalKey updatedProposal (s & sProposals & bmMap)}
-
+  modifyStore $ \s -> pure $ s
+    { sProposals = BigMap Nothing $ Map.insert proposalKey updatedProposal (s & sProposals & bmMap)
+    , sStakedVotes = BigMap Nothing $ Map.insert (author, proposalKey) newStakeAmt (s & sStakedVotes & bmMap)
+    }
 
 applyVote :: ModelSource -> [PermitProtected VoteParam] -> ModelT ()
 applyVote mso = mapM_ acceptVote
@@ -218,7 +210,6 @@ applyVote mso = mapM_ acceptVote
 
       validFrom <- checkDelegate (pp & ppArgument & vFrom) author
       proposal <- checkIfProposalExist (voteParam & vProposalKey)
-      checkVoteLimitReached proposal
       ensureProposalVotingStage proposal
       submitVote proposal voteParam validFrom
 
@@ -297,7 +288,7 @@ handleProposalIsOver (proposalLvl, proposalKey) = do
     cond <- getStore <&> \s ->
               doTotalVoteMeetQuorumThreshold proposal s && ((proposal & plUpvotes) > (proposal & plDownvotes))
 
-    unfreezeProposerAndVoterToken cond proposal
+    unstakeProposerToken cond proposal
     when cond $ do
       store <- getStore
       (ops, newExtra, guardianMaybe) <-
@@ -310,7 +301,7 @@ handleProposalIsOver (proposalLvl, proposalKey) = do
       modifyStore $ \s -> pure $ s { sExtra = newExtra }
       mapM_ execOperation ops
 
-    deleteProposal proposalLvl proposalKey
+    removeFromProposalSortByLevel proposalLvl proposalKey
     pure True
   else
     pure False
@@ -339,8 +330,8 @@ applyDropProposal mso proposalKey = do
     || ((mso & msoSender) == (store & sGuardian) && (mso & msoSender) /= (mso & msoSource))
     || proposalIsExpired
   then do
-    unfreezeProposerAndVoterToken False proposal
-    deleteProposal (proposal & plStartLevel) proposalKey
+    unstakeProposerToken False proposal
+    removeFromProposalSortByLevel (proposal & plStartLevel) proposalKey
   else
     throwError DROP_PROPOSAL_CONDITION_NOT_MET
 
@@ -363,3 +354,35 @@ applyUpdateDelegate mso params =
         updatedDelegates = foldl' (updateDelegate mso) delegates params
     in
       pure $ s { sDelegates = BigMap Nothing $ Map.fromSet (const ()) updatedDelegates }
+
+---------------------------------------------------------------
+-- Unstake_vote
+---------------------------------------------------------------
+
+applyUnstakeVoteOne :: ModelSource -> ProposalKey -> ModelT ()
+applyUnstakeVoteOne mso key = do
+  store <- getStore
+
+  -- Ensure proposal is already flushed or dropped.
+  case Map.lookup key (store & sProposals & bmMap) of
+    Just p ->
+      if Set.member (p & plStartLevel, key) (store & sProposalKeyListSortByDate) then
+        throwError UNSTAKE_INVALID_PROPOSAL
+      else pure ()
+    Nothing -> throwError PROPOSAL_NOT_EXIST
+
+  tokens <- case Map.lookup (mso & msoSender, key) (store & sStakedVotes & bmMap) of
+          Just v -> pure v
+          Nothing -> throwError VOTER_DOES_NOT_EXIST
+
+  unstakeTk tokens 0 (mso & msoSender)
+
+  modifyStore $ \s -> pure $ s
+    { sStakedVotes = BigMap Nothing $ Map.delete (mso & msoSender, key) (s & sStakedVotes & bmMap)
+    }
+
+  pure ()
+
+applyUnstakeVote :: ModelSource -> UnstakeVoteParam -> ModelT ()
+applyUnstakeVote mso params =
+  mapM_ (applyUnstakeVoteOne mso) params
