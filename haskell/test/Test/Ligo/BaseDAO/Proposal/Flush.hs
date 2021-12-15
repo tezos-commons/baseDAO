@@ -116,7 +116,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
     <- originateFn (\c ->
         (FlushLevel 20)
         >>- (ExpireLevel 30)
-        >>- c)
+        >>- testConfig c)
          defaultQuorumThreshold
   originationLevel <- getOriginationLevel dodDao
 
@@ -174,7 +174,7 @@ flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
     <- originateFn (\c ->
         FlushLevel 20
-        >>- (ExpireLevel 60) >>- c
+        >>- (ExpireLevel 60) >>- testConfig c
         ) (mkQuorumThreshold 3 5)
 
   withSender dodOwner2 $
@@ -219,7 +219,7 @@ flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
     <- originateFn (\c ->
           (FlushLevel 20)
-          >>- (ExpireLevel 60) >>- c) (mkQuorumThreshold 3 100)
+          >>- (ExpireLevel 60) >>- testConfig c) (mkQuorumThreshold 3 100)
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount :! 3)

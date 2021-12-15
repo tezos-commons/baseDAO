@@ -350,11 +350,8 @@ voteWithPermitNonce originateFn = do
 
 
   DaoOriginateData{..} <- originateFn (\c -> Period 40 >>- voteConfig c ) defaultQuorumThreshold
-  runIO $ putTextLn $ show dodPeriod
 
   originationLevel <- getOriginationLevel dodDao
-  cLevel <- getLevel
-  runIO $ putTextLn $ show (originationLevel, cLevel)
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount :! 60)
@@ -364,8 +361,6 @@ voteWithPermitNonce originateFn = do
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (originationLevel + dodPeriod)
-  cLevel <- getLevel
-  runIO $ putTextLn $ "1:" <> show cLevel
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -379,8 +374,6 @@ voteWithPermitNonce originateFn = do
 
   -- Advance one voting period to a voting stage.
   advanceToLevel (originationLevel + 2*dodPeriod)
-  cLevel <- getLevel
-  runIO $ putTextLn $ "2:" <> show cLevel
   -- Going to try calls with different nonces
   signed1@(_          , _) <- addDataToSign dodDao (Nonce 0) voteParam
   signed2@(dataToSign2, _) <- addDataToSign dodDao (Nonce 1) voteParam
@@ -390,26 +383,18 @@ voteWithPermitNonce originateFn = do
   params2 <- permitProtect dodOwner1 signed2
   params3 <- permitProtect dodOwner1 signed3
 
-  cLevel <- getLevel
-  runIO $ putTextLn $ "3:" <> show cLevel
   withSender dodOwner2 $ do
     -- Good nonce
     call dodDao (Call @"Vote") [params1]
 
-    cLevel <- getLevel
-    runIO $ putTextLn $ "4:" <> show cLevel
     -- Outdated nonce
     call dodDao (Call @"Vote") [params1]
       & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
-    cLevel <- getLevel
-    runIO $ putTextLn $ "5:" <> show cLevel
     -- Nonce from future
     call dodDao (Call @"Vote") [params3]
       & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
-    cLevel <- getLevel
-    runIO $ putTextLn $ "6:" <> show cLevel
     -- Good nonce after the previous successful entrypoint call
     call dodDao (Call @"Vote") [params2]
 
