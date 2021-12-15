@@ -27,7 +27,7 @@ import Test.Ligo.BaseDAO.Proposal.Config
 
 freezeTokens
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 freezeTokens originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
@@ -44,7 +44,7 @@ freezeTokens originateFn = do
 
 checkFreezeHistoryTracking
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => ((Config -> Config) -> OriginateFn m)
   -> m ()
 checkFreezeHistoryTracking originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -72,7 +72,7 @@ checkFreezeHistoryTracking originateFn = do
 
 canUnfreezeFromPreviousPeriod
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 canUnfreezeFromPreviousPeriod originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
@@ -99,7 +99,7 @@ canUnfreezeFromPreviousPeriod originateFn = do
 
 cannotUnfreezeStakedTokens
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 cannotUnfreezeStakedTokens originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
@@ -122,7 +122,7 @@ cannotUnfreezeStakedTokens originateFn = do
 
 cannotUnfreezeFromSamePeriod
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 cannotUnfreezeFromSamePeriod originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 

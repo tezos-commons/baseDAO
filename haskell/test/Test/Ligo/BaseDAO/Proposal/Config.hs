@@ -6,11 +6,8 @@
 
 module Test.Ligo.BaseDAO.Proposal.Config
   ( IsConfigDescExt (..)
-  , ConfigDesc (..)
   , (>>-)
 
-  , ConfigConstants (..)
-  , configConsts
   , ProposalFrozenTokensCheck (..)
   , RejectedProposalSlashValue (..)
   , DecisionLambdaAction (..)
@@ -40,61 +37,16 @@ import Test.Ligo.BaseDAO.Common.Errors (tooSmallXtzErrMsg)
 -- They can be useful outside of the tests, e.g. there are several commonly useful
 -- implementations of 'cProposalCheck' and we can add helpers represented as instances
 -- of this class.
-class IsConfigDescExt config configDesc where
+class IsConfigDescExt configDesc where
   -- | Fill a portion of config specified by descriptor.
   --
   -- For purposes of composing multiple descriptors we implement it as
   -- config modifier.
-  fillConfig :: configDesc -> config -> config
+  (>>-) :: configDesc -> DAO.Config -> DAO.Config
 
-instance IsConfigDescExt c () where
-  fillConfig () c = c
-
--- | Require many config descriptors to have 'IsConfigDescExt' instance.
-type family AreConfigDescsExt config descs :: Constraint where
-  AreConfigDescsExt _ '[] = ()
-  AreConfigDescsExt config (d ': ds) =
-    (IsConfigDescExt config d, AreConfigDescsExt config ds)
-
--- | Some config descriptor.
-data ConfigDesc config =
-  forall configDesc. IsConfigDescExt config configDesc => ConfigDesc configDesc
-
-instance (config ~ config1) =>
-  IsConfigDescExt config (ConfigDesc config1) where
-  fillConfig (ConfigDesc d) = fillConfig d
-
--- | Chaining capability.
-data ConfigDescChain a b = ConfigDescChain a b
-
-instance (IsConfigDescExt c a, IsConfigDescExt c b) =>
-         IsConfigDescExt c (ConfigDescChain a b) where
-  fillConfig (ConfigDescChain a b) = fillConfig b . fillConfig a
-
--- | Chains two descriptors.
--- In case they modify the same fields, the right-most takes priority.
 infixr 5 >>-
-(>>-) :: ConfigDesc c -> ConfigDesc c -> ConfigDesc c
-ConfigDesc a >>- ConfigDesc b = ConfigDesc (ConfigDescChain a b)
-
-
 -- Config descriptors
 ------------------------------------------------------------------------
-
-data ConfigConstants = ConfigConstants
-  { cmMaxProposals :: Maybe Natural
-  , cmMaxVoters :: Maybe Natural
-  , cmQuorumThreshold :: Maybe DAO.QuorumThreshold
-  , cmPeriod :: Maybe DAO.Period
-  , cmProposalFlushTime :: Maybe Natural
-  , cmProposalExpiredTime :: Maybe Natural
-  }
-
--- | Constructor for config descriptor that overrides config constants.
---
--- Example: @configConsts{ cmMaxVotes = 10 }@
-configConsts :: ConfigConstants
-configConsts = ConfigConstants Nothing Nothing Nothing Nothing Nothing Nothing
 
 data ProposalFrozenTokensCheck =
   ProposalFrozenTokensCheck (Lambda ("ppFrozenToken" :! Natural) ())
@@ -147,59 +99,65 @@ passProposerOnDecision target = DecisionLambdaAction $ do
 ------------------------------------------------------------------------
 
 testConfig
-  :: AreConfigDescsExt config [ConfigConstants, ProposalFrozenTokensCheck, RejectedProposalSlashValue]
-  => ConfigDesc config
-testConfig =
-  ConfigDesc (divideOnRejectionBy 2) >>-
-  ConfigDesc (proposalFrozenTokensMinBound 10) >>-
-  ConfigDesc configConsts
-    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100) }
+  :: DAO.Config -> DAO.Config
+testConfig configIn =
+  (divideOnRejectionBy 2) >>-
+  (proposalFrozenTokensMinBound 10) >>- configIn
 
 -- | Config with longer voting period and bigger quorum threshold
 -- Needed for vote related tests that do not call `flush`
 voteConfig
-  :: AreConfigDescsExt config [ConfigConstants, ProposalFrozenTokensCheck]
-  => ConfigDesc config
-voteConfig = ConfigDesc $
-  ConfigDesc (proposalFrozenTokensMinBound 10) >>-
-  ConfigDesc configConsts
-    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 4 100) }
+  :: DAO.Config -> DAO.Config
+voteConfig configIn =
+  (proposalFrozenTokensMinBound 10) >>- configIn
 
 badRejectedValueConfig
-  :: AreConfigDescsExt config '[RejectedProposalSlashValue]
-  => ConfigDesc config
-badRejectedValueConfig = ConfigDesc doNonsenseOnRejection
+  :: RejectedProposalSlashValue
+badRejectedValueConfig = doNonsenseOnRejection
 
 decisionLambdaConfig
-  :: AreConfigDescsExt config '[DecisionLambdaAction]
-  => TAddress ("proposer" :! Address) -> ConfigDesc config
-decisionLambdaConfig target = ConfigDesc $ passProposerOnDecision target
+  :: TAddress ("proposer" :! Address) -> DecisionLambdaAction
+decisionLambdaConfig target = passProposerOnDecision target
 
 --------------------------------------------------------------------------------
---
-instance IsConfigDescExt DAO.Config ConfigConstants where
-  fillConfig ConfigConstants{..} DAO.Config{..} = DAO.Config
-    { cMaxProposals = cmMaxProposals ?: cMaxProposals
-    , cMaxVoters = cmMaxVoters ?: cMaxVoters
-    , cProposalFlushLevel = cmProposalFlushTime ?: cProposalFlushLevel
-    , cProposalExpiredLevel = cmProposalExpiredTime ?: cProposalExpiredLevel
-    , ..
-    }
-
-instance IsConfigDescExt DAO.Config DAO.Period where
-  fillConfig vp DAO.Config{..} = DAO.Config
+instance IsConfigDescExt DAO.Period where
+  vp >>- DAO.Config{..} = DAO.Config
     { cPeriod = vp
     , ..
     }
 
-instance IsConfigDescExt DAO.Config DAO.FixedFee where
-  fillConfig ff DAO.Config{..} = DAO.Config
+instance IsConfigDescExt DAO.FlushLevel where
+  (DAO.FlushLevel vp) >>- DAO.Config{..} = DAO.Config
+    { cProposalFlushLevel = vp
+    , ..
+    }
+
+instance IsConfigDescExt DAO.MaxVoters where
+  (DAO.MaxVoters vp) >>- DAO.Config{..} = DAO.Config
+    { cMaxVoters = vp
+    , ..
+    }
+
+instance IsConfigDescExt DAO.ExpireLevel where
+  (DAO.ExpireLevel vp) >>- DAO.Config{..} = DAO.Config
+    { cProposalExpiredLevel = vp
+    , ..
+    }
+
+instance IsConfigDescExt DAO.MaxProposals where
+  (DAO.MaxProposals vp) >>- DAO.Config{..} = DAO.Config
+    { cMaxProposals = vp
+    , ..
+    }
+
+instance IsConfigDescExt DAO.FixedFee where
+  ff >>- DAO.Config{..} = DAO.Config
     { cFixedProposalFee = ff
     , ..
     }
 
-instance IsConfigDescExt DAO.Config ProposalFrozenTokensCheck where
-  fillConfig (ProposalFrozenTokensCheck check) DAO.Config{..} = DAO.Config
+instance IsConfigDescExt ProposalFrozenTokensCheck where
+  (ProposalFrozenTokensCheck check) >>- DAO.Config{..} = DAO.Config
     { cProposalCheck = do
         dip drop
         toFieldNamed #ppFrozenToken
@@ -207,8 +165,8 @@ instance IsConfigDescExt DAO.Config ProposalFrozenTokensCheck where
     , ..
     }
 
-instance IsConfigDescExt DAO.Config RejectedProposalSlashValue where
-  fillConfig (RejectedProposalSlashValue toSlashValue) DAO.Config{..} =
+instance IsConfigDescExt RejectedProposalSlashValue where
+  (RejectedProposalSlashValue toSlashValue) >>- DAO.Config{..} =
     DAO.Config
     { cRejectedProposalSlashValue = do
         dip drop
@@ -217,8 +175,8 @@ instance IsConfigDescExt DAO.Config RejectedProposalSlashValue where
     , ..
     }
 
-instance IsConfigDescExt DAO.Config DecisionLambdaAction where
-  fillConfig (DecisionLambdaAction lam) DAO.Config{..} =
+instance IsConfigDescExt DecisionLambdaAction where
+  (DecisionLambdaAction lam) >>- DAO.Config{..} =
     DAO.Config
     { cDecisionLambda = do
         getField #diProposal
@@ -233,22 +191,22 @@ instance IsConfigDescExt DAO.Config DecisionLambdaAction where
     , ..
     }
 
-instance IsConfigDescExt DAO.Config ("changePercent" :! Natural) where
-  fillConfig (N cp) DAO.Config{..} =
+instance IsConfigDescExt ("changePercent" :! Natural) where
+  (N cp) >>- DAO.Config{..} =
     DAO.Config
     { cQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
     , ..
     }
 
-instance IsConfigDescExt DAO.Config ("maxChangePercent" :! Natural) where
-  fillConfig (N cp) DAO.Config{..} =
+instance IsConfigDescExt ("maxChangePercent" :! Natural) where
+  (N cp) >>- DAO.Config{..} =
     DAO.Config
     { cMaxQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
     , ..
     }
 
-instance IsConfigDescExt DAO.Config ("governanceTotalSupply" :! Natural) where
-  fillConfig (N ts) DAO.Config{..} =
+instance IsConfigDescExt ("governanceTotalSupply" :! Natural) where
+  (N ts) >>- DAO.Config{..} =
     DAO.Config
     { cGovernanceTotalSupply = DAO.GovernanceTotalSupply ts
     , ..

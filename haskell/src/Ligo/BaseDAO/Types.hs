@@ -18,6 +18,10 @@ module Ligo.BaseDAO.Types
   , QuorumThreshold (..)
   , QuorumThresholdAtCycle (..)
   , Period (..)
+  , FlushLevel (..)
+  , MaxProposals (..)
+  , MaxVoters (..)
+  , ExpireLevel (..)
   , VoteParam (..)
   , Voter (..)
   , QuorumFraction (..)
@@ -685,6 +689,34 @@ newtype FixedFee = FixedFee Natural
   deriving anyclass IsoValue
 
 type instance AsRPC FixedFee = FixedFee
+
+newtype FlushLevel = FlushLevel Natural
+  deriving stock (Show, Generic, Eq)
+  deriving newtype (Num)
+  deriving anyclass IsoValue
+
+type instance AsRPC FlushLevel = FlushLevel
+
+newtype ExpireLevel = ExpireLevel Natural
+  deriving stock (Show, Generic, Eq)
+  deriving newtype (Num)
+  deriving anyclass IsoValue
+
+type instance AsRPC ExpireLevel = ExpireLevel
+
+newtype MaxProposals = MaxProposals Natural
+  deriving stock (Show, Generic, Eq)
+  deriving newtype (Num)
+  deriving anyclass IsoValue
+
+type instance AsRPC MaxProposals = MaxProposals
+
+newtype MaxVoters = MaxVoters Natural
+  deriving stock (Show, Generic, Eq)
+  deriving newtype (Num)
+  deriving anyclass IsoValue
+
+type instance AsRPC MaxVoters = MaxVoters
 
 data DecisionLambdaInput = DecisionLambdaInput
   { diProposal :: Proposal

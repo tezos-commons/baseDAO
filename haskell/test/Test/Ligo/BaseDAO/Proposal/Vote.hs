@@ -30,7 +30,7 @@ import Test.Ligo.BaseDAO.Proposal.Config
 
 voteNonExistingProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 voteNonExistingProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
@@ -59,7 +59,7 @@ voteNonExistingProposal originateFn = do
 
 voteMultiProposals
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 voteMultiProposals originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
@@ -104,7 +104,7 @@ voteMultiProposals originateFn = do
 
 proposalCorrectlyTrackVotes
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => ((Config -> Config) -> OriginateFn m)
   -> m ()
 proposalCorrectlyTrackVotes originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -210,7 +210,7 @@ proposalCorrectlyTrackVotes originateFn = do
 
 voteOutdatedProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 voteOutdatedProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
@@ -247,7 +247,7 @@ voteOutdatedProposal originateFn = do
 
 voteValidProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => ((Config -> Config) -> OriginateFn m)
   -> m ()
 voteValidProposal originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -284,7 +284,7 @@ voteValidProposal originateFn = do
   --
 voteDeletedProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => ((Config -> Config) -> OriginateFn m)
   -> m ()
 voteDeletedProposal originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -316,7 +316,7 @@ voteDeletedProposal originateFn = do
 
 voteWithPermit
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 voteWithPermit originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner1 $
@@ -345,11 +345,16 @@ voteWithPermit originateFn = do
 
 voteWithPermitNonce
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 voteWithPermitNonce originateFn = do
 
-  DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
+
+  DaoOriginateData{..} <- originateFn (\c -> Period 40 >>- voteConfig c ) defaultQuorumThreshold
+  runIO $ putTextLn $ show dodPeriod
+
   originationLevel <- getOriginationLevel dodDao
+  cLevel <- getLevel
+  runIO $ putTextLn $ show (originationLevel, cLevel)
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount :! 60)
@@ -359,6 +364,8 @@ voteWithPermitNonce originateFn = do
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (originationLevel + dodPeriod)
+  cLevel <- getLevel
+  runIO $ putTextLn $ "1:" <> show cLevel
 
   -- Create sample proposal
   key1 <- createSampleProposal 1 dodOwner1 dodDao
@@ -372,6 +379,8 @@ voteWithPermitNonce originateFn = do
 
   -- Advance one voting period to a voting stage.
   advanceToLevel (originationLevel + 2*dodPeriod)
+  cLevel <- getLevel
+  runIO $ putTextLn $ "2:" <> show cLevel
   -- Going to try calls with different nonces
   signed1@(_          , _) <- addDataToSign dodDao (Nonce 0) voteParam
   signed2@(dataToSign2, _) <- addDataToSign dodDao (Nonce 1) voteParam
@@ -381,18 +390,26 @@ voteWithPermitNonce originateFn = do
   params2 <- permitProtect dodOwner1 signed2
   params3 <- permitProtect dodOwner1 signed3
 
+  cLevel <- getLevel
+  runIO $ putTextLn $ "3:" <> show cLevel
   withSender dodOwner2 $ do
     -- Good nonce
     call dodDao (Call @"Vote") [params1]
 
+    cLevel <- getLevel
+    runIO $ putTextLn $ "4:" <> show cLevel
     -- Outdated nonce
     call dodDao (Call @"Vote") [params1]
       & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
+    cLevel <- getLevel
+    runIO $ putTextLn $ "5:" <> show cLevel
     -- Nonce from future
     call dodDao (Call @"Vote") [params3]
       & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
 
+    cLevel <- getLevel
+    runIO $ putTextLn $ "6:" <> show cLevel
     -- Good nonce after the previous successful entrypoint call
     call dodDao (Call @"Vote") [params2]
 
@@ -402,11 +419,10 @@ voteWithPermitNonce originateFn = do
 
 votesBoundedValue
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => ((Config -> Config) -> OriginateFn m) -> m ()
 votesBoundedValue originateFn = do
   DaoOriginateData{..} <- originateFn
-    ( voteConfig >>-
-      ConfigDesc configConsts{ cmMaxVoters = Just 1 }
+    (\c -> (MaxVoters 1) >>- voteConfig c
     ) defaultQuorumThreshold
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount :! 2)

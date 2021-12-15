@@ -48,15 +48,15 @@ calculateThreshold mcp cp (GovernanceTotalSupply gts) staked oldQt =
 
 checkQuorumThresholdDynamicUpdate
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => ((Config -> Config) -> OriginateFn m)
   -> m ()
 checkQuorumThresholdDynamicUpdate originateFn = do
   DaoOriginateData{..} <- originateFn
-      ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
-      >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
-      >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
-      >>- (ConfigDesc $ Period 20)
-      >>- (ConfigDesc configConsts)
+      (\c -> (#changePercent :! (5 :: Natural))
+      >>- (#maxChangePercent :! (19 :: Natural))
+      >>- (#governanceTotalSupply :! (100 :: Natural))
+      >>- Period 20
+      >>- c
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1
   let dao = dodDao
@@ -94,15 +94,15 @@ checkQuorumThresholdDynamicUpdate originateFn = do
 
 checkQuorumThresholdDynamicUpdateUpperBound
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => ((Config -> Config) -> OriginateFn m)
   -> m ()
 checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   DaoOriginateData{..} <- originateFn
-      ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
-      >>- (ConfigDesc $ (#maxChangePercent :! (7 :: Natural)))
-      >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
-      >>- (ConfigDesc $ Period 20)
-      >>- (ConfigDesc configConsts)
+      (\c -> (#changePercent :! (5 :: Natural))
+      >>- (#maxChangePercent :! (7 :: Natural))
+      >>- (#governanceTotalSupply :! (100 :: Natural))
+      >>- Period 20
+      >>- c
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1
   let dao = dodDao
@@ -139,15 +139,15 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
 
 checkQuorumThresholdDynamicUpdateLowerBound
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => ((Config -> Config) -> OriginateFn m)
   -> m ()
 checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   DaoOriginateData{..} <- originateFn
-      ((ConfigDesc $ (#changePercent :! (25 :: Natural)))
-      >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
-      >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
-      >>- (ConfigDesc $ Period 20)
-      >>- (ConfigDesc configConsts)
+      (\c -> (#changePercent :! (25 :: Natural))
+      >>- (#maxChangePercent :! (19 :: Natural))
+      >>- (#governanceTotalSupply :! (100 :: Natural))
+      >>- Period 20
+      >>- c
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1
   let dao = dodDao
@@ -184,15 +184,15 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
 
 checkProposalSavesQuorum
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => ((Config -> Config) -> OriginateFn m)
   -> m ()
 checkProposalSavesQuorum originateFn = do
   DaoOriginateData{..} <- originateFn
-      ((ConfigDesc $ (#changePercent :! (5 :: Natural)))
-      >>- (ConfigDesc $ (#maxChangePercent :! (19 :: Natural)))
-      >>- (ConfigDesc $ (#governanceTotalSupply :! (100 :: Natural)))
-      >>- (ConfigDesc $ Period 20)
-      >>- (ConfigDesc configConsts)
+      (\c -> (#changePercent :! (5 :: Natural))
+      >>- (#maxChangePercent :! (19 :: Natural))
+      >>- (#governanceTotalSupply :! (100 :: Natural))
+      >>- Period 20
+      >>-c
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1
   let dao = dodDao
@@ -233,9 +233,9 @@ proposalIsRejectedIfNoQuorum
 proposalIsRejectedIfNoQuorum = do
   DaoOriginateData{..} <-
     originateLigoDaoWithConfigDesc dynRecUnsafe
-      ((ConfigDesc $ Period 60)
-      >>- (ConfigDesc (FixedFee 42))
-      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 1800 })
+      (\c -> Period 60
+      >>- FixedFee 42
+      >>- ExpireLevel 1800 >>- c
       ) (mkQuorumThreshold 1 20)
   let proposer = dodOwner1
   let voter = dodOwner2
@@ -284,10 +284,8 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   DaoOriginateData{..} <-
     originateLigoDaoWithConfigDesc dynRecUnsafe
-      (testConfig
-      >>- (ConfigDesc $ Period 60)
-      >>- (ConfigDesc (FixedFee 42))
-      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 1800 })
+      (\c ->
+        (Period 60) >>- (FixedFee 42) >>- (ExpireLevel 1800) >>- testConfig c
       ) $ mkQuorumThreshold 1 20
   let proposer = dodOwner1
   let voter = dodOwner2

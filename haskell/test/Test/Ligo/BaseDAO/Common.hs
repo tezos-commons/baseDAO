@@ -44,7 +44,7 @@ import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common.Errors as Errors
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
-import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
+import Test.Ligo.BaseDAO.Proposal.Config ((>>-))
 
 type OriginateFn m = QuorumThreshold -> m DaoOriginateData
 
@@ -200,10 +200,10 @@ originateLigoDaoWithConfig extra config qt = do
 originateLigoDaoWithConfigDesc
  :: MonadCleveland caps base m
  => ContractExtra
- -> ConfigDesc Config
+ -> (Config -> Config)
  -> OriginateFn m
-originateLigoDaoWithConfigDesc extra config =
-  originateLigoDaoWithConfig extra (fillConfig config defaultConfig)
+originateLigoDaoWithConfigDesc extra configFn =
+  originateLigoDaoWithConfig extra (configFn defaultConfig)
 
 originateLigoDao :: MonadCleveland caps base m => OriginateFn m
 originateLigoDao =
