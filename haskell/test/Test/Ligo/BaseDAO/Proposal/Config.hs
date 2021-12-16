@@ -6,7 +6,6 @@
 
 module Test.Ligo.BaseDAO.Proposal.Config
   ( IsConfigDescExt (..)
-  , (>>-)
 
   , ProposalFrozenTokensCheck (..)
   , RejectedProposalSlashValue (..)
@@ -19,7 +18,7 @@ module Test.Ligo.BaseDAO.Proposal.Config
   ) where
 
 import Lorentz
-import Universum (Constraint, fromIntegral, (?:))
+import Universum (fromIntegral)
 
 import Morley.Util.Named
 
