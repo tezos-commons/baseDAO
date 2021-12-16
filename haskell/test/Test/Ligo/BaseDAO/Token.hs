@@ -13,6 +13,7 @@ import Morley.Michelson.Runtime.GState (genesisAddress1, genesisAddress2)
 import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
 
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 
@@ -49,7 +50,7 @@ transferContractTokensScenario originateFn = do
 
   withSender dodOwner1 $
     call dodDao (Call @"Transfer_contract_tokens") param
-    & expectCustomErrorNoArg #nOT_ADMIN
+    & expectFailedWith notAdmin
 
   withSender dodAdmin $
     call dodDao (Call @"Transfer_contract_tokens") param

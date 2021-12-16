@@ -15,7 +15,6 @@ import Lorentz hiding (assert, now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Morley.Micheline as MM
 import Morley.Michelson.Runtime.Dummy (dummyLevel)
-import Morley.Michelson.Text (MText(..))
 import qualified Morley.Michelson.Typed as T
 import qualified Morley.Michelson.Untyped as U
 import Test.Cleveland
@@ -265,11 +264,11 @@ parseNettestError :: Either TransferFailure a -> Maybe ModelError
 parseNettestError = \case
   Right _ -> Nothing
   Left (FailedWith _ (EOTVExpression expr)) -> case MM.fromExpression @U.Value expr of
-    Right (U.ValueString err) -> Just $ contractErrorToModelError $ unMText err
-    Right (U.ValuePair (U.ValueString err) _) -> Just $ contractErrorToModelError $ unMText err
+    Right (U.ValueInt err) -> Just $ contractErrorToModelError err
+    Right (U.ValuePair (U.ValueInt err) _) -> Just $ contractErrorToModelError err
     err -> error $ "Unexpected error:" <> show err
-  Left (FailedWith _ (EOTVTypedValue (T.VString (unMText -> tval)))) ->
-    Just $ contractErrorToModelError tval
-  Left (FailedWith _ (EOTVTypedValue (T.VPair (T.VString (unMText -> tval), _)))) ->
-    Just $ contractErrorToModelError tval
+  Left (FailedWith _ (EOTVTypedValue (T.VNat tval))) ->
+    Just $ contractErrorToModelError $ toInteger tval
+  Left (FailedWith _ (EOTVTypedValue (T.VPair (T.VNat tval, _)))) ->
+    Just $ contractErrorToModelError $ toInteger tval
   Left err -> error $ "Unexpected error:" <> show err

@@ -27,6 +27,7 @@ import Lorentz hiding (assert, (>>))
 import Morley.Util.Named
 import Test.Cleveland
 
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Common
@@ -189,7 +190,7 @@ cannotProposeWithInsufficientTokens = do
         , ppFrom = dodOwner1
         }
   withSender proposer $ call dodDao (Call @"Propose") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectFailedWith notEnoughFrozenTokens
 
 rejectProposal
   :: (MonadCleveland caps base m, HasCallStack)
@@ -210,7 +211,7 @@ rejectProposal originateFn = do
   advanceToLevel (startLevel + dodPeriod)
 
   (withSender dodOwner1 $ call dodDao (Call @"Propose") params)
-    & expectCustomError #fAIL_PROPOSAL_CHECK tooSmallXtzErrMsg
+    & expectFailedWith (failProposalCheck, tooSmallXtzErrMsg)
 
 nonUniqueProposal
   :: (MonadCleveland caps base m, HasCallStack)
@@ -226,7 +227,7 @@ nonUniqueProposal originateFn = do
   advanceToLevel (startLevel + dodPeriod)
   _ <- createSampleProposal 1 dodOwner1 dodDao
   createSampleProposal 1 dodOwner1 dodDao
-    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
+    & expectFailedWith proposalNotUnique
 
 nonUniqueProposalEvenAfterDrop
   :: (MonadCleveland caps base m, HasCallStack)
@@ -243,7 +244,7 @@ nonUniqueProposalEvenAfterDrop originateFn = do
   key1 <- createSampleProposal 1 dodOwner1 dodDao
   withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   createSampleProposal 1 dodOwner1 dodDao
-    & expectCustomErrorNoArg #pROPOSAL_NOT_UNIQUE
+    & expectFailedWith proposalNotUnique
 
 nonProposalPeriodProposal
   :: (MonadCleveland caps base m, HasCallStack)
@@ -265,7 +266,7 @@ nonProposalPeriodProposal originateFn = do
         }
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
-    & expectCustomErrorNoArg #nOT_PROPOSING_STAGE
+    & expectFailedWith notProposingStage
 
 burnsFeeOnFailure
   :: forall caps base m. (MonadCleveland caps base m)
@@ -391,7 +392,7 @@ insufficientTokenProposal originateFn getProposalAmountFn = do
         }
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectFailedWith notEnoughFrozenTokens
   amt <- getProposalAmountFn (unTAddress dodDao)
   amt @== 0
 
@@ -430,7 +431,7 @@ insufficientTokenVote originateFn = do
   advanceToLevel (startLevel + 2*dodPeriod)
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") params
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectFailedWith notEnoughFrozenTokens
 
 dropProposal
   :: (MonadCleveland caps base m, HasCallStack)
@@ -479,7 +480,7 @@ dropProposal originateFn = withFrozenCallStack $ do
   -- `key2` is not yet expired since it has to be more than 60
   withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key2
-      & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET
+      & expectFailedWith dropProposalConditionNotMet
 
   advanceToLevel (proposalStart2 + 50)
   -- `key2` is expired, so it is possible to `drop_proposal`
@@ -489,7 +490,7 @@ dropProposal originateFn = withFrozenCallStack $ do
   -- `key3` is not yet expired
   withSender dodOwner2 $ do
     call dodDao (Call @"Drop_proposal") key3
-      & expectCustomErrorNoArg #dROP_PROPOSAL_CONDITION_NOT_MET
+      & expectFailedWith dropProposalConditionNotMet
 
   advanceToLevel (proposalStart3 + 50)
   -- proposers can delete their proposal
@@ -499,7 +500,7 @@ dropProposal originateFn = withFrozenCallStack $ do
   -- calling drop proposal again results in an error
   withSender dodOwner1 $ do
     call dodDao (Call @"Drop_proposal") key3
-      & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+      & expectFailedWith proposalNotExist
 
   -- 30 tokens are frozen in total, but only 15 tokens are returned after drop_proposal
   checkBalance dodDao dodOwner1 15
@@ -529,4 +530,5 @@ proposalBoundedValue originateFn = do
   withSender dodOwner1 $ do
     call dodDao (Call @"Propose") params
     call dodDao (Call @"Propose") params
-      & expectCustomErrorNoArg #mAX_PROPOSALS_REACHED
+      & expectFailedWith maxProposalsReached
+

@@ -25,6 +25,7 @@ import Test.Cleveland.Lorentz (contractConsumer)
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.RegistryDAO.Types
@@ -750,8 +751,8 @@ test_RegistryDAO =
 expectFailProposalCheck
   :: (MonadCleveland caps base m)
   => MText -> m a -> m ()
-expectFailProposalCheck =
-  expectCustomError #fAIL_PROPOSAL_CHECK
+expectFailProposalCheck err =
+  expectFailedWith (failProposalCheck, err)
 
 --------------------------------------------------------------------------
 -- Helper

@@ -23,6 +23,7 @@ import Morley.Util.Named
 import Test.Cleveland
 import Test.Cleveland.Lorentz (contractConsumer)
 
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
@@ -396,7 +397,7 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   advanceToLevel (originationLevel + 5*dodPeriod + 1)
   -- `key1` is now expired, and `key2` is not yet expired.
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
-    & expectCustomErrorNoArg #eXPIRED_PROPOSAL
+    & expectFailedWith expiredProposal
 
   -- `key1` is expired, so it is possible to `drop_proposal`
   withSender dodOwner2 $ do
@@ -452,7 +453,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
 
   -- no proposal exist at this point, so flush is empty
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-    & expectCustomErrorNoArg #eMPTY_FLUSH
+    & expectFailedWith emptyFlush
 
   withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount :! 20)
   withSender dodOwner2 $ call dodDao (Call @"Freeze") (#amount :! 20)
@@ -476,7 +477,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   -- the proposal exists at this point (and has votes), but it can't be flushed
   -- yet, because it needs some more level to meet the `proposal_flush_time`
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-    & expectCustomErrorNoArg #eMPTY_FLUSH
+    & expectFailedWith emptyFlush
 
   -- however after enough levels are past flushing is allowed
   advanceToLevel (proposalStart + 42)

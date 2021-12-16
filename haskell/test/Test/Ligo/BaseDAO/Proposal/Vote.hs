@@ -22,6 +22,7 @@ import Lorentz hiding (assert, (>>))
 import Test.Cleveland
 import Morley.Util.Named
 
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
@@ -55,7 +56,7 @@ voteNonExistingProposal originateFn = do
   advanceToLevel (startLevel + 4*dodPeriod)
 
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+    & expectFailedWith proposalNotExist
 
 voteMultiProposals
   :: (MonadCleveland caps base m, HasCallStack)
@@ -243,7 +244,7 @@ voteOutdatedProposal originateFn = do
     -- Advance two voting period to another voting stage.
     advanceToLevel (startLevel + 4*dodPeriod)
     call dodDao (Call @"Vote") [params]
-      & expectCustomErrorNoArg #vOTING_STAGE_OVER
+      & expectFailedWith votingStageOver
 
 voteValidProposal
   :: (MonadCleveland caps base m, HasCallStack)
@@ -312,7 +313,7 @@ voteDeletedProposal originateFn = do
   advanceToLevel (startLevel + 4*dodPeriod)
   withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
   withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
-    & expectCustomErrorNoArg #pROPOSAL_NOT_EXIST
+    & expectFailedWith proposalNotExist
 
 voteWithPermit
   :: (MonadCleveland caps base m, HasCallStack)
@@ -387,11 +388,11 @@ voteWithPermitNonce originateFn = do
 
     -- Outdated nonce
     call dodDao (Call @"Vote") [params1]
-      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
+      & expectFailedWith (missigned, (lPackValue dataToSign2))
 
     -- Nonce from future
     call dodDao (Call @"Vote") [params3]
-      & expectCustomError #mISSIGNED (checkedCoerce $ lPackValue dataToSign2)
+      & expectFailedWith (missigned, (lPackValue dataToSign2))
 
     -- Good nonce after the previous successful entrypoint call
     call dodDao (Call @"Vote") [params2]
@@ -437,4 +438,4 @@ votesBoundedValue originateFn = do
 
   withSender dodOwner2 $ do
     call dodDao (Call @"Vote") [upvote']
-      & expectCustomErrorNoArg #mAX_VOTERS_REACHED
+      & expectFailedWith maxVotersReached

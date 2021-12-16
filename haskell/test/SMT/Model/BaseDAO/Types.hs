@@ -37,6 +37,7 @@ import Morley.Tezos.Address (ContractHash(..))
 import Morley.Tezos.Core
 
 import Ligo.BaseDAO.Types
+import Ligo.BaseDAO.ErrorCodes
 
 -- | Transformer used in haskell implementation of BaseDAO
 newtype ModelT a = ModelT
@@ -202,7 +203,6 @@ data ContractType
 -- | The possible contract errors for the models
 data ModelError
   = NOT_DELEGATE
-  | BAD_ENTRYPOINT_PARAMETER
   | EMPTY_FLUSH
   | MAX_PROPOSALS_REACHED
   | NOT_ENOUGH_FROZEN_TOKENS
@@ -229,25 +229,23 @@ instance Buildable ModelError where
 instance (Buildable a, Buildable b) => Buildable (Either a b) where
   build = genericF
 
-contractErrorToModelError :: Text -> ModelError
-contractErrorToModelError txtError =
-  case txtError of
-    "NOT_DELEGATE" -> NOT_DELEGATE
-    "BAD_ENTRYPOINT_PARAMETER" -> BAD_ENTRYPOINT_PARAMETER
-    "EMPTY_FLUSH" -> EMPTY_FLUSH
-    "MAX_PROPOSALS_REACHED" -> MAX_PROPOSALS_REACHED
-    "NOT_ENOUGH_FROZEN_TOKENS" -> NOT_ENOUGH_FROZEN_TOKENS
-    "NOT_PROPOSING_STAGE" -> NOT_PROPOSING_STAGE
-    "PROPOSAL_NOT_UNIQUE" -> PROPOSAL_NOT_UNIQUE
-    "PROPOSAL_NOT_EXIST" -> PROPOSAL_NOT_EXIST
-    "EXPIRED_PROPOSAL" -> EXPIRED_PROPOSAL
-    "MISSIGNED" -> MISSIGNED
-    "VOTING_STAGE_OVER" -> VOTING_STAGE_OVER
-    "DROP_PROPOSAL_CONDITION_NOT_MET" -> DROP_PROPOSAL_CONDITION_NOT_MET
-    "NOT_ADMIN" -> NOT_ADMIN
-    "NOT_PENDING_ADMIN" -> NOT_PENDING_ADMIN
-    "BAD_TOKEN_CONTRACT" -> BAD_TOKEN_CONTRACT
-    "ENTRYPOINT_NOT_FOUND" -> ENTRYPOINT_NOT_FOUND
-    "UNPACKING_FAILED" -> UNPACKING_FAILED
-    "FAIL_PROPOSAL_CHECK" -> FAIL_PROPOSAL_CHECK
-    _ -> error txtError
+contractErrorToModelError :: Integer -> ModelError
+contractErrorToModelError errorCode
+  | (errorCode == toInteger notDelegate) = NOT_DELEGATE
+  | (errorCode == toInteger emptyFlush) = EMPTY_FLUSH
+  | (errorCode == toInteger maxProposalsReached) = MAX_PROPOSALS_REACHED
+  | (errorCode == toInteger notEnoughFrozenTokens) = NOT_ENOUGH_FROZEN_TOKENS
+  | (errorCode == toInteger notProposingStage) = NOT_PROPOSING_STAGE
+  | (errorCode == toInteger proposalNotUnique) = PROPOSAL_NOT_UNIQUE
+  | (errorCode == toInteger proposalNotExist) = PROPOSAL_NOT_EXIST
+  | (errorCode == toInteger expiredProposal) = EXPIRED_PROPOSAL
+  | (errorCode == toInteger missigned) = MISSIGNED
+  | (errorCode == toInteger votingStageOver) = VOTING_STAGE_OVER
+  | (errorCode == toInteger dropProposalConditionNotMet) = DROP_PROPOSAL_CONDITION_NOT_MET
+  | (errorCode == toInteger notAdmin) = NOT_ADMIN
+  | (errorCode == toInteger notPendingAdmin) = NOT_PENDING_ADMIN
+  | (errorCode == toInteger badTokenContract) = BAD_TOKEN_CONTRACT
+  | (errorCode == toInteger entrypointNotFound) = ENTRYPOINT_NOT_FOUND
+  | (errorCode == toInteger unpackingFailed) = UNPACKING_FAILED
+  | (errorCode == toInteger failProposalCheck) = FAIL_PROPOSAL_CHECK
+  | otherwise = error $ toText $ show errorCode

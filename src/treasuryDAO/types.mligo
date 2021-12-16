@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 #include "../types.mligo"
+#include "../error_codes.mligo"
 
 
 (*
@@ -33,4 +34,5 @@ type treasury_dao_proposal_metadata =
 let unpack_proposal_metadata (pm: proposal_metadata) : treasury_dao_proposal_metadata =
   match ((Bytes.unpack pm) : (treasury_dao_proposal_metadata option)) with
   | Some (v) -> v
-  | None -> (failwith ("UNPACKING_PROPOSAL_METADATA_FAILED") : treasury_dao_proposal_metadata)
+  | None -> (failwith unpacking_proposal_metadata_failed : treasury_dao_proposal_metadata)
+

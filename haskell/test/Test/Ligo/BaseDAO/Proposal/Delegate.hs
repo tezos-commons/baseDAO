@@ -12,6 +12,7 @@ import Morley.Util.Named
 import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
 
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
@@ -64,10 +65,10 @@ addRemoveDelegate originateFn = do
     call dodDao (Call @"Update_delegate") [param False]
 
   withSender dodOperator1 $ call dodDao (Call @"Vote") [vote]
-    & expectCustomErrorNoArg #nOT_DELEGATE
+    & expectFailedWith notDelegate
   advanceToLevel (startLevel + 3*dodPeriod)
   withSender dodOperator1 $ call dodDao (Call @"Propose") (params 2)
-    & expectCustomErrorNoArg #nOT_DELEGATE
+    & expectFailedWith notDelegate
 
 
 updateDelegates

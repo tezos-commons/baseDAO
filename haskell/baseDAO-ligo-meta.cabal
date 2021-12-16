@@ -27,6 +27,7 @@ source-repository head
 library
   exposed-modules:
       Ligo.BaseDAO.Common.Types
+      Ligo.BaseDAO.ErrorCodes
       Ligo.BaseDAO.Types
       Ligo.BaseDAO.TZIP16Metadata
       Ligo.Typescript
@@ -194,6 +195,7 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Common
       Test.Ligo.BaseDAO.Common.Errors
       Test.Ligo.BaseDAO.Common.StorageHelper
+      Test.Ligo.BaseDAO.ErrorCode
       Test.Ligo.BaseDAO.Management
       Test.Ligo.BaseDAO.Management.TransferOwnership
       Test.Ligo.BaseDAO.OffChainViews

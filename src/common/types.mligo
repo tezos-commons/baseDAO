@@ -5,6 +5,7 @@
 #define COMMON_TYPES_H
 
 #include "../types.mligo"
+#include "../error_codes.mligo"
 
 // -- Transfer -- //
 
@@ -29,8 +30,8 @@ type transfer_type =
 let unpack_transfer_type_list (key_name, packed_b: string * bytes) : transfer_type list =
   match ((Bytes.unpack packed_b) : (transfer_type list) option) with
   | Some (v) -> v
-  | None -> ([%Michelson ({| { FAILWITH } |} : (string * string) -> transfer_type list)]
-              ("UNPACKING_FAILED", key_name) : transfer_type list)
+  | None -> ([%Michelson ({| { FAILWITH } |} : (nat * string) -> transfer_type list)]
+              (unpacking_failed, key_name) : transfer_type list)
 
 (*
  * Non-failing unpack function.

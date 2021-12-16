@@ -5,10 +5,11 @@
 #define COMMON_ERRORS_H
 
 #include "types.mligo"
+#include "../error_codes.mligo"
 
 let fail_proposal_check (msg : string) : unit =
-  ([%Michelson ({| { FAILWITH } |} : (string * string) -> unit)]
-    ("FAIL_PROPOSAL_CHECK", msg) : unit)
+  ([%Michelson ({| { FAILWITH } |} : (nat * string) -> unit)]
+    (fail_proposal_check, msg) : unit)
 
 // Xtz transfer amount cannot be 0
 let zero_mutez_err_msg = "ZERO_MUTEZ"
