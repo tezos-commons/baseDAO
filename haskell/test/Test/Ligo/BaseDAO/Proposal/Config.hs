@@ -7,7 +7,6 @@
 module Test.Ligo.BaseDAO.Proposal.Config
   ( IsConfigDescExt (..)
 
-  , ProposalFrozenTokensCheck (..)
   , RejectedProposalSlashValue (..)
   , DecisionLambdaAction (..)
 
