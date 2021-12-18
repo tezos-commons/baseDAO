@@ -9,15 +9,16 @@ module Ligo.BaseDAO.Contract
   , baseDAOTreasuryStorageLigo
   ) where
 
-import Michelson.Test.Import (embedContract)
-import Michelson.Typed
+import Test.Cleveland.Lorentz (embedContract)
+import Morley.Michelson.Typed
+import qualified Lorentz as L
 
 import Ligo.BaseDAO.Types
 import Ligo.Util
 
 baseDAOContractLigo :: Contract (ToT Parameter) (ToT FullStorage)
-baseDAOContractLigo =
-  $$(embedContract @(ToT Parameter) @(ToT FullStorage) "resources/baseDAO.tz")
+baseDAOContractLigo = L.toMichelsonContract
+  $$(embedContract @Parameter @FullStorage "resources/baseDAO.tz")
 
 baseDAORegistryStorageLigo :: FullStorage
 baseDAORegistryStorageLigo =

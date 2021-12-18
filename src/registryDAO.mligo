@@ -86,6 +86,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
   | Update_receivers_proposal _urp -> unit
   | Configuration_proposal _cp -> unit
   | Update_guardian _guardian -> unit
+  | Update_contract_delegate _ -> unit
 
 (*
  * Proposal rejection return lambda: returns `slash_scale_value * frozen / slash_division_value`
@@ -197,11 +198,8 @@ let registry_DAO_decision_lambda (input : decision_lambda_input)
       { operations = ops; extras = extras; guardian = (None : (address option)) }
   | Update_guardian guardian ->
       { operations = ops; extras = extras ; guardian = Some(guardian) }
-
-// A custom entrypoint needed to receive xtz, since most `basedao` entrypoints
-// prohibit non-zero xtz transfer.
-let receive_xtz_entrypoint (_params, full_store : bytes * full_storage) : return =
-  (([]: operation list), full_store.0)
+  | Update_contract_delegate mdelegate ->
+      { operations = ((Tezos.set_delegate mdelegate) :: ops); extras = extras ; guardian = (None : (address option))}
 
 // A custom entrypoint to fetch values from Registry
 let lookup_registry (bytes_param, full_store : bytes * full_storage) : operation list * storage =
@@ -238,7 +236,6 @@ let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : ful
     decision_lambda = registry_DAO_decision_lambda;
     custom_entrypoints = Big_map.literal
       [ "lookup_registry", Bytes.pack lookup_registry
-      ; "receive_xtz", Bytes.pack receive_xtz_entrypoint
       ];
     } in
   (new_storage, new_config)

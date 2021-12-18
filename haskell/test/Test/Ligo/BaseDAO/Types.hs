@@ -9,7 +9,7 @@ import Universum
 
 import Test.HUnit (Assertion)
 
-import Michelson.Typed (Contract)
+import Morley.Michelson.Typed (Contract)
 
 import Ligo.BaseDAO.Contract
 

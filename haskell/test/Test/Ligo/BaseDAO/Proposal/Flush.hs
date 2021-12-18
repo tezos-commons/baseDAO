@@ -19,9 +19,9 @@ module Test.Ligo.BaseDAO.Proposal.Flush
 import Universum
 
 import Lorentz hiding (assert, (>>))
-import Lorentz.Test (contractConsumer)
-import Morley.Nettest
-import Util.Named
+import Morley.Util.Named
+import Test.Cleveland
+import Test.Cleveland.Lorentz (contractConsumer)
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
@@ -30,7 +30,7 @@ import Test.Ligo.BaseDAO.Proposal.Config
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 flushAcceptedProposals
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushAcceptedProposals originateFn = do
 -- Use 60s for voting period, since in real network by the time we call
@@ -42,10 +42,10 @@ flushAcceptedProposals originateFn = do
       ) defaultQuorumThreshold
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount .! 15)
+    call dodDao (Call @"Freeze") (#amount :! 15)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 10)
+    call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -110,7 +110,7 @@ flushAcceptedProposals originateFn = do
     }
 
 flushAcceptedProposalsWithAnAmount
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 flushAcceptedProposalsWithAnAmount originateFn = do
@@ -123,10 +123,10 @@ flushAcceptedProposalsWithAnAmount originateFn = do
 
   -- [Voting]
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 30)
+    call dodDao (Call @"Freeze") (#amount :! 30)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount .! 10)
+    call dodDao (Call @"Freeze") (#amount :! 10)
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
@@ -168,7 +168,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   checkBalance dodDao dodOwner1 25
 
 flushRejectProposalQuorum
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 flushRejectProposalQuorum originateFn = do
@@ -179,10 +179,10 @@ flushRejectProposalQuorum originateFn = do
         ) (mkQuorumThreshold 3 5)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount .! 5)
+    call dodDao (Call @"Freeze") (#amount :! 5)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 10)
+    call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -213,7 +213,7 @@ flushRejectProposalQuorum originateFn = do
   checkBalance dodDao dodOwner2 05 -- Since voter tokens are not burned
 
 flushRejectProposalNegativeVotes
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 flushRejectProposalNegativeVotes originateFn = do
@@ -224,10 +224,10 @@ flushRejectProposalNegativeVotes originateFn = do
           ) (mkQuorumThreshold 3 100)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount .! 3)
+    call dodDao (Call @"Freeze") (#amount :! 3)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 10)
+    call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -274,7 +274,7 @@ flushRejectProposalNegativeVotes originateFn = do
   checkBalance dodDao dodOwner2 03
 
 flushWithBadConfig
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 flushWithBadConfig originateFn = do
@@ -285,10 +285,10 @@ flushWithBadConfig originateFn = do
       ) (mkQuorumThreshold 1 2)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount .! 3)
+    call dodDao (Call @"Freeze") (#amount :! 3)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 10)
+    call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -316,7 +316,7 @@ flushWithBadConfig originateFn = do
   checkBalance dodDao dodOwner2 3
 
 flushDecisionLambda
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushDecisionLambda originateFn = do
   consumer <- chAddress <$> originateSimple @("proposer" :! Address) "consumer" [] contractConsumer
@@ -328,9 +328,9 @@ flushDecisionLambda originateFn = do
       ) defaultQuorumThreshold
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount .! 10)
+    call dodDao (Call @"Freeze") (#amount :! 10)
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 10)
+    call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -354,27 +354,27 @@ flushDecisionLambda originateFn = do
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
   results <- getStorage @(["proposer" :! Address]) (toAddress consumer)
-  assert (results == (#proposer <.!> [dodOwner1]))
+  assert (results == (#proposer <:!> [dodOwner1]))
     "Unexpected accepted proposals list"
 
 flushFailOnExpiredProposal
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
       ) (mkQuorumThreshold 1 50)
   originationLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 20)
+    call dodDao (Call @"Freeze") (#amount :! 20)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount .! 20)
+    call dodDao (Call @"Freeze") (#amount :! 20)
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (originationLevel + dodPeriod)
@@ -406,18 +406,18 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   checkBalance dodDao dodOwner1 10
 
 flushProposalFlushTimeNotReach
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m)
   -> m ()
 flushProposalFlushTimeNotReach originateFn = do
   DaoOriginateData{..} <-
     originateFn (testConfig
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
         ) defaultQuorumThreshold
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount .! 30)
+    call dodDao (Call @"Freeze") (#amount :! 30)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -438,14 +438,14 @@ flushProposalFlushTimeNotReach originateFn = do
 
 
 flushNotEmpty
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
 flushNotEmpty originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 120 })
       ) (mkQuorumThreshold 1 50)
 
   originationLevel <- getOriginationLevel dodDao
@@ -454,8 +454,8 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
     & expectCustomErrorNoArg #eMPTY_FLUSH
 
-  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount .! 20)
-  withSender dodOwner2 $ call dodDao (Call @"Freeze") (#amount .! 20)
+  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount :! 20)
+  withSender dodOwner2 $ call dodDao (Call @"Freeze") (#amount :! 20)
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (originationLevel + dodPeriod)
@@ -479,5 +479,5 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
     & expectCustomErrorNoArg #eMPTY_FLUSH
 
   -- however after enough levels are past flushing is allowed
-  advanceToLevel (proposalStart + 21)
+  advanceToLevel (proposalStart + 42)
   withSender dodAdmin $ call dodDao (Call @"Flush") 1

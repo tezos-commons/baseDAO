@@ -15,6 +15,9 @@ Its `proposal_metadata` contains proposal types:
    - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and motivation for it.
 - Proposal to update the guardian address in the BaseDAO contract.
    - This proposal takes an address parameter and use it to update the guardian address in the storage.
+- Proposal to update the contract delegate.
+   - This proposal takes a `keyhash` `option` parameter and usees it to update the delegate address of the contract. Please note that this different from the `Update_delegate` entrypoint which updates the delegates of an account.
+
 
 ## Configuration lambdas
 
@@ -59,8 +62,3 @@ Here is a summary of all the strings used as error messages thrown by `proposal_
 | `LARGE_PROPOSAL`                 | Proposal size is bigger than 'max_proposal_size'                                                            |
 
 ## Custom entrypoints
-
-### Receive XTZ
-
-A `receive_xtz` with `unit` argument is present only to allow the tranfer of XTZs
-to the contract, which is not allowed by most entrypoints.

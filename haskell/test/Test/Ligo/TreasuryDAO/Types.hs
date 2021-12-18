@@ -31,6 +31,7 @@ deriving anyclass instance IsoValue TransferProposal
 data TreasuryDaoProposalMetadata
   = Transfer_proposal TransferProposal
   | Update_guardian Address
+  | Update_contract_delegate (Maybe KeyHash)
 
 instance HasAnnotation TreasuryDaoProposalMetadata where
   annOptions = baseDaoAnnOptions

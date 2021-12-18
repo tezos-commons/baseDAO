@@ -20,27 +20,27 @@ import Lorentz hiding (assert, (>>))
 import Universum
 
 import qualified Data.Set as S
-import Morley.Nettest
+import Test.Cleveland
 
 import Ligo.BaseDAO.Types
 
 
-getStorageRPC :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m FullStorageRPC
+getStorageRPC :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m FullStorageRPC
 getStorageRPC addr = getStorage @FullStorage (unTAddress addr)
 
-getFrozenTotalSupply :: forall p base caps m. MonadNettest caps base m => TAddress p -> m Natural
+getFrozenTotalSupply :: forall p base caps m. MonadCleveland caps base m => TAddress p -> m Natural
 getFrozenTotalSupply addr = (sFrozenTotalSupplyRPC . fsStorageRPC) <$> (getStorageRPC addr)
 
-getFreezeHistory :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m (Maybe AddressFreezeHistory)
+getFreezeHistory :: forall p base caps m. MonadCleveland caps base m => TAddress p -> Address -> m (Maybe AddressFreezeHistory)
 getFreezeHistory addr owner = do
   freezeHistoryBmId <- (sFreezeHistoryRPC . fsStorageRPC) <$> (getStorageRPC addr)
   getBigMapValueMaybe freezeHistoryBmId owner
 
-getQtAtCycle :: forall p base caps m. MonadNettest caps base m => TAddress p -> m QuorumThresholdAtCycle
+getQtAtCycle :: forall p base caps m. MonadCleveland caps base m => TAddress p -> m QuorumThresholdAtCycle
 getQtAtCycle addr = (sQuorumThresholdAtCycleRPC . fsStorageRPC) <$> getStorageRPC addr
 
 getProposal
-  :: forall p base caps m. MonadNettest caps base m
+  :: forall p base caps m. MonadCleveland caps base m
   => TAddress p
   -> ProposalKey
   -> m (Maybe Proposal)
@@ -49,7 +49,7 @@ getProposal addr pKey = do
   getBigMapValueMaybe bId pKey
 
 getProposalStartLevel
-  :: forall p base caps m. MonadNettest caps base m
+  :: forall p base caps m. MonadCleveland caps base m
   => TAddress p
   -> ProposalKey
   -> m Natural
@@ -57,7 +57,7 @@ getProposalStartLevel addr pKey =
    plStartLevel . fromMaybe (error "proposal not found") <$> getProposal addr pKey
 
 checkIfDelegateExists
-  :: forall p base caps m. MonadNettest caps base m
+  :: forall p base caps m. MonadCleveland caps base m
   => TAddress p
   -> Delegate
   -> m Bool
@@ -66,7 +66,7 @@ checkIfDelegateExists addr delegate = do
   isJust <$> getBigMapValueMaybe bId delegate
 
 checkIfAProposalExist
-  :: forall p base caps m. MonadNettest caps base m
+  :: forall p base caps m. MonadCleveland caps base m
   => ProposalKey -> TAddress p -> Bool -> m ()
 checkIfAProposalExist proposalKey dodDao expected = do
   found <- getProposal dodDao proposalKey >>= \case
@@ -77,13 +77,13 @@ checkIfAProposalExist proposalKey dodDao expected = do
   assert (found == expected) $
     "Unexpected proposal status, expected:" <> (show expected) <> ", found: " <> (show found)
 
-checkGuardian :: forall p base caps m. MonadNettest caps base m => TAddress p -> Address -> m ()
+checkGuardian :: forall p base caps m. MonadCleveland caps base m => TAddress p -> Address -> m ()
 checkGuardian addr guardianToChk = do
   actual <- (sGuardianRPC . fsStorageRPC) <$> (getStorageRPC addr)
   actual @== guardianToChk
 
 checkBalance
-  :: forall p base caps m. MonadNettest caps base m
+  :: forall p base caps m. MonadCleveland caps base m
   => TAddress p
   -> Address
   -> Natural
@@ -95,9 +95,9 @@ checkBalance addr owner bal = do
 sumAddressFreezeHistory :: AddressFreezeHistory -> Natural
 sumAddressFreezeHistory AddressFreezeHistory{..} = fhCurrentUnstaked + fhPastUnstaked + fhStaked
 
-getVotePermitsCounter :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m Nonce
+getVotePermitsCounter :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m Nonce
 getVotePermitsCounter addr =
   (sPermitsCounterRPC . fsStorageRPC) <$> getStorageRPC addr
 
-getOriginationLevel :: forall p base caps m. MonadNettest caps base m => TAddress p ->  m Natural
+getOriginationLevel :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m Natural
 getOriginationLevel dodDao = (sStartLevelRPC . fsStorageRPC) <$> (getStorageRPC dodDao)

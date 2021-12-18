@@ -9,8 +9,8 @@ import Universum
 
 import Control.Monad.Except (throwError)
 import Lorentz hiding (not, cast, checkSignature, get)
-import Tezos.Address (mkKeyAddress)
-import Tezos.Crypto (checkSignature)
+import Morley.Tezos.Address (mkKeyAddress)
+import Morley.Tezos.Crypto (checkSignature)
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types

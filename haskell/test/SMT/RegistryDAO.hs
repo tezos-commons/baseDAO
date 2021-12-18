@@ -13,13 +13,13 @@ import qualified Data.Set as Set
 import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Named (NamedF(..))
 
+import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Hedgehog.Gen.Michelson (genMText)
 import Hedgehog.Gen.Tezos.Address (genAddress)
-import Lorentz hiding (and, now, (>>))
-import Michelson.Text (unsafeMkMText)
-import Util.Named ((.!))
+import Lorentz hiding (and, div, now, (>>))
+import Morley.Michelson.Text (unsafeMkMText)
+import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAORegistryStorageLigo)
@@ -36,7 +36,7 @@ import Test.Ligo.RegistryDAO.Types
 hprop_RegistryDaoSMT :: Property
 hprop_RegistryDaoSMT =
   let
-    registryFs = #registryFs .! baseDAORegistryStorageLigo
+    registryFs = #registryFs :! baseDAORegistryStorageLigo
     option = SmtOption
       { soMkPropose = genProposeRegistryDao
       , soMkCustomCalls = genCustomCallsRegistryDao
@@ -47,8 +47,7 @@ hprop_RegistryDaoSMT =
       , soRejectedProposalSlashValue = registryDaoRejectedProposalSlashValue
       , soDecisionLambda = registryDaoDecisionLambda
       , soCustomEps = Map.fromList
-          [ ( unsafeMkMText "receive_xtz", \_ -> pure () )
-          , ( unsafeMkMText "lookup_registry", lookupRegistryEntrypoint)
+          [ ( unsafeMkMText "lookup_registry", lookupRegistryEntrypoint)
           ]
       }
   in
@@ -111,7 +110,7 @@ registryDaoProposalCheck (params, extras) = do
     Update_receivers_proposal _ -> pure ()
     Configuration_proposal _ -> pure ()
     Update_guardian _ -> pure ()
-
+    Update_contract_delegate _ -> pure ()
 
 registryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
 registryDaoRejectedProposalSlashValue (p, extras) = do
@@ -165,6 +164,8 @@ registryDaoDecisionLambda DecisionLambdaInput{..} = do
       pure $ (ops, extras, Nothing)
     Update_guardian guardian ->
       pure $ ([], diExtra, Just guardian)
+    Update_contract_delegate _ ->
+      pure $ ([], diExtra, Nothing)
 
 applyDiffAffected :: ProposalKey -> [(MText, Maybe MText)] -> ContractExtra -> ContractExtra
 applyDiffAffected proposalKey diffs ce =
@@ -244,8 +245,7 @@ genCustomCallsRegistryDao :: MkGenCustomCalls
 genCustomCallsRegistryDao = do
   mkLookupRegistryParam <- genLookupRegistryParam
   pure
-    [ \_ -> ([mt|receive_xtz|], lPackValueRaw ())
-    , \ModelInputArg{..} -> ([mt|lookup_registry|], lPackValueRaw @LookupRegistryParam (mkLookupRegistryParam miaViewContractAddr))
+    [ \ModelInputArg{..} -> ([mt|lookup_registry|], lPackValueRaw @LookupRegistryParam (mkLookupRegistryParam miaViewContractAddr))
     ]
 
 genLookupRegistryParam :: GeneratorT (TAddress (MText, Maybe MText) -> LookupRegistryParam)

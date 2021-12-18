@@ -45,4 +45,7 @@ let unpack_transfer_type_list_safe (bytes_opt: bytes option) : (transfer_type li
 
 type update_guardian = address
 
+// -- Delegate -- //
+type update_contract_delegate = key_hash option
+
 #endif

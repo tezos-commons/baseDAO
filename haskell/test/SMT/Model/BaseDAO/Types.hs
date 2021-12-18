@@ -33,8 +33,8 @@ import Text.Show (show)
 
 import Lorentz hiding (cast, get, not)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Tezos.Address (ContractHash(..))
-import Tezos.Core
+import Morley.Tezos.Address (ContractHash(..))
+import Morley.Tezos.Core
 
 import Ligo.BaseDAO.Types
 

@@ -35,6 +35,7 @@ let allowing_xtz (param, store, config : allow_xtz_params * storage * config) =
   | Transfer_contract_tokens p -> transfer_contract_tokens(p, store)
   | Transfer_ownership (p)     -> transfer_ownership(p, store)
   | Accept_ownership           -> accept_ownership(store)
+  | Default _                  -> (([] : operation list), store)
 
 (*
  * The actual DAO contract, which is the same, regardless of the specific DAO

@@ -43,6 +43,8 @@ registry. This includes:
    - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and/or changes and motivation for them.
 4. Proposal to update the guardian address in the BaseDAO contract:
    - This proposal takes an address parameter and use it to update the guardian address in the storage.
+5. Proposal to update the contract delegate:
+   - This proposal takes a `keyhash` `option` parameter and usees it to update the delegate address of the contract. Please note that this different from the `Update_delegate` entrypoint which updates the delegates of an account.
 
 ## Configuration lambdas
 
@@ -94,8 +96,3 @@ Here is a summary of all the strings used as error messages thrown by `proposal_
 A custom entrypoint `lookup_registry` is included in the registryDAO contract
 to lookup values in the registry. The parameter of this entrypoint is `(pair k address)`
 where `address` is the address of a callback contract of type `(k, v option)`.
-
-### Receive XTZ
-
-A `receive_xtz` with `unit` argument is present only to allow the tranfer of XTZs
-to the contract, which is not allowed by most entrypoints.

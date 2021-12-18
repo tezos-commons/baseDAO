@@ -13,11 +13,9 @@ import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
 import qualified Hedgehog.Range as Range
-import Named (NamedF(..))
 
-import Lorentz hiding (and, now, (>>))
-import Michelson.Text (unsafeMkMText)
-import Util.Named ((.!))
+import Lorentz hiding (and, div, now, (>>))
+import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
@@ -34,7 +32,7 @@ import Test.Ligo.TreasuryDAO.Types
 hprop_TreasuryDaoSMT :: Property
 hprop_TreasuryDaoSMT =
   let
-    treasuryFs = #treasuryFs .! baseDAOTreasuryStorageLigo
+    treasuryFs = #treasuryFs :! baseDAOTreasuryStorageLigo
     option = SmtOption
       { soMkPropose = genProposeTreasuryDao
       , soMkCustomCalls = genCustomCallsTreasuryDao
@@ -44,7 +42,7 @@ hprop_TreasuryDaoSMT =
       , soProposalCheck = treasuryDaoProposalCheck
       , soRejectedProposalSlashValue = treasuryDaoRejectedProposalSlashValue
       , soDecisionLambda = treasuryDaoDecisionLambda
-      , soCustomEps = Map.fromList [(unsafeMkMText "receive_xtz", \_ -> pure ())]
+      , soCustomEps = Map.empty
       }
   in
     withTests 30 $ property $ do
@@ -105,6 +103,7 @@ treasuryDaoProposalCheck (params, extras) = do
       unless isValid $
         throwError FAIL_PROPOSAL_CHECK
     Update_guardian _ -> pure ()
+    Update_contract_delegate _ -> pure ()
 
 
 treasuryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
@@ -125,7 +124,8 @@ treasuryDaoDecisionLambda DecisionLambdaInput{..} = do
       pure $ (ops, diExtra, Nothing)
     Update_guardian guardian ->
       pure $ ([], diExtra, Just guardian)
-
+    Update_contract_delegate _ ->
+      pure $ ([], diExtra, Nothing)
 
 -------------------------------------------------------------------------------
 -- Gen Functions
@@ -149,7 +149,7 @@ genProposeTreasuryDao senderInput delegate1 invalidFrom = do
 
 genCustomCallsTreasuryDao :: MkGenCustomCalls
 genCustomCallsTreasuryDao =
-  pure [ \_ -> ([mt|receive_xtz|], lPackValueRaw ()) ]
+  pure []
 
 genTransferProposal :: GeneratorT (Address -> Address -> TreasuryDaoProposalMetadata)
 genTransferProposal = do
@@ -169,4 +169,3 @@ genTreasuryDaoProposalMetadata :: GeneratorT (Address -> Address -> TreasuryDaoP
 genTreasuryDaoProposalMetadata = do
   guardianAddr <- genAddress
   Gen.choice [genTransferProposal, pure $ \_ _ -> Update_guardian guardianAddr]
-

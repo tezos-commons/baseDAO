@@ -36,10 +36,9 @@ import Universum hiding (drop, swap)
 import qualified Data.ByteString as BS
 import Lorentz hiding (assert, now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Michelson.Typed.Convert (convertContract, untypeValue)
-import Morley.Nettest
-import Morley.Nettest.Caps (MonadOps)
+import Morley.Michelson.Typed.Convert (convertContract, untypeValue)
 import Named ((!))
+import Test.Cleveland
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
@@ -92,7 +91,7 @@ makeProposalKey :: ProposeParams -> ProposalKey
 makeProposalKey params = toHashHs $ lPackValue params
 
 addDataToSign
-  :: (MonadNettest caps base m)
+  :: (MonadCleveland caps base m)
   => TAddress param
   -> Nonce
   -> d
@@ -103,7 +102,7 @@ addDataToSign (toAddress -> dsContract) dsNonce dsData = do
 
 -- | Add a permit from given user.
 permitProtect
-  :: (MonadNettest caps base m, NicePackedValue a)
+  :: (MonadCleveland caps base m, NicePackedValue a)
   => Address -> (DataToSign a, a) -> m (PermitProtected a)
 permitProtect author (toSign, a) = do
   pKey <- getPublicKey author
@@ -114,26 +113,26 @@ permitProtect author (toSign, a) = do
     }
 
 sendXtz
-  :: (MonadNettest caps base m, HasCallStack, NiceParameter pm)
-  => TAddress cp -> EpName -> pm -> m ()
-sendXtz addr epName pm = withFrozenCallStack $ do
+  :: (MonadCleveland caps base m, HasCallStack)
+  => TAddress cp -> m ()
+sendXtz addr = withFrozenCallStack $ do
   let transferData = TransferData
         { tdTo = toAddress addr
         , tdAmount = toMutez 0.5_e6 -- 0.5 xtz
-        , tdEntrypoint = epName
-        , tdParameter = pm
+        , tdEntrypoint = DefEpName
+        , tdParameter = ()
         }
   transfer transferData
 
 sendXtzWithAmount
-  :: (MonadNettest caps base m, HasCallStack, NiceParameter pm)
-  => Mutez -> TAddress cp -> EpName -> pm -> m ()
-sendXtzWithAmount amt addr epName pm = withFrozenCallStack $ do
+  :: (MonadCleveland caps base m, HasCallStack)
+  => Mutez -> TAddress cp -> m ()
+sendXtzWithAmount amt addr = withFrozenCallStack $ do
   let transferData = TransferData
         { tdTo = toAddress addr
         , tdAmount = amt
-        , tdEntrypoint = epName
-        , tdParameter = pm
+        , tdEntrypoint = DefEpName
+        , tdParameter = ()
         }
   transfer transferData
 
@@ -141,7 +140,7 @@ defaultQuorumThreshold :: QuorumThreshold
 defaultQuorumThreshold = mkQuorumThreshold 1 100
 
 originateLigoDaoWithConfig
- :: MonadNettest caps base m
+ :: MonadCleveland caps base m
  => ContractExtra
  -> Config
  -> OriginateFn m
@@ -164,6 +163,7 @@ originateLigoDaoWithConfig extra config qt = do
   tokenContract <- chAddress <$> originateSimple "TokenContract" [] dummyFA2Contract
   guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
+  let originationOffset = 12
   let fullStorage = FullStorage
         { fsStorage =
             ( mkStorage
@@ -171,8 +171,8 @@ originateLigoDaoWithConfig extra config qt = do
               ! #admin admin
               ! #metadata mempty
               ! #tokenAddress tokenContract
-              ! #level (currentLevel + 6)
-                -- We add 6 levels to offset for the delay caused by the origination function
+              ! #level (currentLevel + originationOffset)
+                -- We add some levels to offset for the delay caused by the origination function
                 -- So the expectation is that by the time origination has finished, we will be closer
                 -- to the actual block that includes origination so that the tests have a lesser chance
                 -- to fail due to this difference.
@@ -191,7 +191,7 @@ originateLigoDaoWithConfig extra config qt = do
       }
 
   daoUntyped <- originateUntyped originateData
-  advanceToLevel (currentLevel + 6)
+  advanceToLevel (currentLevel + originationOffset)
 
   let dao = TAddress @Parameter daoUntyped
 
@@ -199,19 +199,19 @@ originateLigoDaoWithConfig extra config qt = do
       admin (TAddress guardianContract) (unPeriod $ cPeriod config)
 
 originateLigoDaoWithConfigDesc
- :: MonadNettest caps base m
+ :: MonadCleveland caps base m
  => ContractExtra
  -> ConfigDesc Config
  -> OriginateFn m
 originateLigoDaoWithConfigDesc extra config =
   originateLigoDaoWithConfig extra (fillConfig config defaultConfig)
 
-originateLigoDao :: MonadNettest caps base m => OriginateFn m
+originateLigoDao :: MonadCleveland caps base m => OriginateFn m
 originateLigoDao =
   originateLigoDaoWithConfig dynRecUnsafe defaultConfig
 
 createSampleProposal
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => Int -> Address -> TAddress Parameter -> m ProposalKey
 createSampleProposal counter dodOwner dao = do
   let (pk, action) = createSampleProposal_ counter dodOwner dao
@@ -231,7 +231,7 @@ createSampleProposal_ counter dodOwner1 dao =
 
 -- TODO consider making this polymorphic on the input/output size
 createSampleProposals
-  :: (MonadNettest caps base m, HasCallStack)
+  :: (MonadCleveland caps base m, HasCallStack)
   => (Int, Int) -> Address -> TAddress Parameter -> m (ProposalKey, ProposalKey)
 createSampleProposals (counter1, counter2) dodOwner1 dao = do
   let (pk1, action1) = createSampleProposal_ counter1 dodOwner1 dao
@@ -244,7 +244,7 @@ createSampleProposals (counter1, counter2) dodOwner1 dao = do
 
 checkStorage
   :: forall st caps base m.
-      ( AsRPC st ~ st, MonadNettest caps base m
+      ( AsRPC st ~ st, MonadCleveland caps base m
       , HasCallStack, Eq st, NiceStorage st, NiceUnpackedValue st)
   => Address -> st -> m ()
 checkStorage addr expected = do

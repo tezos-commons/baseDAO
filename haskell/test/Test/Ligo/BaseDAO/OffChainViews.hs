@@ -10,15 +10,15 @@ import Universum hiding (view)
 import Fmt (pretty)
 
 import Lorentz.Value
-import Michelson.Interpret (MichelsonFailed)
-import Michelson.Runtime.GState (genesisAddress)
-import Michelson.Test.Dummy
 import Morley.Metadata
+import Morley.Michelson.Interpret (MichelsonFailed, MichelsonFailureWithStack(..))
+import Morley.Michelson.Runtime.Dummy
+import Morley.Michelson.Runtime.GState (genesisAddress)
+import Morley.Tezos.Address
 import Named (defaults, (!))
 import Test.HUnit ((@?=))
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)
-import Tezos.Address
 
 import Ligo.BaseDAO.TZIP16Metadata
 import Ligo.BaseDAO.Types
@@ -52,7 +52,7 @@ runView
 runView view storage param =
   case interpretView dummyContractEnv view param storage of
     Right x -> Right x
-    Left (VIEMichelson _ (MSVIEMichelsonFailed e)) -> Left e
+    Left (VIEMichelson _ (MSVIEMichelsonFailed (MichelsonFailureWithStack e _))) -> Left e
     Left err -> error (pretty err)
 
 
