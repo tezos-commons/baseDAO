@@ -13,3 +13,6 @@ out
 /typescript/baseDAO/node_modules
 /typescript/baseDAO/yarn-error.log
 /typescript/baseDAO/dist
+
+# generated ligo
+/src/implementation.mligo

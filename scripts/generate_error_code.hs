@@ -96,8 +96,6 @@ invalidInputErrors = errorsEnumerate 100
     :? ("The sender has not been delegated the control of the required tokens.", NoArg)
   , "fail_decision_lambda"
     :? ("Executing the proposal's decision lambda results in failure.", NoArg)
-  , "entrypoint_not_found"
-    :? ("The chosen custom entrypoint does not exist.", NoArg)
   , "unstake_invalid_proposal"
     :? ("Cannot call `unstake_vote` on the proposal that is not flushed or dropped.", NoArg)
   , "voter_does_not_exist"

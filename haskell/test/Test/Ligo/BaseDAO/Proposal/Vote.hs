@@ -219,7 +219,6 @@ voteOutdatedProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount :! 10)
 
   startLevel <- getOriginationLevel dodDao
-  runIO $ putTextLn $ show startLevel
   -- Advance one voting period to a proposing stage.
   advanceToLevel (startLevel + dodPeriod)
 
