@@ -16,7 +16,6 @@ import Lorentz hiding (div, fromInteger, now, (>>))
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
-import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import SMT.Common.Run
 import SMT.Common.Types

@@ -1,25 +1,21 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
+#if !TREASURY_H
+#define TREASURY_H
 
 #include "common/errors.mligo"
 #include "common/types.mligo"
 #include "defaults.mligo"
-#include "types.mligo"
-#include "proposal.mligo"
+#include "proposal/helpers.mligo"
 #include "helper/unpack.mligo"
 
 #include "treasuryDAO/types.mligo"
-
-// The following include is required so that we have a function with an
-// entrypoint type to use with `compile-storage` command to make Michelson
-// storage expression.
-#include "base_DAO.mligo"
 
 // -------------------------------------
 // Configuration Lambdas
 // -------------------------------------
 
-let treasury_DAO_proposal_check (params, extras : propose_params * contract_extra) : unit =
+let proposal_check (params, extras : propose_params * contract_extra) : unit =
   let proposal_size = Bytes.size(params.proposal_metadata) in
   let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
   let frozen_extra_value = unpack_nat(find_big_map("frozen_extra_value", extras)) in
@@ -50,7 +46,7 @@ let treasury_DAO_proposal_check (params, extras : propose_params * contract_extr
           List.iter is_all_transfers_valid tpm.transfers
     | Update_contract_delegate _ -> unit
 
-let treasury_DAO_rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
+let rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
   let slash_scale_value = unpack_nat(find_big_map("slash_scale_value", extras)) in
   let slash_division_value =  unpack_nat(find_big_map("slash_division_value", extras))
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
@@ -73,7 +69,7 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
       | None -> (failwith fail_decision_lambda : operation list)
     end
 
-let treasury_DAO_decision_lambda (input : decision_lambda_input)
+let decision_lambda (input : decision_lambda_input)
     : decision_lambda_output =
   let (proposal, extras) = (input.proposal, input.extras) in
   let ops = ([] : operation list) in
@@ -103,11 +99,9 @@ let default_treasury_DAO_full_storage (data : initial_treasuryDAO_storage) : ful
       ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
       ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
       ];
-  } in
-  let new_config = { config with
-    proposal_check = treasury_DAO_proposal_check;
-    rejected_proposal_slash_value = treasury_DAO_rejected_proposal_slash_value;
-    decision_lambda = treasury_DAO_decision_lambda;
-    custom_entrypoints = (Big_map.empty : custom_entrypoints);
-    }
-  in (new_storage, new_config)
+  } in (new_storage, config)
+
+let custom_ep (_, storage, _ : custom_ep_param * storage * config): operation list * storage
+  =  (([]: operation list), storage)
+
+#endif

@@ -77,14 +77,11 @@
 (* Executing the proposal's decision lambda results in failure. *)
 [@inline] let fail_decision_lambda = 121n
 
-(* The chosen custom entrypoint does not exist. *)
-[@inline] let entrypoint_not_found = 122n
-
 (* Cannot call `unstake_vote` on the proposal that is not flushed or dropped. *)
-[@inline] let unstake_invalid_proposal = 123n
+[@inline] let unstake_invalid_proposal = 122n
 
 (* The sender did not vote on the proposal or already unstaked tokens from the proposal. *)
-[@inline] let voter_does_not_exist = 124n
+[@inline] let voter_does_not_exist = 123n
 
 
 

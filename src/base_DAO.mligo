@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+#include "parameter.mligo"
+#include "implementation.mligo"
 #include "management.mligo"
 #include "permit.mligo"
 #include "proposal.mligo"
@@ -30,14 +32,18 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
 (*
  * Entrypoints that allow xtz to be sent.
  *)
-let allowing_xtz (param, store, config : allow_xtz_params * storage * config) =
+let allowing_xtz_contract (param, store, config : allow_xtz_params_contract * storage * config) =
   match param with
-  | CallCustom p               -> call_custom(p, store, config)
   | Propose (p)                -> propose(p, config, store)
   | Transfer_contract_tokens p -> transfer_contract_tokens(p, store)
   | Transfer_ownership (p)     -> transfer_ownership(p, store)
   | Accept_ownership           -> accept_ownership(store)
   | Default _                  -> (([] : operation list), store)
+
+let allowing_xtz (param, store, config : allow_xtz_params * storage * config) =
+  match param with
+  | M_left p -> allowing_xtz_contract (p, store, config)
+  | M_right p -> custom_ep (p, store, config)
 
 (*
  * The actual DAO contract, which is the same, regardless of the specific DAO

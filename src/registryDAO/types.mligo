@@ -47,6 +47,10 @@ type lookup_registry_param =
 
 type lookup_registry_view = (registry_key * (registry_value option)) contract
 
+type custom_ep_param =
+  | Lookup_registry of lookup_registry_param
+  | RegistryCepDummy of unit
+
 type initial_registryDAO_storage =
   { base_data : initial_data
   ; frozen_scale_value : nat

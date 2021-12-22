@@ -27,27 +27,3 @@ let accept_ownership(store : storage) : return =
   if store.pending_owner = Tezos.sender
   then (nil_op, { store with admin = Tezos.sender })
   else (failwith not_pending_admin : return)
-
-(*
- * Call a custom entrypoint.
- *
- * First it looks up the packed code for the entrypoint using the entrypoint
- * name in the parameter.
- * Then it unpacks the code to a lambda of type '(bytes * full_storage) -> return'.
- * Finally it executes this lambda, with the bytes from the function parameter,
- * and returns the resulting value.
- *
- * NO AUTH CHECKS ARE DONE.
- *)
-let call_custom(param, store, config : custom_ep_param * storage * config) : return =
-  let ep_name = param.0 in
-  let packed_param = param.1 in
-
-  let packed_ep =
-    match Map.find_opt ep_name config.custom_entrypoints with
-    | Some (ep_code) -> ep_code
-    | None -> (failwith entrypoint_not_found : bytes)
-  in
-  match ((Bytes.unpack packed_ep) : (bytes * full_storage -> return) option) with
-  | Some lambda -> lambda (packed_param, (store, config))
-  | None -> (failwith unpacking_failed : return)

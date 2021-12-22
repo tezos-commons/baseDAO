@@ -1,55 +1,21 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
+#if !PROPOSAL_H
+#define PROPOSAL_H
 
+#include "implementation.mligo"
 #include "types.mligo"
 #include "common.mligo"
 #include "token.mligo"
 #include "permit.mligo"
 #include "error_codes.mligo"
 #include "proposal/freeze_history.mligo"
+#include "proposal/helpers.mligo"
 #include "proposal/quorum_threshold.mligo"
 
 // -----------------------------------------------------------------
 // Helper
 // -----------------------------------------------------------------
-
-[@inline]
-let to_proposal_key (propose_params: propose_params): proposal_key =
-  Crypto.blake2b (Bytes.pack propose_params)
-
-let fetch_proposal (proposal_key, store : proposal_key * storage): proposal =
-  match Map.find_opt proposal_key store.proposals with
-  | Some p -> p
-  | None -> (failwith proposal_not_exist : proposal)
-
-[@inline]
-let check_if_proposal_exist (proposal_key, store : proposal_key * storage): proposal =
-  let p = fetch_proposal (proposal_key, store) in
-  if Set.mem (p.start_level, proposal_key) store.proposal_key_list_sort_by_level
-    then p
-    else (failwith proposal_not_exist : proposal)
-
-// Gets the current stage counting how many `period` s have passed since
-// the `start`. The stages are zero-index.
-let get_current_stage_num(start, vp : blocks * period) : nat =
-  match is_nat((Tezos.level - start.blocks) : int) with
-  | Some (elapsed_levels) -> elapsed_levels/vp.blocks
-  | None -> (failwith bad_state : nat)
-
-[@inline]
-let ensure_proposal_voting_stage (proposal, period, store : proposal * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, period) in
-  if current_stage = proposal.voting_stage_num
-  then store
-  else (failwith voting_stage_over : storage)
-
-// Checks that a given stage number is a proposing stage
-// Only odd stage numbers are proposing stages, in which a proposal can be
-// submitted.
-let ensure_proposing_stage(stage_num, store : nat * storage): storage =
-  if (stage_num mod 2n) = 1n
-  then store
-  else (failwith not_proposing_stage : storage)
 
 [@inline]
 let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
@@ -242,14 +208,14 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
   (nil_op, List.fold accept_vote votes store)
 
 let unstake_proposer_token
-  (rejected_proposal_slash, is_accepted, proposal, period, fixed_fee, store :
-    (proposal * contract_extra -> nat) * bool * proposal * period * nat * storage): storage =
+  (is_accepted, proposal, period, fixed_fee, store :
+    bool * proposal * period * nat * storage): storage =
   // Get proposer token and burn amount
   let (tokens, burn_amount) =
     if is_accepted
     then (proposal.proposer_frozen_token + fixed_fee, 0n)
     else
-      let slash_amount = rejected_proposal_slash (proposal, store.extra) in
+      let slash_amount = rejected_proposal_slash_value (proposal, store.extra) in
       let frozen_tokens = proposal.proposer_frozen_token + fixed_fee in
       let desired_burn_amount = slash_amount + fixed_fee in
       let tokens =
@@ -287,7 +253,7 @@ let remove_from_proposal_sort_by_level
 
 let propose (param, config, store : propose_params * config * storage): return =
   let valid_from = check_delegate (param.from, Tezos.sender, store) in
-  let _ : unit = config.proposal_check (param, store.extra) in
+  let _ : unit = proposal_check (param, store.extra) in
   let store = check_proposal_limit_reached (config, store) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
   let current_stage = get_current_stage_num(store.start_level, config.period) in
@@ -314,11 +280,11 @@ let handle_proposal_is_over
               && proposal.upvotes > proposal.downvotes
     in
     let store = unstake_proposer_token
-          (config.rejected_proposal_slash_value, cond, proposal, config.period, config.fixed_proposal_fee_in_token, store) in
+          (cond, proposal, config.period, config.fixed_proposal_fee_in_token, store) in
     let (new_ops, store) =
       if cond
       then
-        let dl_out = config.decision_lambda { proposal = proposal; extras = store.extra } in
+        let dl_out = decision_lambda { proposal = proposal; extras = store.extra } in
         let guardian = match dl_out.guardian with
           | Some g -> g
           | None -> store.guardian
@@ -364,8 +330,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
     || proposal_is_expired
   then
     let store = unstake_proposer_token
-          ( config.rejected_proposal_slash_value
-          , false // A dropped proposal is treated as rejected regardless of its actual votes
+          ( false // A dropped proposal is treated as rejected regardless of its actual votes
           , proposal
           , config.period
           , config.fixed_proposal_fee_in_token
@@ -413,3 +378,4 @@ let unfreeze (amt, config, store : unfreeze_param * config * storage) : return =
         freeze_history = new_freeze_history
       ; frozen_total_supply = frozen_total_supply
     })
+#endif
