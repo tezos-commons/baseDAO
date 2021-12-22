@@ -1,20 +1,18 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+#if !VARIANT
+#define VARIANT
+
 #include "error_codes.mligo"
 #include "common/errors.mligo"
 #include "common/types.mligo"
 #include "defaults.mligo"
 #include "types.mligo"
-#include "proposal.mligo"
+#include "proposal/helpers.mligo"
 #include "helper/unpack.mligo"
 
 #include "registryDAO/types.mligo"
-
-// The following include is required so that we have a function with an
-// entrypoint type to use with `compile-storage` command to make Michelson
-// storage expression.
-#include "base_DAO.mligo"
 
 let apply_diff_registry (diff, registry : registry_diff * registry) : registry =
   let
@@ -56,7 +54,7 @@ let apply_diff_affected
  *   3.b. is a token transfer
  * where min_xtz_amount and max_xtz_amount are from storage configuration.
  *)
-let registry_DAO_proposal_check (params, extras : propose_params * contract_extra) : unit =
+let proposal_check (params, extras : propose_params * contract_extra) : unit =
   let proposal_size = Bytes.size(params.proposal_metadata) in
   let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
   let frozen_extra_value = unpack_nat(find_big_map("frozen_extra_value", extras)) in
@@ -94,7 +92,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
  * where slash_scale_value and slash_division_value are specified by the DAO creator
  * in configuration and frozen is the amount that was frozen by the proposer.
  *)
-let registry_DAO_rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
+let rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
   let slash_scale_value = unpack_nat(find_big_map ("slash_scale_value", extras)) in
   let slash_division_value = unpack_nat(find_big_map ("slash_division_value", extras))
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
@@ -139,7 +137,7 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
  * and `slash_division_value`. `None` values are ignored and `Some` values are
  * used for updating corresponding configuraton.
  *)
-let registry_DAO_decision_lambda (input : decision_lambda_input)
+let decision_lambda (input : decision_lambda_input)
     : decision_lambda_output =
   let (proposal, extras) = (input.proposal, input.extras) in
   let propose_param : propose_params = {
@@ -203,8 +201,7 @@ let registry_DAO_decision_lambda (input : decision_lambda_input)
       { operations = ((Tezos.set_delegate mdelegate) :: ops); extras = extras ; guardian = (None : (address option))}
 
 // A custom entrypoint to fetch values from Registry
-let lookup_registry (bytes_param, full_store : bytes * full_storage) : operation list * storage =
-  let param : lookup_registry_param = unpack_lookup_registry_param ("lookup_registry_param", bytes_param) in
+let lookup_registry (param, full_store : lookup_registry_param * full_storage) : operation list * storage =
   let view_contract : lookup_registry_view =
       match (Tezos.get_contract_opt(param.callback) : lookup_registry_view option) with
       | Some callback_contract -> callback_contract
@@ -230,16 +227,7 @@ let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : ful
       ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
       ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
       ];
-  } in
-  let new_config = { config with
-    proposal_check = registry_DAO_proposal_check;
-    rejected_proposal_slash_value = registry_DAO_rejected_proposal_slash_value;
-    decision_lambda = registry_DAO_decision_lambda;
-    custom_entrypoints = Big_map.literal
-      [ "lookup_registry", Bytes.pack lookup_registry
-      ];
-    } in
-  (new_storage, new_config)
+  } in (new_storage, config)
 
 // We are not using this right now, but just leaving here in case we might want it
 // soon.
@@ -252,3 +240,10 @@ let successful_proposal_receiver_view (full_storage : full_storage): proposal_re
         | None -> ((failwith unpacking_failed) : proposal_receivers)
       end
   | None -> (failwith "'proposal_receivers' key not found" : proposal_receivers)
+
+let custom_ep (custom_ep_param, storage, config : custom_ep_param * storage * config): operation list * storage
+  = match custom_ep_param with
+  | Lookup_registry p -> lookup_registry(p, (storage, config))
+  | _ -> (([]: operation list), storage)
+
+#endif

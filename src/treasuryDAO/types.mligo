@@ -4,7 +4,6 @@
 #include "../types.mligo"
 #include "../error_codes.mligo"
 
-
 (*
  * Contract Extra
  *)
@@ -36,3 +35,5 @@ let unpack_proposal_metadata (pm: proposal_metadata) : treasury_dao_proposal_met
   | Some (v) -> v
   | None -> (failwith unpacking_proposal_metadata_failed : treasury_dao_proposal_metadata)
 
+
+type custom_ep_param = unit

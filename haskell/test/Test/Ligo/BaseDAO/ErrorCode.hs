@@ -36,7 +36,6 @@ test_ErrorCodes = testGroup "FA2 off-chain views"
       emptyFlush @?= 119
       notDelegate @?= 120
       failDecisionLambda @?= 121
-      entrypointNotFound @?= 122
       unstakeInvalidProposal @?= 123
       voterDoesNotExist @?= 124
       badState @?= 300

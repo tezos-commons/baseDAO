@@ -99,10 +99,6 @@ notDelegate = 120
 failDecisionLambda :: Natural
 failDecisionLambda = 121
 
--- | The chosen custom entrypoint does not exist.
-entrypointNotFound :: Natural
-entrypointNotFound = 122
-
 -- | Cannot call `unstake_vote` on the proposal that is not flushed or dropped.
 unstakeInvalidProposal :: Natural
 unstakeInvalidProposal = 123
@@ -249,12 +245,6 @@ tzipErrorList = [
   EStatic $ StaticError
     { seError = toExpression $ toVal @Integer $ toInteger failDecisionLambda
     , seExpansion = toExpression $ toVal @MText [mt|Executing the proposal's decision lambda results in failure.|]
-    , seLanguages = ["en"]
-    }
-  ,
-  EStatic $ StaticError
-    { seError = toExpression $ toVal @Integer $ toInteger entrypointNotFound
-    , seExpansion = toExpression $ toVal @MText [mt|The chosen custom entrypoint does not exist.|]
     , seLanguages = ["en"]
     }
   ,

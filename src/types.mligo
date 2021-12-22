@@ -175,8 +175,6 @@ type unstake_vote_param = proposal_key list
 
 type transfer_ownership_param = address
 
-type custom_ep_param = (string * bytes)
-
 type propose_params =
   [@layout:comb]
   { from : address
@@ -236,23 +234,12 @@ type forbid_xtz_params =
 (*
  * Entrypoints that allow Tz transfers
  *)
-type allow_xtz_params =
-  | CallCustom of custom_ep_param
+type allow_xtz_params_contract =
   | Propose of propose_params
   | Transfer_contract_tokens of transfer_contract_tokens_param
   | Transfer_ownership of transfer_ownership_param
   | Accept_ownership of unit
   | Default of unit
-
-(*
- * Full parameter of the contract.
- * Separated into entrypoints that forbid Tz transfers,
- * and those that allow Tz transfers
- *)
-type parameter =
-  (allow_xtz_params, "", forbid_xtz_params, "") michelson_or
-
-type custom_entrypoints = (string, bytes) big_map
 
 type decision_lambda_input =
   { proposal : proposal
@@ -299,19 +286,7 @@ type initial_data =
 type decision_lambda = decision_lambda_input -> decision_lambda_output
 
 type config =
-  { proposal_check : propose_params * contract_extra -> unit
-  // ^ A lambda used to verify whether a proposal can be submitted.
-  // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
-  // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
-  ; rejected_proposal_slash_value : proposal * contract_extra -> nat
-  // ^ When a proposal is rejected, the value that the proposer gets back can be slashed.
-  // This lambda returns the amount to be slashed.
-  ; decision_lambda : decision_lambda
-  // ^ The decision lambda is executed based on a successful proposal.
-  // It has access to the proposal, can modify `contractExtra` and perform arbitrary
-  // operations.
-
-  ; max_quorum_threshold : quorum_fraction
+  { max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction
   // ^ Determine the minimum value of quorum threshold that is allowed.
@@ -338,9 +313,6 @@ type config =
   ; proposal_expired_level : blocks
   // ^ The proposal age at (and above) which the proposal is considered expired.
   // Has to be bigger than `proposal_flush_time`
-
-  ; custom_entrypoints : custom_entrypoints
-  // ^ Packed arbitrary lambdas associated to a name for custom execution.
   }
 
 type full_storage = storage * config
