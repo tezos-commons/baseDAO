@@ -8,8 +8,8 @@ import { ContractMethod , Signer, TransactionWalletOperation,
 import { InMemorySigner, importKey } from '@taquito/signer';
 
 import { Parameter } from './generated/Parameter';
-import { CallCustom } from './generated/CallCustom';
 import { Accept_ownership } from './generated/Accept_ownership';
+import { Lookup_registry } from './generated/Lookup_registry';
 import { Drop_proposal } from './generated/Drop_proposal';
 import { Flush } from './generated/Flush';
 import { Propose } from './generated/Propose';
@@ -113,7 +113,7 @@ export class BaseDAOContract {
       })
   }
 
-  private withContract(callback: Callback): Promise<string | void> {
+  protected withContract(callback: Callback): Promise<string | void> {
 
     // Initialize contract if it hasn't been initialized
     return this.initContract().then(callback)
@@ -138,11 +138,6 @@ export class BaseDAOContract {
   accept_ownership(): Promise<string|void> {
     return this.withContract(
       contract => contract.methods.accept_ownership(unit));
-  }
-
-  call_custom(arg: CallCustom): Promise<string|void> {
-    return this.withContract(
-      contract => contract.methods.callCustom(arg[0], arg[1]));
   }
 
   drop_proposal(arg: Drop_proposal): Promise<string|void> {
@@ -184,5 +179,24 @@ export class BaseDAOContract {
   unfreeze(arg: Freeze) {
     return this.withContract(
       contract => contract.methods.unfreeze(arg));
+  }
+}
+
+export class RegistryDAOContract extends BaseDAOContract {
+  lookup_registry(arg: Lookup_registry): Promise<string|void> {
+    return this.withContract(
+      contract => contract.methods.lookup_registry(arg.key, arg.callback));
+  }
+
+  receive_xtz(): Promise<string|void> {
+    return this.withContract(
+      contract => contract.methods.receive_xtz());
+  }
+}
+
+export class TreasuryDAOContract extends BaseDAOContract {
+  receive_xtz(): Promise<string|void> {
+    return this.withContract(
+      contract => contract.methods.receive_xtz());
   }
 }

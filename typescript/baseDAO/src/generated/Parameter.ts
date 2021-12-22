@@ -1,5 +1,6 @@
 import {Accept_ownership} from  './Accept_ownership';
-import {CallCustom} from  './CallCustom';
+import {ConcreteEp} from  './ConcreteEp';
+import {CustomEp} from  './CustomEp';
 import {Drop_proposal} from  './Drop_proposal';
 import {Flush} from  './Flush';
 import {Freeze} from  './Freeze';
@@ -12,7 +13,8 @@ import {Update_delegate} from  './Update_delegate';
 import {Vote} from  './Vote';
 export type Parameter =
   | Accept_ownership
-  | CallCustom
+  | ConcreteEp
+  | CustomEp
   | Drop_proposal
   | Flush
   | Freeze
