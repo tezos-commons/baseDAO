@@ -36,10 +36,10 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ligo": {
-        "sha256": "e6e4a919b0d65687e8a592a79d281ab96ba1489d50328ac147fa758a7810b58d",
+        "sha256": "06y2yng41gqz4lrxrfwhi767nfils7vrpm28h1fg73sxd65xycgh",
         "type": "file",
-        "url": "https://gitlab.com/ligolang/ligo/-/jobs/1553142179/artifacts/raw/ligo",
-        "url_template": "https://gitlab.com/ligolang/ligo/-/jobs/1553142179/artifacts/raw/ligo"
+        "url": "https://gitlab.com/ligolang/ligo/-/jobs/1943933762/artifacts/raw/ligo",
+        "url_template": "https://gitlab.com/ligolang/ligo/-/jobs/1943933762/artifacts/raw/ligo"
     },
     "morley": {
         "sha256": "0g9mdqb7l85z8qa931lxmcqrzhscq6451plz1k18v738ylx4dxmj",

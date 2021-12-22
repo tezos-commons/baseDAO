@@ -11,18 +11,67 @@ in particular its CameLIGO dialect.
 To generate the contract code, or the storage for one of the provided examples,
 you will need the [ligo executable](https://ligolang.org/docs/intro/installation) installed.
 
-The latest working version tested is [0.24.0](https://gitlab.com/ligolang/ligo/-/releases/0.24.0).
+The latest working version tested is [0.33.0](https://gitlab.com/ligolang/ligo/-/releases/0.33.0).
 
 ## Generating the contract code
 
-You can use the [`Makefile`](../Makefile) to build the LIGO contract by simply running:
+Since this repo contain multiple variants, a slightly different command is required to build
+the contract, depending on the variant that is required. For example, you can build the most simple
+variant, the TrivialDAO LIGO contract using the [`Makefile`](../Makefile) in following command
+
 ```sh
-make out/baseDAO.tz
+make out/trivialDAO.tz
 ```
-which will use `ligo compile-contract` and save the result in `out/baseDAO.tz`.
+which will use `ligo compile contract` and save the result in `out/trivialDAO.tz`.
 
 If you prefer to build it manually, the contract's main entrypoint is
 `base_DAO_contract`, located in [src/base_DAO.mligo](../src/base_DAO.mligo).
+
+## Generating the contract code for a custom variant
+
+Imagine you want to implement a DAO called 'acme'. For this first
+copy `src/template.mligo` to a new file `src/acmeDAO.mligo` and follow the instructions
+in the comments to implement your logic for proposal check, decision lambda and rejection
+slash value procedures.
+
+If your variant should support custom entrypoints, then define the type of your custom entrypoints
+using the type `custom_ep_para`, which is also included in the template file with a placeholder unit
+type.
+
+For example, if you have custom entrypoints 'my_custom_ep1' of type `(nat, nat)` and
+'my_custom_ep2' of type `(int, int)` change the line:
+
+```
+type custom_ep_param = unit
+
+```
+
+to
+
+```
+type custom_ep_param =
+  | My_custom_ep1 of (nat, nat)
+  | My_custom_ep2 of (int, int)
+```
+
+if your custom entrypoints only contain a single entrypoint, you might have to pair
+it with a dummy entrypoint so that the entrypoint annotation will show up in the final
+contract.
+
+```
+type custom_ep_param =
+  | MyCustomEp1 of (nat, nat)
+  | MyCustomEpDummy of unit
+```
+
+After this, you can implement the handlers for this entrypoints by modifying the `custom_ep` function
+that is included in the template.
+
+Then you can build this DAO variant by using the make command:
+
+```
+export VARIANT=acme && make baseDAO
+```
 
 ## Generating a contract metadata
 

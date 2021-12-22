@@ -33,14 +33,13 @@ An existing separate FA2 contract is required and used for governance.
 
 # Configuration
 
-BaseDAO is a concrete smart contract, but also a framework to implement various DAOs.
-It can be configured at origination for any specific needs.
+BaseDAO is a framework to implement various DAO smart contracts.
+It can be configured during build for any specific needs.
 
 In order to do so the contract has types that can contain arbitary data:
 - `proposal_metadata` which is a type synonym for `bytes`
 - `contract_extra` which is a type synonym for `(string, bytes) big_map`
   (or in Michelson: `big_map string bytes`)
-
 
 The former contains fields that are required to submit a proposal.
 
@@ -72,26 +71,13 @@ type treasury_dao_proposal_metadata =
 ```
 and an empty `contract_extra`.
 
-Lastly, there is one more `(string, bytes) big_map` type synonym: `custom_entrypoints`,
-used to execute arbitrary logic on the contract, see [its section](#custom-entrypoints)
-for more information on its content and usage.
+One can use the template.mligo module to derive a new variant by copying it and
+filling in the placeholders defining custom logic and types.
 
 DAO configuration value parameters are captured by the `config` type:
 
 ```ocaml
 type config =
-  { proposal_check : propose_params * contract_extra -> unit
-  // ^ A lambda used to verify whether a proposal can be submitted.
-  // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
-  // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
-  ; rejected_proposal_slash_value : proposal * contract_extra -> nat
-  // ^ When a proposal is rejected, the value that the proposer gets back can be slashed.
-  // This lambda returns the amount to be slashed.
-  ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
-  // ^ The decision lambda is executed based on a successful proposal.
-  // It has access to the proposal, can modify `contractExtra` and perform arbitrary
-  // operations.
-
   ; max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction
@@ -120,8 +106,6 @@ type config =
   // ^ The proposal age at (and above) which the proposal is considered expired.
   // Has to be bigger than `proposal_flush_level`
 
-  ; custom_entrypoints : custom_entrypoints
-  // ^ Packed arbitrary lambdas associated to a name for custom execution.
   }
 ```
 
@@ -701,33 +685,8 @@ Parameter (in Michelson):
 
 BaseDAO allows DAOs to define their own additional entrypoints.
 
-```ocaml
-bytes * full_storage -> operation list * storage
-```
-
-where the bytes is the packed parameter of the custom entrypoint.
-
-To call one of these "custom entrypoints" the contract `parameter` has:
-
-### **CallCustom**
-
-```ocaml
-type custom_ep_param = (string * bytes)
-
-CallCustom of custom_ep_param
-```
-
-Parameter (in Michelson):
-```
-(pair %callCustom
-  string
-  bytes
-)
-```
-
-`CallCustom` receives:
-- a `string`: the custom entrypoint name stored inside `custom_entrypoints` to execute
-- a `bytes`: the `packed` representation of the `<ep_param>` to execute it with
+This is done by defining the type to represent the custom entrypoints, and
+implementing procedure to handle custom entrypoints using the `template.mligo` module.
 
 # TZIP-016 metadata
 
