@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 #include "../types.mligo"
+#include "../error_codes.mligo"
 
 
 let add_frozen_fh (amt, fh : nat * address_freeze_history): address_freeze_history =
@@ -11,8 +12,7 @@ let sub_frozen_fh (amt, fh : nat * address_freeze_history): address_freeze_histo
   match is_nat(fh.past_unstaked - amt) with
   | Some new_amt -> { fh with past_unstaked = new_amt }
   | None ->
-      ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
-        ( "NOT_ENOUGH_FROZEN_TOKENS", ()) : address_freeze_history)
+      (failwith not_enough_frozen_tokens : address_freeze_history)
 
 let stake_frozen_fh (amt, fh : nat * address_freeze_history): address_freeze_history =
   let fh = sub_frozen_fh(amt, fh) in
@@ -23,8 +23,7 @@ let unstake_frozen_fh (amt_to_unstake, amt_to_burn, fh : nat * nat * address_fre
   | Some new_staked_amt ->
       { fh with staked = new_staked_amt; past_unstaked = fh.past_unstaked + amt_to_unstake }
   | None ->
-      ([%Michelson ({| { FAILWITH } |} : (string * unit) -> address_freeze_history)]
-        ("BAD_STATE", ()) : address_freeze_history)
+      (failwith bad_state : address_freeze_history)
 
 // Update a possibly outdated freeze_history for the current stage
 let update_fh (current_stage, freeze_history : nat * address_freeze_history): address_freeze_history =

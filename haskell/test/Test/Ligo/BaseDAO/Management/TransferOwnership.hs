@@ -25,6 +25,7 @@ import Lorentz hiding (assert, (>>))
 import Morley.Util.Named
 import Test.Cleveland
 
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 
@@ -156,9 +157,9 @@ bypassAcceptForSelf withOriginatedFn initialStorage =
 expectNotAdmin
   :: (MonadCleveland caps base m)
   => m a -> m ()
-expectNotAdmin = expectCustomErrorNoArg #nOT_ADMIN
+expectNotAdmin = expectFailedWith notAdmin
 
 expectNotPendingOwner
   :: (MonadCleveland caps base m)
   => m a -> m ()
-expectNotPendingOwner = expectCustomErrorNoArg #nOT_PENDING_ADMIN
+expectNotPendingOwner = expectFailedWith notPendingAdmin

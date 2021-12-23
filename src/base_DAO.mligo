@@ -6,6 +6,7 @@
 #include "proposal.mligo"
 #include "defaults.mligo"
 #include "token.mligo"
+#include "error_codes.mligo"
 
 (*
  * Entrypoints that require no xtz to be sent.
@@ -15,7 +16,7 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     : operation list * storage =
   // check for no xtz
   if Tezos.amount > 0tez then
-    (failwith("FORBIDDEN_XTZ") : return)
+    (failwith forbidden_xtz : return)
   else
     match param with
     | Drop_proposal (p)      -> drop_proposal(p, config, store)

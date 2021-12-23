@@ -3,6 +3,7 @@
 
 #include "types.mligo"
 #include "common.mligo"
+#include "error_codes.mligo"
 
 (*
  * Auth checks for admin and store the address in parameter to the
@@ -25,7 +26,7 @@ let transfer_ownership (param, store : transfer_ownership_param * storage) : ret
 let accept_ownership(store : storage) : return =
   if store.pending_owner = Tezos.sender
   then (nil_op, { store with admin = Tezos.sender })
-  else (failwith("NOT_PENDING_ADMIN") : return)
+  else (failwith not_pending_admin : return)
 
 (*
  * Call a custom entrypoint.
@@ -45,8 +46,8 @@ let call_custom(param, store, config : custom_ep_param * storage * config) : ret
   let packed_ep =
     match Map.find_opt ep_name config.custom_entrypoints with
     | Some (ep_code) -> ep_code
-    | None -> ([%Michelson ({| { FAILWITH } |} : string -> bytes)] "ENTRYPOINT_NOT_FOUND" : bytes)
+    | None -> (failwith entrypoint_not_found : bytes)
   in
   match ((Bytes.unpack packed_ep) : (bytes * full_storage -> return) option) with
   | Some lambda -> lambda (packed_param, (store, config))
-  | None -> ([%Michelson ({| { FAILWITH } |} : string -> return)] "UNPACKING_FAILED" : return)
+  | None -> (failwith unpacking_failed : return)

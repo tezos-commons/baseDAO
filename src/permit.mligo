@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+#include "error_codes.mligo"
+
 // Complete parameter with common signature data and pack them into bytes that
 // will be signed in permit.
 [@inline]
@@ -17,8 +19,8 @@ let vote_param_to_signed_data (param, store : vote_param * storage) : bytes * st
 let checked_permit_sender (permit, data_to_sign : permit * bytes): address =
   if Crypto.check permit.key permit.signature data_to_sign
   then Tezos.address (Tezos.implicit_account (Crypto.hash_key (permit.key)))
-  else ([%Michelson ({| { FAILWITH } |} : string * bytes -> address)]
-        ("MISSIGNED", data_to_sign) : address)
+  else ([%Michelson ({| { FAILWITH } |} : nat * bytes -> address)]
+        (missigned, data_to_sign) : address)
 
 // Check that permit is signed by its author, and return the author
 // and the parameter to work with.

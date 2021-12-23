@@ -24,6 +24,7 @@ import Lorentz.Contracts.Spec.TZIP16Interface
 import Morley.Metadata
 import Morley.Metadata.Util.Aeson (aesonOptions)
 
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import qualified Paths_baseDAO_ligo_meta as Paths
 
@@ -78,6 +79,7 @@ knownBaseDAOMetadata settings@MetadataSettings{..} = mconcat
   , keyValue @[MetadataConfig] "assets"
       [ msConfig
       ]
+  , errors tzipErrorList
   ]
 
 ------------------------------------------------------------------------

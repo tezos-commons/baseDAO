@@ -63,14 +63,14 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
           : transfer_params contract option) with
       | Some contract ->
           (Tezos.transaction tt.transfer_list 0mutez contract) :: ops
-      | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
+      | None -> (failwith fail_decision_lambda : operation list)
     end
   | Xtz_transfer_type xt ->
     begin
       match (Tezos.get_contract_opt xt.recipient : unit contract option) with
       | Some contract ->
           (Tezos.transaction unit xt.amount contract) :: ops
-      | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
+      | None -> (failwith fail_decision_lambda : operation list)
     end
 
 let treasury_DAO_decision_lambda (input : decision_lambda_input)

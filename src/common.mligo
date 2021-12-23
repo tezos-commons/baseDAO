@@ -4,6 +4,7 @@
 #if !COMMON_H
 #define COMMON_H
 
+#include "error_codes.mligo"
 #include "types.mligo"
 
 [@inline]
@@ -11,6 +12,6 @@ let authorize_admin (store : storage): storage =
   if sender = store.admin then
     store
   else
-    (failwith("NOT_ADMIN") : storage)
+    (failwith not_admin : storage)
 
 #endif

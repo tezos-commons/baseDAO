@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+#include "error_codes.mligo"
 #include "common/errors.mligo"
 #include "common/types.mligo"
 #include "defaults.mligo"
@@ -112,14 +113,14 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
           : transfer_params contract option) with
       | Some contract ->
           (Tezos.transaction tt.transfer_list 0mutez contract) :: ops
-      | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
+      | None -> (failwith fail_decision_lambda : operation list)
     end
   | Xtz_transfer_type xt ->
     begin
       match (Tezos.get_contract_opt xt.recipient : unit contract option) with
       | Some contract ->
           (Tezos.transaction unit xt.amount contract) :: ops
-      | None -> (failwith("FAIL_DECISION_LAMBDA") : operation list)
+      | None -> (failwith fail_decision_lambda : operation list)
     end
 
 (*
@@ -207,7 +208,7 @@ let lookup_registry (bytes_param, full_store : bytes * full_storage) : operation
   let view_contract : lookup_registry_view =
       match (Tezos.get_contract_opt(param.callback) : lookup_registry_view option) with
       | Some callback_contract -> callback_contract
-      | None -> (failwith "BAD_VIEW_CONTRACT": lookup_registry_view) in
+      | None -> (failwith bad_view_contract: lookup_registry_view) in
   let contract_extra = full_store.0.extra in
   let registry : registry = unpack_registry(find_big_map("registry", contract_extra)) in
   let value_at_key : registry_value option = Big_map.find_opt param.key registry in
@@ -248,6 +249,6 @@ let successful_proposal_receiver_view (full_storage : full_storage): proposal_re
       begin
         match (Bytes.unpack packed_b : proposal_receivers option) with
         | Some r -> r
-        | None -> ((failwith "Unpacking failed") : proposal_receivers)
+        | None -> ((failwith unpacking_failed) : proposal_receivers)
       end
   | None -> (failwith "'proposal_receivers' key not found" : proposal_receivers)

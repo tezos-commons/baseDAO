@@ -318,7 +318,7 @@ handleProposalIsOver (proposalLvl, proposalKey) = do
 applyFlush :: ModelSource -> Natural -> ModelT ()
 applyFlush _ param = do
   when (param == 0) $
-    throwError BAD_ENTRYPOINT_PARAMETER
+    throwError EMPTY_FLUSH
 
   anyFlushedProposal <-
     getStore

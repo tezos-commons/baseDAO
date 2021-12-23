@@ -3,12 +3,13 @@
 
 #include "common.mligo"
 #include "types.mligo"
+#include "error_codes.mligo"
 
 let make_transfer_on_token (tps, contract_addr : transfer_params * address) : operation =
   let token_contract =
     match (Tezos.get_entrypoint_opt "%transfer" contract_addr : ((transfer_params contract) option)) with
       | Some (c) -> c
-      | None -> (failwith "BAD_TOKEN_CONTRACT" : (transfer_params contract))
+      | None -> (failwith bad_token_contract : (transfer_params contract))
   in Tezos.transaction tps 0mutez token_contract
 
 let transfer_contract_tokens (param, store : transfer_contract_tokens_param * storage) : return =

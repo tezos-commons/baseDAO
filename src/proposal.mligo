@@ -5,6 +5,7 @@
 #include "common.mligo"
 #include "token.mligo"
 #include "permit.mligo"
+#include "error_codes.mligo"
 #include "proposal/freeze_history.mligo"
 #include "proposal/quorum_threshold.mligo"
 
@@ -19,29 +20,28 @@ let to_proposal_key (propose_params: propose_params): proposal_key =
 let fetch_proposal (proposal_key, store : proposal_key * storage): proposal =
   match Map.find_opt proposal_key store.proposals with
   | Some p -> p
-  | None -> (failwith("PROPOSAL_NOT_EXIST") : proposal)
+  | None -> (failwith proposal_not_exist : proposal)
 
 [@inline]
 let check_if_proposal_exist (proposal_key, store : proposal_key * storage): proposal =
   let p = fetch_proposal (proposal_key, store) in
   if Set.mem (p.start_level, proposal_key) store.proposal_key_list_sort_by_level
     then p
-    else (failwith("PROPOSAL_NOT_EXIST") : proposal)
+    else (failwith proposal_not_exist : proposal)
 
 // Gets the current stage counting how many `period` s have passed since
 // the `start`. The stages are zero-index.
 let get_current_stage_num(start, vp : blocks * period) : nat =
   match is_nat((Tezos.level - start.blocks) : int) with
   | Some (elapsed_levels) -> elapsed_levels/vp.blocks
-  | None -> ([%Michelson ({| { FAILWITH } |} : string * unit -> nat)]
-      ("BAD_STATE", ()))
+  | None -> (failwith bad_state : nat)
 
 [@inline]
 let ensure_proposal_voting_stage (proposal, period, store : proposal * period * storage): storage =
   let current_stage = get_current_stage_num(store.start_level, period) in
   if current_stage = proposal.voting_stage_num
   then store
-  else (failwith("VOTING_STAGE_OVER") : storage)
+  else (failwith voting_stage_over : storage)
 
 // Checks that a given stage number is a proposing stage
 // Only odd stage numbers are proposing stages, in which a proposal can be
@@ -49,13 +49,13 @@ let ensure_proposal_voting_stage (proposal, period, store : proposal * period * 
 let ensure_proposing_stage(stage_num, store : nat * storage): storage =
   if (stage_num mod 2n) = 1n
   then store
-  else (failwith("NOT_PROPOSING_STAGE") : storage)
+  else (failwith not_proposing_stage : storage)
 
 [@inline]
 let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
   let proposal_key = to_proposal_key(propose_params) in
   if Map.mem proposal_key store.proposals
-    then (failwith("PROPOSAL_NOT_UNIQUE") : proposal_key)
+    then (failwith proposal_not_unique: proposal_key)
     else proposal_key
 
 // -----------------------------------------------------------------
@@ -68,7 +68,7 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
 let check_delegate (from, author, store : address * address * storage): address =
   let key: delegate = { owner = from; delegate = author } in
   if (author <> from) && not (Big_map.mem key store.delegates) then
-    (failwith("NOT_DELEGATE") : address)
+    (failwith not_delegate : address)
   else from
 
 let update_delegate (delegates, param: delegates * update_delegate): delegates =
@@ -95,7 +95,7 @@ let update_delegates (params, store : update_delegate_params * storage): return 
 [@inline]
 let check_proposal_limit_reached (config, store : config * storage): storage =
   if config.max_proposals <= List.length store.proposal_key_list_sort_by_level
-  then (failwith("MAX_PROPOSALS_REACHED") : storage)
+  then (failwith max_proposals_reached : storage)
   else store
 
 let lock_governance_tokens (tokens, addr, frozen_total_supply, governance_token : nat * address * nat * governance_token)
@@ -117,8 +117,7 @@ let stake_tk(token_amount, addr, period, store : nat * address * period * storag
     | None ->
       if token_amount = 0n
       then store.freeze_history
-      else ([%Michelson ({| { FAILWITH } |} : (string * unit) -> freeze_history)]
-              ("NOT_ENOUGH_FROZEN_TOKENS", ()) : freeze_history)
+      else (failwith not_enough_frozen_tokens : freeze_history)
   in { store with freeze_history = new_freeze_history; quorum_threshold_at_cycle = {store.quorum_threshold_at_cycle with staked = new_cycle_staked } }
 
 [@inline]
@@ -131,7 +130,7 @@ let unlock_governance_tokens (tokens, addr, frozen_total_supply, governance_toke
     match Michelson.is_nat (frozen_total_supply - tokens) with
       Some new_total_supply -> new_total_supply
     | None ->
-        (failwith("BAD_STATE") : nat)
+        (failwith bad_state : nat)
   in ([operation], new_total_supply)
 
 let add_proposal (propose_params, period, store : propose_params * period * storage): storage =
@@ -181,7 +180,7 @@ let check_vote_limit_reached
   if config.max_voters <= Map.size(proposal.voters)
       // We use <= because this function is called before the voter is added to the proposal.voters
       // map.
-  then (failwith("MAX_VOTERS_REACHED") : vote_param)
+  then (failwith max_voters_reached : vote_param)
   else vote_param
 
 let vote(votes, config, store : vote_param_permited list * config * storage): return =
@@ -207,12 +206,12 @@ let unstake_tk(token_amount, burn_amount, addr, period, store : nat * nat * addr
         let new_total_supply =
           match Michelson.is_nat (store.frozen_total_supply - burn_amount) with
             Some new_total_supply -> new_total_supply
-          | None -> (failwith("BAD_STATE") : nat) in
+          | None -> (failwith bad_state : nat) in
         { store with
             freeze_history = new_freeze_history
           ; frozen_total_supply = new_total_supply
         }
-    | None -> (failwith("BAD_STATE") : storage)
+    | None -> (failwith bad_state : storage)
 
 let unfreeze_proposer_and_voter_token
   (rejected_proposal_slash, is_accepted, proposal, period, fixed_fee, store :
@@ -283,7 +282,7 @@ let handle_proposal_is_over
   let proposal = fetch_proposal (proposal_key, store) in
 
   if is_proposal_age (proposal, config.proposal_expired_level)
-  then (failwith("EXPIRED_PROPOSAL") : (operation list * storage * counter))
+  then (failwith expired_proposal : (operation list * storage * counter))
   else if is_proposal_age (proposal, config.proposal_flush_level)
        && counter.current < counter.total // not finished
   then
@@ -315,7 +314,7 @@ let handle_proposal_is_over
 // Flush all proposals that passed their voting stage.
 let flush(n, config, store : nat * config * storage): return =
   if n = 0n
-  then (failwith("BAD_ENTRYPOINT_PARAMETER") : return)
+  then (failwith empty_flush : return)
   else
     let counter : counter = { current = 0n; total = n } in
     let flush_one
@@ -329,7 +328,7 @@ let flush(n, config, store : nat * config * storage): return =
     in
     // prevent empty flushes to avoid gas costs when unnecessary.
     if counter.current = 0n
-    then (failwith("EMPTY_FLUSH") : return)
+    then (failwith empty_flush : return)
     else (ops, store)
 
 // Removes an accepted and finished proposal by key.
@@ -352,7 +351,7 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
     let store = delete_proposal (proposal.start_level, proposal_key, store) in
     (nil_op, store)
   else
-    (failwith("DROP_PROPOSAL_CONDITION_NOT_MET") : return)
+    (failwith drop_proposal_condition_not_met : return)
 
 let freeze (amt, config, store : freeze_param * config * storage) : return =
   let addr = Tezos.sender in
@@ -382,8 +381,7 @@ let unfreeze (amt, config, store : unfreeze_param * config * storage) : return =
         let fh = sub_frozen_fh(amt, fh) in
         Big_map.update addr (Some(fh)) store.freeze_history
     | None ->
-        ([%Michelson ({| { FAILWITH } |} : (string * unit) -> freeze_history)]
-          ("NOT_ENOUGH_FROZEN_TOKENS", ()) : freeze_history)
+        (failwith not_enough_frozen_tokens : freeze_history)
   in
 
   let (operations, frozen_total_supply) = unlock_governance_tokens (amt, Tezos.sender, store.frozen_total_supply, store.governance_token) in

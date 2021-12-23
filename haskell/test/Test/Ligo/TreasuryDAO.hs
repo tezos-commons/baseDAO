@@ -16,6 +16,7 @@ import Test.Tasty (TestTree, testGroup)
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.TreasuryDAO.Types
@@ -69,7 +70,7 @@ validProposal = withFrozenCallStack $ do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 (proposalSize + 1) proposalMeta)
-    & expectCustomError #fAIL_PROPOSAL_CHECK incorrectTokenAmountErrMsg
+    & expectFailedWith (failProposalCheck, incorrectTokenAmountErrMsg)
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
@@ -153,11 +154,11 @@ flushXtzTransfer = withFrozenCallStack $ do
   withSender dodOwner1 $ do
     -- due to smaller than min_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 1)
-      & expectCustomError #fAIL_PROPOSAL_CHECK tooSmallXtzErrMsg
+      & expectFailedWith (failProposalCheck, tooSmallXtzErrMsg)
 
     -- due to bigger than max_xtz_amount
     call dodDao (Call @"Propose") (proposeParams 6)
-      & expectCustomError #fAIL_PROPOSAL_CHECK tooLargeXtzErrMsg
+      & expectFailedWith (failProposalCheck, tooLargeXtzErrMsg)
 
     call dodDao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3)
@@ -299,7 +300,7 @@ proposalCheckFailZeroMutez = withFrozenCallStack do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
-      & expectCustomError #fAIL_PROPOSAL_CHECK zeroMutezErrMsg
+      & expectFailedWith (failProposalCheck, zeroMutezErrMsg)
 
 proposalCheckBiggerThanMaxProposalSize
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
@@ -323,7 +324,7 @@ proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
 
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 largeProposalSize largeProposalMeta)
-      & expectCustomError #fAIL_PROPOSAL_CHECK tooLargeProposalErrMsg
+      & expectFailedWith (failProposalCheck, tooLargeProposalErrMsg)
 
 
 --------------------------------------------------------------------------

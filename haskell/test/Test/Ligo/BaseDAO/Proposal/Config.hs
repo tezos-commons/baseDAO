@@ -26,6 +26,7 @@ import Universum (Constraint, fromIntegral, (?:))
 
 import Morley.Util.Named
 
+import qualified Ligo.BaseDAO.ErrorCodes as DAO
 import qualified Ligo.BaseDAO.Types as DAO
 import Test.Ligo.BaseDAO.Common.Errors (tooSmallXtzErrMsg)
 
@@ -110,7 +111,9 @@ proposalFrozenTokensMinBound minTokens = ProposalFrozenTokensCheck $ do
     push ()
   else do
     push tooSmallXtzErrMsg
-    failCustom #fAIL_PROPOSAL_CHECK
+    push DAO.failProposalCheck
+    pair
+    failWith
 
 divideOnRejectionBy :: Natural -> RejectedProposalSlashValue
 divideOnRejectionBy divisor = RejectedProposalSlashValue $ do

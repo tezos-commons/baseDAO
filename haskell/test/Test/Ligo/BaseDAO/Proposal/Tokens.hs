@@ -18,6 +18,7 @@ import Lorentz hiding (assert, (>>))
 import Test.Cleveland
 import Morley.Util.Named
 
+import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Test.Ligo.BaseDAO.Common
@@ -116,7 +117,7 @@ cannotUnfreezeStakedTokens originateFn = do
   -- but unfreeze won't let all of them be unfrozen because of the staked tokens
   -- note: 110 tokens are staked here
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 41)
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectFailedWith notEnoughFrozenTokens
   -- it will allow the un-staked ones to be unfrozen
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 40)
 
@@ -131,5 +132,5 @@ cannotUnfreezeFromSamePeriod originateFn = do
 
   -- Cannot unfreeze in the same period
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 10)
-    & expectCustomError_ #nOT_ENOUGH_FROZEN_TOKENS
+    & expectFailedWith notEnoughFrozenTokens
 
