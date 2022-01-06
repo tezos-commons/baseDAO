@@ -100,4 +100,8 @@ getVotePermitsCounter addr =
   (sPermitsCounterRPC . fsStorageRPC) <$> getStorageRPC addr
 
 getOriginationLevel :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m Natural
-getOriginationLevel dodDao = (sStartLevelRPC . fsStorageRPC) <$> (getStorageRPC dodDao)
+getOriginationLevel dodDao =
+  ( fromMaybe (error "getOriginationLevel: start_level is not set") .
+    sStartLevelRPC .
+    fsStorageRPC
+  ) <$> (getStorageRPC dodDao)

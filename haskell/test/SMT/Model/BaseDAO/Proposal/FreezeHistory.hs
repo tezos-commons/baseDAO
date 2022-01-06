@@ -25,9 +25,13 @@ getCurrentStageNum :: ModelT Natural
 getCurrentStageNum = do
   (Period vp) <- getConfig <&> cPeriod
   startLvl <- getStore <&> sStartLevel
-  lvl <- get <&> msLevel
-  case lvl `minusNaturalMaybe` startLvl of
-    Just elapsedLevel -> pure $ elapsedLevel `div` vp
+
+  case startLvl of
+    Just start -> do
+      lvl <- get <&> msLevel
+      case lvl `minusNaturalMaybe` start of
+        Just elapsedLevel -> pure $ elapsedLevel `div` vp
+        Nothing -> throwError NOT_ENOUGH_FROZEN_TOKENS
     Nothing -> error "BAD_STATE: Current lvl is smaller than `startLvl`."
 
 

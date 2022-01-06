@@ -83,6 +83,9 @@
 (* The chosen custom entrypoint does not exist. *)
 [@inline] let entrypoint_not_found = 122n
 
+(* The storage `start_level` is not set. Call `transfer_ownership` to set this. *)
+[@inline] let start_level_not_set = 123n
+
 
 
 

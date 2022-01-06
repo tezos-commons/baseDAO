@@ -8,6 +8,8 @@
 (*
  * Auth checks for admin and store the address in parameter to the
  * `pending_owner` field in storage.
+ * Set storage's `start_level` to the current level of the blockchain if
+ * it is not set previously.
  *)
 let transfer_ownership (param, store : transfer_ownership_param * storage) : return =
   let store = authorize_admin(store) in
@@ -15,8 +17,12 @@ let transfer_ownership (param, store : transfer_ownership_param * storage) : ret
     if Tezos.self_address = param
     // If new admin is address of baseDAO, set as admin right away.
     then { store with admin = param ; }
-    else { store with pending_owner = param ; }
-  in (nil_op, store)
+    else { store with pending_owner = param ; } in
+  let store =
+    match store.start_level with
+    | Some _ -> store
+    | None -> { store with start_level = Some {blocks = Tezos.level} } in
+  (nil_op, store)
 
 (*
  * Auth check for pending admin and copies the value in `pending_owner` field

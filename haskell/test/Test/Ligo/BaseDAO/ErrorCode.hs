@@ -39,5 +39,6 @@ test_ErrorCodes = testGroup "FA2 off-chain views"
       notDelegate @?= 120
       failDecisionLambda @?= 121
       entrypointNotFound @?= 122
+      startLevelNotSet @?= 123
       badState @?= 300
   ]

@@ -63,7 +63,7 @@ runBaseDaoSMT option@SmtOption{..} = do
         let currentLevel = (dummyLevel + (ms & msLevel))
 
         let fullStorage = msFullStorage ms
-        let storage = (fsStorage fullStorage) { sStartLevel = currentLevel }
+        let storage = (fsStorage fullStorage) { sStartLevel = Just currentLevel }
 
         -- Set initial level for the Nettest
         advanceToLevel currentLevel

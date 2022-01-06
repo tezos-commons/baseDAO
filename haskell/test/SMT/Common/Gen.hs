@@ -83,7 +83,7 @@ genStorage = do
               { gtAddress = govAddr
               , gtTokenId = FA2.theTokenId
               }
-        , sStartLevel = startLevel
+        , sStartLevel = Just startLevel
         , sQuorumThresholdAtCycle = quorumThresholdAtCycle
         , sProposals = BigMap Nothing mempty
         , sProposalKeyListSortByDate = mempty
@@ -183,7 +183,9 @@ genModelState SmtOption{..} = do
         { msFullStorage = fs
         , msMutez = toMutez 0
 
-        , msLevel = fs & fsStorage & sStartLevel
+        , msLevel = case fs & fsStorage & sStartLevel of
+            Just start -> start
+            Nothing -> error "Cannot set `msLevel` in generator."
         , msChainId = dummyChainId
         , msSelfAddress = selfAddrPlaceholder -- This will be replace when dao is originated
         , msGovernanceTokenAddress = gov

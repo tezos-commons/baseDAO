@@ -111,6 +111,10 @@ failDecisionLambda = 121
 entrypointNotFound :: Natural
 entrypointNotFound = 122
 
+-- | The storage `start_level` is not set. Call `transfer_ownership` to set this.
+startLevelNotSet :: Natural
+startLevelNotSet = 123
+
 
 
 
@@ -267,6 +271,12 @@ tzipErrorList = [
   EStatic $ StaticError
     { seError = toExpression $ toVal @Integer $ toInteger entrypointNotFound
     , seExpansion = toExpression $ toVal @MText [mt|The chosen custom entrypoint does not exist.|]
+    , seLanguages = ["en"]
+    }
+  ,
+  EStatic $ StaticError
+    { seError = toExpression $ toVal @Integer $ toInteger startLevelNotSet
+    , seExpansion = toExpression $ toVal @MText [mt|The storage `start_level` is not set. Call `transfer_ownership` to set this.|]
     , seLanguages = ["en"]
     }
   ,

@@ -41,6 +41,7 @@ Here is a summary of all the error codes thrown by the contract.
 | 120 | `not_delegate` | The sender has not been delegated the control of the required tokens. |
 | 121 | `fail_decision_lambda` | Executing the proposal's decision lambda results in failure. |
 | 122 | `entrypoint_not_found` | The chosen custom entrypoint does not exist. |
+| 123 | `start_level_not_set` | The storage `start_level` is not set. Call `transfer_ownership` to set this. |
 
 
 

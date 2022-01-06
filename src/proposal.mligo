@@ -31,14 +31,19 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
 
 // Gets the current stage counting how many `period` s have passed since
 // the `start`. The stages are zero-index.
-let get_current_stage_num(start, vp : blocks * period) : nat =
-  match is_nat((Tezos.level - start.blocks) : int) with
-  | Some (elapsed_levels) -> elapsed_levels/vp.blocks
-  | None -> (failwith bad_state : nat)
+// Fail if `start_level` is not set.
+let get_current_stage_num(store, vp : storage * period) : nat =
+  match store.start_level with
+  | Some start -> (
+      match is_nat((Tezos.level - start.blocks) : int) with
+        | Some (elapsed_levels) -> elapsed_levels/vp.blocks
+        | None -> (failwith bad_state : nat)
+      )
+  | None -> (failwith start_level_not_set : nat)
 
 [@inline]
 let ensure_proposal_voting_stage (proposal, period, store : proposal * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, period) in
+  let current_stage = get_current_stage_num(store, period) in
   if current_stage = proposal.voting_stage_num
   then store
   else (failwith voting_stage_over : storage)
@@ -107,7 +112,7 @@ let lock_governance_tokens (tokens, addr, frozen_total_supply, governance_token 
   ([operation], frozen_total_supply + tokens)
 
 let stake_tk(token_amount, addr, period, store : nat * address * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, period) in
+  let current_stage = get_current_stage_num(store, period) in
   let new_cycle_staked = store.quorum_threshold_at_cycle.staked + token_amount in
   let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
@@ -135,7 +140,7 @@ let unlock_governance_tokens (tokens, addr, frozen_total_supply, governance_toke
 
 let add_proposal (propose_params, period, store : propose_params * period * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
-  let current_stage = get_current_stage_num(store.start_level, period) in
+  let current_stage = get_current_stage_num(store, period) in
   let store = ensure_proposing_stage(current_stage, store) in
   let proposal : proposal =
     { upvotes = 0n
@@ -197,7 +202,7 @@ let vote(votes, config, store : vote_param_permited list * config * storage): re
 
 
 let unstake_tk(token_amount, burn_amount, addr, period, store : nat * nat * address * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, period) in
+  let current_stage = get_current_stage_num(store, period) in
   match Big_map.find_opt addr store.freeze_history with
     | Some(fh) ->
         let fh = update_fh(current_stage, fh) in
@@ -267,7 +272,7 @@ let propose (param, config, store : propose_params * config * storage): return =
   let _ : unit = config.proposal_check (param, store.extra) in
   let store = check_proposal_limit_reached (config, store) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
-  let current_stage = get_current_stage_num(store.start_level, config.period) in
+  let current_stage = get_current_stage_num(store, config.period) in
   let store = update_quorum(current_stage, store, config) in
   let store = stake_tk(amount_to_freeze, valid_from, config.period, store) in
   let store = add_proposal (param, config.period, store) in
@@ -358,7 +363,7 @@ let freeze (amt, config, store : freeze_param * config * storage) : return =
   let (operations, frozen_total_supply) = lock_governance_tokens (amt, addr, store.frozen_total_supply, store.governance_token) in
 
   // Add the `amt` to the current stage frozen token count of the freeze-history.
-  let current_stage = get_current_stage_num(store.start_level, config.period) in
+  let current_stage = get_current_stage_num(store, config.period) in
   let new_freeze_history_for_address = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
         let fh = update_fh(current_stage, fh) in
@@ -372,7 +377,7 @@ let freeze (amt, config, store : freeze_param * config * storage) : return =
 
 let unfreeze (amt, config, store : unfreeze_param * config * storage) : return =
   let addr = Tezos.sender in
-  let current_stage = get_current_stage_num(store.start_level, config.period) in
+  let current_stage = get_current_stage_num(store, config.period) in
 
   let new_freeze_history =
     match Big_map.find_opt addr store.freeze_history with

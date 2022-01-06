@@ -107,7 +107,7 @@ test_BaseDAO_Management =
       ! #admin admin
       ! #extra dynRecUnsafe
       ! #metadata mempty
-      ! #level currentLevel
+      ! #level (Just currentLevel)
       ! #tokenAddress genesisAddress
       ! #customEps
           [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)

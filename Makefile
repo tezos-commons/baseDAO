@@ -81,7 +81,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
             { address = (\"$(call require_defined,governance_token_address)\" : address) \
             ; token_id = ($(call require_defined,governance_token_id) : nat) \
             } \
-          ; start_level = {blocks = $(call require_defined,start_level)} \
+          ; start_level = Some {blocks = $(call require_defined,start_level)} \
           ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
           ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
           } \
@@ -136,7 +136,7 @@ $(OUT)/registryDAO_storage.tz: src/**
               { address = (\"$(call require_defined,governance_token_address)\" : address) \
               ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
-            ; start_level = {blocks = $(call require_defined,start_level)} \
+            ; start_level = Some {blocks = $(call require_defined,start_level)} \
             ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
             ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
             } \
@@ -198,7 +198,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
               { address = (\"$(call require_defined,governance_token_address)\" : address) \
               ; token_id = ($(call require_defined,governance_token_id) : nat) \
               } \
-            ; start_level = {blocks = $(call require_defined,start_level)} \
+            ; start_level = Some {blocks = $(call require_defined,start_level)} \
             ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
             ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
             } \

@@ -186,6 +186,10 @@ These values are:
    tokens total supply are required in total to vote for a successful proposal.
 8. `fixed_proposal_fee_in_token : nat` specifies the fee to be paid for submitting
    a proposal (in frozen tokens), if any.
+9. `start_level : blocks option` specifies the `start_level` that is used to calculate
+proposing/voting stage. Can be set at the start origination or after origination by calling
+`Transfer_ownership` which will set `start_level` to the current level of the blockchain if
+its value is `None`.
 
 # Contract logic
 
@@ -439,6 +443,8 @@ Parameter (in Michelson):
 - Initiate transfer of the role of administrator to a new address.
 
 - Fails with `NOT_ADMIN` if the sender is not the administrator.
+
+- Set storage's `start_level` to the current level of the blockchain if it is not set previously.
 
 - The current administrator retains his privileges up until
   `accept_ownership` is called, unless the proposed administrator is the DAO itself.

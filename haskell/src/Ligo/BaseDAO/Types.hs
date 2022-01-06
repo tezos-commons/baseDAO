@@ -600,7 +600,7 @@ data Storage = Storage
   , sProposalKeyListSortByDate :: Set (Natural, ProposalKey)
   , sGovernanceToken :: GovernanceToken
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
-  , sStartLevel :: Natural
+  , sStartLevel :: Maybe Natural
   , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
   , sFrozenTotalSupply :: Natural
   , sDelegates :: Delegates' BigMap
@@ -639,7 +639,7 @@ mkStorage
   :: "admin" :! Address
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
-  -> "level" :! Natural
+  -> "level" :! Maybe Natural
   -> "tokenAddress" :! Address
   -> "quorumThreshold" :! QuorumThreshold
   -> Storage
@@ -813,7 +813,7 @@ mkFullStorage
   -> "governanceTotalSupply" :? GovernanceTotalSupply
   -> "extra" :! ContractExtra
   -> "metadata" :! TZIP16.MetadataMap BigMap
-  -> "level" :! Natural
+  -> "level" :! Maybe Natural
   -> "tokenAddress" :! Address
   -> "customEps" :? [CustomEntrypoint]
   -> FullStorage

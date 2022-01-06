@@ -47,7 +47,7 @@ withOriginated addrCount storageFn tests = do
             { gtAddress = dodTokenContract
             , gtTokenId = FA2.theTokenId
             }
-          , sStartLevel = now_level
+          , sStartLevel = Just now_level
           }
         }
 

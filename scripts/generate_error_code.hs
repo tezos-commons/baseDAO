@@ -99,6 +99,8 @@ invalidInputErrors = errorsEnumerate 100
     :? ("Executing the proposal's decision lambda results in failure.", NoArg)
   , "entrypoint_not_found"
     :? ("The chosen custom entrypoint does not exist.", NoArg)
+  , "start_level_not_set"
+    :? ("The storage `start_level` is not set. Call `transfer_ownership` to set this.", NoArg)
   ]
 
 invalidConfigErrors :: [ErrorItem]

@@ -154,7 +154,7 @@ type storage =
   ; permits_counter : nonce
   ; freeze_history : freeze_history
   ; frozen_token_id : token_id
-  ; start_level : blocks
+  ; start_level : blocks option
   ; quorum_threshold_at_cycle : quorum_threshold_at_cycle
   ; frozen_total_supply : nat
   ; delegates : delegates
@@ -278,7 +278,7 @@ type initial_storage_data =
   { admin : address
   ; guardian : address
   ; governance_token : governance_token
-  ; start_level : blocks
+  ; start_level : blocks option
   ; metadata_map : metadata_map
   ; freeze_history : freeze_history_list
   }

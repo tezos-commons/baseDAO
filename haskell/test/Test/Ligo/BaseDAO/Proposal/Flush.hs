@@ -120,7 +120,6 @@ flushAcceptedProposalsWithAnAmount originateFn = do
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
         ) defaultQuorumThreshold
-  originationLevel <- getOriginationLevel dodDao
 
   -- [Voting]
   withSender dodOwner1 $
@@ -135,7 +134,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   -- [Proposing]
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
   advanceLevel 1
-  _key3 <- createSampleProposal 3 dodOwner1 dodDao
+  key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   let vote' key = NoPermit VoteParam
         { vFrom = dodOwner2
@@ -144,7 +143,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
         , vProposalKey = key
         }
 
-  advanceToLevel (originationLevel + 2 * dodPeriod)
+  advanceToLevel (startLevel + 2 * dodPeriod)
 
   -- [Voting]
   withSender dodOwner2 . inBatch $ do
@@ -153,7 +152,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
       pure ()
 
   proposalStart2 <- getProposalStartLevel dodDao key2
-  proposalStart3 <- getProposalStartLevel dodDao key2
+  proposalStart3 <- getProposalStartLevel dodDao key3
   advanceToLevel (proposalStart2 + 21)
 
   -- [Proposing]

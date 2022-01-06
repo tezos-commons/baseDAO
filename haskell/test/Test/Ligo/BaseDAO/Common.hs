@@ -37,7 +37,7 @@ import qualified Data.ByteString as BS
 import Lorentz hiding (assert, now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Morley.Michelson.Typed.Convert (convertContract, untypeValue)
-import Named ((!))
+import Morley.Util.Named
 import Test.Cleveland
 
 import Ligo.BaseDAO.Contract
@@ -159,11 +159,9 @@ originateLigoDaoWithConfig extra config qt = do
     let fundAddress x = transfer $ TransferData x (toMutez 5_e6) DefEpName ()
     mapM_ fundAddress [owner1, operator1, owner2, operator2, admin]
 
-  currentLevel <- getLevel
   tokenContract <- chAddress <$> originateSimple "TokenContract" [] dummyFA2Contract
   guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
-  let originationOffset = 12
   let fullStorage = FullStorage
         { fsStorage =
             ( mkStorage
@@ -171,11 +169,7 @@ originateLigoDaoWithConfig extra config qt = do
               ! #admin admin
               ! #metadata mempty
               ! #tokenAddress tokenContract
-              ! #level (currentLevel + originationOffset)
-                -- We add some levels to offset for the delay caused by the origination function
-                -- So the expectation is that by the time origination has finished, we will be closer
-                -- to the actual block that includes origination so that the tests have a lesser chance
-                -- to fail due to this difference.
+              ! #level Nothing
               ! #quorumThreshold qt
             )
             { sGuardian = guardianContract
@@ -191,9 +185,12 @@ originateLigoDaoWithConfig extra config qt = do
       }
 
   daoUntyped <- originateUntyped originateData
-  advanceToLevel (currentLevel + originationOffset)
 
   let dao = TAddress @Parameter daoUntyped
+
+  -- Set `start_level` to the current level.
+  withSender admin $ call dao (Call @"Transfer_ownership")
+    (#newOwner :! admin)
 
   pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao (TAddress tokenContract)
       admin (TAddress guardianContract) (unPeriod $ cPeriod config)
