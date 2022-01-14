@@ -32,9 +32,6 @@
 (* The maximum amount of ongoing proposals has been reached. *)
 [@inline] let max_proposals_reached = 105n
 
-(* The maximum amount of voters has been reached for the proposal. *)
-[@inline] let max_voters_reached = 106n
-
 (* Transfer of XTZ is forbidden on this entrypoint. *)
 [@inline] let forbidden_xtz = 107n
 
@@ -82,6 +79,12 @@
 
 (* The chosen custom entrypoint does not exist. *)
 [@inline] let entrypoint_not_found = 122n
+
+(* Cannot call `unstake_vote` on the proposal that is not flushed or dropped. *)
+[@inline] let unstake_invalid_proposal = 123n
+
+(* The sender did not vote on the proposal or already unstaked tokens from the proposal. *)
+[@inline] let voter_does_not_exist = 124n
 
 
 

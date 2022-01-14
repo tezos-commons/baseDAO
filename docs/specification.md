@@ -94,9 +94,6 @@ type config =
 
   ; max_proposals : nat
   // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
-  ; max_voters : nat
-  // ^ Determine the maximum number of voters that are allowed to vote on a proposal.
-  // Voters who votes on a proposal, both ways are counted twice.
   ; max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction
@@ -154,8 +151,6 @@ type proposal =
   // ^ address of the proposer
   ; proposer_frozen_token : nat
   // ^ amount of frozen tokens used by the proposer, exluding the fixed fee
-  ; voters : voter list
-  // ^ voter data
   ; quorum_threshold: quorum_threshold
   // ^ quorum threshold at the cycle in which proposal was raised
   }
@@ -304,10 +299,10 @@ Moreover the proposal to vote on must have been submitted in the proposing `stag
 immediately preceding and the voter must have frozen his tokens in one of the
 preceding `stage`s.
 
-Each vote stakes one frozen token. Staked tokens cannot be unfreezed till they
-are unstaked when the associated proposal is flushed. The number of staked tokens
-only depend on the number of votes, and does not depend on whether the vote is in
-favor or against a proposal.
+Each vote stakes one frozen token. Staked tokens cannot be unfreezed till the
+associated proposal is flushed or dropped. The tokens are unstaked by calling `unstake_vote`.
+The number of staked tokens only depend on the number of votes, and does not depend
+on whether the vote is in favor or against a proposal.
 
 It's possible to vote positively or negatively.
 After the voting ends, the contract is "flushed" by calling a dedicated entrypoint.
@@ -330,6 +325,7 @@ Full list:
 * [`drop_proposal`](#drop_proposal)
 * [`freeze`](#freeze)
 * [`unfreeze`](#unfreeze)
+* [`unstake_vote`](#unstake_vote)
 
 Format:
 ```
@@ -579,8 +575,6 @@ Parameter (in Michelson):
   from past stages that is not staked is less than specified `vote_amount` .
 - Fails with `PROPOSAL_NOT_EXIST` if the proposal key is not associated with any ongoing proposals.
 - Fails with `VOTING_STAGE_OVER` if the voting `stage` for the proposal has already ended.
-- Fails with `MAX_VOTERS_REACHED` if the voter count of the associated proposal
-  is already at the max value set by the configuration.
 - Fails with `MISSIGNED` if permit is incorrect with respect to the provided vote parameter and contract state.
 - The entrypoint accepts a list of vote params. As a result, it is possible to
   `vote` on multiple proposals (or the same proposal multiple time) in one entrypoint call.
@@ -610,6 +604,8 @@ Parameter (in Michelson):
   - If proposal got accepted:
     - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
     - The return amount for each voters is equal to or less than the voter's frozen tokens.
+  - The token return to voters are not immediate. The voters should call `unstake_vote` with the proposal key to get their tokens
+  after `flush` is called.
 - If proposal is accepted, the decision lambda is called.
 - The `quorum_threshold` at the cycle in which the proposal was raised will be
   stored in the proposal, and this threshold will be used to check if the votes
@@ -680,6 +676,26 @@ Parameter (in Michelson):
   baseDAO contract to the address of the sender.
 - Fails with `NOT_ENOUGH_FROZEN_TOKENS` if the author does not have enough tokens
   that can be burned.
+
+
+### **unstake_vote**
+
+```ocaml
+type proposal_key = bytes
+type unstake_vote_param = [proposal_key]
+
+Unstake_vote of unstake_vote_param
+```
+
+Parameter (in Michelson):
+```
+(list %unstake_vote bytes)
+```
+
+- Unstake voter's tokens for proposals that are already flushed or dropped.
+- Fails with `unstake_invalid_proposal` error code if one of the proposals are not yet flushed or dropped.
+- Fails with `voter_does_not_exist` error code if the sender did not vote on the proposal or the sender already called this entrypoint before.
+
 
 ## Custom entrypoints
 

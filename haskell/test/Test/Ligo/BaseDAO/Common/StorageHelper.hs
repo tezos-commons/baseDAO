@@ -10,6 +10,7 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
   , getFullStorage
   , getProposal
   , getProposalStartLevel
+  , getVoter
   , getQtAtCycle
   , getStorageRPC
   , getVotePermitsCounter
@@ -47,6 +48,15 @@ getProposal
 getProposal addr pKey = do
   bId <- (sProposalsRPC . fsStorageRPC) <$> getStorageRPC addr
   getBigMapValueMaybe bId pKey
+
+getVoter
+  :: forall p base caps m. MonadCleveland caps base m
+  => TAddress p
+  -> (Address, ProposalKey)
+  -> m (Maybe StakedVote)
+getVoter addr key = do
+  bId <- (sStakedVotesRPC . fsStorageRPC) <$> getStorageRPC addr
+  getBigMapValueMaybe bId key
 
 getProposalStartLevel
   :: forall p base caps m. MonadCleveland caps base m

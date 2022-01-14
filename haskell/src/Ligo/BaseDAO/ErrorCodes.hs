@@ -43,10 +43,6 @@ votingStageOver = 104
 maxProposalsReached :: Natural
 maxProposalsReached = 105
 
--- | The maximum amount of voters has been reached for the proposal.
-maxVotersReached :: Natural
-maxVotersReached = 106
-
 -- | Transfer of XTZ is forbidden on this entrypoint.
 forbiddenXtz :: Natural
 forbiddenXtz = 107
@@ -111,6 +107,14 @@ failDecisionLambda = 121
 entrypointNotFound :: Natural
 entrypointNotFound = 122
 
+-- | Cannot call `unstake_vote` on the proposal that is not flushed or dropped.
+unstakeInvalidProposal :: Natural
+unstakeInvalidProposal = 123
+
+-- | The sender did not vote on the proposal or already unstaked tokens from the proposal.
+voterDoesNotExist :: Natural
+voterDoesNotExist = 124
+
 
 
 
@@ -165,12 +169,6 @@ tzipErrorList = [
   EStatic $ StaticError
     { seError = toExpression $ toVal @Integer $ toInteger maxProposalsReached
     , seExpansion = toExpression $ toVal @MText [mt|The maximum amount of ongoing proposals has been reached.|]
-    , seLanguages = ["en"]
-    }
-  ,
-  EStatic $ StaticError
-    { seError = toExpression $ toVal @Integer $ toInteger maxVotersReached
-    , seExpansion = toExpression $ toVal @MText [mt|The maximum amount of voters has been reached for the proposal.|]
     , seLanguages = ["en"]
     }
   ,
@@ -267,6 +265,18 @@ tzipErrorList = [
   EStatic $ StaticError
     { seError = toExpression $ toVal @Integer $ toInteger entrypointNotFound
     , seExpansion = toExpression $ toVal @MText [mt|The chosen custom entrypoint does not exist.|]
+    , seLanguages = ["en"]
+    }
+  ,
+  EStatic $ StaticError
+    { seError = toExpression $ toVal @Integer $ toInteger unstakeInvalidProposal
+    , seExpansion = toExpression $ toVal @MText [mt|Cannot call `unstake_vote` on the proposal that is not flushed or dropped.|]
+    , seLanguages = ["en"]
+    }
+  ,
+  EStatic $ StaticError
+    { seError = toExpression $ toVal @Integer $ toInteger voterDoesNotExist
+    , seExpansion = toExpression $ toVal @MText [mt|The sender did not vote on the proposal or already unstaked tokens from the proposal.|]
     , seLanguages = ["en"]
     }
   ,

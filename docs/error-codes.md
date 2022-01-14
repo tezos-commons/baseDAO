@@ -24,7 +24,6 @@ Here is a summary of all the error codes thrown by the contract.
 | 103 | `proposal_not_exist` | The proposal does not exist or is no longer ongoing. |
 | 104 | `voting_stage_over` | The proposal voting stage has already ended. |
 | 105 | `max_proposals_reached` | The maximum amount of ongoing proposals has been reached. |
-| 106 | `max_voters_reached` | The maximum amount of voters has been reached for the proposal. |
 | 107 | `forbidden_xtz` | Transfer of XTZ is forbidden on this entrypoint. |
 | 108 | `proposal_not_unique` | The submitted proposal already exist. |
 | 109 | `missigned` | Parameter signature does not match the expected one - for permits. |
@@ -41,6 +40,8 @@ Here is a summary of all the error codes thrown by the contract.
 | 120 | `not_delegate` | The sender has not been delegated the control of the required tokens. |
 | 121 | `fail_decision_lambda` | Executing the proposal's decision lambda results in failure. |
 | 122 | `entrypoint_not_found` | The chosen custom entrypoint does not exist. |
+| 123 | `unstake_invalid_proposal` | Cannot call `unstake_vote` on the proposal that is not flushed or dropped. |
+| 124 | `voter_does_not_exist` | The sender did not vote on the proposal or already unstaked tokens from the proposal. |
 
 
 

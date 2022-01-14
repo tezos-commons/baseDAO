@@ -92,6 +92,9 @@ flushAcceptedProposals originateFn = do
   proposalStart <- getProposalStartLevel dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
+  withSender dodOwner1 $ call dodDao (Call @"Unstake_vote") [key1]
+    & expectFailedWith voterDoesNotExist
+  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key1]
 
   checkIfAProposalExist key1 dodDao False
 
@@ -135,7 +138,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   -- [Proposing]
   (key1, key2) <- createSampleProposals (1, 2) dodOwner1 dodDao
   advanceLevel 1
-  _key3 <- createSampleProposal 3 dodOwner1 dodDao
+  key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   let vote' key = NoPermit VoteParam
         { vFrom = dodOwner2
@@ -153,7 +156,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
       pure ()
 
   proposalStart2 <- getProposalStartLevel dodDao key2
-  proposalStart3 <- getProposalStartLevel dodDao key2
+  proposalStart3 <- getProposalStartLevel dodDao key3
   advanceToLevel (proposalStart2 + 21)
 
   -- [Proposing]

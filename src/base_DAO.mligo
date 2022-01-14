@@ -25,6 +25,7 @@ let requiring_no_xtz (param, store, config : forbid_xtz_params * storage * confi
     | Freeze p               -> freeze(p, config, store)
     | Unfreeze p             -> unfreeze(p, config, store)
     | Update_delegate p      -> update_delegates(p, store)
+    | Unstake_vote p         -> unstake_vote(p, config, store)
 
 (*
  * Entrypoints that allow xtz to be sent.

@@ -211,7 +211,6 @@ data ModelError
   | PROPOSAL_NOT_EXIST
   | EXPIRED_PROPOSAL
   | MISSIGNED
-  | MAX_VOTERS_REACHED
   | VOTING_STAGE_OVER
   | DROP_PROPOSAL_CONDITION_NOT_MET
   | NOT_ADMIN
@@ -221,6 +220,8 @@ data ModelError
   | UNPACKING_FAILED
   | FAIL_PROPOSAL_CHECK
   | MISSING_VALUE
+  | UNSTAKE_INVALID_PROPOSAL
+  | VOTER_DOES_NOT_EXIST
   deriving stock (Generic, Eq, Show)
 
 instance Buildable ModelError where
@@ -248,4 +249,6 @@ contractErrorToModelError errorCode
   | (errorCode == toInteger entrypointNotFound) = ENTRYPOINT_NOT_FOUND
   | (errorCode == toInteger unpackingFailed) = UNPACKING_FAILED
   | (errorCode == toInteger failProposalCheck) = FAIL_PROPOSAL_CHECK
+  | (errorCode == toInteger unstakeInvalidProposal) = UNSTAKE_INVALID_PROPOSAL
+  | (errorCode == toInteger voterDoesNotExist) = VOTER_DOES_NOT_EXIST
   | otherwise = error $ toText $ show errorCode

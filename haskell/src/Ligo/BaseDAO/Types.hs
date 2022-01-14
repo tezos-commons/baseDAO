@@ -19,9 +19,9 @@ module Ligo.BaseDAO.Types
   , QuorumThresholdAtCycle (..)
   , Period (..)
   , VoteParam (..)
-  , Voter (..)
   , QuorumFraction (..)
   , GovernanceTotalSupply (..)
+  , StakedVote
   , mkQuorumThreshold
   , fractionDenominator
   , percentageToFractionNumerator
@@ -53,6 +53,7 @@ module Ligo.BaseDAO.Types
   , AllowXTZParam (..)
   , FreezeParam
   , UnfreezeParam
+  , UnstakeVoteParam
 
   , FixedFee (..)
   , Storage (..)
@@ -213,19 +214,6 @@ instance Buildable GovernanceTotalSupply where
 -- | Represents whether a voter has voted against (False) or for (True) a given proposal.
 type VoteType = Bool
 
-data Voter = Voter
-  { voteAmount :: Natural
-  , voteType :: VoteType
-  }
-  deriving stock (Show)
-
-instance TypeHasDoc Voter where
-  typeDocMdDescription =
-    "Describes a voter on some proposal, including its address, vote type and vote amount"
-
-instance HasAnnotation Voter where
-  annOptions = baseDaoAnnOptions
-
 data VoteParam = VoteParam
   { vProposalKey :: ProposalKey
   , vVoteType    :: VoteType
@@ -245,6 +233,9 @@ instance HasAnnotation VoteParam where
 
 instance Buildable VoteParam where
   build = genericF
+
+
+type StakedVote = Natural
 
 ------------------------------------------------------------------------
 -- Non FA2
@@ -497,7 +488,6 @@ data Proposal = Proposal
   , plProposer                :: Address
   , plProposerFrozenToken     :: Natural
 
-  , plVoters                  :: Map (Address, Bool) Natural
   , plQuorumThreshold         :: QuorumThreshold
   }
   deriving stock (Eq, Show)
@@ -510,6 +500,7 @@ type CustomEntrypoint = (MText, ByteString)
 
 type FreezeParam = ("amount" :! Natural)
 type UnfreezeParam = ("amount" :! Natural)
+type UnstakeVoteParam = [ProposalKey]
 
 data ForbidXTZParam
   = Drop_proposal ProposalKey
@@ -518,6 +509,7 @@ data ForbidXTZParam
   | Freeze FreezeParam
   | Unfreeze UnfreezeParam
   | Update_delegate [DelegateParam]
+  | Unstake_vote UnstakeVoteParam
   deriving stock (Eq, Show)
 
 instance Buildable ForbidXTZParam where
@@ -598,6 +590,7 @@ data Storage = Storage
   , sPermitsCounter :: Nonce
   , sProposals :: BigMap ProposalKey Proposal
   , sProposalKeyListSortByDate :: Set (Natural, ProposalKey)
+  , sStakedVotes :: BigMap (Address, ProposalKey) StakedVote
   , sGovernanceToken :: GovernanceToken
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
   , sStartLevel :: Natural
@@ -653,6 +646,7 @@ mkStorage (N admin) (N extra) (N metadata) (N lvl) (N tokenAddress) (N qt) =
     , sPermitsCounter = Nonce 0
     , sProposals = mempty
     , sProposalKeyListSortByDate = mempty
+    , sStakedVotes = mempty
     , sGovernanceToken = GovernanceToken
         { gtAddress = tokenAddress
         , gtTokenId = FA2.theTokenId
@@ -720,7 +714,6 @@ data Config = Config
   , cDecisionLambda :: '[DecisionLambdaInput] :-> '[DecisionLambdaOutput]
 
   , cMaxProposals :: Natural
-  , cMaxVoters :: Natural
   , cMaxQuorumThreshold :: QuorumFraction
   , cMinQuorumThreshold :: QuorumFraction
 
@@ -777,7 +770,6 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   , cMaxQuorumThreshold = percentageToFractionNumerator 99 -- 99%
   , cMinQuorumThreshold = percentageToFractionNumerator 1 -- 1%
 
-  , cMaxVoters = 1000
   , cMaxProposals = 500
   }
 
@@ -836,14 +828,10 @@ setExtra key v (s@FullStorage {..}) = s { fsStorage = newStorage }
 -- Instances
 ------------------------------------------------
 
-deriving anyclass instance IsoValue Voter
-
-customGeneric "Voter" ligoLayout
 customGeneric "Proposal" ligoLayout
 deriving anyclass instance IsoValue Proposal
 instance Buildable Proposal where
   build = genericF
-
 
 customGeneric "ForbidXTZParam" ligoLayout
 deriving anyclass instance IsoValue ForbidXTZParam

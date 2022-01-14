@@ -12,12 +12,10 @@ module Test.Ligo.BaseDAO.Proposal.Vote
   , voteValidProposal
   , voteWithPermit
   , voteWithPermitNonce
-  , votesBoundedValue
   ) where
 
 import Universum
 
-import qualified Data.Map as Map
 import Lorentz hiding (assert, (>>))
 import Test.Cleveland
 import Morley.Util.Named
@@ -193,21 +191,19 @@ proposalCorrectlyTrackVotes originateFn = do
   assert (plUpvotes proposal2 == 7) "proposal did not track upvotes correctly"
   assert (plDownvotes proposal2 == 3) "proposal did not track downvotes correctly"
 
-  let proposal1Voters = plVoters proposal1
-  let proposal2Voters = plVoters proposal2
+  voter1key1 <- getVoter dodDao (voter1, key1)
+  voter1key2 <- getVoter dodDao (voter1, key2)
+  voter2key1 <- getVoter dodDao (voter2, key1)
+  voter2key2 <- getVoter dodDao (voter2, key2)
 
-  assert ((Map.lookup (voter1, True) proposal1Voters) == Just 8) $ "proposal did not track upvote count for voter correctly"
-  assert (isNothing $ (Map.lookup (voter1, False) proposal1Voters)) $ "proposal did not track upvote count for voter correctly"
+  voter1key1 @== Just 8 -- 8 upvotes, 0 downvotes
 
-  assert ((Map.lookup (voter1, True) proposal2Voters) == Just 3) $ "proposal did not track upvote count for voter correctly"
-  assert ((Map.lookup (voter1, False) proposal2Voters) == Just 3) $ "proposal did not track upvote count for voter correctly"
+  voter1key2 @== Just 6 -- 3 upvotes, 3 downvotes
 
+  voter2key1 @== Just 2 -- 0 upvotes, 2 downvotes
 
-  assert (isNothing $ (Map.lookup (voter2, True) proposal1Voters)) $ "proposal did not track upvote count for voter correctly"
-  assert ((Map.lookup (voter2, False) proposal1Voters) == Just 2) $ "proposal did not track upvote count for voter correctly"
+  voter2key2 @== Just 4 -- 4 upvotes, 0 downvotes
 
-  assert ((Map.lookup (voter2, True) proposal2Voters) == Just 4) $ "proposal did not track upvote count for voter correctly"
-  assert (isNothing $ (Map.lookup (voter2, False) proposal2Voters)) $ "proposal did not track upvote count for voter correctly"
 
 voteOutdatedProposal
   :: (MonadCleveland caps base m, HasCallStack)
@@ -400,42 +396,3 @@ voteWithPermitNonce originateFn = do
   -- Check counter
   (Nonce counter) <- getVotePermitsCounter dodDao
   counter @== 2
-
-votesBoundedValue
-  :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-votesBoundedValue originateFn = do
-  DaoOriginateData{..} <- originateFn
-    ( voteConfig >>-
-      ConfigDesc configConsts{ cmMaxVoters = Just 1 }
-    ) defaultQuorumThreshold
-  withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 2)
-
-  withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 11)
-
-  -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
-  advanceToLevel (startLevel + dodPeriod)
-  key1 <- createSampleProposal 1 dodOwner2 dodDao
-  let upvote' = NoPermit VoteParam
-        { vVoteType = False
-        , vVoteAmount = 1
-        , vProposalKey = key1
-        , vFrom = dodOwner2
-        }
-      downvote' = NoPermit VoteParam
-        { vVoteType = False
-        , vVoteAmount = 1
-        , vProposalKey = key1
-        , vFrom = dodOwner1
-        }
-  -- Advance one voting period to a voting stage.
-  advanceToLevel (startLevel + 2*dodPeriod)
-  withSender dodOwner1 $ do
-    call dodDao (Call @"Vote") [downvote']
-
-  withSender dodOwner2 $ do
-    call dodDao (Call @"Vote") [upvote']
-      & expectFailedWith maxVotersReached

@@ -19,6 +19,7 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , validProposal
   , validProposalWithFixedFee
   , unstakesTokensForMultipleVotes
+  , unstakeVote
   ) where
 
 import Universum
@@ -371,6 +372,8 @@ unstakesTokensForMultipleVotes = do
   proposalStart <- getProposalStartLevel dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
+  withSender voter $ call dodDao (Call @"Unstake_vote") [key1]
+
   fh_after_flush <- getFreezeHistory dodDao voter
   let expected_after_flush = Just (AddressFreezeHistory
         { fhCurrentUnstaked = 0
@@ -505,6 +508,7 @@ dropProposal originateFn = withFrozenCallStack $ do
   -- 30 tokens are frozen in total, but only 15 tokens are returned after drop_proposal
   checkBalance dodDao dodOwner1 15
 
+
 proposalBoundedValue
   :: (MonadCleveland caps base m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn m) -> m ()
@@ -531,4 +535,98 @@ proposalBoundedValue originateFn = do
     call dodDao (Call @"Propose") params
     call dodDao (Call @"Propose") params
       & expectFailedWith maxProposalsReached
+
+
+unstakeVote
+  :: (MonadCleveland caps base m, HasCallStack)
+  => (ConfigDesc Config -> OriginateFn m)
+  -> m ()
+unstakeVote originateFn = do
+  let flushLevel = 20
+  DaoOriginateData{..}
+    <- originateFn (testConfig
+        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just flushLevel })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
+        ) defaultQuorumThreshold
+
+  -- [Voting]
+  withSender dodOwner1 $
+    call dodDao (Call @"Freeze") (#amount :! 30)
+
+  withSender dodOwner2 $
+    call dodDao (Call @"Freeze") (#amount :! 10)
+
+  startLevel <- getOriginationLevel dodDao
+  advanceToLevel (startLevel + dodPeriod)
+
+  -- [Proposing]
+  key1 <- createSampleProposal 1 dodOwner1 dodDao
+  advanceLevel 1
+  key2 <- createSampleProposal 2 dodOwner1 dodDao
+
+  let vote' key = NoPermit VoteParam
+        { vFrom = dodOwner2
+        , vVoteType = True
+        , vVoteAmount = 5
+        , vProposalKey = key
+        }
+
+  -- Advance to a level where vote can be called
+  advanceToLevel (startLevel + 2 * dodPeriod)
+
+  -- [Voting]
+  withSender dodOwner2 . inBatch $ do
+      call dodDao (Call @"Vote") [vote' key1]
+      call dodDao (Call @"Vote") [vote' key2]
+      pure ()
+
+  -- Advance to a level where flush can be called
+  proposalStart <- getProposalStartLevel dodDao key1
+  advanceToLevel (proposalStart + (flushLevel + 1))
+
+  -- [Proposing]
+  withSender dodAdmin $ call dodDao (Call @"Flush") 1
+
+  -- Freeze history before `Unstake_vote`
+  fhOwner2 <- getFreezeHistory dodDao dodOwner2
+  (fhOwner2 <&> fhStaked) @== Just 10
+  (fhOwner2 <&> fhPastUnstaked) @== Just 0
+  (fhOwner2 <&> fhCurrentUnstaked) @== Just 0
+
+  -- Call succeeds.
+  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key1]
+
+  -- Freeze history after `Unstake_vote`
+  fhOwner2_ <- getFreezeHistory dodDao dodOwner2
+  (fhOwner2_ <&> fhStaked) @== Just 5 -- Still staked since `key2` is not yet flush.
+  (fhOwner2_ <&> fhPastUnstaked) @== Just 5
+  (fhOwner2_ <&> fhCurrentUnstaked) @== Just 0
+
+  -- Trigger error since the tokens are already unstaked.
+  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key1]
+    & expectFailedWith voterDoesNotExist
+
+  -- Proposal key2 is not yet flush.
+  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key2]
+    & expectFailedWith unstakeInvalidProposal
+
+  -- owner 1 does not vote on the proposal
+  withSender dodOwner1 $ call dodDao (Call @"Unstake_vote") [key1]
+    & expectFailedWith voterDoesNotExist
+
+  --------------------------------------
+  -- Unstake_vote on dropped proposal
+  --------------------------------------
+  withSender dodOwner1 $ do
+    call dodDao (Call @"Drop_proposal") key2
+
+  advanceToLevel (startLevel + 4 * dodPeriod)
+  -- Call succeeds.
+  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key2]
+
+  -- Freeze history after `Unstake_vote`
+  fhOwner2__ <- getFreezeHistory dodDao dodOwner2
+  (fhOwner2__ <&> fhStaked) @== Just 0
+  (fhOwner2__ <&> fhPastUnstaked) @== Just 10
+  (fhOwner2__ <&> fhCurrentUnstaked) @== Just 0
 

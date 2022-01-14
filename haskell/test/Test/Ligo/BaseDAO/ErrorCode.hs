@@ -22,7 +22,6 @@ test_ErrorCodes = testGroup "FA2 off-chain views"
       proposalNotExist @?= 103
       votingStageOver @?= 104
       maxProposalsReached @?= 105
-      maxVotersReached @?= 106
       forbiddenXtz @?= 107
       proposalNotUnique @?= 108
       missigned @?= 109
@@ -39,5 +38,7 @@ test_ErrorCodes = testGroup "FA2 off-chain views"
       notDelegate @?= 120
       failDecisionLambda @?= 121
       entrypointNotFound @?= 122
+      unstakeInvalidProposal @?= 123
+      voterDoesNotExist @?= 124
       badState @?= 300
   ]
