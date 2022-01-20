@@ -295,7 +295,7 @@ type config =
   // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
   ; rejected_proposal_slash_value : proposal * contract_extra -> nat
-  // ^ When a proposal is rejected, the value that voters get back can be slashed.
+  // ^ When a proposal is rejected, the value that the proposer gets back can be slashed.
   // This lambda returns the amount to be slashed.
   ; decision_lambda : decision_lambda
   // ^ The decision lambda is executed based on a successful proposal.

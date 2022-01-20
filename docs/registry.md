@@ -62,12 +62,13 @@ are parameters of the contract specified by the DAO creator.
 
 Note that by setting `frozen_scale_value` to 0 it's possible to require a constant number of tokens to be locked.
 
-### Rejected proposal amount
+### Rejected proposal slash amount
 
-When a proposal is rejected, the returned amount is computed as `slash_scale_value * frozen / slash_division_value`.
+When a proposal is rejected, the amount of tokens to slash is computed as
+`slash_scale_value * frozen / slash_division_value`.
 
 `slash_scale_value` and `slash_division_value` are specified by the DAO creator.
-One can set them to 1 and 1 by default to always unfreeze all tokens.
+One can set them to 1 and 1 by default to always slash all staked tokens.
 
 ### Decision lambda
 
