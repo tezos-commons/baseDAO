@@ -3,6 +3,7 @@
 
 #include "types.mligo"
 #include "proposal.mligo"
+#include "common/plist.mligo"
 
 let validate_proposal_flush_expired_level (data : initial_config_data) : unit =
   if data.proposal_expired_level.blocks <= data.proposal_flush_level.blocks then
@@ -70,7 +71,11 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     metadata = data.metadata_map;
     extra = (Big_map.empty : (string, bytes) big_map);
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
-    proposal_key_list_sort_by_level = (Set.empty : (blocks * proposal_key) set);
+    proposals_doubly_linked_list = plist_empty; 
+    // proposal_key_list_sort_by_level = (Set.empty : (blocks * proposal_key) set);
+    // proposals_linked_list = (Big_map.empty : (proposal_key, proposal_node) big_map);
+    // proposal_first = (None: (proposal_key * proposal_node) option);
+    // proposal_last = (None: (proposal_key * proposal_node) option);
     staked_votes = (Big_map.empty : (address * proposal_key, staked_vote) big_map);
     permits_counter = 0n;
     freeze_history = freeze_history;
@@ -85,6 +90,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
       };
     frozen_total_supply = total;
     delegates = (Big_map.empty : delegates);
+
   }
 
 let default_full_storage (data : initial_data) : full_storage =

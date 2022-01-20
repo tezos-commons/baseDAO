@@ -8,6 +8,7 @@
 #include "error_codes.mligo"
 #include "proposal/freeze_history.mligo"
 #include "proposal/quorum_threshold.mligo"
+#include "common/plist.mligo"
 
 // -----------------------------------------------------------------
 // Helper
@@ -25,9 +26,13 @@ let fetch_proposal (proposal_key, store : proposal_key * storage): proposal =
 [@inline]
 let check_if_proposal_exist (proposal_key, store : proposal_key * storage): proposal =
   let p = fetch_proposal (proposal_key, store) in
-  if Set.mem (p.start_level, proposal_key) store.proposal_key_list_sort_by_level
-    then p
-    else (failwith proposal_not_exist : proposal)
+  // match Map.find_opt proposal_key store.proposals_linked_list with
+  //   | Some _ -> p
+  //   | None -> (failwith proposal_not_exist : proposal)
+  // if Set.mem (p.start_level, proposal_key) store.proposal_key_list_sort_by_level
+  //   then p
+  //   else 
+  (failwith proposal_not_exist : proposal)
 
 // Gets the current stage counting how many `period` s have passed since
 // the `start`. The stages are zero-index.
@@ -113,9 +118,12 @@ let unstake_vote_one (config: config) (store , proposal_key : storage * proposal
 
   // Ensure proposal is already flushed or dropped.
   let p = fetch_proposal (proposal_key, store) in
-  let _ = if Set.mem (p.start_level, proposal_key) store.proposal_key_list_sort_by_level
-            then (failwith unstake_invalid_proposal : unit)
-            else unit in
+  // let _ = if Set.mem proposal_key store.proposals_linked_list
+  //           then (failwith unstake_invalid_proposal : unit)
+  //           else unit in
+  // let _ =  match Map.find_opt proposal_key store.proposals_linked_list with
+  //   | Some _ -> (failwith unstake_invalid_proposal : unit)
+  //   | None -> unit in
 
   // Check if voter exist.
   let staked_vote_amount = match Big_map.find_opt (Tezos.sender, proposal_key) store.staked_votes with
@@ -140,11 +148,11 @@ let unstake_vote (params, config, store : unstake_vote_param * config * storage)
 // Propose
 // -----------------------------------------------------------------
 
-[@inline]
-let check_proposal_limit_reached (config, store : config * storage): storage =
-  if config.max_proposals <= List.length store.proposal_key_list_sort_by_level
-  then (failwith max_proposals_reached : storage)
-  else store
+// [@inline]
+// let check_proposal_limit_reached (config, store : config * storage): storage =
+//   if config.max_proposals <= List.length store.proposal_key_list_sort_by_level
+//   then (failwith max_proposals_reached : storage)
+//   else store
 
 let lock_governance_tokens (tokens, addr, frozen_total_supply, governance_token : nat * address * nat * governance_token)
     : (operation list * nat) =
@@ -181,6 +189,20 @@ let unlock_governance_tokens (tokens, addr, frozen_total_supply, governance_toke
         (failwith bad_state : nat)
   in ([operation], new_total_supply)
 
+
+
+//     | Some (first, next_o) ->
+//         (match next_o with
+//           | None ->
+//               { plist with
+//                 first = (Some (first, Some proposal_key))
+//               }
+//           | Some next ->
+              
+
+//         )
+
+
 let add_proposal (propose_params, period, store : propose_params * period * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
   let current_stage = get_current_stage_num(store.start_level, period) in
@@ -195,12 +217,21 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
     ; proposer_frozen_token = propose_params.frozen_token
     ; quorum_threshold = store.quorum_threshold_at_cycle.quorum_threshold
     } in
+
+  // match store.proposal_last with
+  //   | Some last -> p
+  //   | None -> (failwith proposal_not_exist : proposal)
+
   { store with
     proposals =
       Map.add proposal_key proposal store.proposals
-  ; proposal_key_list_sort_by_level =
-      Set.add ({blocks = Tezos.level}, proposal_key) store.proposal_key_list_sort_by_level
+  // ; proposal_last = Some (proposal_key, {prev = Some store.proposal_last ; next = (None : proposal_key option)})
+  // ; proposals_linked_list =
+  //     Map.add proposal_key ()
+  // // ; proposal_key_list_sort_by_level =
+  // //     Set.add ({blocks = Tezos.level}, proposal_key) store.proposal_key_list_sort_by_level
   }
+
 
 // -----------------------------------------------------------------
 // Vote
@@ -281,14 +312,15 @@ let do_total_vote_meet_quorum_threshold (proposal, store: proposal * storage): b
 [@inline]
 let remove_from_proposal_sort_by_level
     (level, proposal_key, store : blocks * proposal_key * storage): storage =
-  { store with proposal_key_list_sort_by_level =
-    Set.remove (level, proposal_key) store.proposal_key_list_sort_by_level
-  }
+  // { store with proposal_key_list_sort_by_level =
+  //   Set.remove (level, proposal_key) store.proposal_key_list_sort_by_level
+  // }
+  store
 
 let propose (param, config, store : propose_params * config * storage): return =
   let valid_from = check_delegate (param.from, Tezos.sender, store) in
   let _ : unit = config.proposal_check (param, store.extra) in
-  let store = check_proposal_limit_reached (config, store) in
+  // let store = check_proposal_limit_reached (config, store) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
   let current_stage = get_current_stage_num(store.start_level, config.period) in
   let store = update_quorum(current_stage, store, config) in
@@ -346,13 +378,14 @@ let flush(n, config, store : nat * config * storage): return =
           let (start_level, proposal_key) = e in
           handle_proposal_is_over (config, start_level, proposal_key, store, ops, counter)
         in
-    let (ops, store, counter) =
-      Set.fold flush_one store.proposal_key_list_sort_by_level (nil_op, store, counter)
-    in
-    // prevent empty flushes to avoid gas costs when unnecessary.
-    if counter.current = 0n
-    then (failwith empty_flush : return)
-    else (ops, store)
+    (failwith empty_flush : return)
+    // let (ops, store, counter) =
+    //   Set.fold flush_one store.proposal_key_list_sort_by_level (nil_op, store, counter)
+    // in
+    // // prevent empty flushes to avoid gas costs when unnecessary.
+    // if counter.current = 0n
+    // then (failwith empty_flush : return)
+    // else (ops, store)
 
 // Removes an accepted and finished proposal by key.
 let drop_proposal (proposal_key, config, store : proposal_key * config * storage): return =

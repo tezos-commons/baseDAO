@@ -139,6 +139,35 @@ type delegate =
   }
 type delegates = (delegate, unit) big_map
 
+
+// Proposal Linked List
+// One idea is to remove proposal_key_list_sort_by_level and replace it with:
+
+//     two fields to track the **first** and **last** ongoing proposals
+//     a big_map where the key is a proposal's ID and the value is a tuple with the proposal ID that comes next and previously
+
+// type proposals_linked_map = (proposal_key, (proposal_key * proposal_key)) big_map
+
+// type proposal_node =
+//   { prev: proposal_key option
+//   ; next: proposal_key option
+//   }
+
+// type proposal_node =
+//   | First_proposal of (proposal_key option)
+//   | Mid_proposal of (proposal_key * proposal_key)
+//   | Last_proposal of (proposal_key)
+
+type first_proposal_node = (proposal_key * (proposal_key option))
+type last_proposal_node = (proposal_key * proposal_key)
+
+type proposals_doubly_linked_list =
+  { first: first_proposal_node option
+  ; last: last_proposal_node option
+  ; map: (proposal_key, (proposal_key * proposal_key)) big_map
+  }
+
+
 type storage =
   { governance_token : governance_token
   ; admin : address
@@ -147,7 +176,11 @@ type storage =
   ; metadata : metadata_map
   ; extra : contract_extra
   ; proposals : (proposal_key, proposal) big_map
-  ; proposal_key_list_sort_by_level : (blocks * proposal_key) set
+  // ; proposal_key_list_sort_by_level : (blocks * proposal_key) set
+
+  // Doubly linked list to track order of proposals
+  ; proposals_doubly_linked_list: proposals_doubly_linked_list
+
   ; staked_votes : (address * proposal_key, staked_vote) big_map
   ; permits_counter : nonce
   ; freeze_history : freeze_history
@@ -156,6 +189,7 @@ type storage =
   ; quorum_threshold_at_cycle : quorum_threshold_at_cycle
   ; frozen_total_supply : nat
   ; delegates : delegates
+
   }
 
 // -- Parameter -- //
