@@ -85,7 +85,7 @@ type config =
   // It checks 2 things: the proposal itself and the amount of tokens frozen upon submission.
   // It allows the DAO to reject a proposal by arbitrary logic and captures bond requirements
   ; rejected_proposal_slash_value : proposal * contract_extra -> nat
-  // ^ When a proposal is rejected, the value that voters get back can be slashed.
+  // ^ When a proposal is rejected, the value that the proposer gets back can be slashed.
   // This lambda returns the amount to be slashed.
   ; decision_lambda : proposal * contract_extra -> operation list * contract_extra
   // ^ The decision lambda is executed based on a successful proposal.
@@ -595,17 +595,20 @@ Parameter (in Michelson):
 - The order of processing proposals are from 'the oldest' to 'the newest'.
   The proposals which have the same level due to being in the same block,
   are processed in the order of their proposal keys.
-- Frozen tokens from voters and proposal submitter associated with those proposals
-  are returned in the form of tokens in governance token contract:
-  - If proposal got rejected due to the quorum was not met or the quorum was met but upvotes are less then downvotes:
-    - The return amount for the proposer is equal to or less than the slashed amount based on `rejected_proposal_slash_value`.
-    - The paid fee is not returned to the proposer.
-    - The return amount for each voters is equal to or less than the voter's frozen tokens.
-  - If proposal got accepted:
-    - The return amount for the proposer is equal to or less than the sum of the proposer frozen tokens and the fee paid for the proposal.
-    - The return amount for each voters is equal to or less than the voter's frozen tokens.
-  - The token return to voters are not immediate. The voters should call `unstake_vote` with the proposal key to get their tokens
-  after `flush` is called.
+- Staked tokens from the proposer and the voters and participated on those proposals
+  are returned in the form of frozen tokens:
+  - If the proposal got rejected, because the quorum was not met or because
+    the upvotes are less then downvotes:
+    - The return amount for the proposer is equal to its staked tokens minus the
+      slash value calculated by `rejected_proposal_slash_value` and the fixed fee.
+    - The return amount for each voters is equal to the voter's staked tokens.
+  - If the proposal got accepted:
+    - The return amount for the proposer is equal to the sum of the proposer
+      staked tokens and the fixed fee paid for the proposal.
+    - The return amount for each voters is equal the voter's staked tokens.
+  - The token return to voters are not immediate.
+    The voters should call `unstake_vote` with the proposal key to get their
+    tokens back after `flush` is called.
 - If proposal is accepted, the decision lambda is called.
 - The `quorum_threshold` at the cycle in which the proposal was raised will be
   stored in the proposal, and this threshold will be used to check if the votes
@@ -631,10 +634,10 @@ Parameter (in Michelson):
   - The proposer is the `SENDER`, regardless of the `proposal_expired_level`.
   - The `guardian` is the `SENDER`, regardless of the `proposal_expired_level`.
 - Fails with `DROP_PROPOSAL_CONDITION_NOT_MET` when none of the conditions above are met.
-- Tokens that are frozen for this proposal are returned to the proposer and voters
+- Tokens that were frozen for this proposal are returned to the proposer and voters
   as if the proposal was rejected, regardless of the actual votes.
+  See [`flush`](#flush) for details.
 
-[FA2]: https://gitlab.com/tzip/tzip/-/blob/3a6464b1e641008b77a83807a0c102e7602c6af4/proposals/tzip-12/tzip-12.md
 
 ### **freeze**
 

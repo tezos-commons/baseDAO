@@ -90,7 +90,7 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
   | Update_contract_delegate _ -> unit
 
 (*
- * Proposal rejection return lambda: returns `slash_scale_value * frozen / slash_division_value`
+ * Proposal rejection slash lambda: returns `slash_scale_value * frozen / slash_division_value`
  * where slash_scale_value and slash_division_value are specified by the DAO creator
  * in configuration and frozen is the amount that was frozen by the proposer.
  *)

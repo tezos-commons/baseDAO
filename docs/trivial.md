@@ -17,9 +17,11 @@ This DAO has no `extra` information associated to it.
 The proposal check is always successful, regardless of the content of its metadata
 or the amount of `frozen_token`s.
 
-### Rejected proposal amount
+### Rejected proposal slash amount
 
-When a proposal is rejected, the returned amount is a constant value of `0`.
+When a proposal is rejected, the amount to be slashed is a constant value of `0`.
+
+In other words, the proposer will receive back all the staked tokens.
 
 ### Decision lambda
 

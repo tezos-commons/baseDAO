@@ -36,9 +36,10 @@ For XTZ transfers their amount must be in range `[min_xtz_amount .. max_xtz_amou
 `max_proposal_size`, `frozen_scale_value`, `frozen_extra_value`, `min_xtz_amount` and `max_xtz_amount` are parameters of the contract specified by the DAO creator.
 Additionally, for XTZ transfers `CONTRACT unit` instruction must pass for the `recipient` address, i. e. this address must be an implicit account or refer to an entrypoint of the `unit` type.
 
-### Rejected proposal amount
+### Rejected proposal slash amount
 
-When a proposal is rejected, the returned amount is computed as `slash_scale_value * frozen / slash_division_value` just like in Registry DAO.
+When a proposal is rejected, the amount of tokens to slash is computed as
+`slash_scale_value * frozen / slash_division_value`, just like in Registry DAO.
 
 ### Decision lambda
 
