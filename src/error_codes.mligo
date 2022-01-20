@@ -78,10 +78,10 @@
 [@inline] let fail_decision_lambda = 121n
 
 (* Cannot call `unstake_vote` on the proposal that is not flushed or dropped. *)
-[@inline] let unstake_invalid_proposal = 122n
+[@inline] let unstake_invalid_proposal = 123n
 
 (* The sender did not vote on the proposal or already unstaked tokens from the proposal. *)
-[@inline] let voter_does_not_exist = 123n
+[@inline] let voter_does_not_exist = 124n
 
 
 
