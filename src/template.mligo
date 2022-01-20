@@ -1,15 +1,8 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-// Replace TEMPLATE_H with something unique corresponding to your
-// variant. For example, if your variant is called MyBaseDAOVariant you
-// can change TEMPLATE_H to MYBASEDAOVARIANT_H so this section reads
-//
-// #if !MYBASEDAOVARIANT_H
-// #define MYBASEDAOVARIANT_H
-
-#if !TEMPLATE_H
-#define TEMPLATE_H
+#if !VARIANT
+#define VARIANT
 
 //
 

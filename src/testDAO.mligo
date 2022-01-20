@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-#if !TEST_H
-#define TEST_H
+#if !VARIANT
+#define VARIANT
 
 #include "types.mligo"
 #include "common/errors.mligo"

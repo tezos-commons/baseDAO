@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-#if !REGISTRY_H
-#define REGISTRY_H
+#if !VARIANT
+#define VARIANT
 
 #include "error_codes.mligo"
 #include "common/errors.mligo"

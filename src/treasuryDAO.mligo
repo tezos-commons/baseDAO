@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
-#if !TREASURY_H
-#define TREASURY_H
+#if !VARIANT
+#define VARIANT
 
 #include "common/errors.mligo"
 #include "common/types.mligo"
