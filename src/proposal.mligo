@@ -8,7 +8,7 @@
 #include "error_codes.mligo"
 #include "proposal/freeze_history.mligo"
 #include "proposal/quorum_threshold.mligo"
-// #include "common/plist.mligo"
+#include "common/plist.mligo"
 
 // -----------------------------------------------------------------
 // Helper
@@ -31,7 +31,7 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
   //   | None -> (failwith proposal_not_exist : proposal)
   // if Set.mem (p.start_level, proposal_key) store.proposal_key_list_sort_by_level
   //   then p
-  //   else 
+  //   else
   (failwith proposal_not_exist : proposal)
 
 // Gets the current stage counting how many `period` s have passed since
@@ -198,7 +198,7 @@ let unlock_governance_tokens (tokens, addr, frozen_total_supply, governance_toke
 //                 first = (Some (first, Some proposal_key))
 //               }
 //           | Some next ->
-              
+
 
 //         )
 
@@ -386,6 +386,174 @@ let flush(n, config, store : nat * config * storage): return =
     // if counter.current = 0n
     // then (failwith empty_flush : return)
     // else (ops, store)
+
+
+// // flush helper function that modify the `proposals_doubly_linked_list`.
+// let plist_flush (amt, store : nat * storage): storage =
+//   // operate on the first
+
+//   // operate on the next
+
+//   // operate on the last (if Map.find_opt `next` does not exist in the `map`, check it in the `last`. If it exist, then flush it.) (flush = run unstake f, and update the head)
+
+//   (failwith "" : storage)
+
+
+[@inline]
+let handle_proposal_is_over_2
+    (proposal_key, config,  store, ops
+      : proposal_key * config *  storage * operation list
+    )
+    : (operation list * storage) option =
+  let proposal = fetch_proposal (proposal_key, store) in
+
+  if is_proposal_age (proposal, config.proposal_expired_level)
+  then (failwith expired_proposal : (operation list * storage) option)
+  else if is_proposal_age (proposal, config.proposal_flush_level)
+      //  && counter.current < counter.total // not finished
+  then
+    // let counter = { counter with current = counter.current + 1n } in
+    let cond =    do_total_vote_meet_quorum_threshold(proposal, store)
+              && proposal.upvotes > proposal.downvotes
+    in
+    let store = unstake_proposer_token
+          (config.rejected_proposal_slash_value, cond, proposal, config.period, config.fixed_proposal_fee_in_token, store) in
+    let (new_ops, store) =
+      if cond
+      then
+        let dl_out = config.decision_lambda { proposal = proposal; extras = store.extra } in
+        let guardian = match dl_out.guardian with
+          | Some g -> g
+          | None -> store.guardian
+        in (dl_out.operations,
+              { store with extra = dl_out.extras
+              ; guardian = guardian
+              })
+      else (nil_op, store)
+    in
+    let cons = fun (l, e : operation list * operation) -> e :: l in
+    let ops = List.fold cons ops new_ops in
+    // let store = remove_from_proposal_sort_by_level (start_level, proposal_key, store) in
+    Some (ops, store)
+  else (None : (operation list * storage) option)
+
+
+let run_plist_flush (nat, config, store: nat * config * storage): (operation list * storage * nat) =
+  let counter = { current = 0n; total = nat } in
+  // let ops = nil_op in
+
+  // Operate on first
+  let (ops, store, counter) =
+      match store.proposals_doubly_linked_list.first with
+        | None ->
+            // No proposals, do nth
+            (nil_op, store, counter)
+        | Some (first, next_o) ->
+            let result = handle_proposal_is_over_2 (first, config, store, nil_op) in
+            (match result with
+               None ->
+                    // First proposal is not flusable, do nothing
+                    (nil_op, store, counter)
+              | Some (new_ops, new_store) -> 
+                  let new_counter = { counter with current = counter.current + 1n } in
+                  (match next_o with
+                    | None ->
+                        // No next proposals, exit
+                        ( ops
+                        , { new_store with proposals_doubly_linked_list = plist_empty }
+                        , new_counter
+                        )
+                    // NOTE: we can process, first and last, now we need to figure how to loop through the map
+                    | Some next ->
+                        run_plist_flush_on_map (next, config, new_store, new_ops, new_counter)
+                  )
+
+  
+  in (ops, storage, counter)
+
+let flush(n, config, store : nat * config * storage): return =
+  if n = 0n
+  then (failwith empty_flush : return)
+  else
+    // let (ops, store, counter) = run_plist_flush store
+    //   Set.fold flush_one store.proposal_key_list_sort_by_level (nil_op, store, counter) in
+    // prevent empty flushes to avoid gas costs when unnecessary.
+    // if counter.current = 0n
+    // then (failwith empty_flush : return)
+    // else (ops, store)
+    (failwith empty_flush : return)
+
+let run_plist_flush_on_map (key, config, store, ops, counter:
+      proposal_key * config * storage * operation list * nat) =
+  let (key, next_o) =
+      match Map.find_opt key store.proposals_doubly_linked_list.map with
+        | Some (_, next) -> (key, Some next)
+        | None ->
+          (match store.proposals_doubly_linked_list.last with
+            | Some (last, _) -> if key = last
+                then (last, None)
+                else (failwith bad_state : (proposal_key * proposal_key)) // impossible
+            | None -> (failwith bad_state : (proposal_key * proposal_key)) // impossible
+          ) in
+  let result = handle_proposal_is_over_2 (key, config, storage, ops) in
+  match result with
+  | None ->
+      // The proposal is not flushable, update plist with new head, and exit.
+    (match next_o with
+      | None ->
+          // No next, indicate this is the last key
+          let new_plist =
+            { new_store.plist with
+              first = Some key
+            ; last = (None : last_proposal_node option )
+            } in
+          ( ops
+          , { new_store with proposals_doubly_linked_list = new_plist }
+          , counter
+          )
+      | Some (next) ->
+          // There is `next`, which mean we modify the `map`
+          let new_plist =
+            { new_store.plist with
+              first = Some (key, Some next)
+            , map = Map.remove key store.proposals_doubly_linked_list.map
+            } in
+          ( ops
+          , { new_store with proposals_doubly_linked_list = new_plist }
+          , counter
+          )
+    )
+  | Some (new_ops, new_store) ->
+      // Flush the next proposal
+      let new_counter = { counter with current = counter.current + 1n } in
+      (match next_o with
+      | None ->
+          // No next, which mean all proposals are flushed
+          let new_plist =
+            { new_store.plist with
+              first = Some key
+            ; last = (None : last_proposal_node option )
+            } in
+          ( ops
+          , { new_store with proposals_doubly_linked_list = plist_empty }
+          , counter
+          )
+      | Some (next) ->
+        // Since there next, find and updated it with the previous key
+        // homeless is coz of tall tree wand big car
+        // TODO:, move the key as first, remove it from the map, and updates its relation properly
+      
+          // let new_plist =
+          //   { new_store.plist with
+          //     first = Some (key, Some next)
+          //   , map = Map.remove key store.proposals_doubly_linked_list.map
+          //   } in
+          // ( ops
+          // , { new_store with proposals_doubly_linked_list = new_plist }
+          // , counter
+          // )
+    )
+
 
 // Removes an accepted and finished proposal by key.
 let drop_proposal (proposal_key, config, store : proposal_key * config * storage): return =

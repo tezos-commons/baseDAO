@@ -6,12 +6,14 @@
 
 #include "../types.mligo"
 
+[@inline]
 let plist_empty : proposals_doubly_linked_list =
   { first = (None : first_proposal_node option )
   ; last = (None : last_proposal_node option )
   ; map = (Big_map.empty : (proposal_key, (proposal_key * proposal_key)) big_map )
   }
 
+[@inline]
 let plist_mem (key, plist : proposal_key * proposals_doubly_linked_list): bool =
   let is_first = match plist.first with
     | None ->
@@ -26,6 +28,7 @@ let plist_mem (key, plist : proposal_key * proposals_doubly_linked_list): bool =
   let is_inbetween = Map.mem key plist.map in
   is_first || is_last || is_inbetween
 
+[@inline]
 let plist_insert (proposal_key, plist : proposal_key * proposals_doubly_linked_list): proposals_doubly_linked_list =
   match plist.first with
     | None ->
@@ -48,6 +51,7 @@ let plist_insert (proposal_key, plist : proposal_key * proposals_doubly_linked_l
               }
         )
 
+[@inline]
 let plist_delete (proposal_key, plist : proposal_key * proposals_doubly_linked_list): proposals_doubly_linked_list =
   match plist.first with
     | None ->
@@ -101,15 +105,5 @@ let plist_delete (proposal_key, plist : proposal_key * proposals_doubly_linked_l
                   map = new_map
                 }
         )
-
-// flush helper function that modify the `proposals_doubly_linked_list`.
-let plist_flush (store : storage): storage =
-  // operate on the first
-
-  // operate on the next
-
-  // operate on the last (if Map.find_opt `next` does not exist in the `map`, check it in the `last`. If it exist, then flush it.) (flush = run unstake f, and update the head)
-
-  (failwith "" : storage)
 
 #endif
