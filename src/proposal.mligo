@@ -8,7 +8,7 @@
 #include "error_codes.mligo"
 #include "proposal/freeze_history.mligo"
 #include "proposal/quorum_threshold.mligo"
-#include "common/plist.mligo"
+// #include "common/plist.mligo"
 
 // -----------------------------------------------------------------
 // Helper
