@@ -187,6 +187,7 @@ test-suite baseDAO-test
       SMT.Model.BaseDAO.Permit
       SMT.Model.BaseDAO.Proposal
       SMT.Model.BaseDAO.Proposal.FreezeHistory
+      SMT.Model.BaseDAO.Proposal.Plist
       SMT.Model.BaseDAO.Proposal.QuorumThreshold
       SMT.Model.BaseDAO.Token
       SMT.Model.BaseDAO.Types
@@ -199,6 +200,7 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Management
       Test.Ligo.BaseDAO.Management.TransferOwnership
       Test.Ligo.BaseDAO.OffChainViews
+      Test.Ligo.BaseDAO.Plist
       Test.Ligo.BaseDAO.Proposal
       Test.Ligo.BaseDAO.Proposal.Config
       Test.Ligo.BaseDAO.Proposal.Delegate

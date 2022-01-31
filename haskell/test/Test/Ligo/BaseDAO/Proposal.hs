@@ -7,7 +7,6 @@ module Test.Ligo.BaseDAO.Proposal
   ) where
 
 import Lorentz hiding (assert, (>>))
-import Universum
 
 import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
@@ -67,7 +66,7 @@ test_BaseDAO_Proposal =
 
   -- Note: When checking storage, we need to split the test into 2 (emulator and network) as demonstrated below:
   , testScenario "cannot propose with insufficient tokens " $ scenario $
-      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe) (\addr -> (length . sProposalKeyListSortByDateRPC . fsStorageRPC) <$> getStorageRPC (TAddress addr))
+      insufficientTokenProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
   , testGroup "Permit:"
       [ testScenario "can vote from another user behalf" $ scenario $
@@ -109,11 +108,6 @@ test_BaseDAO_Proposal =
       , testScenario "can drop proposals, only when allowed" $ scenario $
           dropProposal (originateLigoDaoWithConfigDesc dynRecUnsafe)
 
-      ]
-
-  , testGroup "Bounded Value"
-      [ testScenario "bounded value on proposals" $ scenario $
-          proposalBoundedValue (originateLigoDaoWithConfigDesc dynRecUnsafe)
       ]
 
   , testGroup "Freeze-Unfreeze"

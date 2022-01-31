@@ -86,7 +86,7 @@ genStorage = do
         , sStartLevel = startLevel
         , sQuorumThresholdAtCycle = quorumThresholdAtCycle
         , sProposals = BigMap Nothing mempty
-        , sProposalKeyListSortByDate = mempty
+        , sOngoingProposalsDlist = Nothing
         , sStakedVotes = BigMap Nothing mempty
         , sExtra = DynamicRec' mempty
 
@@ -124,8 +124,6 @@ genConfig = do
     , cGovernanceTotalSupply = governanceTotalSupply
     , cMaxQuorumThreshold = percentageToFractionNumerator 99 -- 99%
     , cMinQuorumThreshold = percentageToFractionNumerator 1 -- 1%
-
-    , cMaxProposals = 500
     }
 
 genDelegates :: GeneratorT (Map Delegate ())

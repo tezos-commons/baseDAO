@@ -36,14 +36,6 @@ type transfer_item =
   }
 type transfer_params = transfer_item list
 
-// -- Helpers -- //
-
-// Internal helper to fold up to a number
-type counter =
-  { current : nat
-  ; total : nat
-  }
-
 // -- DAO base types -- //
 
 type nonce = nat
@@ -137,7 +129,24 @@ type delegate =
   { owner : address
   ; delegate : address
   }
+
 type delegates = (delegate, unit) big_map
+
+
+// Use to query the previous and next of a proposal.
+type plist_direction = bool
+
+// Value of `plist_direction`.
+let prev = false
+let next = true
+
+// Proposal Doubly Linked List
+type proposal_doubly_linked_list =
+  [@layout:comb]
+  { first: proposal_key // First proposal_key in the list
+  ; last: proposal_key // Last proposal_key in the list. If only 1 key exist, last = first.
+  ; map: ((proposal_key * plist_direction), proposal_key) big_map
+  }
 
 type storage =
   { governance_token : governance_token
@@ -147,7 +156,7 @@ type storage =
   ; metadata : metadata_map
   ; extra : contract_extra
   ; proposals : (proposal_key, proposal) big_map
-  ; proposal_key_list_sort_by_level : (blocks * proposal_key) set
+  ; ongoing_proposals_dlist: proposal_doubly_linked_list option
   ; staked_votes : (address * proposal_key, staked_vote) big_map
   ; permits_counter : nonce
   ; freeze_history : freeze_history
@@ -302,8 +311,6 @@ type config =
   // It has access to the proposal, can modify `contractExtra` and perform arbitrary
   // operations.
 
-  ; max_proposals : nat
-  // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   ; max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction

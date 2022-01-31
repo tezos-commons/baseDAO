@@ -23,7 +23,6 @@ Here is a summary of all the error codes thrown by the contract.
 | 102 | `fail_proposal_check` | Thrown paired with a `string` error message when the proposal does not pass the `proposal_check`. |
 | 103 | `proposal_not_exist` | The proposal does not exist or is no longer ongoing. |
 | 104 | `voting_stage_over` | The proposal voting stage has already ended. |
-| 105 | `max_proposals_reached` | The maximum amount of ongoing proposals has been reached. |
 | 107 | `forbidden_xtz` | Transfer of XTZ is forbidden on this entrypoint. |
 | 108 | `proposal_not_unique` | The submitted proposal already exist. |
 | 109 | `missigned` | Parameter signature does not match the expected one - for permits. |

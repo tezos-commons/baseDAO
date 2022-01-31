@@ -29,9 +29,6 @@
 (* The proposal voting stage has already ended. *)
 [@inline] let voting_stage_over = 104n
 
-(* The maximum amount of ongoing proposals has been reached. *)
-[@inline] let max_proposals_reached = 105n
-
 (* Transfer of XTZ is forbidden on this entrypoint. *)
 [@inline] let forbidden_xtz = 107n
 

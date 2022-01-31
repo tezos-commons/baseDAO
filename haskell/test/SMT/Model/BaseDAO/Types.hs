@@ -204,7 +204,6 @@ data ContractType
 data ModelError
   = NOT_DELEGATE
   | EMPTY_FLUSH
-  | MAX_PROPOSALS_REACHED
   | NOT_ENOUGH_FROZEN_TOKENS
   | NOT_PROPOSING_STAGE
   | PROPOSAL_NOT_UNIQUE
@@ -234,7 +233,6 @@ contractErrorToModelError :: Integer -> ModelError
 contractErrorToModelError errorCode
   | (errorCode == toInteger notDelegate) = NOT_DELEGATE
   | (errorCode == toInteger emptyFlush) = EMPTY_FLUSH
-  | (errorCode == toInteger maxProposalsReached) = MAX_PROPOSALS_REACHED
   | (errorCode == toInteger notEnoughFrozenTokens) = NOT_ENOUGH_FROZEN_TOKENS
   | (errorCode == toInteger notProposingStage) = NOT_PROPOSING_STAGE
   | (errorCode == toInteger proposalNotUnique) = PROPOSAL_NOT_UNIQUE
