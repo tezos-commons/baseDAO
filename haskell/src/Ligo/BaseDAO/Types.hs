@@ -4,7 +4,8 @@
 
 -- | Types mirrored from LIGO implementation.
 module Ligo.BaseDAO.Types
-  ( CustomEpToParam
+  ( VariantToParam
+  , VariantToExtra
   , Variants(..)
   , frozenTokenId
   , baseDaoAnnOptions
@@ -60,12 +61,22 @@ module Ligo.BaseDAO.Types
   , UnstakeVoteParam
 
   , FixedFee (..)
-  , Storage (..)
-  , StorageRPC (..)
+  , BaseFullStorage
+  , pattern FullStorageP
+  , pattern FullStoragePRPC
+  , fsStorage
+  , fsConfig
+  , fsStorageRPC
+  , fsConfigRPC
+  , Storage
+  , StorageRPC
+  , StorageSkeleton (..)
+  , StorageSkeletonRPC (..)
   , Config (..)
   , ConfigRPC (..)
-  , FullStorage (..)
-  , FullStorageRPC(..)
+  , ContractExtraConstrain
+  , FullStorage
+  , FullStorageRPC (..)
   , AddressFreezeHistory (..)
   , DynamicRec
   , DynamicRec' (..)
@@ -80,7 +91,6 @@ module Ligo.BaseDAO.Types
 
 import Universum (Enum, Integral, Num, One(..), Real, Type, div, fromIntegral, maybe, show, (*))
 
-import qualified Data.Map as M
 import Fmt (Buildable, build, genericF)
 
 import Lorentz hiding (div, now)
@@ -89,7 +99,6 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
 import Morley.Client
 import Morley.Michelson.Typed.Annotation
-import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Morley.Michelson.Typed.T (T(TUnit))
 import Morley.Michelson.Untyped.Annotation
 import Morley.Util.Markdown
@@ -106,8 +115,10 @@ data Variants
   | Base
 
 -- | A type family to map a variant to the type that represents it's custom entrypoints.
-type family CustomEpToParam (v :: Variants) :: Type
-type instance CustomEpToParam 'Base = ()
+type family VariantToParam (v :: Variants) :: Type
+type instance VariantToParam 'Base = ()
+
+type family VariantToExtra (v :: Variants) :: Type
 
 ------------------------------------------------------------------------
 -- Orphans
@@ -491,6 +502,8 @@ type ProposalMetadata = ByteString
 type ContractExtra' big_map = DynamicRec' big_map "ce"
 type ContractExtra = ContractExtra' BigMap
 
+type instance VariantToExtra 'Base = ()
+
 type CustomEntrypoints' big_map = DynamicRec' big_map "ep"
 type CustomEntrypoints = CustomEntrypoints' BigMap
 
@@ -508,6 +521,9 @@ data Proposal = Proposal
   , plQuorumThreshold         :: QuorumThreshold
   }
   deriving stock (Eq, Show)
+
+customGeneric "Proposal" ligoLayout
+deriving anyclass instance IsoValue Proposal
 
 -- | Utility type containing an entrypoint name and its packed argument.
 type CallCustomParam = (MText, ByteString)
@@ -565,6 +581,9 @@ data AddressFreezeHistory = AddressFreezeHistory
   , fhPastUnstaked :: Natural
   } deriving stock (Eq, Show)
 
+customGeneric "AddressFreezeHistory" ligoLayout
+deriving anyclass instance IsoValue AddressFreezeHistory
+
 instance Buildable AddressFreezeHistory where
   build = genericF
 
@@ -603,36 +622,36 @@ type instance AsRPC GovernanceTotalSupply = GovernanceTotalSupply
 type instance AsRPC QuorumFraction = QuorumFraction
 type instance AsRPC Period = Period
 
-data Storage = Storage
+data StorageSkeleton ce = Storage
   { sAdmin :: Address
-  , sGuardian :: Address
-  , sExtra :: ContractExtra' BigMap
+  , sDelegates :: Delegates' BigMap
+  , sExtra :: ce
+  , sFreezeHistory :: BigMap Address AddressFreezeHistory
   , sFrozenTokenId :: FA2.TokenId
+  , sFrozenTotalSupply :: Natural
+  , sGovernanceToken :: GovernanceToken
+  , sGuardian :: Address
   , sMetadata :: TZIP16.MetadataMap BigMap
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
-  , sProposals :: BigMap ProposalKey Proposal
   , sProposalKeyListSortByDate :: Set (Natural, ProposalKey)
-  , sStakedVotes :: BigMap (Address, ProposalKey) StakedVote
-  , sGovernanceToken :: GovernanceToken
-  , sFreezeHistory :: BigMap Address AddressFreezeHistory
-  , sStartLevel :: Natural
+  , sProposals :: BigMap ProposalKey Proposal
   , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
-  , sFrozenTotalSupply :: Natural
-  , sDelegates :: Delegates' BigMap
-  }
+  , sStakedVotes :: BigMap (Address, ProposalKey) StakedVote
+  , sStartLevel :: Natural
+  } deriving stock (Generic, Eq)
+    deriving anyclass IsoValue
 
-customGeneric "Storage" ligoLayout
-
-deriving stock instance Show Storage
-deriving stock instance Eq Storage
-deriving anyclass instance IsoValue Storage
-instance HasAnnotation Storage where
-  annOptions = baseDaoAnnOptions
-instance Buildable Storage where
+deriving stock instance Show ce => Show (StorageSkeleton ce)
+instance Buildable ce => Buildable (StorageSkeleton ce) where
   build = genericF
+instance HasAnnotation ce => HasAnnotation (StorageSkeleton ce) where
+  annOptions = baseDaoAnnOptions
 
-deriveRPCWithStrategy "Storage" ligoLayout
+deriveRPC "StorageSkeleton"
+
+type Storage = StorageSkeleton (ContractExtra' BigMap)
+type StorageRPC = StorageSkeletonRPC (ContractExtra' BigMap)
 
 instance HasAnnotation GovernanceToken where
   annOptions = baseDaoAnnOptions
@@ -653,12 +672,12 @@ instance HasFieldOfType Storage name field => StoreHasField Storage name field w
 
 mkStorage
   :: "admin" :! Address
-  -> "extra" :! ContractExtra
+  -> "extra" :! ce
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "level" :! Natural
   -> "tokenAddress" :! Address
   -> "quorumThreshold" :! QuorumThreshold
-  -> Storage
+  -> StorageSkeleton ce
 mkStorage (N admin) (N extra) (N metadata) (N lvl) (N tokenAddress) (N qt) =
   Storage
     { sAdmin = admin
@@ -703,31 +722,31 @@ newtype FixedFee = FixedFee Natural
 
 type instance AsRPC FixedFee = FixedFee
 
-data DecisionLambdaInput = DecisionLambdaInput
+data DecisionLambdaInput ce = DecisionLambdaInput
   { diProposal :: Proposal
-  , diExtra :: ContractExtra
+  , diExtra :: ce
   }
 
 customGeneric "DecisionLambdaInput" ligoLayout
 
-deriving anyclass instance IsoValue DecisionLambdaInput
-deriving stock instance Show DecisionLambdaInput
+deriving anyclass instance IsoValue ce => IsoValue (DecisionLambdaInput ce)
+deriving stock instance Show ce => Show (DecisionLambdaInput ce)
 
-instance HasAnnotation DecisionLambdaInput where
+instance HasAnnotation ce => HasAnnotation (DecisionLambdaInput ce) where
   annOptions = baseDaoAnnOptions
 
-data DecisionLambdaOutput = DecisionLambdaOutput
+data DecisionLambdaOutput ce = DecisionLambdaOutput
   { doOperations :: List Operation
-  , doExtra :: ContractExtra
+  , doExtra :: ce
   , doGuardian :: Maybe Address
   }
 
 customGeneric "DecisionLambdaOutput" ligoLayout
 
-deriving anyclass instance IsoValue DecisionLambdaOutput
-deriving stock instance Show DecisionLambdaOutput
+deriving anyclass instance IsoValue ce => IsoValue (DecisionLambdaOutput ce)
+deriving stock instance Show ce => Show (DecisionLambdaOutput ce)
 
-instance HasAnnotation DecisionLambdaOutput where
+instance HasAnnotation ce => HasAnnotation (DecisionLambdaOutput ce) where
   annOptions = baseDaoAnnOptions
 
 data Config = Config
@@ -780,25 +799,27 @@ mkConfig votingPeriod fixedProposalFee maxChangePercent changePercent governance
 defaultConfig :: Config
 defaultConfig = mkConfig (Period 20) (FixedFee 0) 19 5 (GovernanceTotalSupply 500)
 
-data FullStorage = FullStorage
-  { fsStorage :: Storage
-  , fsConfig :: Config
-  }
+type FullStorageSkeleton ce =
+  (StorageSkeleton ce, Config)
 
--- Note: FullStorage is a tuple in ligo, so we need to use `ligoCombLayout`
--- Derive Generic on `FullStorage'` does not work.
-customGeneric "FullStorage" ligoCombLayout
+pattern FullStorageP :: StorageSkeleton ce -> Config -> FullStorageSkeleton ce
+pattern FullStorageP {fsStorage, fsConfig} <- (fsStorage, fsConfig)
+  where FullStorageP fsStorage fsConfig = (fsStorage, fsConfig)
 
-deriving stock instance Show FullStorage
-deriving stock instance Eq FullStorage
-deriving anyclass instance IsoValue FullStorage
-instance HasAnnotation FullStorage where
-  annOptions = baseDaoAnnOptions
+type FullStorage ce = FullStorageSkeleton ce
 
-instance Buildable FullStorage where
-  build = genericF
+type FullStorageRPC ce = (StorageSkeletonRPC ce, ConfigRPC)
 
-deriveRPCWithStrategy "FullStorage" ligoCombLayout
+type BaseFullStorage = FullStorage (VariantToExtra 'Base)
+
+type ContractExtraConstrain ce = (NiceStorage ce, NiceUnpackedValue (AsRPC ce))
+
+pattern FullStoragePRPC :: StorageSkeletonRPC ce -> ConfigRPC -> FullStorageRPC ce
+pattern FullStoragePRPC {fsStorageRPC, fsConfigRPC} <- (fsStorageRPC, fsConfigRPC)
+  where FullStoragePRPC fsStorageRPC fsConfigRPC = (fsStorageRPC, fsConfigRPC)
+
+setExtra :: (ce -> ce) -> FullStorage ce -> FullStorage ce
+setExtra fn (s, c)= (s { sExtra = fn $ sExtra s }, c)
 
 mkFullStorage
   :: "admin" :! Address
@@ -807,12 +828,12 @@ mkFullStorage
   -> "maxChangePercent" :? Natural
   -> "changePercent" :? Natural
   -> "governanceTotalSupply" :? GovernanceTotalSupply
-  -> "extra" :! ContractExtra
+  -> "extra" :! ce
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "level" :! Natural
   -> "tokenAddress" :! Address
-  -> FullStorage
-mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress = FullStorage
+  -> FullStorage ce
+mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress = FullStorageP
   { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig
       (argDef #votingPeriod votingPeriodDef vp) (FixedFee 0) (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply (GovernanceTotalSupply 100) gts)
@@ -821,18 +842,9 @@ mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress = FullStorage
     quorumThresholdDef = mkQuorumThreshold 1 10 -- 10% of frozen total supply
     votingPeriodDef = Period $ 60 * 60 * 24 * 7  -- 7 days
 
-setExtra :: forall a. NicePackedValue a => MText -> a -> FullStorage -> FullStorage
-setExtra key v (s@FullStorage {..}) = s { fsStorage = newStorage }
-  where
-    (BigMap bid oldExtra) = unDynamic $ sExtra fsStorage
-    newExtra = BigMap bid $ M.insert key (lPackValueRaw v) oldExtra
-    newStorage = fsStorage { sExtra = DynamicRec' newExtra }
-
 -- Instances
 ------------------------------------------------
 
-customGeneric "Proposal" ligoLayout
-deriving anyclass instance IsoValue Proposal
 instance Buildable Proposal where
   build = genericF
 customGeneric "ForbidXTZParam" ligoLayout
@@ -858,9 +870,6 @@ customGeneric "Parameter'" ligoLayout
 deriving anyclass instance IsoValue cep => IsoValue (Parameter' cep)
 instance ParameterHasEntrypoints (Parameter' ()) where
   type ParameterEntrypointsDerivation (Parameter' ()) = EpdDelegate
-
-customGeneric "AddressFreezeHistory" ligoLayout
-deriving anyclass instance IsoValue AddressFreezeHistory
 
 customGeneric "VoteParam" ligoLayout
 deriving anyclass instance IsoValue VoteParam

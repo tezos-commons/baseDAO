@@ -17,11 +17,11 @@
 
 let proposal_check (params, extras : propose_params * contract_extra) : unit =
   let proposal_size = Bytes.size(params.proposal_metadata) in
-  let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
-  let frozen_extra_value = unpack_nat(find_big_map("frozen_extra_value", extras)) in
-  let max_proposal_size = unpack_nat(find_big_map("max_proposal_size", extras)) in
-  let min_xtz_amount = unpack_tez(find_big_map("min_xtz_amount", extras)) in
-  let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
+  let frozen_scale_value = require_nat(extras.frozen_scale_value) in
+  let frozen_extra_value = require_nat(extras.frozen_extra_value) in
+  let max_proposal_size = require_nat(extras.max_proposal_size) in
+  let min_xtz_amount = require_tez(extras.min_xtz_amount) in
+  let max_xtz_amount = require_tez(extras.max_xtz_amount) in
 
   let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
 
@@ -47,8 +47,8 @@ let proposal_check (params, extras : propose_params * contract_extra) : unit =
     | Update_contract_delegate _ -> unit
 
 let rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
-  let slash_scale_value = unpack_nat(find_big_map("slash_scale_value", extras)) in
-  let slash_division_value =  unpack_nat(find_big_map("slash_division_value", extras))
+  let slash_scale_value = require_nat(extras.slash_scale_value) in
+  let slash_division_value =  require_nat(extras.slash_division_value)
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
 let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (operation list) =
@@ -90,15 +90,15 @@ let decision_lambda (input : decision_lambda_input)
 let default_treasury_DAO_full_storage (data : initial_treasuryDAO_storage) : full_storage =
   let (store, config) = default_full_storage (data.base_data) in
   let new_storage = { store with
-    extra = Big_map.literal [
-      ("frozen_scale_value" , Bytes.pack data.frozen_scale_value);
-      ("frozen_extra_value" , Bytes.pack data.frozen_extra_value);
-      ("max_proposal_size" , Bytes.pack data.max_proposal_size);
-      ("slash_scale_value" , Bytes.pack data.slash_scale_value);
-      ("slash_division_value" , Bytes.pack data.slash_division_value);
-      ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
-      ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
-      ];
+    extra =
+      { frozen_scale_value = (None : nat option)
+      ; frozen_extra_value = (None : nat option)
+      ; max_proposal_size = (None : nat option)
+      ; slash_scale_value = (None : nat option)
+      ; slash_division_value = (None : nat option)
+      ; min_xtz_amount = (None : tez option)
+      ; max_xtz_amount = (None : tez option)
+      }
   } in (new_storage, config)
 
 let custom_ep (_, storage, _ : custom_ep_param * storage * config): operation list * storage

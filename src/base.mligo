@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-#if !TYPES_H
-#define TYPES_H
-# include "implementation_storage.mligo"
+#if !BASE_H
+#define BASE_H
 
 // ID of an FA2 token
 type token_id = nat
@@ -70,6 +69,10 @@ let quorum_denominator = 1000000n
 // that does not allow negative values.
 type unsigned_quorum_fraction = { numerator : nat }
 
+[@inline]
+let to_signed(n : unsigned_quorum_fraction): quorum_fraction
+  = { numerator = int(n.numerator) }
+
 // Quorum threshold that a proposal needs to meet in order to be accepted,
 // expressed as a fraction of the total_supply of frozen tokens, only
 // storing the numerator while denominator is assumed to be
@@ -107,6 +110,9 @@ type permit =
 // TZIP-16 metadata map
 type metadata_map = (string, bytes) big_map
 
+// Instantiation-specific stored data
+type contract_extra = (string, bytes) big_map
+
 // -- Storage -- //
 
 // External FA2 token used for governance
@@ -136,25 +142,6 @@ type delegate =
   ; delegate : address
   }
 type delegates = (delegate, unit) big_map
-
-type storage =
-  { governance_token : governance_token
-  ; admin : address
-  ; guardian : address // A special role that can drop any proposals at anytime
-  ; pending_owner : address
-  ; metadata : metadata_map
-  ; extra : contract_extra
-  ; proposals : (proposal_key, proposal) big_map
-  ; proposal_key_list_sort_by_level : (blocks * proposal_key) set
-  ; staked_votes : (address * proposal_key, staked_vote) big_map
-  ; permits_counter : nonce
-  ; freeze_history : freeze_history
-  ; frozen_token_id : token_id
-  ; start_level : blocks
-  ; quorum_threshold_at_cycle : quorum_threshold_at_cycle
-  ; frozen_total_supply : nat
-  ; delegates : delegates
-  }
 
 // -- Parameter -- //
 
@@ -306,14 +293,8 @@ type config =
   // Has to be bigger than `proposal_flush_time`
   }
 
-type full_storage = storage * config
-
 // -- Misc -- //
-
-type return = operation list * storage
-
-type return_with_full_storage = operation list * full_storage
 
 let nil_op = ([] : operation list)
 
-#endif  // TYPES_H included
+#endif  // BASE_H included

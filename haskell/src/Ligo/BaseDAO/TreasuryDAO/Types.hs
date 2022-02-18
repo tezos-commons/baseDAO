@@ -7,6 +7,6 @@ module Ligo.BaseDAO.TreasuryDAO.Types
 
 import Ligo.BaseDAO.Types
 
-type instance CustomEpToParam 'Treasury = TreasuryCustomEpParam
+type instance VariantToParam 'Treasury = TreasuryCustomEpParam
 
 type TreasuryCustomEpParam = ()

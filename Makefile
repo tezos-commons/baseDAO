@@ -39,6 +39,7 @@ all: $(OUT)/trivialDAO.tz $(OUT)/registryDAO.tz $(OUT)/treasuryDAO.tz $(OUT)/tes
 # Compile LIGO contract into its michelson representation.
 $(OUT)/%DAO.tz: src/**
 	cp src/$*DAO.mligo src/implementation.mligo
+	cp src/$*DAO_storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	# ============== Compiling contract ============== #
 	$(BUILD) src/base_DAO.mligo -e base_DAO_contract --output-file $@
@@ -70,6 +71,7 @@ $(OUT)/trivialDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/trivialDAO_storage.tz: src/**
 	# ============== Compiling TrivialDAO storage ============== #
 	cp src/trivialDAO.mligo src/implementation.mligo
+	cp src/trivialDAO_storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/trivialDAO_storage.tz \
       src/base_DAO.mligo -e base_DAO_contract "default_full_storage( \
@@ -122,6 +124,7 @@ $(OUT)/registryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
 	cp src/registryDAO.mligo src/implementation.mligo
+	cp src/registryDAO_storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz \
       src/base_DAO.mligo -e base_DAO_contract "default_registry_DAO_full_storage( \
@@ -182,6 +185,7 @@ $(OUT)/treasuryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
 	cp src/treasuryDAO.mligo src/implementation.mligo
+	cp src/treasuryDAO_storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz \
        src/base_DAO.mligo -e base_DAO_contract "default_treasury_DAO_full_storage( \

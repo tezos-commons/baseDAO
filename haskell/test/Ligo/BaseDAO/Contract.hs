@@ -26,7 +26,7 @@ import Ligo.BaseDAO.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 
-getBaseDAOContract :: forall cep. (Typeable cep) => Contract (ToT (Parameter' (CustomEpToParam cep))) (ToT FullStorage)
+getBaseDAOContract :: forall cep ce. (Typeable cep, Typeable ce) => Contract (ToT (Parameter' (VariantToParam cep))) (ToT (FullStorage (VariantToExtra ce)))
 getBaseDAOContract = case eqT @cep @'Base of
   Just Refl -> baseDAOContractLigo
   Nothing -> case eqT @cep @'Registry of
@@ -35,11 +35,11 @@ getBaseDAOContract = case eqT @cep @'Base of
       Just Refl -> baseDAOTreasuryLigo
       Nothing -> error "Unknown contract"
 
-baseDAOContractLigo :: Contract (ToT Parameter) (ToT FullStorage)
+baseDAOContractLigo :: Contract (ToT Parameter) (ToT BaseFullStorage)
 baseDAOContractLigo = L.toMichelsonContract
   $$(embedContract @(Parameter' ()) @FullStorage "resources/testDAO.tz")
 
-baseDAORegistryLigo :: Contract (ToT (Parameter' RegistryCustomEpParam)) (ToT FullStorage)
+baseDAORegistryLigo :: Contract (ToT (Parameter' RegistryCustomEpParam)) (ToT RegistryFullStorage)
 baseDAORegistryLigo = L.toMichelsonContract
   $$(embedContract @(Parameter' RegistryCustomEpParam) @FullStorage "resources/registryDAO.tz")
 

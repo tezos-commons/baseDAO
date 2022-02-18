@@ -31,7 +31,7 @@ data RegistryCustomEpParam
   = Lookup_registry LookupRegistryParam
   | RegistryCepDummy ()
 
-type instance CustomEpToParam 'Registry = RegistryCustomEpParam
+type instance VariantToParam 'Registry = RegistryCustomEpParam
 
 instance Buildable RegistryCustomEpParam where
   build = genericF
