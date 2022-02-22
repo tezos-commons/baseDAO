@@ -719,7 +719,7 @@ test_RegistryDAO =
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
     initialStorage :: Address -> RegistryFullStorage
     initialStorage admin = let
-      fs = baseDAOStorageLigo { fsStorage = (fsStorage baseDAOStorageLigo) { sExtra = registryTestContractExtra } }
+      fs = baseDAORegistryStorageLigo { fsStorage = (fsStorage baseDAOStorageLigo) { sExtra = def } }
       oldStorage = fsStorage fs
       oldConfig = fsConfig fs
 
@@ -736,7 +736,17 @@ test_RegistryDAO =
             }
 
     initialStorageWithExplictRegistryDAOConfig :: Address -> RegistryFullStorage
-    initialStorageWithExplictRegistryDAOConfig admin = undefined
+    initialStorageWithExplictRegistryDAOConfig admin = (initialStorage admin)
+      & setExtra' (\re -> re { reRegistry = M.empty })
+      & setExtra' (\re -> re { reRegistryAffected = M.empty })
+      & setExtra' (\re -> re { reProposalReceivers = S.empty })
+      & setExtra' (\re -> re { reFrozenScaleValue = Just 1 })
+      & setExtra' (\re -> re { reFrozenExtraValue = Just 0 })
+      & setExtra' (\re -> re { reSlashScaleValue = Just 1 })
+      & setExtra' (\re -> re { reSlashDivisionValue = Just 1 })
+      & setExtra' (\re -> re { reMinXtzAmount = Just 2 })
+      & setExtra' (\re -> re { reMaxXtzAmount = Just 5 })
+      & setExtra' (\re -> re { reMaxProposalSize = Just 100 })
       -- setExtra @(M.Map MText MText) [mt|registry|] M.empty $
       -- setExtra @(M.Map MText ProposalKey) [mt|registry_affected|] M.empty $
       -- setExtra @(S.Set Address) [mt|proposal_receivers|] S.empty $

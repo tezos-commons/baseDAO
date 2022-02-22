@@ -147,7 +147,7 @@ sendXtzWithAmount amt addr = withFrozenCallStack $ do
 defaultQuorumThreshold :: QuorumThreshold
 defaultQuorumThreshold = mkQuorumThreshold 1 100
 
-type OriginationCEConatraints cep = (Typeable cep, IsoValue (VariantToExtra cep), HasNoOp (ToT (VariantToExtra cep)))
+type OriginationCEConatraints cep = (Typeable cep, Default (VariantToExtra cep), IsoValue (VariantToExtra cep), HasNoOp (ToT (VariantToExtra cep)))
 
 originateLigoDaoWithConfig
  :: forall cep caps base m. (OriginationCEConatraints cep, MonadCleveland caps base m)
@@ -219,7 +219,7 @@ originateLigoDaoWithConfigDesc extra config =
 
 originateLigoDao :: forall cep caps base m. (OriginationCEConatraints cep, MonadCleveland caps base m) => OriginateFn cep m
 originateLigoDao =
-  originateLigoDaoWithConfig @cep undefined defaultConfig
+  originateLigoDaoWithConfig @cep def defaultConfig
 
 createSampleProposal
   :: (MonadCleveland caps base m, HasCallStack)

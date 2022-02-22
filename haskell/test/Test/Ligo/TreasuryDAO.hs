@@ -15,7 +15,7 @@ import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
 
 import Ligo.BaseDAO.Common.Types
-import Ligo.BaseDAO.Contract (baseDAOStorageLigo)
+import Ligo.BaseDAO.Contract (baseDAOStorageLigo, baseDAOTreasuryStorageLigo)
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
@@ -357,18 +357,18 @@ originateTreasuryDao
  => (TreasuryFullStorage -> TreasuryFullStorage)
  -> OriginateFn 'Treasury m
 originateTreasuryDao modifyStorageFn =
-  let fs = baseDAOStorageLigo
+  let fs = baseDAOTreasuryStorageLigo
       FullStorageP {..} = fs
-        -- & setExtra @Natural [mt|frozen_scale_value|] 1
-        -- & setExtra @Natural [mt|frozen_extra_value|] 0
-        -- & setExtra @Natural [mt|slash_scale_value|] 1
-        -- & setExtra @Natural [mt|slash_division_value|] 1
-        -- & setExtra @Natural [mt|max_proposal_size|] 1000
-        -- & setExtra @Natural [mt|min_xtz_amount|] 2
-        -- & setExtra @Natural [mt|max_xtz_amount|] 5
-        -- & modifyStorageFn
+        & setExtra' (\te -> te { teFrozenScaleValue = Just 1 })
+        & setExtra' (\te -> te { teFrozenExtraValue = Just 0 })
+        & setExtra' (\te -> te { teSlashScaleValue = Just 1 })
+        & setExtra' (\te -> te { teSlashDivisionValue = Just 1 })
+        & setExtra' (\te -> te { teMaxProposalSize = Just 1000 })
+        & setExtra' (\te -> te { teMinXtzAmount = Just 2 })
+        & setExtra' (\te -> te { teMaxXtzAmount = Just 5 })
+        & modifyStorageFn
 
-  in originateLigoDaoWithConfig @'Treasury (undefined :: TreasuryExtra)
+  in originateLigoDaoWithConfig @'Treasury def
       (fsConfig
         { cMinQuorumThreshold = fromIntegral $ mkQuorumThreshold 1 100
         , cPeriod = 10

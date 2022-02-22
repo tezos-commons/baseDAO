@@ -6,10 +6,12 @@ module Ligo.BaseDAO.RegistryDAO.Types
   , RegistryExtra (..)
   , RegistryFullStorage
   , LookupRegistryParam (..)
-  , registryTestContractExtra
   ) where
 
 import Universum
+
+import qualified Data.Set as S
+import qualified Data.Map as M
 
 import Fmt (Buildable, build, genericF)
 import Lorentz as L
@@ -71,6 +73,9 @@ data RegistryExtra = RegistryExtra
 
 registryTestContractExtra :: RegistryExtra
 registryTestContractExtra = undefined
+
+instance Default RegistryExtra where
+  def = RegistryExtra M.empty M.empty S.empty Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 instance Buildable RegistryExtra where
   build = genericF

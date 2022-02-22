@@ -32,6 +32,9 @@ data TreasuryExtra = TreasuryExtra
   , teMaxXtzAmount :: Maybe Mutez
   } deriving stock (Eq)
 
+instance Default TreasuryExtra where
+  def = TreasuryExtra Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
 instance Buildable TreasuryExtra where
   build = genericF
 

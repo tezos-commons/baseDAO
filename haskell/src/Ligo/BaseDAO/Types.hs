@@ -11,8 +11,8 @@ module Ligo.BaseDAO.Types
   , baseDaoAnnOptions
 
     -- * Proposals
-  , DecisionLambdaInput (..)
-  , DecisionLambdaOutput (..)
+  , DecisionLambdaInput
+  , DecisionLambdaOutput
   , ProposalKey
   , ProposeParams(..)
   , GovernanceToken(..)
@@ -88,6 +88,7 @@ module Ligo.BaseDAO.Types
   , defaultConfig
   , mkFullStorage
   , setExtra
+  , setExtra'
   ) where
 
 import Universum (Enum, Integral, Num, One(..), Real, Type, div, fromIntegral, maybe, show, (*))
@@ -822,8 +823,8 @@ pattern FullStoragePRPC :: StorageSkeletonRPC ce -> ConfigRPC -> FullStorageRPC'
 pattern FullStoragePRPC {fsStorageRPC, fsConfigRPC} <- (fsStorageRPC, fsConfigRPC)
   where FullStoragePRPC fsStorageRPC fsConfigRPC = (fsStorageRPC, fsConfigRPC)
 
-setExtra' :: (ce -> ce) -> FullStorage -> FullStorage
-setExtra' fn (s, c) = undefined -- (s { sExtra = fn $ sExtra s }, c)
+setExtra' :: (ce -> ce) -> FullStorageSkeleton ce -> FullStorageSkeleton ce
+setExtra' fn (s, c) = (s { sExtra = fn $ sExtra s }, c)
 
 setExtra :: MText -> v -> s ->  s
 setExtra = undefined -- (s { sExtra = fn $ sExtra s }, c)
