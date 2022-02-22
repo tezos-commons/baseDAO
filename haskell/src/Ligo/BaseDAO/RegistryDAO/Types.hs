@@ -71,9 +71,6 @@ data RegistryExtra = RegistryExtra
   , reMaxXtzAmount :: Maybe Mutez
   } deriving stock (Eq)
 
-registryTestContractExtra :: RegistryExtra
-registryTestContractExtra = undefined
-
 instance Default RegistryExtra where
   def = RegistryExtra M.empty M.empty S.empty Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 

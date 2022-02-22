@@ -30,7 +30,6 @@ import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.RegistryDAO.Types
 import Test.Ligo.BaseDAO.Common
-import Test.Ligo.BaseDAO.Proposal.Config (testContractExtra)
 import Test.Ligo.RegistryDAO.Types
 
 getStorageRPCRegistry :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m (FullStorageRPC' (VariantToExtra 'Registry))
@@ -45,17 +44,16 @@ withOriginated
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
   dodTokenContract <- chAddress <$> originateSimple "token_contract" [] dummyFA2Contract
-  let storageInitial = storageFn addresses
+
+  let storageInitial@(st, cn) = storageFn addresses
   now_level <- getLevel
-  let storage = storageInitial
-        { fsStorage = (fsStorage storageInitial)
-          { sGovernanceToken = GovernanceToken
-            { gtAddress = dodTokenContract
-            , gtTokenId = FA2.theTokenId
-            }
-          , sStartLevel = now_level
-          }
-        }
+
+  let storage = (st { sGovernanceToken = GovernanceToken
+                        { gtAddress = dodTokenContract
+                        , gtTokenId = FA2.theTokenId
+                        }
+                    , sStartLevel = now_level
+                    }, cn)
 
   baseDao <- originateUntyped $ UntypedOriginateData
     { uodName = "BaseDAO - RegistryDAO Test Contract"

@@ -76,7 +76,7 @@ module Ligo.BaseDAO.Types
   , ContractExtraConstrain
   , FullStorage
   , FullStorageSkeleton
-  , FullStorageRPC (..)
+  , FullStorageRPC
   , FullStorageRPC'
   , AddressFreezeHistory (..)
   , DynamicRec
