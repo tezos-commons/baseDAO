@@ -61,8 +61,6 @@ module Ligo.BaseDAO.Types
   , UnstakeVoteParam
 
   , FixedFee (..)
-  , pattern FullStorageP
-  , pattern FullStoragePRPC
   , fsStorage
   , fsConfig
   , fsStorageRPC
@@ -75,9 +73,10 @@ module Ligo.BaseDAO.Types
   , ConfigRPC (..)
   , ContractExtraConstrain
   , FullStorage
-  , FullStorageSkeleton
   , FullStorageRPC
   , FullStorageRPC'
+  , FullStorageSkeleton (..)
+  , FullStorageSkeletonRPC (..)
   , AddressFreezeHistory (..)
   , DynamicRec
   , DynamicRec' (..)
@@ -805,26 +804,29 @@ mkConfig votingPeriod fixedProposalFee maxChangePercent changePercent governance
 defaultConfig :: Config
 defaultConfig = mkConfig (Period 20) (FixedFee 0) 19 5 (GovernanceTotalSupply 500)
 
-type FullStorageSkeleton ce =
-  (StorageSkeleton ce, Config)
+data FullStorageSkeleton ce = FullStorageSkeleton
+  { fsStorage :: StorageSkeleton ce
+  , fsConfig :: Config
+  } deriving stock (Generic, Eq)
+    deriving anyclass IsoValue
 
-pattern FullStorageP :: StorageSkeleton ce -> Config -> FullStorageSkeleton ce
-pattern FullStorageP {fsStorage, fsConfig} <- (fsStorage, fsConfig)
-  where FullStorageP fsStorage fsConfig = (fsStorage, fsConfig)
+deriving stock instance Show ce => Show (FullStorageSkeleton ce)
+instance Buildable ce => Buildable (FullStorageSkeleton ce) where
+  build = genericF
+instance HasAnnotation ce => HasAnnotation (FullStorageSkeleton ce) where
+  annOptions = baseDaoAnnOptions
+
+deriveRPC "FullStorageSkeleton"
 
 type FullStorage = FullStorageSkeleton (VariantToExtra 'Base)
 
-type FullStorageRPC = (StorageSkeletonRPC (VariantToExtra 'Base), ConfigRPC)
-type FullStorageRPC' ce = (StorageSkeletonRPC ce, ConfigRPC)
+type FullStorageRPC = FullStorageSkeletonRPC (VariantToExtra 'Base) -- (StorageSkeletonRPC (VariantToExtra 'Base), ConfigRPC)
+type FullStorageRPC' ce = FullStorageSkeletonRPC ce
 
 type ContractExtraConstrain ce = (NiceStorage ce, NiceUnpackedValue (AsRPC ce))
 
-pattern FullStoragePRPC :: StorageSkeletonRPC ce -> ConfigRPC -> FullStorageRPC' ce
-pattern FullStoragePRPC {fsStorageRPC, fsConfigRPC} <- (fsStorageRPC, fsConfigRPC)
-  where FullStoragePRPC fsStorageRPC fsConfigRPC = (fsStorageRPC, fsConfigRPC)
-
 setExtra' :: (ce -> ce) -> FullStorageSkeleton ce -> FullStorageSkeleton ce
-setExtra' fn (s, c) = (s { sExtra = fn $ sExtra s }, c)
+setExtra' fn fsk = fsk { fsStorage = (fsStorage fsk) { sExtra = fn $ sExtra $ fsStorage fsk } }
 
 setExtra :: MText -> v -> s ->  s
 setExtra = undefined -- (s { sExtra = fn $ sExtra s }, c)
@@ -841,7 +843,7 @@ mkFullStorage
   -> "level" :! Natural
   -> "tokenAddress" :! Address
   -> FullStorageSkeleton (VariantToExtra cep)
-mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress = FullStorageP
+mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress = FullStorageSkeleton
   { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig
       (argDef #votingPeriod votingPeriodDef vp) (FixedFee 0) (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply (GovernanceTotalSupply 100) gts)

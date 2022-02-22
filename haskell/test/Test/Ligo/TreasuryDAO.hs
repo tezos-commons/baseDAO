@@ -15,7 +15,7 @@ import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
 
 import Ligo.BaseDAO.Common.Types
-import Ligo.BaseDAO.Contract (baseDAOStorageLigo, baseDAOTreasuryStorageLigo)
+import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
@@ -358,7 +358,7 @@ originateTreasuryDao
  -> OriginateFn 'Treasury m
 originateTreasuryDao modifyStorageFn =
   let fs = baseDAOTreasuryStorageLigo
-      FullStorageP {..} = fs
+      FullStorageSkeleton {..} = fs
         & setExtra' (\te -> te { teFrozenScaleValue = Just 1 })
         & setExtra' (\te -> te { teFrozenExtraValue = Just 0 })
         & setExtra' (\te -> te { teSlashScaleValue = Just 1 })

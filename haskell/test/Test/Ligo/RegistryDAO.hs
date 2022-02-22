@@ -44,16 +44,17 @@ withOriginated
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
   dodTokenContract <- chAddress <$> originateSimple "token_contract" [] dummyFA2Contract
-
-  let storageInitial@(st, cn) = storageFn addresses
+  let storageInitial = storageFn addresses
   now_level <- getLevel
-
-  let storage = (st { sGovernanceToken = GovernanceToken
-                        { gtAddress = dodTokenContract
-                        , gtTokenId = FA2.theTokenId
-                        }
-                    , sStartLevel = now_level
-                    }, cn)
+  let storage = storageInitial
+        { fsStorage = (fsStorage storageInitial)
+          { sGovernanceToken = GovernanceToken
+              { gtAddress = dodTokenContract
+              , gtTokenId = FA2.theTokenId
+              }
+          , sStartLevel = now_level
+          }
+        }
 
   baseDao <- originateUntyped $ UntypedOriginateData
     { uodName = "BaseDAO - RegistryDAO Test Contract"

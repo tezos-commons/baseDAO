@@ -174,7 +174,7 @@ originateLigoDaoWithConfig extra config qt = do
   guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
   let originationOffset = 12
-  let fullStorage = FullStorageP
+  let fullStorage = FullStorageSkeleton
         { fsStorage =
             ( mkStorage
               ! #extra extra
