@@ -33,11 +33,14 @@ import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config (testContractExtra)
 import Test.Ligo.RegistryDAO.Types
 
+getStorageRPCRegistry :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m (FullStorageRPC' (VariantToExtra 'Registry))
+getStorageRPCRegistry addr = getStorage @(FullStorageSkeleton (VariantToExtra 'Registry)) (unTAddress addr)
+
 withOriginated
   :: MonadCleveland caps base m
   => Integer
-  -> ([Address] -> FullStorage)
-  -> ([Address] -> FullStorage -> TAddress (Parameter' RegistryCustomEpParam) -> TAddress FA2.Parameter -> m a)
+  -> ([Address] -> RegistryFullStorage)
+  -> ([Address] -> RegistryFullStorage -> TAddress (Parameter' RegistryCustomEpParam) -> TAddress FA2.Parameter -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
@@ -62,7 +65,7 @@ withOriginated addrCount storageFn tests = do
     }
   tests addresses storage (TAddress baseDao) (TAddress dodTokenContract)
 
-toPeriod :: FullStorage -> Natural
+toPeriod :: RegistryFullStorage -> Natural
 toPeriod = unPeriod . cPeriod . fsConfig
 
 -- | We test non-token entrypoints of the BaseDAO contract here
@@ -260,9 +263,8 @@ test_RegistryDAO =
               withSender admin $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
-              extraBigmapId <- (unDynamic . sExtraRPC . fsStorageRPC) <$> getStorageRPC baseDao
-              maxProposalSize <- getBigMapValue extraBigmapId "max_proposal_size"
-              assert ((lUnpackValueRaw @Natural maxProposalSize) == (Right 341)) "Unexpected max_proposal_size update"
+              maxProposalSize <- (reMaxProposalSize . sExtraRPC . fsStorageRPC) <$> getStorageRPCRegistry baseDao
+              assert (maxProposalSize == Just 341) "Unexpected max_proposal_size update"
 
     , testScenario "checks on-chain view correctly returns the registry value" $ scenario $ do
         -- The default values assigned from initialStorageWithExplictRegistryDAOConfig function
@@ -652,12 +654,9 @@ test_RegistryDAO =
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            extraBigmapId <- (unDynamic . sExtraRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
-            (lUnpackValueRaw . fromMaybe (error "")) <$> getBigMapValueMaybe extraBigmapId [mt|proposal_receivers|] >>= \case
-              Left _ -> error "Unpacking failed"
-              Right receiversSet ->
-                assert ((wallet1 `S.member` receiversSet) && (wallet2 `S.member` receiversSet))
-                  "Proposal receivers was not updated as expected"
+            receiversSet <- (reProposalReceivers . sExtraRPC . fsStorageRPC) <$> getStorageRPCRegistry baseDao
+            assert ((wallet1 `S.member` receiversSet) && (wallet2 `S.member` receiversSet))
+              "Proposal receivers was not updated as expected"
 
     , testScenario "checks it can flush an Update_receivers_proposal that deletes" $ scenario $
         withOriginated 3
@@ -705,12 +704,9 @@ test_RegistryDAO =
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            extraBigmapId <- (unDynamic . sExtraRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
-            (lUnpackValueRaw . fromMaybe (error "")) <$> getBigMapValueMaybe extraBigmapId [mt|proposal_receivers|] >>= \case
-              Left _ -> error "Unpacking failed"
-              Right receiversSet ->
-                assert (Universum.not (wallet1 `S.member` receiversSet))
-                  "Proposal receivers was not updated as expected"
+            receiversSet <- (reProposalReceivers . sExtraRPC . fsStorageRPC) <$> getStorageRPCRegistry baseDao
+            assert (Universum.not (wallet1 `S.member` receiversSet))
+              "Proposal receivers was not updated as expected"
     ]
   ]
   where
@@ -721,9 +717,9 @@ test_RegistryDAO =
     -- RegistryDAO configuration values using the setExtra function below, and
     -- initialize the contract using it. This let us have the lambdas from LIGO
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
-    initialStorage :: Address -> FullStorage
+    initialStorage :: Address -> RegistryFullStorage
     initialStorage admin = let
-      fs = baseDAOStorageLigo { fsStorage = (fsStorage baseDAOStorageLigo) { sExtra = testContractExtra } }
+      fs = baseDAOStorageLigo { fsStorage = (fsStorage baseDAOStorageLigo) { sExtra = registryTestContractExtra } }
       oldStorage = fsStorage fs
       oldConfig = fsConfig fs
 
@@ -739,19 +735,19 @@ test_RegistryDAO =
                 }
             }
 
-    initialStorageWithExplictRegistryDAOConfig :: Address -> FullStorage
-    initialStorageWithExplictRegistryDAOConfig admin =
-      setExtra @(M.Map MText MText) [mt|registry|] M.empty $
-      setExtra @(M.Map MText ProposalKey) [mt|registry_affected|] M.empty $
-      setExtra @(S.Set Address) [mt|proposal_receivers|] S.empty $
+    initialStorageWithExplictRegistryDAOConfig :: Address -> RegistryFullStorage
+    initialStorageWithExplictRegistryDAOConfig admin = undefined
+      -- setExtra @(M.Map MText MText) [mt|registry|] M.empty $
+      -- setExtra @(M.Map MText ProposalKey) [mt|registry_affected|] M.empty $
+      -- setExtra @(S.Set Address) [mt|proposal_receivers|] S.empty $
 
-      setExtra @Natural [mt|frozen_scale_value|] 1 $
-      setExtra @Natural [mt|frozen_extra_value|] 0 $
-      setExtra @Natural [mt|slash_scale_value|] 1 $
-      setExtra @Natural [mt|slash_division_value|] 1 $
-      setExtra @Natural [mt|min_xtz_amount|] 2 $
-      setExtra @Natural [mt|max_xtz_amount|] 5 $
-      setExtra @Natural [mt|max_proposal_size|] 100 (initialStorage admin)
+      -- setExtra @Natural [mt|frozen_scale_value|] 1 $
+      -- setExtra @Natural [mt|frozen_extra_value|] 0 $
+      -- setExtra @Natural [mt|slash_scale_value|] 1 $
+      -- setExtra @Natural [mt|slash_division_value|] 1 $
+      -- setExtra @Natural [mt|min_xtz_amount|] 2 $
+      -- setExtra @Natural [mt|max_xtz_amount|] 5 $
+      -- setExtra @Natural [mt|max_proposal_size|] 100 (initialStorage admin)
 
 expectFailProposalCheck
   :: (MonadCleveland caps base m)

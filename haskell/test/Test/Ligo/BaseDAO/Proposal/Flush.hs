@@ -115,14 +115,15 @@ flushAcceptedProposals originateFn = do
 
 flushAcceptedProposalsWithAnAmount
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushAcceptedProposalsWithAnAmount originateFn = do
   DaoOriginateData{..}
-    <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
-        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
-        ) defaultQuorumThreshold
+    <- originateFn testConfig defaultQuorumThreshold
+    -- <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
+    --     >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
+    --     >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
+    --     ) defaultQuorumThreshold
   originationLevel <- getOriginationLevel dodDao
 
   -- [Voting]
@@ -173,14 +174,15 @@ flushAcceptedProposalsWithAnAmount originateFn = do
 
 flushRejectProposalQuorum
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
-    <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
-        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-        ) (mkQuorumThreshold 3 5)
+    <- originateFn testConfig (mkQuorumThreshold 3 5)
+    -- <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
+    --     >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
+    --     >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+    --     ) (mkQuorumThreshold 3 5)
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount :! 5)
@@ -218,14 +220,16 @@ flushRejectProposalQuorum originateFn = do
 
 flushRejectProposalNegativeVotes
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
-    <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
-          >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-          >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-          ) (mkQuorumThreshold 3 100)
+    <- originateFn testConfig (mkQuorumThreshold 3 100)
+
+    -- <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
+    --       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
+    --       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+    --       ) (mkQuorumThreshold 3 100)
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount :! 3)
@@ -279,14 +283,15 @@ flushRejectProposalNegativeVotes originateFn = do
 
 flushWithBadConfig
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushWithBadConfig originateFn = do
   DaoOriginateData{..} <-
-    originateFn (fillConfig badRejectedValueConfig testContractExtra) (
-      (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-      ) (mkQuorumThreshold 1 2)
+    originateFn testConfig (mkQuorumThreshold 1 2)
+    -- originateFn (fillConfig badRejectedValueConfig testContractExtra) (
+    --   (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
+    --   >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
+    --   ) (mkQuorumThreshold 1 2)
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount :! 3)
@@ -321,15 +326,17 @@ flushWithBadConfig originateFn = do
 
 flushDecisionLambda
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 flushDecisionLambda originateFn = do
   consumer <- chAddress <$> originateSimple @("proposer" :! Address) "consumer" [] contractConsumer
   DaoOriginateData{..} <-
-    originateFn (fillConfig (passProposerOnDecision (TAddress consumer)) testContractExtra) (
-      (ConfigDesc $ Period 60)
-      >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
-      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
-      ) defaultQuorumThreshold
+    originateFn testConfig defaultQuorumThreshold
+
+    -- originateFn (fillConfig (passProposerOnDecision (TAddress consumer)) testContractExtra) (
+    --   (ConfigDesc $ Period 60)
+    --   >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
+    --   >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
+    --   ) defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount :! 10)
@@ -363,16 +370,17 @@ flushDecisionLambda originateFn = do
 
 flushFailOnExpiredProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
-    originateFn
-     (fillConfig (divideOnRejectionBy 2) testContractExtra)
-     (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
-      ) (mkQuorumThreshold 1 50)
+    originateFn testConfig (mkQuorumThreshold 1 50)
+    -- originateFn
+    --  (fillConfig (divideOnRejectionBy 2) testContractExtra)
+    --  (testConfig
+    --    >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+    --    >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
+    --   ) (mkQuorumThreshold 1 50)
   originationLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
@@ -412,14 +420,15 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
 
 flushProposalFlushTimeNotReach
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushProposalFlushTimeNotReach originateFn = do
   DaoOriginateData{..} <-
-    originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
-        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
-        ) defaultQuorumThreshold
+    originateFn testConfig defaultQuorumThreshold
+    -- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
+    --     >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
+    --     >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
+    --     ) defaultQuorumThreshold
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount :! 30)

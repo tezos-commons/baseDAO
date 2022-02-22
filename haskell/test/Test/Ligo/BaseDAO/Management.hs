@@ -95,9 +95,9 @@ test_BaseDAO_Management =
 
   where
 
-    initialStorage currentLevel admin = mkFullStorage
+    initialStorage currentLevel admin = mkFullStorage @'Base
       ! #admin admin
-      ! #extra testContractExtra
+      ! #extra ()
       ! #metadata mempty
       ! #level currentLevel
       ! #tokenAddress genesisAddress

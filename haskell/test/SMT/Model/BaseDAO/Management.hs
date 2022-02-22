@@ -1,43 +1,43 @@
 -- SPDX-FileCopyrightText: 2021 TQ Tezos
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-module SMT.Model.BaseDAO.Management
-  ( applyAcceptOwnership
-  , applyTransferOwnership
-  , applyCallCustom
-  ) where
+module SMT.Model.BaseDAO.Management () where
+--   ( applyAcceptOwnership
+--   , applyTransferOwnership
+--   , applyCallCustom
+--   ) where
 
-import Universum
-
-import Control.Monad.Except (throwError)
-
-import Morley.Util.Named
-
-import Ligo.BaseDAO.Types
-import SMT.Model.BaseDAO.Types
-
-applyTransferOwnership :: ModelSource -> TransferOwnershipParam -> ModelT cep ()
-applyTransferOwnership mso (N param) = do
-  selfAddr <- get <&> msSelfAddress
-
-  modifyStore $ \s -> do
-    let newOwner = param
-
-    unless (msoSender mso == sAdmin s) $
-      throwError NOT_ADMIN
-
-    if selfAddr == newOwner then
-      pure $ s { sAdmin = newOwner }
-    else
-      pure $ s { sPendingOwner = newOwner}
-
-applyAcceptOwnership :: ModelSource -> ModelT cep ()
-applyAcceptOwnership mso = modifyStore $ \s ->
-  if (s & sPendingOwner) == (mso & msoSender) then
-    pure $ s { sAdmin = (mso & msoSender)}
-  else throwError NOT_PENDING_ADMIN
-
-applyCallCustom :: ModelSource -> cep -> ModelT cep ()
-applyCallCustom _ cep = do
-  customEps <- get <&> msCustomEps
-  customEps cep
+-- import Universum
+--
+-- import Control.Monad.Except (throwError)
+--
+-- import Morley.Util.Named
+--
+-- import Ligo.BaseDAO.Types
+-- import SMT.Model.BaseDAO.Types
+--
+-- applyTransferOwnership :: ModelSource -> TransferOwnershipParam -> ModelT cep ()
+-- applyTransferOwnership mso (N param) = do
+--   selfAddr <- get <&> msSelfAddress
+--
+--   modifyStore $ \s -> do
+--     let newOwner = param
+--
+--     unless (msoSender mso == sAdmin s) $
+--       throwError NOT_ADMIN
+--
+--     if selfAddr == newOwner then
+--       pure $ s { sAdmin = newOwner }
+--     else
+--       pure $ s { sPendingOwner = newOwner}
+--
+-- applyAcceptOwnership :: ModelSource -> ModelT cep ()
+-- applyAcceptOwnership mso = modifyStore $ \s ->
+--   if (s & sPendingOwner) == (mso & msoSender) then
+--     pure $ s { sAdmin = (mso & msoSender)}
+--   else throwError NOT_PENDING_ADMIN
+--
+-- applyCallCustom :: ModelSource -> cep -> ModelT cep ()
+-- applyCallCustom _ cep = do
+--   customEps <- get <&> msCustomEps
+--   customEps cep

@@ -232,7 +232,7 @@ proposalIsRejectedIfNoQuorum
   => m ()
 proposalIsRejectedIfNoQuorum = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc @'Base testContractExtra
+    originateLigoDaoWithConfigDesc @'Base ()
       ((ConfigDesc $ Period 60)
       >>- (ConfigDesc (FixedFee 42))
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 1800 })
@@ -283,7 +283,7 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum
   => m ()
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc @'Base testContractExtra
+    originateLigoDaoWithConfigDesc @'Base ()
       (testConfig
       >>- (ConfigDesc $ Period 60)
       >>- (ConfigDesc (FixedFee 42))

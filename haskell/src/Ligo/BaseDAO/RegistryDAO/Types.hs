@@ -3,13 +3,17 @@
 
 module Ligo.BaseDAO.RegistryDAO.Types
   ( RegistryCustomEpParam (..)
+  , RegistryExtra (..)
+  , RegistryFullStorage
   , LookupRegistryParam (..)
+  , registryTestContractExtra
   ) where
 
 import Universum
 
 import Fmt (Buildable, build, genericF)
 import Lorentz as L
+import Morley.Client
 
 import Ligo.BaseDAO.Types
 
@@ -31,8 +35,6 @@ data RegistryCustomEpParam
   = Lookup_registry LookupRegistryParam
   | RegistryCepDummy ()
 
-type instance VariantToParam 'Registry = RegistryCustomEpParam
-
 instance Buildable RegistryCustomEpParam where
   build = genericF
 
@@ -50,3 +52,37 @@ instance ParameterHasEntrypoints (AllowXTZParam RegistryCustomEpParam) where
 
 instance ParameterHasEntrypoints (Parameter' RegistryCustomEpParam) where
   type ParameterEntrypointsDerivation (Parameter' RegistryCustomEpParam) = EpdDelegate
+
+type RegistryKey = MText
+type RegistryValue = MText
+
+data RegistryExtra = RegistryExtra
+  { reRegistry :: Map RegistryKey RegistryValue
+  , reRegistryAffected :: Map RegistryKey ProposalKey
+  , reProposalReceivers :: Set Address
+  , reFrozenScaleValue :: Maybe Natural
+  , reFrozenExtraValue :: Maybe Natural
+  , reMaxProposalSize :: Maybe Natural
+  , reSlashScaleValue :: Maybe Natural
+  , reSlashDivisionValue :: Maybe Natural
+  , reMinXtzAmount :: Maybe Mutez
+  , reMaxXtzAmount :: Maybe Mutez
+  } deriving stock (Eq)
+
+registryTestContractExtra :: RegistryExtra
+registryTestContractExtra = undefined
+
+instance Buildable RegistryExtra where
+  build = genericF
+
+type instance AsRPC RegistryExtra = RegistryExtra
+
+customGeneric "RegistryExtra" ligoLayout
+deriving anyclass instance IsoValue RegistryExtra
+instance HasAnnotation RegistryExtra where
+  annOptions = baseDaoAnnOptions
+
+type instance VariantToParam 'Registry = RegistryCustomEpParam
+type instance VariantToExtra 'Registry = RegistryExtra
+
+type RegistryFullStorage = FullStorageSkeleton (VariantToExtra 'Registry)

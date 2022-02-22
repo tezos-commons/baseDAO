@@ -61,7 +61,6 @@ module Ligo.BaseDAO.Types
   , UnstakeVoteParam
 
   , FixedFee (..)
-  , BaseFullStorage
   , pattern FullStorageP
   , pattern FullStoragePRPC
   , fsStorage
@@ -76,7 +75,9 @@ module Ligo.BaseDAO.Types
   , ConfigRPC (..)
   , ContractExtraConstrain
   , FullStorage
+  , FullStorageSkeleton
   , FullStorageRPC (..)
+  , FullStorageRPC'
   , AddressFreezeHistory (..)
   , DynamicRec
   , DynamicRec' (..)
@@ -722,31 +723,35 @@ newtype FixedFee = FixedFee Natural
 
 type instance AsRPC FixedFee = FixedFee
 
-data DecisionLambdaInput ce = DecisionLambdaInput
+data DecisionLambdaInput' ce = DecisionLambdaInput'
   { diProposal :: Proposal
   , diExtra :: ce
   }
 
-customGeneric "DecisionLambdaInput" ligoLayout
+customGeneric "DecisionLambdaInput'" ligoLayout
 
-deriving anyclass instance IsoValue ce => IsoValue (DecisionLambdaInput ce)
-deriving stock instance Show ce => Show (DecisionLambdaInput ce)
+deriving anyclass instance IsoValue ce => IsoValue (DecisionLambdaInput' ce)
+deriving stock instance Show ce => Show (DecisionLambdaInput' ce)
 
-instance HasAnnotation ce => HasAnnotation (DecisionLambdaInput ce) where
+type DecisionLambdaInput = DecisionLambdaInput' ()
+
+instance HasAnnotation ce => HasAnnotation (DecisionLambdaInput' ce) where
   annOptions = baseDaoAnnOptions
 
-data DecisionLambdaOutput ce = DecisionLambdaOutput
+data DecisionLambdaOutput' ce = DecisionLambdaOutput'
   { doOperations :: List Operation
   , doExtra :: ce
   , doGuardian :: Maybe Address
   }
 
-customGeneric "DecisionLambdaOutput" ligoLayout
+type DecisionLambdaOutput = DecisionLambdaOutput' ()
 
-deriving anyclass instance IsoValue ce => IsoValue (DecisionLambdaOutput ce)
-deriving stock instance Show ce => Show (DecisionLambdaOutput ce)
+customGeneric "DecisionLambdaOutput'" ligoLayout
 
-instance HasAnnotation ce => HasAnnotation (DecisionLambdaOutput ce) where
+deriving anyclass instance IsoValue ce => IsoValue (DecisionLambdaOutput' ce)
+deriving stock instance Show ce => Show (DecisionLambdaOutput' ce)
+
+instance HasAnnotation ce => HasAnnotation (DecisionLambdaOutput' ce) where
   annOptions = baseDaoAnnOptions
 
 data Config = Config
@@ -806,33 +811,35 @@ pattern FullStorageP :: StorageSkeleton ce -> Config -> FullStorageSkeleton ce
 pattern FullStorageP {fsStorage, fsConfig} <- (fsStorage, fsConfig)
   where FullStorageP fsStorage fsConfig = (fsStorage, fsConfig)
 
-type FullStorage ce = FullStorageSkeleton ce
+type FullStorage = FullStorageSkeleton (VariantToExtra 'Base)
 
-type FullStorageRPC ce = (StorageSkeletonRPC ce, ConfigRPC)
-
-type BaseFullStorage = FullStorage (VariantToExtra 'Base)
+type FullStorageRPC = (StorageSkeletonRPC (VariantToExtra 'Base), ConfigRPC)
+type FullStorageRPC' ce = (StorageSkeletonRPC ce, ConfigRPC)
 
 type ContractExtraConstrain ce = (NiceStorage ce, NiceUnpackedValue (AsRPC ce))
 
-pattern FullStoragePRPC :: StorageSkeletonRPC ce -> ConfigRPC -> FullStorageRPC ce
+pattern FullStoragePRPC :: StorageSkeletonRPC ce -> ConfigRPC -> FullStorageRPC' ce
 pattern FullStoragePRPC {fsStorageRPC, fsConfigRPC} <- (fsStorageRPC, fsConfigRPC)
   where FullStoragePRPC fsStorageRPC fsConfigRPC = (fsStorageRPC, fsConfigRPC)
 
-setExtra :: (ce -> ce) -> FullStorage ce -> FullStorage ce
-setExtra fn (s, c)= (s { sExtra = fn $ sExtra s }, c)
+setExtra' :: (ce -> ce) -> FullStorage -> FullStorage
+setExtra' fn (s, c) = undefined -- (s { sExtra = fn $ sExtra s }, c)
+
+setExtra :: MText -> v -> s ->  s
+setExtra = undefined -- (s { sExtra = fn $ sExtra s }, c)
 
 mkFullStorage
-  :: "admin" :! Address
+  :: forall cep. "admin" :! Address
   -> "votingPeriod" :? Period
   -> "quorumThreshold" :? QuorumThreshold
   -> "maxChangePercent" :? Natural
   -> "changePercent" :? Natural
   -> "governanceTotalSupply" :? GovernanceTotalSupply
-  -> "extra" :! ce
+  -> "extra" :! (VariantToExtra cep)
   -> "metadata" :! TZIP16.MetadataMap BigMap
   -> "level" :! Natural
   -> "tokenAddress" :! Address
-  -> FullStorage ce
+  -> FullStorageSkeleton (VariantToExtra cep)
 mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress = FullStorageP
   { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
   , fsConfig  = mkConfig
