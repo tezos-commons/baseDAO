@@ -27,8 +27,8 @@ test_BaseDAO_Proposal =
       [ testScenario "BaseDAO - can propose a valid proposal" $ scenario $
           validProposal (originateLigoDaoWithConfigDesc @'Base ())
 
-      , testScenario "cannot propose an invalid proposal (rejected)" $ scenario $
-          rejectProposal (originateLigoDaoWithConfigDesc @'Base ())
+      , testScenario "cannot propose an invalid proposal - rejected" $ scenario $
+          rejectProposal (originateLigoDaoWithConfigDesc @'TestDynamic testContractExtra)
 
       , testScenario "cannot propose a non-unique proposal" $ scenario $
           nonUniqueProposal (originateLigoDaoWithConfigDesc @'Base ())

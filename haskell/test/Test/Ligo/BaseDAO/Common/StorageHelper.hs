@@ -2,20 +2,32 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 module Test.Ligo.BaseDAO.Common.StorageHelper
   ( checkBalance
+  , checkBalance'
   , checkGuardian
+  , checkGuardian'
   , checkIfAProposalExist
+  , checkIfAProposalExist'
   , checkIfDelegateExists
+  , checkIfDelegateExists'
   , getFreezeHistory
+  , getFreezeHistory'
   , getFrozenTotalSupply
+  , getFrozenTotalSupply'
   , getFullStorage
   , getProposal
+  , getProposal'
   , getProposalStartLevel
+  , getProposalStartLevel'
   , getVoter
+  , getVoter'
   , getQtAtCycle
+  , getQtAtCycle'
   , getStorageRPC
   , getStorageRPC'
   , getVotePermitsCounter
+  , getVotePermitsCounter'
   , getOriginationLevel
+  , getOriginationLevel'
   ) where
 
 import Lorentz hiding (assert, (>>))
@@ -36,7 +48,6 @@ type CEConatraints cep =
   , HasNoContract (ToT (AsRPC (VariantToExtra cep)))
   , HasNoNestedBigMaps (ToT (AsRPC (VariantToExtra cep)))
   , HasNoTicket (ToT (VariantToExtra cep))
-  , HasNoBigMap (ToT (VariantToExtra cep))
   , HasNoOp (ToT (VariantToExtra cep))
   , HasNoContract (ToT (VariantToExtra cep))
   , HasNoNestedBigMaps (ToT (VariantToExtra cep))

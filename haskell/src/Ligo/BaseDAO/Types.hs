@@ -77,6 +77,7 @@ module Ligo.BaseDAO.Types
   , FullStorageRPC'
   , FullStorageSkeleton (..)
   , FullStorageSkeletonRPC (..)
+  , TestDynamicFullStorage
   , AddressFreezeHistory (..)
   , DynamicRec
   , DynamicRec' (..)
@@ -114,6 +115,7 @@ data Variants
   = Registry
   | Treasury
   | Base
+  | TestDynamic
 
 -- | A type family to map a variant to the type that represents it's custom entrypoints.
 type family VariantToParam (v :: Variants) :: Type
@@ -503,6 +505,8 @@ type ProposalMetadata = ByteString
 type ContractExtra' big_map = DynamicRec' big_map "ce"
 type ContractExtra = ContractExtra' BigMap
 
+type instance VariantToExtra 'TestDynamic = ContractExtra' BigMap
+type instance VariantToParam 'TestDynamic = ()
 type instance VariantToExtra 'Base = ()
 
 type CustomEntrypoints' big_map = DynamicRec' big_map "ep"
@@ -819,17 +823,18 @@ instance HasAnnotation ce => HasAnnotation (FullStorageSkeleton ce) where
 deriveRPC "FullStorageSkeleton"
 
 type FullStorage = FullStorageSkeleton (VariantToExtra 'Base)
+type TestDynamicFullStorage = FullStorageSkeleton (VariantToExtra 'TestDynamic)
 
 type FullStorageRPC = FullStorageSkeletonRPC (VariantToExtra 'Base) -- (StorageSkeletonRPC (VariantToExtra 'Base), ConfigRPC)
 type FullStorageRPC' ce = FullStorageSkeletonRPC ce
 
 type ContractExtraConstrain ce = (NiceStorage ce, NiceUnpackedValue (AsRPC ce))
 
-setExtra' :: (ce -> ce) -> FullStorageSkeleton ce -> FullStorageSkeleton ce
-setExtra' fn fsk = fsk { fsStorage = (fsStorage fsk) { sExtra = fn $ sExtra $ fsStorage fsk } }
+setExtra :: (ce -> ce) -> FullStorageSkeleton ce -> FullStorageSkeleton ce
+setExtra fn fsk = fsk { fsStorage = (fsStorage fsk) { sExtra = fn $ sExtra $ fsStorage fsk } }
 
-setExtra :: MText -> v -> s ->  s
-setExtra = undefined -- (s { sExtra = fn $ sExtra s }, c)
+setExtra' :: MText -> v -> s ->  s
+setExtra' = undefined -- (s { sExtra = fn $ sExtra s }, c)
 
 mkFullStorage
   :: forall cep. "admin" :! Address

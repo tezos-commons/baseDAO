@@ -198,7 +198,7 @@ cannotProposeWithInsufficientTokens = do
 -- proposal_check logic.
 rejectProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'TestDynamic m) -> m ()
 rejectProposal originateFn = do
   DaoOriginateData{..} <-
     originateFn testConfig defaultQuorumThreshold
@@ -212,7 +212,7 @@ rejectProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @TestDynamic dodDao
   advanceToLevel (startLevel + dodPeriod)
 
   (withSender dodOwner1 $ call dodDao (Call @"Propose") params)

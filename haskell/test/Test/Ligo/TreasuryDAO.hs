@@ -279,7 +279,7 @@ proposalCheckFailZeroMutez
 proposalCheckFailZeroMutez = withFrozenCallStack do
   DaoOriginateData{..} <-
     originateTreasuryDao
-      (\store -> setExtra @Natural [mt|min_xtz_amount|] 0 store)
+      (\store -> setExtra (\te -> te { teMinXtzAmount = Just 0 }) store)
       defaultQuorumThreshold
 
   startLevel <- getOriginationLevel dodDao
@@ -359,13 +359,13 @@ originateTreasuryDao
 originateTreasuryDao modifyStorageFn =
   let fs = baseDAOTreasuryStorageLigo
       FullStorageSkeleton {..} = fs
-        & setExtra' (\te -> te { teFrozenScaleValue = Just 1 })
-        & setExtra' (\te -> te { teFrozenExtraValue = Just 0 })
-        & setExtra' (\te -> te { teSlashScaleValue = Just 1 })
-        & setExtra' (\te -> te { teSlashDivisionValue = Just 1 })
-        & setExtra' (\te -> te { teMaxProposalSize = Just 1000 })
-        & setExtra' (\te -> te { teMinXtzAmount = Just 2 })
-        & setExtra' (\te -> te { teMaxXtzAmount = Just 5 })
+        & setExtra (\te -> te { teFrozenScaleValue = Just 1 })
+        & setExtra (\te -> te { teFrozenExtraValue = Just 0 })
+        & setExtra (\te -> te { teSlashScaleValue = Just 1 })
+        & setExtra (\te -> te { teSlashDivisionValue = Just 1 })
+        & setExtra (\te -> te { teMaxProposalSize = Just 1000 })
+        & setExtra (\te -> te { teMinXtzAmount = Just 2 })
+        & setExtra (\te -> te { teMaxXtzAmount = Just 5 })
         & modifyStorageFn
 
   in originateLigoDaoWithConfig @'Treasury def
