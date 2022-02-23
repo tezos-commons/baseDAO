@@ -92,8 +92,6 @@ type config =
   // It has access to the proposal, can modify `contractExtra` and perform arbitrary
   // operations.
 
-  ; max_proposals : nat
-  // ^ Determine the maximum number of ongoing proposals that are allowed in the contract.
   ; max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
   ; min_quorum_threshold : quorum_fraction
@@ -523,7 +521,6 @@ Parameter (in Michelson):
 - Fails with `NOT_PROPOSING_STAGE` if the current stage is not a proposing one.
 - Fails with `FAIL_PROPOSAL_CHECK` if the proposal is rejected by `proposal_check`
   from the configuration.
-- Fails with `MAX_PROPOSALS_REACHED` if the current amount of ongoing proposals is at max value set by the config.
 - Fails with `PROPOSAL_NOT_UNIQUE` if exactly the same proposal from the same author has been proposed.
 
 

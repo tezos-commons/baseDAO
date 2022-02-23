@@ -21,7 +21,6 @@ test_ErrorCodes = testGroup "FA2 off-chain views"
       failProposalCheck @?= 102
       proposalNotExist @?= 103
       votingStageOver @?= 104
-      maxProposalsReached @?= 105
       forbiddenXtz @?= 107
       proposalNotUnique @?= 108
       missigned @?= 109

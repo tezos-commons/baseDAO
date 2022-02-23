@@ -83,8 +83,7 @@ ConfigDesc a >>- ConfigDesc b = ConfigDesc (ConfigDescChain a b)
 ------------------------------------------------------------------------
 
 data ConfigConstants = ConfigConstants
-  { cmMaxProposals :: Maybe Natural
-  , cmMaxVoters :: Maybe Natural
+  { cmMaxVoters :: Maybe Natural
   , cmQuorumThreshold :: Maybe DAO.QuorumThreshold
   , cmPeriod :: Maybe DAO.Period
   , cmProposalFlushTime :: Maybe Natural
@@ -95,7 +94,7 @@ data ConfigConstants = ConfigConstants
 --
 -- Example: @configConsts{ cmMaxVotes = 10 }@
 configConsts :: ConfigConstants
-configConsts = ConfigConstants Nothing Nothing Nothing Nothing Nothing Nothing
+configConsts = ConfigConstants Nothing Nothing Nothing Nothing Nothing
 
 data ProposalFrozenTokensCheck =
   ProposalFrozenTokensCheck (Lambda ("ppFrozenToken" :! Natural) ())
@@ -182,8 +181,7 @@ decisionLambdaConfig target = ConfigDesc $ passProposerOnDecision target
 --
 instance IsConfigDescExt DAO.Config ConfigConstants where
   fillConfig ConfigConstants{..} DAO.Config{..} = DAO.Config
-    { cMaxProposals = cmMaxProposals ?: cMaxProposals
-    , cProposalFlushLevel = cmProposalFlushTime ?: cProposalFlushLevel
+    { cProposalFlushLevel = cmProposalFlushTime ?: cProposalFlushLevel
     , cProposalExpiredLevel = cmProposalExpiredTime ?: cProposalExpiredLevel
     , ..
     }

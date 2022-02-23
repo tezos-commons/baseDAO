@@ -26,6 +26,7 @@ import Morley.Util.Named
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Permit
+import SMT.Model.BaseDAO.Proposal.Plist
 import SMT.Model.BaseDAO.Proposal.FreezeHistory
 import SMT.Model.BaseDAO.Proposal.QuorumThreshold
 import SMT.Model.BaseDAO.Token
@@ -39,7 +40,7 @@ checkIfProposalExist key = do
 
   let resultMaybe = do
         p <- Map.lookup key (store & sProposals & bmMap)
-        if Set.member (p & plStartLevel, key) (store & sProposalKeyListSortByDate) then
+        if plistMem key (store & sOngoingProposalsDlist) then
           Just p
         else Nothing
 
@@ -56,13 +57,6 @@ checkDelegate from author  = do
   if (author /= from) && not (Map.member key (store & sDelegates & bmMap)) then
     throwError NOT_DELEGATE
   else pure from
-
-checkProposalLimitReached :: ModelT ()
-checkProposalLimitReached = do
-  proposalKeyListSortByDate <- getStore <&> sProposalKeyListSortByDate
-  maxProposal <- getConfig <&> cMaxProposals
-  when (maxProposal <= (fromIntegral $ length proposalKeyListSortByDate)) $
-    throwError MAX_PROPOSALS_REACHED
 
 stakeTk :: Natural -> Address -> ModelT ()
 stakeTk tokenAmount addr = do
@@ -108,7 +102,7 @@ addProposal params = do
         }
   modifyStore $ \s -> pure $ s
     { sProposals = BigMap Nothing $ Map.insert proposalKey proposal (bmMap (s & sProposals))
-    , sProposalKeyListSortByDate = Set.insert (lvl, proposalKey) (s & sProposalKeyListSortByDate)
+    , sOngoingProposalsDlist = plistInsert proposalKey (s & sOngoingProposalsDlist)
     }
 
 unstakeTk :: Natural -> Natural -> Address -> ModelT ()
@@ -153,10 +147,6 @@ unstakeProposerToken isAccepted proposal = do
   unstakeTk tokens burnAmount (proposal & plProposer)
 
 
-removeFromProposalSortByLevel :: Natural -> ProposalKey -> ModelT ()
-removeFromProposalSortByLevel pLevel proposalKey = modifyStore $ \s ->
-  pure $ s { sProposalKeyListSortByDate = Set.delete (pLevel, proposalKey) (s & sProposalKeyListSortByDate)}
-
 applyPropose :: ModelSource -> ProposeParams -> ModelT ()
 applyPropose mso param@ProposeParams{..} = do
 
@@ -167,7 +157,6 @@ applyPropose mso param@ProposeParams{..} = do
 
   store <- getStore
   get <&> msProposalCheck >>= \f -> f (param, (store & sExtra))
-  checkProposalLimitReached
 
   let amountToFreeze = ppFrozenToken + fixedFee
   currentStage <- getCurrentStageNum
@@ -276,48 +265,56 @@ isLevelReached proposal target = do
   lvl <- get <&> msLevel
   pure (lvl >= (proposal & plStartLevel) + target)
 
-handleProposalIsOver :: (Natural, ProposalKey) -> ModelT Bool
-handleProposalIsOver (proposalLvl, proposalKey) = do
-  proposal <- checkIfProposalExist proposalKey
 
-  isExpired <- isLevelReached proposal =<< (getConfig <&> cProposalExpiredLevel)
-  canBeFlushed <- isLevelReached proposal =<< (getConfig <&> cProposalFlushLevel)
-  if isExpired then
-    throwError EXPIRED_PROPOSAL
-  else if canBeFlushed then do
-    cond <- getStore <&> \s ->
-              doTotalVoteMeetQuorumThreshold proposal s && ((proposal & plUpvotes) > (proposal & plDownvotes))
+handleProposalIsOver
+  :: Proposal
+  -> ModelT ()
+handleProposalIsOver proposal = do
+  cond <- getStore <&> \s ->
+            doTotalVoteMeetQuorumThreshold proposal s && ((proposal & plUpvotes) > (proposal & plDownvotes))
+  unstakeProposerToken cond proposal
+  -- Execute decision lambda if the proposal is passed.
+  when cond $ do
+    store <- getStore
+    (ops, newExtra, guardianMaybe) <-
+      get <&> msDecisionLambda >>= \f -> f (DecisionLambdaInput proposal (store & sExtra))
 
-    unstakeProposerToken cond proposal
-    when cond $ do
-      store <- getStore
-      (ops, newExtra, guardianMaybe) <-
-        get <&> msDecisionLambda >>= \f -> f (DecisionLambdaInput proposal (store & sExtra))
+    case guardianMaybe of
+      Just g -> modifyStore $ \s -> pure $ s { sGuardian = g }
+      Nothing -> pure ()
 
-      case guardianMaybe of
-        Just g -> modifyStore $ \s -> pure $ s { sGuardian = g }
-        Nothing -> pure ()
+    modifyStore $ \s -> pure $ s { sExtra = newExtra }
+    mapM_ execOperation ops
 
-      modifyStore $ \s -> pure $ s { sExtra = newExtra }
-      mapM_ execOperation ops
 
-    removeFromProposalSortByLevel proposalLvl proposalKey
-    pure True
-  else
-    pure False
+flushEach :: Integer -> ModelT Integer
+flushEach n = do
+  store <- getStore
+  let (plistHead, plistNew) = plistPop (store & sOngoingProposalsDlist)
+  case plistHead of
+    Just firstKey -> do
+      proposal <- checkIfProposalExist firstKey
+      isExpired <- isLevelReached proposal =<< (getConfig <&> cProposalExpiredLevel)
+      canBeFlushed <- isLevelReached proposal =<< (getConfig <&> cProposalFlushLevel)
+      when isExpired $
+        throwError EXPIRED_PROPOSAL
+
+      if (n > 0 && canBeFlushed) then do
+        handleProposalIsOver proposal
+        modifyStore $ \s -> pure $ s { sOngoingProposalsDlist = plistNew}
+        flushEach (n - 1)
+      else
+        pure n
+    Nothing -> pure n
+
 
 applyFlush :: ModelSource -> Natural -> ModelT ()
 applyFlush _ param = do
-  when (param == 0) $
-    throwError EMPTY_FLUSH
 
-  anyFlushedProposal <-
-    getStore
-      <&> (take (fromIntegral param) . Set.toAscList . sProposalKeyListSortByDate)
-      >>= mapM handleProposalIsOver
-      <&> or
+  newN <- flushEach (toInteger param)
 
-  unless anyFlushedProposal $ throwError EMPTY_FLUSH
+  if (newN == toInteger param) then throwError EMPTY_FLUSH
+  else pure ()
 
 applyDropProposal :: ModelSource -> ProposalKey -> ModelT ()
 applyDropProposal mso proposalKey = do
@@ -331,7 +328,10 @@ applyDropProposal mso proposalKey = do
     || proposalIsExpired
   then do
     unstakeProposerToken False proposal
-    removeFromProposalSortByLevel (proposal & plStartLevel) proposalKey
+    modifyStore $ \s ->
+      pure $ s
+        { sOngoingProposalsDlist = plistDelete proposalKey (s & sOngoingProposalsDlist)
+        }
   else
     throwError DROP_PROPOSAL_CONDITION_NOT_MET
 
@@ -364,12 +364,8 @@ applyUnstakeVoteOne mso key = do
   store <- getStore
 
   -- Ensure proposal is already flushed or dropped.
-  case Map.lookup key (store & sProposals & bmMap) of
-    Just p ->
-      if Set.member (p & plStartLevel, key) (store & sProposalKeyListSortByDate) then
-        throwError UNSTAKE_INVALID_PROPOSAL
-      else pure ()
-    Nothing -> throwError PROPOSAL_NOT_EXIST
+  when (plistMem key (store & sOngoingProposalsDlist)) $
+    throwError UNSTAKE_INVALID_PROPOSAL
 
   tokens <- case Map.lookup (mso & msoSender, key) (store & sStakedVotes & bmMap) of
           Just v -> pure v
@@ -380,8 +376,6 @@ applyUnstakeVoteOne mso key = do
   modifyStore $ \s -> pure $ s
     { sStakedVotes = BigMap Nothing $ Map.delete (mso & msoSender, key) (s & sStakedVotes & bmMap)
     }
-
-  pure ()
 
 applyUnstakeVote :: ModelSource -> UnstakeVoteParam -> ModelT ()
 applyUnstakeVote mso params =

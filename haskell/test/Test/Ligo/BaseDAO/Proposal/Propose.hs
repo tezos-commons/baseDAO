@@ -13,7 +13,6 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , nonProposalPeriodProposal
   , nonUniqueProposal
   , nonUniqueProposalEvenAfterDrop
-  , proposalBoundedValue
   , proposerIsReturnedFeeAfterSucceeding
   , rejectProposal
   , validProposal
@@ -385,8 +384,8 @@ unstakesTokensForMultipleVotes = do
 
 insufficientTokenProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> (Address -> m Int) -> m ()
-insufficientTokenProposal originateFn getProposalAmountFn = do
+  => (ConfigDesc Config -> OriginateFn m) -> m ()
+insufficientTokenProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
   let params = ProposeParams
         { ppFrozenToken = 101
@@ -396,8 +395,6 @@ insufficientTokenProposal originateFn getProposalAmountFn = do
 
   withSender dodOwner1 $ call dodDao (Call @"Propose") params
     & expectFailedWith notEnoughFrozenTokens
-  amt <- getProposalAmountFn (unTAddress dodDao)
-  amt @== 0
 
 insufficientTokenVote
   :: (MonadCleveland caps base m, HasCallStack)
@@ -509,32 +506,6 @@ dropProposal originateFn = withFrozenCallStack $ do
   checkBalance dodDao dodOwner1 15
 
 
-proposalBoundedValue
-  :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-proposalBoundedValue originateFn = do
-  DaoOriginateData{..} <- originateFn
-    ( testConfig >>-
-      ConfigDesc configConsts{ cmMaxProposals = Just 1 }
-    ) defaultQuorumThreshold
-
-  withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 20)
-
-  -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
-  advanceToLevel (startLevel + dodPeriod)
-
-  let params = ProposeParams
-        { ppFrozenToken = 10
-        , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = dodOwner1
-        }
-
-  withSender dodOwner1 $ do
-    call dodDao (Call @"Propose") params
-    call dodDao (Call @"Propose") params
-      & expectFailedWith maxProposalsReached
 
 
 unstakeVote

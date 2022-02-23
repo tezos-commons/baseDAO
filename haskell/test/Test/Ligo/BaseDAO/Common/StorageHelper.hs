@@ -20,7 +20,6 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
 import Lorentz hiding (assert, (>>))
 import Universum
 
-import qualified Data.Set as S
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -75,15 +74,30 @@ checkIfDelegateExists addr delegate = do
   bId <- (sDelegatesRPC . fsStorageRPC) <$> getStorageRPC addr
   isJust <$> getBigMapValueMaybe bId delegate
 
+plistMemRPC
+  :: forall p base caps m. MonadCleveland caps base m
+  => TAddress p -> ProposalKey -> m Bool
+plistMemRPC addr key = do
+  plistMb <- (sOngoingProposalsDlistRPC . fsStorageRPC) <$> getStorageRPC addr
+  case plistMb of
+    Just ProposalDoublyLinkedListRPC{..} ->
+      if (plFirstRPC == key)
+        then pure True
+        else do
+          result <- getBigMapValueMaybe plMapRPC (key, False)
+          case result of
+            Nothing -> pure False
+            Just _ -> pure True
+    Nothing -> pure False
+
 checkIfAProposalExist
   :: forall p base caps m. MonadCleveland caps base m
   => ProposalKey -> TAddress p -> Bool -> m ()
 checkIfAProposalExist proposalKey dodDao expected = do
   found <- getProposal dodDao proposalKey >>= \case
     Nothing -> pure False
-    Just p -> do
-      proposalSet <- (sProposalKeyListSortByDateRPC . fsStorageRPC) <$> getStorageRPC dodDao
-      pure $ S.member (plStartLevel p, proposalKey) proposalSet
+    Just _ -> do
+      plistMemRPC dodDao proposalKey
   assert (found == expected) $
     "Unexpected proposal status, expected:" <> (show expected) <> ", found: " <> (show found)
 

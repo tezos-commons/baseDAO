@@ -63,8 +63,7 @@ invalidInputErrors = errorsEnumerate 100
     :? ("The proposal does not exist or is no longer ongoing.", NoArg)
   , "voting_stage_over"
     :? ("The proposal voting stage has already ended.", NoArg)
-  , "max_proposals_reached"
-    :? ("The maximum amount of ongoing proposals has been reached.", NoArg)
+  , removedError
   , removedError
   , "forbidden_xtz"
     :? ("Transfer of XTZ is forbidden on this entrypoint.", NoArg)

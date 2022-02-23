@@ -13,6 +13,8 @@ module Ligo.BaseDAO.Types
   , ProposalKey
   , ProposeParams(..)
   , GovernanceToken(..)
+  , ProposalDoublyLinkedList(..)
+  , ProposalDoublyLinkedListRPC(..)
 
     -- * Voting
   , QuorumThreshold (..)
@@ -72,6 +74,8 @@ module Ligo.BaseDAO.Types
   , defaultConfig
   , mkFullStorage
   , setExtra
+  , prev
+  , next
   ) where
 
 import Universum (Enum, Integral, Num, One(..), Real, div, fromIntegral, maybe, show, (*))
@@ -571,6 +575,28 @@ instance Buildable QuorumThresholdAtCycle where
 instance HasAnnotation QuorumThresholdAtCycle where
   annOptions = baseDaoAnnOptions
 
+
+type Direction = Bool
+
+prev, next :: Direction
+prev = False
+next = True
+
+data ProposalDoublyLinkedList = ProposalDoublyLinkedList
+  { plFirst :: ProposalKey
+  , plLast :: ProposalKey
+  , plMap :: BigMap (ProposalKey, Direction) ProposalKey
+  } deriving stock (Generic, Eq, Show)
+
+
+deriving anyclass instance  IsoValue ProposalDoublyLinkedList
+instance Buildable ProposalDoublyLinkedList where
+  build = genericF
+instance HasAnnotation ProposalDoublyLinkedList where
+  annOptions = baseDaoAnnOptions
+
+deriveRPC "ProposalDoublyLinkedList"
+
 type instance AsRPC (DynamicRec s) = DynamicRecView s
 type instance AsRPC FA2.TokenId = FA2.TokenId
 type instance AsRPC GovernanceToken = GovernanceToken
@@ -589,7 +615,7 @@ data Storage = Storage
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
   , sProposals :: BigMap ProposalKey Proposal
-  , sProposalKeyListSortByDate :: Set (Natural, ProposalKey)
+  , sOngoingProposalsDlist :: Maybe ProposalDoublyLinkedList
   , sStakedVotes :: BigMap (Address, ProposalKey) StakedVote
   , sGovernanceToken :: GovernanceToken
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
@@ -645,7 +671,7 @@ mkStorage (N admin) (N extra) (N metadata) (N lvl) (N tokenAddress) (N qt) =
     , sPendingOwner = admin
     , sPermitsCounter = Nonce 0
     , sProposals = mempty
-    , sProposalKeyListSortByDate = mempty
+    , sOngoingProposalsDlist = Nothing
     , sStakedVotes = mempty
     , sGovernanceToken = GovernanceToken
         { gtAddress = tokenAddress
@@ -713,7 +739,6 @@ data Config = Config
       :-> '["slash_amount" :! Natural]
   , cDecisionLambda :: '[DecisionLambdaInput] :-> '[DecisionLambdaOutput]
 
-  , cMaxProposals :: Natural
   , cMaxQuorumThreshold :: QuorumFraction
   , cMinQuorumThreshold :: QuorumFraction
 
@@ -769,8 +794,6 @@ mkConfig customEps votingPeriod fixedProposalFee maxChangePercent changePercent 
   , cGovernanceTotalSupply = governanceTotalSupply
   , cMaxQuorumThreshold = percentageToFractionNumerator 99 -- 99%
   , cMinQuorumThreshold = percentageToFractionNumerator 1 -- 1%
-
-  , cMaxProposals = 500
   }
 
 defaultConfig :: Config

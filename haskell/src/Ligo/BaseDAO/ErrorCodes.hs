@@ -39,10 +39,6 @@ proposalNotExist = 103
 votingStageOver :: Natural
 votingStageOver = 104
 
--- | The maximum amount of ongoing proposals has been reached.
-maxProposalsReached :: Natural
-maxProposalsReached = 105
-
 -- | Transfer of XTZ is forbidden on this entrypoint.
 forbiddenXtz :: Natural
 forbiddenXtz = 107
@@ -163,12 +159,6 @@ tzipErrorList = [
   EStatic $ StaticError
     { seError = toExpression $ toVal @Integer $ toInteger votingStageOver
     , seExpansion = toExpression $ toVal @MText [mt|The proposal voting stage has already ended.|]
-    , seLanguages = ["en"]
-    }
-  ,
-  EStatic $ StaticError
-    { seError = toExpression $ toVal @Integer $ toInteger maxProposalsReached
-    , seExpansion = toExpression $ toVal @MText [mt|The maximum amount of ongoing proposals has been reached.|]
     , seLanguages = ["en"]
     }
   ,
