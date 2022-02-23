@@ -97,7 +97,7 @@ getProposal
   => TAddress p
   -> ProposalKey
   -> m (Maybe Proposal)
-getProposal addr pKey = getProposal' @Base addr pKey
+getProposal addr pKey = getProposal' @'Base addr pKey
 
 getVoter'
   :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
