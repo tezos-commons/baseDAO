@@ -201,7 +201,7 @@ rejectProposal
   => (ConfigDesc Config -> OriginateFn 'TestDynamic m) -> m ()
 rejectProposal originateFn = do
   DaoOriginateData{..} <-
-    originateFn testConfig defaultQuorumThreshold
+    originateFn testConfigDynamic defaultQuorumThreshold
   let params = ProposeParams
         { ppFrozenToken = 9
         , ppProposalMetadata = lPackValueRaw @Integer 1

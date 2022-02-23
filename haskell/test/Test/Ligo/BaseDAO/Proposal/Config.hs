@@ -21,6 +21,7 @@ module Test.Ligo.BaseDAO.Proposal.Config
   , passProposerOnDecision
   , proposalFrozenTokensMinBound
   , testConfig
+  , testConfigDynamic
   , testContractExtra
   , voteConfig
   ) where
@@ -188,6 +189,15 @@ testConfig
   :: AreConfigDescsExt config '[ConfigConstants]
   => ConfigDesc config
 testConfig =
+  ConfigDesc configConsts
+    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100) }
+
+testConfigDynamic
+  :: AreConfigDescsExt config [ConfigConstants, ProposalFrozenTokensCheck, RejectedProposalSlashValue]
+  => ConfigDesc config
+testConfigDynamic =
+  ConfigDesc (divideOnRejectionBy 2) >>-
+  ConfigDesc (proposalFrozenTokensMinBound 10) >>-
   ConfigDesc configConsts
     { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100) }
 
