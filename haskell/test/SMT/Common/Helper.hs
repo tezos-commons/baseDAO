@@ -5,6 +5,7 @@ module SMT.Common.Helper
   ( findBigMap
   , handleTransfer
   , unpackWithError
+  , lookupWithError
   ) where
 
 import Universum hiding (drop, swap)
@@ -28,6 +29,10 @@ unpackWithError :: forall a. (NiceUnpackedValue a) => ByteString -> a
 unpackWithError packed =
   lUnpackValueRaw @a packed
     & fromRight (error "UNPACKING_FAILED")
+
+lookupWithError :: HasCallStack => Maybe a -> a
+lookupWithError (Just a) = a
+lookupWithError _ = (error "MISSING_VALUE")
 
 handleTransfer :: [SimpleOperation] -> TransferType -> [SimpleOperation]
 handleTransfer ops transferType =

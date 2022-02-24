@@ -69,102 +69,100 @@ addRegistryDaoConfig (Arg registryFs) fs =
 -------------------------------------------------------------------------------
 
 registryDaoProposalCheck :: (ProposeParams, VariantToExtra 'Registry) -> ModelT 'Registry ()
-registryDaoProposalCheck (params, extras) = undefined
-  -- let proposalSize = metadataSize (params & ppProposalMetadata)
-  --     frozenScaleValue = unpackWithError @Natural $ findBigMap "frozen_scale_value" extras
-  --     frozenExtraValue = unpackWithError @Natural $ findBigMap "frozen_extra_value" extras
-  --     maxProposalSize = unpackWithError @Natural $ findBigMap "max_proposal_size" extras
-  --     minXtzAmount = unpackWithError @Mutez $ findBigMap "min_xtz_amount" extras
-  --     maxXtzAmount = unpackWithError @Mutez $ findBigMap "max_xtz_amount" extras
-  --     requiredTokenLock = frozenScaleValue * proposalSize + frozenExtraValue
+registryDaoProposalCheck (params, extras) = do
+  let proposalSize = metadataSize (params & ppProposalMetadata)
+      frozenScaleValue = lookupWithError $ reFrozenScaleValue extras
+      frozenExtraValue = lookupWithError $ reFrozenExtraValue extras
+      maxProposalSize = lookupWithError $ reMaxProposalSize extras
+      minXtzAmount = lookupWithError $ reMinXtzAmount extras
+      maxXtzAmount = lookupWithError $ reMaxXtzAmount extras
+      requiredTokenLock = frozenScaleValue * proposalSize + frozenExtraValue
 
-  -- when
-  --   (  (params & ppFrozenToken) /= requiredTokenLock
-  --   || proposalSize >= maxProposalSize
-  --   ) $ throwError FAIL_PROPOSAL_CHECK
+  when
+    (  (params & ppFrozenToken) /= requiredTokenLock
+    || proposalSize >= maxProposalSize
+    ) $ throwError FAIL_PROPOSAL_CHECK
 
-  -- let metadata = (params & ppProposalMetadata)
-  --       & lUnpackValueRaw @RegistryDaoProposalMetadata
-  --       & fromRight (error "UNPACKING_PROPOSAL_METADATA_FAILED")
+  let metadata = (params & ppProposalMetadata)
+        & lUnpackValueRaw @RegistryDaoProposalMetadata
+        & fromRight (error "UNPACKING_PROPOSAL_METADATA_FAILED")
 
-  -- case metadata of
-  --   Transfer_proposal tp -> do
-  --     let isValid = (tp & tpTransfers)
-  --             <&> (\case
-  --                     Token_transfer_type _ -> True
-  --                     Xtz_transfer_type xt ->
-  --                          (xt & xtAmount) >= minXtzAmount
-  --                       && (xt & xtAmount) <= maxXtzAmount
-  --                       && (xt & xtAmount) /= (toMutez 0)
-  --                 )
-  --             & and
-  --     unless isValid $
-  --       throwError FAIL_PROPOSAL_CHECK
-  --   Update_receivers_proposal _ -> pure ()
-  --   Configuration_proposal _ -> pure ()
-  --   Update_guardian _ -> pure ()
-  --   Update_contract_delegate _ -> pure ()
+  case metadata of
+    Transfer_proposal tp -> do
+      let isValid = (tp & tpTransfers)
+              <&> (\case
+                      Token_transfer_type _ -> True
+                      Xtz_transfer_type xt ->
+                           (xt & xtAmount) >= minXtzAmount
+                        && (xt & xtAmount) <= maxXtzAmount
+                        && (xt & xtAmount) /= (toMutez 0)
+                  )
+              & and
+      unless isValid $
+        throwError FAIL_PROPOSAL_CHECK
+    Update_receivers_proposal _ -> pure ()
+    Configuration_proposal _ -> pure ()
+    Update_guardian _ -> pure ()
+    Update_contract_delegate _ -> pure ()
 
 registryDaoRejectedProposalSlashValue :: (Proposal, VariantToExtra 'Registry) -> ModelT 'Registry Natural
-registryDaoRejectedProposalSlashValue (p, extras) = undefined
-  -- let slashScaleValue = unpackWithError @Natural $ findBigMap "slash_scale_value" extras
-  --     slashDivisionValue = unpackWithError @Natural $ findBigMap "slash_division_value" extras
+registryDaoRejectedProposalSlashValue (p, extras) = do
+  let slashScaleValue = fromMaybe (error "MISSING_VALUE") $ reSlashScaleValue extras
+      slashDivisionValue = fromMaybe (error "MISSING_VALUE") $ reSlashDivisionValue extras
 
-  -- pure $ (slashScaleValue * (p & plProposerFrozenToken) `div` slashDivisionValue)
+  pure $ (slashScaleValue * (p & plProposerFrozenToken) `div` slashDivisionValue)
 
 registryDaoDecisionLambda :: DecisionLambdaInput' (VariantToExtra 'Registry) -> ModelT cep ([SimpleOperation], VariantToExtra 'Registry, Maybe Address)
-registryDaoDecisionLambda DecisionLambdaInput' {..} = undefined
-  -- let metadata = (diProposal & plMetadata)
-  --       & lUnpackValueRaw @RegistryDaoProposalMetadata
-  --       & fromRight (error "UNPACKING_PROPOSAL_METADATA_FAILED")
-  --     proposeParam = ProposeParams (diProposal & plProposer) (diProposal & plProposerFrozenToken) (diProposal & plMetadata)
-  --     proposalKey = makeProposalKey (proposeParam)
+registryDaoDecisionLambda DecisionLambdaInput' {..} = do
+  let metadata = (diProposal & plMetadata)
+        & lUnpackValueRaw @RegistryDaoProposalMetadata
+        & fromRight (error "UNPACKING_PROPOSAL_METADATA_FAILED")
+      proposeParam = ProposeParams (diProposal & plProposer) (diProposal & plProposerFrozenToken) (diProposal & plMetadata)
+      proposalKey = makeProposalKey (proposeParam)
 
-  -- case metadata of
-  --   Update_receivers_proposal urp -> do
-  --     let currentSet = unpackWithError @(Set Address) $ findBigMap "proposal_receivers" diExtra
-  --         updatedReceivers = case urp of
-  --           Add_receivers receivers ->
-  --             foldl' (\cSet addr -> Set.insert addr cSet) currentSet receivers
-  --           Remove_receivers receivers ->
-  --             foldl' (\cSet addr -> Set.delete addr cSet) currentSet receivers
-  --         newExtra = Map.insert "proposal_receivers" (lPackValueRaw @(Set Address) updatedReceivers) (bmMap $ unDynamic diExtra)
-  --     pure ([], DynamicRec' $ BigMap Nothing $ newExtra, Nothing)
-  --   Configuration_proposal cp -> do
-  --     let newExtras = (bmMap $ unDynamic diExtra)
-  --           & (\ce -> case (cp & cpFrozenScaleValue) of
-  --                 Just val -> Map.insert "frozen_scale_value" (lPackValueRaw @Natural val) ce
-  --                 Nothing -> ce)
-  --           & (\ce -> case (cp & cpFrozenExtraValue) of
-  --                 Just val -> Map.insert "frozen_extra_value" (lPackValueRaw @Natural val) ce
-  --                 Nothing -> ce)
-  --           & (\ce -> case (cp & cpMaxProposalSize) of
-  --                 Just val -> Map.insert "max_proposal_size" (lPackValueRaw @Natural val) ce
-  --                 Nothing -> ce)
-  --           & (\ce -> case (cp & cpSlashScaleValue) of
-  --                 Just val -> Map.insert "slash_scale_value" (lPackValueRaw @Natural val) ce
-  --                 Nothing -> ce)
-  --           & (\ce -> case (cp & cpSlashDivisionValue) of
-  --                 Just val -> Map.insert "slash_division_value" (lPackValueRaw @Natural val) ce
-  --                 Nothing -> ce)
-  --     pure $ ([], DynamicRec' $ BigMap Nothing $ newExtras, Nothing)
-  --   Transfer_proposal tp -> do
-  --     let extras = diExtra
-  --           & applyDiff (tp & tpRegistryDiff)
-  --           & applyDiffAffected proposalKey (tp & tpRegistryDiff)
+  case metadata of
+    Update_receivers_proposal urp -> do
+      let currentSet = reProposalReceivers diExtra
+          updatedReceivers = case urp of
+            Add_receivers receivers ->
+              foldl' (\cSet addr -> Set.insert addr cSet) currentSet receivers
+            Remove_receivers receivers ->
+              foldl' (\cSet addr -> Set.delete addr cSet) currentSet receivers
+          newExtra = diExtra { reProposalReceivers = updatedReceivers }
+      pure ([], newExtra, Nothing)
+    Configuration_proposal cp -> do
+      let newExtras = diExtra
+            & (\ce -> case (cp & cpFrozenScaleValue) of
+                  Just val -> ce { reFrozenScaleValue = Just val }
+                  Nothing -> ce)
+            & (\ce -> case (cp & cpFrozenExtraValue) of
+                  Just val -> ce { reFrozenExtraValue = Just val }
+                  Nothing -> ce)
+            & (\ce -> case (cp & cpMaxProposalSize) of
+                  Just val -> ce { reMaxProposalSize = Just val }
+                  Nothing -> ce)
+            & (\ce -> case (cp & cpSlashScaleValue) of
+                  Just val -> ce { reSlashScaleValue = Just val }
+                  Nothing -> ce)
+            & (\ce -> case (cp & cpSlashDivisionValue) of
+                  Just val -> ce { reSlashDivisionValue = Just val }
+                  Nothing -> ce)
+      pure $ ([], newExtras, Nothing)
+    Transfer_proposal tp -> do
+      let extras =
+            applyDiffAffected proposalKey (tp & tpRegistryDiff) $ applyDiff (tp & tpRegistryDiff) $ diExtra
 
-  --     let ops = foldl' handleTransfer [] (tp & tpTransfers)
-  --     pure $ (ops, extras, Nothing)
-  --   Update_guardian guardian ->
-  --     pure $ ([], diExtra, Just guardian)
-  --   Update_contract_delegate _ ->
-  --     pure $ ([], diExtra, Nothing)
+      let ops = foldl' handleTransfer [] (tp & tpTransfers)
+      pure $ (ops, extras, Nothing)
+    Update_guardian guardian ->
+      pure $ ([], diExtra, Just guardian)
+    Update_contract_delegate _ ->
+      pure $ ([], diExtra, Nothing)
 
-applyDiffAffected :: ProposalKey -> [(MText, Maybe MText)] -> ContractExtra -> ContractExtra
+applyDiffAffected :: ProposalKey -> [(MText, Maybe MText)] -> (VariantToExtra 'Registry) -> (VariantToExtra 'Registry)
 applyDiffAffected proposalKey diffs ce =
-  let registryAff = applyDiffRegistryAffected proposalKey diffs $ unpackWithError @(Map MText ProposalKey) $ findBigMap "registry_affected" ce
-  in DynamicRec' $ BigMap Nothing $
-      Map.insert "registry_affected" (lPackValueRaw @(Map MText ProposalKey) registryAff) (bmMap $ unDynamic ce)
+  let registryAff = applyDiffRegistryAffected proposalKey diffs $ reRegistryAffected ce
+  in  ce { reRegistryAffected = registryAff }
 
 applyDiffRegistryAffected :: ProposalKey -> [(MText, Maybe MText)] -> Map MText ProposalKey -> Map MText ProposalKey
 applyDiffRegistryAffected proposalKey diffs registryAff =
@@ -174,11 +172,10 @@ applyDiffRegistryAffected proposalKey diffs registryAff =
     ) registryAff diffs
 
 
-applyDiff :: [(MText, Maybe MText)] -> ContractExtra -> ContractExtra
+applyDiff :: [(MText, Maybe MText)] -> (VariantToExtra 'Registry) -> (VariantToExtra 'Registry)
 applyDiff diffs ce =
-  let newRegistry = applyDiffRegistry diffs $ unpackWithError @(Map MText MText) $ findBigMap "registry" ce
-  in DynamicRec' $ BigMap Nothing $
-      Map.insert "registry" (lPackValueRaw @(Map MText MText) newRegistry) (bmMap $ unDynamic ce)
+  let newRegistry = applyDiffRegistry diffs $ reRegistry ce
+  in ce { reRegistry =  newRegistry }
 
 applyDiffRegistry :: [(MText, Maybe MText)] -> Map MText MText -> Map MText MText
 applyDiffRegistry diffs registry =
