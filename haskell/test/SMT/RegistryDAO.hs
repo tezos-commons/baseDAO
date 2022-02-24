@@ -58,7 +58,15 @@ addRegistryDaoConfig (Arg registryFs) fs =
   let registryStore = fsStorage registryFs
   in fs
       { fsStorage = (fsStorage fs)
-          { sExtra = sExtra registryStore
+          { sExtra = (sExtra registryStore)
+              { reFrozenScaleValue = Just 1
+              , reFrozenExtraValue = Just 0
+              , reMaxProposalSize = Just 100
+              , reSlashScaleValue = Just 1
+              , reSlashDivisionValue = Just 1
+              , reMinXtzAmount = Just 0
+              , reMaxXtzAmount = Just 100
+              }
           }
       , fsConfig = (fsConfig fs)
       }
