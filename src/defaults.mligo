@@ -62,7 +62,7 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
     guardian = data.guardian;
     pending_owner = data.admin;
     metadata = data.metadata_map;
-    extra = (Big_map.empty : (string, bytes) big_map);
+    extra = default_extra;
     proposals = (Big_map.empty : (proposal_key, proposal) big_map);
     ongoing_proposals_dlist = (None : proposal_doubly_linked_list option);
     staked_votes = (Big_map.empty : (address * proposal_key, staked_vote) big_map);

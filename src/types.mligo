@@ -3,6 +3,7 @@
 
 #if !TYPES_H
 #define TYPES_H
+# include "implementation_storage.mligo"
 
 // ID of an FA2 token
 type token_id = nat
@@ -97,9 +98,6 @@ type permit =
 
 // TZIP-16 metadata map
 type metadata_map = (string, bytes) big_map
-
-// Instantiation-specific stored data
-type contract_extra = (string, bytes) big_map
 
 // -- Storage -- //
 
