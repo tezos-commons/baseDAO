@@ -11,17 +11,8 @@ module Test.Ligo.BaseDAO.Proposal.Config
 
   , ConfigConstants (..)
   , configConsts
-  , ProposalFrozenTokensCheck (..)
-  , RejectedProposalSlashValue (..)
-  , DecisionLambdaAction (..)
 
-  , badRejectedValueConfig
-  , divideOnRejectionBy
-  , dummyDecisionLambda
-  , passProposerOnDecision
-  , proposalFrozenTokensMinBound
   , testConfig
-  , testContractExtra
   , voteConfig
   ) where
 
@@ -33,9 +24,7 @@ import Universum (Constraint, fromIntegral, (?:))
 import Morley.Util.Named
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 
-import qualified Ligo.BaseDAO.ErrorCodes as DAO
 import qualified Ligo.BaseDAO.Types as DAO
-import Test.Ligo.BaseDAO.Common.Errors (tooSmallXtzErrMsg)
 
 -- | Configuration descriptor.
 --
@@ -109,79 +98,12 @@ data ProposalFrozenTokensCheck =
 data RejectedProposalSlashValue =
   RejectedProposalSlashValue (Lambda (DAO.Proposal, DAO.ContractExtra) Natural)
 
-proposalFrozenTokensMinBound :: Natural -> ProposalFrozenTokensCheck
-proposalFrozenTokensMinBound minTokens = ProposalFrozenTokensCheck $ do
-  car
-  toFieldNamed #ppFrozenToken
-  push minTokens
-  toNamed #requireValue
-  if #requireValue <=. #ppFrozenToken then
-    push ()
-  else do
-    push tooSmallXtzErrMsg
-    push DAO.failProposalCheck
-    pair
-    failWith
-
-divideOnRejectionBy :: Natural -> RejectedProposalSlashValue
-divideOnRejectionBy divisor = RejectedProposalSlashValue $ do
-  car
-  toField #plProposerFrozenToken
-  push divisor
-  swap
-  ediv
-  ifSome car $
-    push (0 :: Natural)
-
-doNonsenseOnRejection :: RejectedProposalSlashValue
-doNonsenseOnRejection = RejectedProposalSlashValue $ do
-  drop; push (10 :: Natural)
-
-data DecisionLambdaAction =
-  DecisionLambdaAction
-  ('[DAO.DecisionLambdaInput] :-> '[DAO.DecisionLambdaOutput])
-
--- | Pass frozen tokens amount as argument to the given contract.
-passProposerOnDecision
-  :: TAddress ("proposer" :! Address) -> DecisionLambdaAction
-passProposerOnDecision target = DecisionLambdaAction $ do
-  getField #diExtra
-  swap
-  toField #diProposal
-  toFieldNamed #plProposer
-  dip @("plProposer" :! _) $ do
-    push target
-    contract; assertSome [mt|Cannot find contract for decision lambda|]
-    push zeroMutez
-  fromNamed #plProposer
-  toNamed #proposer
-  transferTokens
-  dip nil; cons
-  swap
-  dip $ dip none
-  dip swap
-  constructStack @DAO.DecisionLambdaOutput
-
-dummyDecisionLambda
-  :: DecisionLambdaAction
-dummyDecisionLambda = DecisionLambdaAction $ do
-  toField #diExtra
-  dip $ do
-    nil
-    none
-  constructStack @DAO.DecisionLambdaOutput
+data DecisionCallbackAction =
+  DecisionCallbackAction
+  ('[DAO.DecisionCallbackInput] :-> '[DAO.DecisionCallbackOutput])
 
 -- Config samples
 ------------------------------------------------------------------------
-
-testContractExtra :: DAO.ContractExtra
-testContractExtra = fillContractExtraDefaults DAO.dynRecUnsafe
-
-fillContractExtraDefaults :: DAO.ContractExtra -> DAO.ContractExtra
-fillContractExtraDefaults ce =
-  fillConfig dummyDecisionLambda $
-    fillConfig (divideOnRejectionBy 0) $
-      fillConfig (proposalFrozenTokensMinBound 0) ce
 
 testConfig
   :: AreConfigDescsExt config '[ConfigConstants]
@@ -198,11 +120,6 @@ voteConfig
 voteConfig = ConfigDesc $
   ConfigDesc configConsts
     { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 4 100) }
-
-badRejectedValueConfig
-  :: AreConfigDescsExt config '[RejectedProposalSlashValue]
-  => ConfigDesc config
-badRejectedValueConfig = ConfigDesc doNonsenseOnRejection
 
 --------------------------------------------------------------------------------
 --

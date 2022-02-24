@@ -8,7 +8,7 @@ module Ligo.BaseDAO.RegistryDAO.Types
   , LookupRegistryParam (..)
   ) where
 
-import Universum
+import Universum hiding (fromInteger)
 
 import qualified Data.Set as S
 import qualified Data.Map as M
@@ -62,17 +62,17 @@ data RegistryExtra = RegistryExtra
   { reRegistry :: Map RegistryKey RegistryValue
   , reRegistryAffected :: Map RegistryKey ProposalKey
   , reProposalReceivers :: Set Address
-  , reFrozenScaleValue :: Maybe Natural
-  , reFrozenExtraValue :: Maybe Natural
-  , reMaxProposalSize :: Maybe Natural
-  , reSlashScaleValue :: Maybe Natural
-  , reSlashDivisionValue :: Maybe Natural
-  , reMinXtzAmount :: Maybe Mutez
-  , reMaxXtzAmount :: Maybe Mutez
+  , reFrozenScaleValue :: Natural
+  , reFrozenExtraValue :: Natural
+  , reMaxProposalSize :: Natural
+  , reSlashScaleValue :: Natural
+  , reSlashDivisionValue :: Natural
+  , reMinXtzAmount :: Mutez
+  , reMaxXtzAmount :: Mutez
   } deriving stock (Eq)
 
 instance Default RegistryExtra where
-  def = RegistryExtra M.empty M.empty S.empty Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+  def = RegistryExtra M.empty M.empty S.empty 1 0 1000 1 1 zeroMutez (toMutez 1)
 
 instance Buildable RegistryExtra where
   build = genericF

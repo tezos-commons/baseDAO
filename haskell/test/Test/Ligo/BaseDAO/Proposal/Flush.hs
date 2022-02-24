@@ -11,8 +11,6 @@ module Test.Ligo.BaseDAO.Proposal.Flush
   , flushRejectProposalQuorum
   , flushRejectProposalNegativeVotes
   , flushFailOnExpiredProposal
-  , flushWithBadConfig
-  , flushDecisionLambda
   , flushNotEmpty
   ) where
 
@@ -21,7 +19,6 @@ import Universum
 import Lorentz hiding (assert, (>>))
 import Morley.Util.Named
 import Test.Cleveland
-import Test.Cleveland.Lorentz (contractConsumer)
 
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
@@ -115,15 +112,15 @@ flushAcceptedProposals originateFn = do
 
 flushAcceptedProposalsWithAnAmount
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushAcceptedProposalsWithAnAmount originateFn = do
   DaoOriginateData{..}
-    <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
+    <- originateFn (testConfig
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 30 })
         ) defaultQuorumThreshold
-  originationLevel <- getOriginationLevel dodDao
+  originationLevel <- getOriginationLevel' @'Base dodDao
 
   -- [Voting]
   withSender dodOwner1 $
@@ -132,7 +129,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount :! 10)
 
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Base dodDao
   advanceToLevel (startLevel + dodPeriod)
 
   -- [Proposing]
@@ -155,29 +152,29 @@ flushAcceptedProposalsWithAnAmount originateFn = do
       call dodDao (Call @"Vote") [vote' key2]
       pure ()
 
-  proposalStart2 <- getProposalStartLevel dodDao key2
-  proposalStart3 <- getProposalStartLevel dodDao key3
+  proposalStart2 <- getProposalStartLevel' @'Base dodDao key2
+  proposalStart3 <- getProposalStartLevel' @'Base dodDao key3
   advanceToLevel (proposalStart2 + 21)
 
   -- [Proposing]
   withSender dodAdmin $ call dodDao (Call @"Flush") 2
 
   -- key1 and key2 are flushed. (Tokens remain the same, because they are all passed)
-  checkBalance dodDao dodOwner1 30
+  checkBalance' @'Base dodDao dodOwner1 30
 
   advanceToLevel (proposalStart3 + 21)
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
 
   ---- key3 is rejected
-  checkBalance dodDao dodOwner1 25
+  checkBalance' @'Base dodDao dodOwner1 29
 
 flushRejectProposalQuorum
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushRejectProposalQuorum originateFn = do
   DaoOriginateData{..}
-    <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
+    <- originateFn (testConfig
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
         ) (mkQuorumThreshold 3 5)
@@ -189,7 +186,7 @@ flushRejectProposalQuorum originateFn = do
     call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Base dodDao
   advanceToLevel (startLevel + dodPeriod)
 
   -- Rejected Proposal
@@ -207,22 +204,22 @@ flushRejectProposalQuorum originateFn = do
   advanceToLevel (startLevel + 2*dodPeriod)
   withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
-  proposalStart <- getProposalStartLevel dodDao key1
+  proposalStart <- getProposalStartLevel' @'Base dodDao key1
   advanceToLevel (proposalStart + 20)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  checkIfAProposalExist key1 dodDao False
+  checkIfAProposalExist' @'Base key1 dodDao False
 
-  checkBalance dodDao dodOwner1 05
-  checkBalance dodDao dodOwner2 05 -- Since voter tokens are not burned
+  checkBalance' @'Base dodDao dodOwner1 09
+  checkBalance' @'Base dodDao dodOwner2 05 -- Since voter tokens are not burned
 
 flushRejectProposalNegativeVotes
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushRejectProposalNegativeVotes originateFn = do
   DaoOriginateData{..}
-    <- originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
+    <- originateFn (testConfig
           >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
           >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
           ) (mkQuorumThreshold 3 100)
@@ -234,7 +231,7 @@ flushRejectProposalNegativeVotes originateFn = do
     call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Base dodDao
   advanceToLevel (startLevel + dodPeriod)
 
   -- Rejected Proposal
@@ -265,114 +262,29 @@ flushRejectProposalNegativeVotes originateFn = do
   withSender dodOwner2 $ call dodDao (Call @"Vote") votes
 
   -- Check proposer balance
-  checkBalance dodDao dodOwner1 10
+  checkBalance' @'Base dodDao dodOwner1 10
 
   -- Advance one voting period to a proposing stage.
-  proposalStart <- getProposalStartLevel dodDao key1
+  proposalStart <- getProposalStartLevel' @'Base dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  checkIfAProposalExist key1 dodDao False
+  checkIfAProposalExist' @'Base key1 dodDao False
 
-  checkBalance dodDao dodOwner1 05
-  checkBalance dodDao dodOwner2 03
-
-flushWithBadConfig
-  :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
-  -> m ()
-flushWithBadConfig originateFn = do
-  DaoOriginateData{..} <-
-    originateFn (fillConfig badRejectedValueConfig testContractExtra) (
-      (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
-      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 60 })
-      ) (mkQuorumThreshold 1 2)
-
-  withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 3)
-
-  withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
-
-  -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
-  advanceToLevel (startLevel + dodPeriod)
-  key1 <- createSampleProposal 1 dodOwner1 dodDao
-
-  let upvote' = NoPermit VoteParam
-        { vVoteType = True
-        , vVoteAmount = 1
-        , vProposalKey = key1
-        , vFrom = dodOwner2
-        }
-  -- Advance one voting period to a voting stage.
-  advanceToLevel (startLevel + 2*dodPeriod)
-  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote']
-
-  -- Advance one voting period to a proposing stage.
-  proposalStart <- getProposalStartLevel dodDao key1
-  advanceToLevel (proposalStart + 2*dodPeriod)
-  withSender dodAdmin $ call dodDao (Call @"Flush") 100
-
-  checkIfAProposalExist key1 dodDao False
-
-  checkBalance dodDao dodOwner1 0
-  checkBalance dodDao dodOwner2 3
-
-flushDecisionLambda
-  :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m) -> m ()
-flushDecisionLambda originateFn = do
-  consumer <- chAddress <$> originateSimple @("proposer" :! Address) "consumer" [] contractConsumer
-  DaoOriginateData{..} <-
-    originateFn (fillConfig (passProposerOnDecision (TAddress consumer)) testContractExtra) (
-      (ConfigDesc $ Period 60)
-      >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
-      >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
-      ) defaultQuorumThreshold
-
-  withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
-  withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
-
-  -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
-  advanceToLevel (startLevel + dodPeriod)
-  key1 <- createSampleProposal 1 dodOwner1 dodDao
-
-  let upvote' = NoPermit VoteParam
-        { vVoteType = True
-        , vVoteAmount = 10
-        , vProposalKey = key1
-        , vFrom = dodOwner2
-        }
-  -- Advance one voting period to a voting stage.
-  advanceToLevel (startLevel + 2*dodPeriod)
-  withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote']
-
-  -- Advance one voting period to a proposing stage.
-  proposalStart <- getProposalStartLevel dodDao key1
-  advanceToLevel (proposalStart + 2*dodPeriod)
-
-  withSender dodAdmin $ call dodDao (Call @"Flush") 100
-
-  results <- getStorage @(["proposer" :! Address]) (toAddress consumer)
-  assert (results == (#proposer <:!> [dodOwner1]))
-    "Unexpected accepted proposals list"
+  checkBalance' @'Base dodDao dodOwner1 09
+  checkBalance' @'Base dodDao dodOwner2 03
 
 flushFailOnExpiredProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
-     (fillConfig (divideOnRejectionBy 2) testContractExtra)
      (testConfig
        >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
-      ) (mkQuorumThreshold 1 50)
+      ) (mkQuorumThreshold 1 5000)
   originationLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
@@ -408,15 +320,15 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
     call dodDao (Call @"Drop_proposal") key1
 
   withSender dodAdmin $ call dodDao (Call @"Flush") 1
-  checkBalance dodDao dodOwner1 10
+  checkBalance dodDao dodOwner1 18 -- One proposal dropped, one rejected.
 
 flushProposalFlushTimeNotReach
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushProposalFlushTimeNotReach originateFn = do
   DaoOriginateData{..} <-
-    originateFn (fillConfig (divideOnRejectionBy 2) testContractExtra) (testConfig
+    originateFn (testConfig
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 20 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
         ) defaultQuorumThreshold
@@ -436,7 +348,7 @@ flushProposalFlushTimeNotReach originateFn = do
   proposalStart <- getProposalStartLevel dodDao key2
   advanceToLevel (proposalStart + 20)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  checkBalance dodDao dodOwner1 (5 + 5 + 10) -- first 2 proposals got flushed then slashed by 5, the last one is not affected.
+  checkBalance dodDao dodOwner1 (9 + 9 + 10) -- first 2 proposals got flushed then slashed by 1, the last one is not affected.
 
   checkIfAProposalExist key1 dodDao False
   checkIfAProposalExist key2 dodDao False

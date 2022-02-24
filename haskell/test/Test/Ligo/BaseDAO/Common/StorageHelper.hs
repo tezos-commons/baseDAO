@@ -14,7 +14,6 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
   , getProposalStartLevel
   , getProposalStartLevel'
   , getVoter
-  , getVoter'
   , getQtAtCycle
   , getStorageRPC
   , getVotePermitsCounter
@@ -90,21 +89,14 @@ getProposal
   -> m (Maybe Proposal)
 getProposal addr pKey = getProposal' @'Base addr pKey
 
-getVoter'
-  :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
-  => TAddress p
-  -> (Address, ProposalKey)
-  -> m (Maybe StakedVote)
-getVoter' addr key = do
-  bId <- (sStakedVotesRPC . fsStorageRPC) <$> getStorageRPC addr
-  getBigMapValueMaybe bId key
-
 getVoter
   :: forall p base caps m. MonadCleveland caps base m
   => TAddress p
   -> (Address, ProposalKey)
   -> m (Maybe StakedVote)
-getVoter addr key = getVoter' @'Base addr key
+getVoter addr key = do
+  bId <- (sStakedVotesRPC . fsStorageRPC) <$> getStorageRPC addr
+  getBigMapValueMaybe bId key
 
 getProposalStartLevel'
   :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
@@ -152,11 +144,6 @@ plistMemRPC' addr key = do
             Nothing -> pure False
             Just _ -> pure True
     Nothing -> pure False
-
-plistMemRPC
-  :: forall p base caps m. MonadCleveland caps base m
-  => TAddress p -> ProposalKey -> m Bool
-plistMemRPC addr key = plistMemRPC' @'Base addr key
 
 checkIfAProposalExist'
   :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)

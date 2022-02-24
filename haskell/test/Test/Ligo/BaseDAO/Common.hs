@@ -38,6 +38,7 @@ import qualified Data.ByteString as BS
 import Lorentz hiding (assert, now, (>>))
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Morley.Michelson.Typed.Convert (convertContract, untypeValue)
+import Morley.Michelson.Typed.Scope (HasNoOp)
 import Named ((!))
 import Test.Cleveland
 
@@ -45,7 +46,7 @@ import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common.Errors as Errors
 import Test.Ligo.BaseDAO.Common.StorageHelper as StorageHelper
-import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig, testContractExtra)
+import Test.Ligo.BaseDAO.Proposal.Config (ConfigDesc, fillConfig)
 
 type OriginateFn a m = QuorumThreshold -> m (DaoOriginateData a)
 
@@ -62,7 +63,7 @@ data DaoOriginateData a = DaoOriginateData
   , dodOperator1 :: Address
   , dodOwner2 :: Address
   , dodOperator2 :: Address
-  , dodDao :: TAddress (Parameter' (CustomEpToParam a))
+  , dodDao :: TAddress (Parameter' (VariantToParam a))
   , dodTokenContract :: TAddress FA2.Parameter
   , dodAdmin :: Address
   , dodGuardian :: TAddress (Address, ProposalKey)
@@ -146,9 +147,11 @@ sendXtzWithAmount amt addr = withFrozenCallStack $ do
 defaultQuorumThreshold :: QuorumThreshold
 defaultQuorumThreshold = mkQuorumThreshold 1 100
 
+type OriginationCEConatraints cep = (Typeable cep, Default (VariantToExtra cep), IsoValue (VariantToExtra cep), HasNoOp (ToT (VariantToExtra cep)))
+
 originateLigoDaoWithConfig
- :: forall cep caps base m. (Typeable cep, MonadCleveland caps base m)
- => ContractExtra
+ :: forall cep caps base m. (OriginationCEConatraints cep, MonadCleveland caps base m)
+ => (VariantToExtra cep)
  -> Config
  -> OriginateFn cep m
 originateLigoDaoWithConfig extra config qt = do
@@ -171,7 +174,7 @@ originateLigoDaoWithConfig extra config qt = do
   guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
   let originationOffset = 12
-  let fullStorage = FullStorage
+  let fullStorage = FullStorageSkeleton
         { fsStorage =
             ( mkStorage
               ! #extra extra
@@ -201,22 +204,22 @@ originateLigoDaoWithConfig extra config qt = do
   daoUntyped <- originateUntyped originateData
   advanceToLevel (currentLevel + originationOffset)
 
-  let dao = TAddress @(Parameter' (CustomEpToParam cep)) daoUntyped
+  let dao = TAddress @(Parameter' (VariantToParam cep)) daoUntyped
 
   pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao (TAddress tokenContract)
       admin (TAddress guardianContract) (unPeriod $ cPeriod config)
 
 originateLigoDaoWithConfigDesc
- :: forall cep caps base m. (Typeable cep, MonadCleveland caps base m)
- => ContractExtra
+ :: forall cep caps base m. (OriginationCEConatraints cep, MonadCleveland caps base m)
+ => VariantToExtra cep
  -> ConfigDesc Config
  -> OriginateFn cep m
 originateLigoDaoWithConfigDesc extra config =
   originateLigoDaoWithConfig @cep extra (fillConfig config defaultConfig)
 
-originateLigoDao :: forall cep caps base m. (Typeable cep, MonadCleveland caps base m) => OriginateFn cep m
+originateLigoDao :: forall cep caps base m. (OriginationCEConatraints cep, MonadCleveland caps base m) => OriginateFn cep m
 originateLigoDao =
-  originateLigoDaoWithConfig @cep testContractExtra defaultConfig
+  originateLigoDaoWithConfig @cep def defaultConfig
 
 createSampleProposal
   :: (MonadCleveland caps base m, HasCallStack)

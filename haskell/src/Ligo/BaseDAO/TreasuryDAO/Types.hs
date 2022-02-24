@@ -7,7 +7,7 @@ module Ligo.BaseDAO.TreasuryDAO.Types
   , TreasuryFullStorage
   ) where
 
-import Universum
+import Universum hiding (fromInteger)
 
 import Fmt (Buildable, build, genericF)
 import Lorentz as L
@@ -23,17 +23,17 @@ type TreasuryFullStorage = FullStorageSkeleton (VariantToExtra 'Treasury)
 type TreasuryCustomEpParam = ()
 
 data TreasuryExtra = TreasuryExtra
-  { teFrozenScaleValue :: Maybe Natural
-  , teFrozenExtraValue :: Maybe Natural
-  , teMaxProposalSize :: Maybe Natural
-  , teSlashScaleValue :: Maybe Natural
-  , teSlashDivisionValue :: Maybe Natural
-  , teMinXtzAmount :: Maybe Mutez
-  , teMaxXtzAmount :: Maybe Mutez
+  { teFrozenScaleValue :: Natural
+  , teFrozenExtraValue :: Natural
+  , teMaxProposalSize :: Natural
+  , teSlashScaleValue :: Natural
+  , teSlashDivisionValue :: Natural
+  , teMinXtzAmount :: Mutez
+  , teMaxXtzAmount :: Mutez
   } deriving stock (Eq)
 
 instance Default TreasuryExtra where
-  def = TreasuryExtra Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+  def = TreasuryExtra 1 0 1000 1 1 zeroMutez (toMutez 1)
 
 instance Buildable TreasuryExtra where
   build = genericF

@@ -6,7 +6,6 @@ module Ligo.BaseDAO.Contract
   ( baseDAOContractLigo
   , baseDAORegistryLigo
   , baseDAOTreasuryLigo
-  , baseDAOTestDynamicLigo
   , baseDAORegistryStorageLigo
   , baseDAOTreasuryStorageLigo
 
@@ -34,17 +33,11 @@ getBaseDAOContract = case eqT @cep @'Base of
     Just Refl -> baseDAORegistryLigo
     Nothing -> case eqT @cep @'Treasury of
       Just Refl -> baseDAOTreasuryLigo
-      Nothing -> case eqT @cep @'TestDynamic of
-        Just Refl -> baseDAOTestDynamicLigo
-        Nothing -> error "Unknown contract"
+      Nothing -> error "Unknown contract"
 
 baseDAOContractLigo :: Contract (ToT Parameter) (ToT FullStorage)
 baseDAOContractLigo = L.toMichelsonContract
   $$(embedContract @(Parameter' ()) @FullStorage "resources/trivialDAO.tz")
-
-baseDAOTestDynamicLigo :: Contract (ToT Parameter) (ToT TestDynamicFullStorage)
-baseDAOTestDynamicLigo = L.toMichelsonContract
-  $$(embedContract @(Parameter' ()) @TestDynamicFullStorage "resources/testDAO.tz")
 
 baseDAORegistryLigo :: Contract (ToT (Parameter' RegistryCustomEpParam)) (ToT RegistryFullStorage)
 baseDAORegistryLigo = L.toMichelsonContract

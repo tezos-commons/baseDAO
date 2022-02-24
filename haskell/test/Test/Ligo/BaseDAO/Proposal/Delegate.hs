@@ -21,9 +21,9 @@ test_UpdateDelegates :: TestTree
 test_UpdateDelegates =
   testGroup "Update_delegates:"
     [ testScenario "add/remove a delgate" $ scenario $
-        addRemoveDelegate (originateLigoDaoWithConfigDesc @'Base testContractExtra)
+        addRemoveDelegate (originateLigoDaoWithConfigDesc @'Base ())
     , testScenario "update multiple delegates" $ scenario $
-        updateDelegates (originateLigoDaoWithConfigDesc @'Base testContractExtra) checkIfDelegateExists
+        updateDelegates (originateLigoDaoWithConfigDesc @'Base ()) checkIfDelegateExists
     ]
 
 addRemoveDelegate

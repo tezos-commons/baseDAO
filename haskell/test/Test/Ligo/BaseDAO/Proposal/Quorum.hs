@@ -232,7 +232,7 @@ proposalIsRejectedIfNoQuorum
   => m ()
 proposalIsRejectedIfNoQuorum = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc @'Base testContractExtra
+    originateLigoDaoWithConfigDesc @'Base ()
       ((ConfigDesc $ Period 60)
       >>- (ConfigDesc (FixedFee 42))
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 1800 })
@@ -276,14 +276,14 @@ proposalIsRejectedIfNoQuorum = do
   advanceToLevel (proposalStart + 2*dodPeriod)
   withSender admin $ call dao (Call @"Flush") 100
 
-  checkBalance dao proposer 10 -- We expect 42 tokens to have burned
+  checkBalance dao proposer 9 -- We expect 42 + 1 tokens to have burned
 
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum
   :: (MonadCleveland caps base m, HasCallStack)
   => m ()
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc @'Base testContractExtra
+    originateLigoDaoWithConfigDesc @'Base ()
       (testConfig
       >>- (ConfigDesc $ Period 60)
       >>- (ConfigDesc (FixedFee 42))

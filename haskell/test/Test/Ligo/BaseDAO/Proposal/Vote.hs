@@ -29,10 +29,10 @@ import Test.Ligo.BaseDAO.Proposal.Config
 
 voteNonExistingProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'Base m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteNonExistingProposal originateFn = do
   DaoOriginateData{..} <-
-    originateFn testContractExtra testConfig defaultQuorumThreshold
+    originateFn testConfig defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
 
   withSender dodOwner2 $
