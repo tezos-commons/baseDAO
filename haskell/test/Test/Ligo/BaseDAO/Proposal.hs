@@ -28,7 +28,7 @@ test_BaseDAO_Proposal =
           validProposal (originateLigoDaoWithConfigDesc @'Base ())
 
       , testScenario "cannot propose an invalid proposal - rejected" $ scenario $
-          rejectProposal (originateLigoDaoWithConfigDesc @'TestDynamic testContractExtra)
+          rejectProposal (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       , testScenario "cannot propose a non-unique proposal" $ scenario $
           nonUniqueProposal (originateLigoDaoWithConfigDesc @'Base ())
@@ -84,31 +84,31 @@ test_BaseDAO_Proposal =
 
       , testScenario "can flush 2 proposals that got accepted" $ scenario $
           flushAcceptedProposalsWithAnAmount
-            (originateLigoDaoWithConfigDesc @'Base ())
+            (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       , testScenario "can flush proposals that got rejected due to not meeting quorum_threshold" $ scenario $
-          flushRejectProposalQuorum (originateLigoDaoWithConfigDesc @'Base ())
+          flushRejectProposalQuorum (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       , testScenario "can flush proposals that got rejected due to negative votes" $ scenario $
-          flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc @'Base ())
+          flushRejectProposalNegativeVotes (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       , testScenario "flush should not affect proposals that cannot be flushed yet" $ scenario $
-          flushProposalFlushTimeNotReach (originateLigoDaoWithConfigDesc @'Base ())
+          flushProposalFlushTimeNotReach (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       , testScenario "flush should fail on expired proposals" $ scenario $
-          flushFailOnExpiredProposal (originateLigoDaoWithConfigDesc @'Base ())
+          flushFailOnExpiredProposal (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       , testScenario "flush with bad cRejectedProposalSlashValue" $ scenario $
-          flushWithBadConfig (originateLigoDaoWithConfigDesc @'Base ())
+          flushWithBadConfig (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       , testScenario "flush and run decision lambda" $ scenario $
-          flushDecisionLambda (originateLigoDaoWithConfigDesc @'Base ())
+          flushDecisionLambda (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       , testScenario "empty flush calls are rejected" $ scenario $
           flushNotEmpty (originateLigoDaoWithConfigDesc @'Base ())
 
       , testScenario "can drop proposals, only when allowed" $ scenario $
-          dropProposal (originateLigoDaoWithConfigDesc @'Base ())
+          dropProposal (originateLigoDaoWithConfigDesc @'TestDynamic)
 
       ]
 

@@ -53,7 +53,7 @@ validProposal
   => m ()
 validProposal = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Treasury dodDao
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       Transfer_proposal $ TransferProposal
@@ -76,7 +76,7 @@ validProposal = withFrozenCallStack $ do
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
 
-  checkBalance dodDao dodOwner1 (proposalSize)
+  checkBalance' @'Treasury dodDao dodOwner1 (proposalSize)
 
 flushTokenTransfer
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)

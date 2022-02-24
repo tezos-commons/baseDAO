@@ -198,10 +198,10 @@ cannotProposeWithInsufficientTokens = do
 -- proposal_check logic.
 rejectProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn 'TestDynamic m) -> m ()
+  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'TestDynamic m) -> m ()
 rejectProposal originateFn = do
   DaoOriginateData{..} <-
-    originateFn testConfigDynamic defaultQuorumThreshold
+    originateFn (fillConfig testConfigDynamic testContractExtra) testConfig defaultQuorumThreshold
   let params = ProposeParams
         { ppFrozenToken = 9
         , ppProposalMetadata = lPackValueRaw @Integer 1
@@ -212,7 +212,7 @@ rejectProposal originateFn = do
     call dodDao (Call @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel' @TestDynamic dodDao
+  startLevel <- getOriginationLevel' @'TestDynamic dodDao
   advanceToLevel (startLevel + dodPeriod)
 
   (withSender dodOwner1 $ call dodDao (Call @"Propose") params)
@@ -442,18 +442,17 @@ insufficientTokenVote originateFn = do
 
 dropProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
+  => (ContractExtra -> ConfigDesc Config -> OriginateFn 'TestDynamic m) -> m ()
 dropProposal originateFn = withFrozenCallStack $ do
-  DaoOriginateData{..} <- originateFn testConfig (mkQuorumThreshold 1 50)
+  DaoOriginateData{..} <-
+    originateFn
+     (fillConfig (divideOnRejectionBy 2) testContractExtra)
+     (testConfig
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
+      ) (mkQuorumThreshold 1 50)
 
-    -- originateFn
-    --  (fillConfig (divideOnRejectionBy 2) testContractExtra)
-    --  (testConfig
-    --    >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
-    --    >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
-    --   ) (mkQuorumThreshold 1 50)
-
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @TestDynamic dodDao
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount :! 30)
@@ -479,8 +478,8 @@ dropProposal originateFn = withFrozenCallStack $ do
   advanceToLevel (startLevel + 3*dodPeriod)
 
   key3 <- createSampleProposal 3 dodOwner1 dodDao
-  proposalStart2 <- getProposalStartLevel dodDao key2
-  proposalStart3 <- getProposalStartLevel dodDao key3
+  proposalStart2 <- getProposalStartLevel' @'TestDynamic dodDao key2
+  proposalStart3 <- getProposalStartLevel' @'TestDynamic dodDao key3
 
   -- `guardian` contract can drop any proposal.
   withSender dodOwner2 $ do
@@ -512,8 +511,7 @@ dropProposal originateFn = withFrozenCallStack $ do
       & expectFailedWith proposalNotExist
 
   -- 30 tokens are frozen in total, but only 15 tokens are returned after drop_proposal
-  checkBalance dodDao dodOwner1 15
-
+  checkBalance' @'TestDynamic dodDao dodOwner1 15
 
 proposalBoundedValue
   :: (MonadCleveland caps base m, HasCallStack)

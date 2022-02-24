@@ -153,7 +153,7 @@ checkIfAProposalExist' proposalKey dodDao expected = do
   found <- getProposal' @cep dodDao proposalKey >>= \case
     Nothing -> pure False
     Just p -> do
-      proposalSet <- (sProposalKeyListSortByDateRPC . fsStorageRPC) <$> getStorageRPC dodDao
+      proposalSet <- (sProposalKeyListSortByDateRPC . fsStorageRPC) <$> getStorageRPC' @cep dodDao
       pure $ S.member (plStartLevel p, proposalKey) proposalSet
   assert (found == expected) $
     "Unexpected proposal status, expected:" <> (show expected) <> ", found: " <> (show found)

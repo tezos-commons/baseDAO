@@ -510,7 +510,7 @@ test_RegistryDAO =
             -- Advance one voting period to a voting stage.
             advanceToLevel (startLevel + 2*period)
             withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
-            proposalStart <- getProposalStartLevel baseDao key1
+            proposalStart <- getProposalStartLevel' @Registry baseDao key1
             advanceToLevel (proposalStart + 2*period + 1)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -534,13 +534,13 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount :! 20)
 
             -- Advance one voting period to a proposing stage.
-            startLevel <- getOriginationLevel baseDao
+            startLevel <- getOriginationLevel' @'Registry baseDao
             advanceToLevel (startLevel + period)
 
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
 
-            checkBalance baseDao wallet1 proposalSize
+            checkBalance' @'Registry baseDao wallet1 proposalSize
 
             let
               key1 = makeProposalKey proposeParams
@@ -554,11 +554,11 @@ test_RegistryDAO =
             -- Advance one voting period to a voting stage.
             advanceToLevel (startLevel + 2*period)
             withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
-            proposalStart <- getProposalStartLevel baseDao key1
+            proposalStart <- getProposalStartLevel' @'Registry baseDao key1
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            checkGuardian baseDao newGuardian
+            checkGuardian' @Registry baseDao newGuardian
 
     , testScenario "checks it can flush a proposal that updates contract delegate address" $ scenario $
         withOriginated 4
@@ -582,13 +582,13 @@ test_RegistryDAO =
                   call baseDao (Call @"Freeze") (#amount :! 20)
 
                 -- Advance one voting period to a proposing stage.
-                startLevel <- getOriginationLevel baseDao
+                startLevel <- getOriginationLevel' @'Registry baseDao
                 advanceToLevel (startLevel + period)
 
                 withSender wallet1 $
                   call baseDao (Call @"Propose") proposeParams
 
-                checkBalance baseDao wallet1 proposalSize
+                checkBalance' @'Registry baseDao wallet1 proposalSize
 
                 let
                   key1 = makeProposalKey proposeParams
@@ -602,7 +602,7 @@ test_RegistryDAO =
                 -- Advance one voting period to a voting stage.
                 advanceToLevel (startLevel + 2*period)
                 withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
-                proposalStart <- getProposalStartLevel baseDao key1
+                proposalStart <- getProposalStartLevel' @'Registry baseDao key1
                 advanceToLevel (proposalStart + 2*period)
                 withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
                 getDelegate baseDao @@== (Just delegate)
@@ -627,14 +627,14 @@ test_RegistryDAO =
             withSender wallet2 $
               call baseDao (Call @"Freeze") (#amount :! 20)
 
-            startLevel <- getOriginationLevel baseDao
+            startLevel <- getOriginationLevel' @'Registry baseDao
             -- Advance one voting period to a proposing stage.
             advanceToLevel (startLevel + period)
 
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
 
-            checkBalance baseDao wallet1 proposalSize
+            checkBalance' @'Registry baseDao wallet1 proposalSize
 
             let
               key1 = makeProposalKey proposeParams
@@ -649,7 +649,7 @@ test_RegistryDAO =
             advanceToLevel (startLevel + 2*period)
             withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
             -- Advance one voting period to a proposing stage.
-            proposalStart <- getProposalStartLevel baseDao key1
+            proposalStart <- getProposalStartLevel' @'Registry baseDao key1
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
@@ -678,13 +678,13 @@ test_RegistryDAO =
               call baseDao (Call @"Freeze") (#amount :! 20)
 
             -- Advance one voting period to a proposing stage.
-            startLevel <- getOriginationLevel baseDao
+            startLevel <- getOriginationLevel' @'Registry baseDao
             advanceToLevel (startLevel + period)
 
             withSender wallet1 $
               call baseDao (Call @"Propose") proposeParams
 
-            checkBalance baseDao wallet1 proposalSize
+            checkBalance' @'Registry baseDao wallet1 proposalSize
 
             let
               key1 = makeProposalKey proposeParams
@@ -699,7 +699,7 @@ test_RegistryDAO =
             advanceToLevel (startLevel + 2*period)
             withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
             -- Advance one voting period to a proposing stage.
-            proposalStart <- getProposalStartLevel baseDao key1
+            proposalStart <- getProposalStartLevel' @'Registry baseDao key1
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 

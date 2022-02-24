@@ -193,13 +193,11 @@ testConfig =
     { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100) }
 
 testConfigDynamic
-  :: AreConfigDescsExt config [ConfigConstants, ProposalFrozenTokensCheck, RejectedProposalSlashValue]
+  :: AreConfigDescsExt config [ProposalFrozenTokensCheck, RejectedProposalSlashValue]
   => ConfigDesc config
 testConfigDynamic =
   ConfigDesc (divideOnRejectionBy 2) >>-
-  ConfigDesc (proposalFrozenTokensMinBound 10) >>-
-  ConfigDesc configConsts
-    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100) }
+  ConfigDesc (proposalFrozenTokensMinBound 10)
 
 -- | Config with longer voting period and bigger quorum threshold
 -- Needed for vote related tests that do not call `flush`
