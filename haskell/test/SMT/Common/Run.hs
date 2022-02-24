@@ -116,8 +116,6 @@ runBaseDaoSMT option@SmtOption{..} = do
               Nothing -> case eqT @var @'TestDynamic of
                 Just Refl -> handleCallLoop @'TestDynamic (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
                 Nothing -> error "Unknown contract"
-
-
     )
 
 -- | For each generated entrypoint calls, this function does 3 things:
