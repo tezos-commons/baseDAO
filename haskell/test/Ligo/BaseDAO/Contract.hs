@@ -6,6 +6,7 @@ module Ligo.BaseDAO.Contract
   ( baseDAOContractLigo
   , baseDAORegistryLigo
   , baseDAOTreasuryLigo
+  , baseDAOTestDynamicLigo
   , baseDAORegistryStorageLigo
   , baseDAOTreasuryStorageLigo
 

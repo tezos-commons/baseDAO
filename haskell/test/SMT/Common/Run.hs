@@ -78,7 +78,7 @@ runBaseDaoSMT option@SmtOption{..} = do
         -- Originate Dao for Nettest
         dao <- case soContractType of
           BaseDaoContract ->
-            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msFullStorage)) (T.convertContract baseDAOContractLigo)
+            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msFullStorage)) (T.convertContract baseDAOTestDynamicLigo)
           RegistryDaoContract ->
             originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msFullStorage)) (T.convertContract baseDAORegistryLigo)
           TreasuryDaoContract ->
@@ -113,7 +113,9 @@ runBaseDaoSMT option@SmtOption{..} = do
               handleCallLoop @'Registry (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
             Nothing -> case eqT @var @'Treasury of
               Just Refl -> handleCallLoop @'Treasury (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
-              Nothing -> error "Unknown contract"
+              Nothing -> case eqT @var @'TestDynamic of
+                Just Refl -> handleCallLoop @'TestDynamic (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
+                Nothing -> error "Unknown contract"
 
 
     )
