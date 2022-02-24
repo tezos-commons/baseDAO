@@ -55,14 +55,13 @@ hprop_RegistryDaoSMT =
 
 addRegistryDaoConfig :: ("registryFs" :! RegistryFullStorage) -> RegistryFullStorage -> RegistryFullStorage
 addRegistryDaoConfig (Arg registryFs) fs =
-  let registryStore = registryFs & fsStorage
+  let registryStore = fsStorage registryFs
   in fs
-      { fsStorage = (fs & fsStorage)
-          { sExtra = registryStore & sExtra
+      { fsStorage = (fsStorage fs)
+          { sExtra = sExtra registryStore
           }
-      , fsConfig = (fs & fsConfig)
+      , fsConfig = (fsConfig fs)
       }
-
 
 -------------------------------------------------------------------------------
 -- Lambdas
