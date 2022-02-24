@@ -36,6 +36,12 @@ let unpack_nat(key_name, packed_b: string * bytes) : nat =
   | None -> ([%Michelson ({| { FAILWITH } |} : (nat * string) -> nat)]
               (unpacking_failed, key_name) : nat)
 
+let require_nat_(nam, packed_b: string * nat option) : nat =
+  match (packed_b : (nat option)) with
+  | Some (v) -> v
+  | None -> ([%Michelson ({| { FAILWITH } |} : (string * nat) -> nat)]
+              (nam, unpacking_failed) : nat)
+
 let require_nat(packed_b: nat option) : nat =
   match (packed_b : (nat option)) with
   | Some (v) -> v

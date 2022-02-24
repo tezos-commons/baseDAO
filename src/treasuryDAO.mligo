@@ -17,8 +17,8 @@
 
 let proposal_check (params, extras : propose_params * contract_extra) : unit =
   let proposal_size = Bytes.size(params.proposal_metadata) in
-  let frozen_scale_value = require_nat(extras.frozen_scale_value) in
-  let frozen_extra_value = require_nat(extras.frozen_extra_value) in
+  let frozen_extra_value = require_nat_("fev", extras.frozen_extra_value) in
+  let frozen_scale_value = require_nat_("fscv", extras.frozen_scale_value) in
   let max_proposal_size = require_nat(extras.max_proposal_size) in
   let min_xtz_amount = require_tez(extras.min_xtz_amount) in
   let max_xtz_amount = require_tez(extras.max_xtz_amount) in
