@@ -37,7 +37,7 @@ applyAcceptOwnership mso = modifyStore $ \s ->
     pure $ s { sAdmin = (mso & msoSender)}
   else throwError NOT_PENDING_ADMIN
 
-applyCallCustom :: ModelSource -> cep -> ModelT cep ()
+applyCallCustom :: ModelSource -> (VariantToParam var) -> ModelT var ()
 applyCallCustom _ cep = do
   customEps <- get <&> msCustomEps
   customEps cep

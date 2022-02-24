@@ -39,13 +39,13 @@ import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.ErrorCodes
 
 -- | Transformer used in haskell implementation of BaseDAO
-newtype ModelT cep a = ModelT
-  { unModelT :: (ExceptT ModelError $ State (ModelState cep)) a
-  } deriving newtype (Functor, Applicative, Monad, MonadState (ModelState cep), MonadError ModelError)
+newtype ModelT var a = ModelT
+  { unModelT :: (ExceptT ModelError $ State (ModelState var)) a
+  } deriving newtype (Functor, Applicative, Monad, MonadState (ModelState var), MonadError ModelError)
 
 -- | A type that keep track of blockchain state
-data ModelState cep = ModelState
-  { msFullStorage :: FullStorage
+data ModelState var = ModelState
+  { msFullStorage :: FullStorageSkeleton (VariantToExtra var)
   , msMutez :: Mutez
   -- ^ Dao balance
 
@@ -57,20 +57,23 @@ data ModelState cep = ModelState
   -- ^ Keep track of originated contract in the blockchain.
   -- See `SimpleContractType` for detail.
 
-  , msProposalCheck :: (ProposeParams, ContractExtra) -> ModelT cep ()
-  , msRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT cep Natural
-  , msDecisionLambda :: DecisionLambdaInput -> ModelT cep ([SimpleOperation], ContractExtra, Maybe Address)
-  , msCustomEps :: cep -> ModelT cep ()
-  } deriving stock (Generic, Show)
+  , msProposalCheck :: (ProposeParams, VariantToExtra var) -> ModelT var ()
+  , msRejectedProposalSlashValue :: (Proposal, VariantToExtra var) -> ModelT var Natural
+  , msDecisionLambda :: DecisionLambdaInput' (VariantToExtra var) -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
+  , msCustomEps :: VariantToParam var -> ModelT var ()
+  } deriving stock (Generic)
 
 -- Needed by `forall`
-instance Show ((ProposeParams, ContractExtra) -> ModelT cep ()) where
+--
+deriving stock instance Show (VariantToExtra var) => Show (ModelState var)
+
+instance Show ((ProposeParams, a) -> ModelT var ()) where
   show _ = "<lambda>"
-instance Show ((Proposal, ContractExtra) -> ModelT cep Natural) where
+instance Show ((Proposal, a) -> ModelT cep Natural) where
   show _ = "<msRejectedProposalSlashValue>"
-instance Show (DecisionLambdaInput -> ModelT cep ([SimpleOperation], ContractExtra, Maybe Address)) where
+instance Show (DecisionLambdaInput' b -> ModelT var ([SimpleOperation], a, Maybe Address)) where
   show _ = "<msDecisionLambda>"
-instance {-# INCOHERENT #-} Show (cep -> ModelT cep ()) where
+instance {-# INCOHERENT #-} Show (a -> ModelT var ()) where
   show _ = "<lambda>"
 
 runModelT :: ModelT cep a -> ModelState cep -> (Either ModelError (ModelState cep))
@@ -116,16 +119,16 @@ execOperation op = do
 
   modify $ \ms -> ms { msContracts = updatedContracts, msMutez = newBal }
 
-getStore :: ModelT cep Storage
+getStore :: ModelT var (StorageSkeleton (VariantToExtra var))
 getStore = get <&> msFullStorage <&> fsStorage
 
 getConfig :: ModelT cep Config
 getConfig = get <&> msFullStorage <&> fsConfig
 
-modifyStore :: (Storage -> ModelT cep Storage) -> ModelT cep ()
+modifyStore :: (StorageSkeleton (VariantToExtra var) -> ModelT var (StorageSkeleton (VariantToExtra var))) -> ModelT var ()
 modifyStore f = do
-  ms <- get
-  updatedStorage <- f (ms & msFullStorage & fsStorage)
+  ms :: ModelState var <- get
+  updatedStorage :: StorageSkeleton (VariantToExtra var) <- f (fsStorage $ msFullStorage $ ms)
   put $ ms
     { msFullStorage = (ms & msFullStorage)
         { fsStorage = updatedStorage }
@@ -170,16 +173,18 @@ instance Buildable OtherContract where
   build = genericF
 
 -- | Definition of an entrypoint call to emulate in the SMTs
-data ModelCall cep = ModelCall
+data ModelCall var = ModelCall
   { mcAdvanceLevel :: Maybe Natural -- Advance level before calling the entrypoint
-  , mcParameter :: Parameter' cep
+  , mcParameter :: Parameter' (VariantToParam var)
   , mcSource :: ModelSource
-  } deriving stock (Eq, Show, Generic)
+  } deriving stock (Generic)
+
+deriving stock instance Show (VariantToParam var) => Show (ModelCall var)
 
 instance Buildable ContractHash where
   build = genericF
 
-instance Buildable (Parameter' cep) => Buildable (ModelCall cep) where
+instance Buildable (Parameter' (VariantToParam var)) => Buildable (ModelCall var) where
   build = genericF
 
 -- | Definition of an @source@ and @sender@ for a call to emulate in the SMTs
@@ -206,9 +211,7 @@ data ModelError
   | NOT_ADMIN
   | NOT_PENDING_ADMIN
   | BAD_TOKEN_CONTRACT
-  | UNPACKING_FAILED
   | FAIL_PROPOSAL_CHECK
-  | MISSING_VALUE
   | UNSTAKE_INVALID_PROPOSAL
   | VOTER_DOES_NOT_EXIST
   deriving stock (Generic, Eq, Show)
@@ -234,7 +237,6 @@ contractErrorToModelError errorCode
   | (errorCode == toInteger notAdmin) = NOT_ADMIN
   | (errorCode == toInteger notPendingAdmin) = NOT_PENDING_ADMIN
   | (errorCode == toInteger badTokenContract) = BAD_TOKEN_CONTRACT
-  | (errorCode == toInteger unpackingFailed) = UNPACKING_FAILED
   | (errorCode == toInteger failProposalCheck) = FAIL_PROPOSAL_CHECK
   | (errorCode == toInteger unstakeInvalidProposal) = UNSTAKE_INVALID_PROPOSAL
   | (errorCode == toInteger voterDoesNotExist) = VOTER_DOES_NOT_EXIST

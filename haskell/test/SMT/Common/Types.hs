@@ -31,9 +31,10 @@ import Test.Ligo.BaseDAO.Common (ContractType(..))
 
 -- | A type that will be the inputs to the (Haskell) Model.
 -- This contains a list of entrypoint calls and the `ModelState`.
-newtype ModelInput cep =
-  ModelInput ([ModelCall cep], ModelState cep)
-  deriving stock Show
+newtype ModelInput var =
+  ModelInput ([ModelCall var], ModelState var)
+
+deriving stock instance (Show (VariantToExtra var), Show (VariantToParam var)) => Show (ModelInput var)
 
 -- | A type needed to pass to `MkModelInput` to get `ModelInput`
 data ModelInputArg = ModelInputArg
@@ -53,31 +54,31 @@ instance Show (ModelInputArg -> ModelInput cep) where
   show _ = "<MkModelInput>"
 
 -- | A type for `genPropose` which is used by registry/treasury dao
-type MkGenPropose cep =
+type MkGenPropose (var :: Variants) =
      Address
   -> Address
   -> Address
-  -> GeneratorT cep (Address -> Address -> (Parameter' cep, Natural, ProposalKey))
+  -> GeneratorT var (Address -> Address -> (Parameter' (VariantToParam var), Natural, ProposalKey))
 
-type MkGenCustomCalls cep = GeneratorT cep ([ModelInputArg -> cep])
+type MkGenCustomCalls var = GeneratorT var ([ModelInputArg -> VariantToParam var])
 
 -- | A data type that is used to configure the generator, initial storage
 -- how the SMT behaves. Mostly used by Registry/Treasury SMT.
-data SmtOption cep = SmtOption
-  { soMkPropose :: MkGenPropose cep
-  , soMkCustomCalls :: MkGenCustomCalls cep
+data SmtOption (var :: Variants) = SmtOption
+  { soMkPropose :: MkGenPropose var
+  , soMkCustomCalls :: MkGenCustomCalls var
 
-  , soModifyFs :: (FullStorage -> FullStorage)
+  , soModifyFs :: (FullStorageSkeleton (VariantToExtra var) -> FullStorageSkeleton (VariantToExtra var))
     -- ^ Used by `registry/treasury` dao to add their configurations (sExtra, cProposalCheck ..)
     -- to the generated storage.
 
   , soContractType :: ContractType
     -- ^ Track which dao the smt used. Mainly needed to run some pre-cond (sendXtz when registry/treasury)
 
-  , soProposalCheck :: (ProposeParams, ContractExtra) -> ModelT cep ()
-  , soRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT cep Natural
-  , soDecisionLambda :: DecisionLambdaInput -> ModelT cep ([SimpleOperation], ContractExtra, Maybe Address)
-  , soCustomEps :: cep -> ModelT cep ()
+  , soProposalCheck :: (ProposeParams, VariantToExtra var) -> ModelT var ()
+  , soRejectedProposalSlashValue :: (Proposal, VariantToExtra var) -> ModelT var Natural
+  , soDecisionLambda :: DecisionLambdaInput' (VariantToExtra var) -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
+  , soCustomEps :: VariantToParam var -> ModelT var ()
   }
 
 -- | Generator state, contains commonly used value that shared between generators.

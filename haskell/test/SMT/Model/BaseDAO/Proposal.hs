@@ -58,7 +58,7 @@ checkDelegate from author  = do
     throwError NOT_DELEGATE
   else pure from
 
-stakeTk :: Natural -> Address -> ModelT ()
+stakeTk :: Natural -> Address -> ModelT var ()
 stakeTk tokenAmount addr = do
   stakingUpdateFh addr $ fromIntegral tokenAmount
   modifyStore $ \s -> do
@@ -121,7 +121,7 @@ unstakeTk tokenAmount burnAmount addr = do
     }
 
 
-doTotalVoteMeetQuorumThreshold :: Proposal -> Storage -> Bool
+doTotalVoteMeetQuorumThreshold :: Proposal -> StorageSkeleton var -> Bool
 doTotalVoteMeetQuorumThreshold proposal store =
   let votesPlaced = (proposal & plUpvotes) + (proposal & plDownvotes)
       totalSupply = store & sFrozenTotalSupply
@@ -147,7 +147,7 @@ unstakeProposerToken isAccepted proposal = do
   unstakeTk tokens burnAmount (proposal & plProposer)
 
 
-applyPropose :: ModelSource -> ProposeParams -> ModelT ()
+applyPropose :: ModelSource -> ProposeParams -> ModelT var ()
 applyPropose mso param@ProposeParams{..} = do
 
   config <- getConfig
@@ -262,13 +262,13 @@ applyUnfreeze mso (N amt) = do
 
 isLevelReached :: Proposal -> Natural -> ModelT cep Bool
 isLevelReached proposal target = do
-  lvl <- get <&> msLevel
+  lvl <- msLevel <$> get
   pure (lvl >= (proposal & plStartLevel) + target)
 
 
 handleProposalIsOver
   :: Proposal
-  -> ModelT ()
+  -> ModelT var ()
 handleProposalIsOver proposal = do
   cond <- getStore <&> \s ->
             doTotalVoteMeetQuorumThreshold proposal s && ((proposal & plUpvotes) > (proposal & plDownvotes))
@@ -277,7 +277,7 @@ handleProposalIsOver proposal = do
   when cond $ do
     store <- getStore
     (ops, newExtra, guardianMaybe) <-
-      get <&> msDecisionLambda >>= \f -> f (DecisionLambdaInput proposal (store & sExtra))
+      get <&> msDecisionLambda >>= \f -> f (DecisionLambdaInput' proposal (store & sExtra))
 
     case guardianMaybe of
       Just g -> modifyStore $ \s -> pure $ s { sGuardian = g }
@@ -287,7 +287,7 @@ handleProposalIsOver proposal = do
     mapM_ execOperation ops
 
 
-flushEach :: Integer -> ModelT Integer
+flushEach :: Integer -> ModelT var Integer
 flushEach n = do
   store <- getStore
   let (plistHead, plistNew) = plistPop (store & sOngoingProposalsDlist)

@@ -16,3 +16,4 @@ out
 
 # generated ligo
 /src/implementation.mligo
+/src/implementation_storage.mligo

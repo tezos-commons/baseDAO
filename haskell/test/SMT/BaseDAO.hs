@@ -9,7 +9,6 @@ module SMT.BaseDAO
 
 import Universum hiding (drop, swap)
 
-import Control.Monad.Except (throwError)
 import Hedgehog
 import Lorentz hiding (div, fromInteger, now, (>>))
 
@@ -19,9 +18,7 @@ import qualified Hedgehog.Range as Range
 import Ligo.BaseDAO.Types
 import SMT.Common.Run
 import SMT.Common.Types
-import SMT.Model.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common (ContractType(..), makeProposalKey, metadataSize)
-import Test.Ligo.BaseDAO.Proposal.Config
 
 hprop_SMT :: Property
 hprop_SMT =
@@ -32,36 +29,26 @@ hprop_SMT =
       , soModifyFs = addBaseDaoConfig
       , soContractType = BaseDaoContract
 
-      , soProposalCheck = \(ProposeParams{..}, _) -> do
-        -- Implemented from `proposalFrozenTokensMinBound 10`
-        let minTokens = 10
-        unless (minTokens <= ppFrozenToken) $
-          throwError FAIL_PROPOSAL_CHECK
+      , soProposalCheck = \_ -> pass
 
-      , soRejectedProposalSlashValue = \(Proposal{..}, _) -> do
-        -- Implemented from `divideOnRejectionBy 2`
-        let divisor = 2
-        pure $ plProposerFrozenToken `div` divisor
+      , soRejectedProposalSlashValue = \_ -> do
+        pure 1
 
-      , soDecisionLambda = \DecisionLambdaInput{..} -> do
+      , soDecisionLambda = \DecisionLambdaInput'{..} -> do
         pure $ ([], diExtra, Nothing)
 
       , soCustomEps = \_ -> pure ()
       }
   in
     withTests 30 $ property $ do
-      runBaseDaoSMT @() option
+      runBaseDaoSMT @'Base option
 
-addBaseDaoConfig :: FullStorage -> FullStorage
+addBaseDaoConfig :: FullStorageSkeleton (VariantToExtra 'Base) -> FullStorageSkeleton (VariantToExtra 'Base)
 addBaseDaoConfig fs = fs
-  { fsStorage = (fsStorage fs) { sExtra = ce }
+  { fsStorage = (fsStorage fs) { sExtra = () }
   }
-  where
-    ce = fillConfig dummyDecisionLambda $
-      fillConfig (divideOnRejectionBy 2) $
-        fillConfig (proposalFrozenTokensMinBound 10) dynRecUnsafe
 
-genPropose :: MkGenPropose ()
+genPropose :: MkGenPropose 'Base
 genPropose senderInput delegate1 invalidFrom = do
   from <- Gen.element [senderInput, invalidFrom, delegate1]
   metadata <- Gen.integral (Range.constant 1 100)

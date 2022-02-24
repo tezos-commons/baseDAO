@@ -30,7 +30,7 @@ import Ligo.BaseDAO.Types
 import SMT.Common.Types
 import SMT.Model.BaseDAO.Types
 
-genMkModelInput :: SmtOption cep -> GeneratorT cep (MkModelInput cep)
+genMkModelInput :: Default (VariantToExtra var) => SmtOption var -> GeneratorT var (MkModelInput var)
 genMkModelInput option@SmtOption{..} = do
 
   -- Initial
@@ -60,7 +60,7 @@ genContractCallGroup = do
   Gen.choice [genProposingProcess, genRandomCalls]
 
 
-genStorage :: GeneratorT cep (Address -> Address -> Storage)
+genStorage :: Default (VariantToExtra var) => GeneratorT var (Address -> Address -> StorageSkeleton (VariantToExtra var))
 genStorage = do
   userPool <- get <&> gsAddresses
   admin <- userPool <&> fst & Gen.element
@@ -88,7 +88,7 @@ genStorage = do
         , sProposals = BigMap Nothing mempty
         , sOngoingProposalsDlist = Nothing
         , sStakedVotes = BigMap Nothing mempty
-        , sExtra = DynamicRec' mempty
+        , sExtra = def
 
         , sFrozenTokenId = FA2.theTokenId
         , sMetadata = mempty
@@ -156,12 +156,12 @@ genQuorumThresholdAtCycle staked = do
   lvl <- get <&> gsLevel
   pure $ QuorumThresholdAtCycle quorumThreshold lvl staked
 
-genModelState :: SmtOption cep -> GeneratorT cep (Address -> Address -> ModelState cep)
+genModelState :: Default (VariantToExtra var) => SmtOption var -> GeneratorT var (Address -> Address -> ModelState var)
 genModelState SmtOption{..} = do
 
   mkStore <- genStorage
   config <- genConfig
-  let mkFs = \guardian gov -> FullStorage (mkStore guardian gov) config
+  let mkFs = \guardian gov -> FullStorageSkeleton (mkStore guardian gov) config
 
   selfAddrPlaceholder <- genAddress
   pure $ \guardian gov ->
@@ -214,7 +214,7 @@ genRandomCalls = do
       pure $ \govAddr -> mkSimpleContractCall sender1 $ f govAddr
 
 
-mkSimpleContractCall :: Address -> Parameter' cep -> ModelCall cep
+mkSimpleContractCall :: Address -> Parameter' (VariantToParam var) -> ModelCall var
 mkSimpleContractCall sender1 param = do
   ModelCall
     { mcAdvanceLevel = Nothing
@@ -247,7 +247,7 @@ genProposingProcess = do
 
   -- | `advanceLvl` is provided precisely to ensure the order of operations results in successful proposal.
   let
-    mkCall :: Parameter' cep -> Maybe Natural -> ModelCall cep
+    mkCall :: Parameter' (VariantToParam var) -> Maybe Natural -> ModelCall var
     mkCall param advanceLvl = ModelCall
         { mcAdvanceLevel = advanceLvl
         , mcParameter = param
@@ -346,38 +346,39 @@ sign' addr = do
   pure $ \bytes -> fst $ withDRG seed $ do
     sign addr bytes
 
-genFlush :: GeneratorT cep (Parameter' cep)
+type Parameter'' var = Parameter' (VariantToParam var)
+
+genFlush :: GeneratorT var (Parameter'' var)
 genFlush = do
   amt <- Gen.integral (Range.constant 0 100)
   pure $ XtzForbidden $ Flush amt
 
-genDropProposal :: GeneratorT cep (ProposalKey -> (Parameter' cep))
+genDropProposal :: GeneratorT var (ProposalKey -> (Parameter'' var))
 genDropProposal = do
   pure $ \key -> XtzForbidden $ Drop_proposal key
 
-genUnstakeVote :: GeneratorT cep (ProposalKey -> Parameter' cep)
+genUnstakeVote :: GeneratorT var (ProposalKey -> Parameter'' var)
 genUnstakeVote = do
   pure $ \key -> XtzForbidden $ Unstake_vote [key]
 
-genUpdateDelegate :: GeneratorT cep (Parameter' cep)
+genUpdateDelegate :: GeneratorT var (Parameter'' var)
 genUpdateDelegate = do
   params <- genDelegateParams
   pure $ XtzForbidden $ Update_delegate params
 
-genTransferContractTokens :: GeneratorT cep (Address -> Parameter' cep)
+genTransferContractTokens :: GeneratorT var (Address -> Parameter'' var)
 genTransferContractTokens = do
   transfers <- genFa2TransferItems
   pure $ \govAddr -> XtzAllowed $ ConcreteEp $ Transfer_contract_tokens $ TransferContractTokensParam govAddr transfers
 
-
-genTransferOwnership :: GeneratorT cep (Parameter' cep)
+genTransferOwnership :: GeneratorT var (Parameter'' var)
 genTransferOwnership = do
   userAddrs <- get <&> gsAddresses
   newOwner <- fst <$> Gen.element userAddrs
   pure $ XtzAllowed $ ConcreteEp $ Transfer_ownership $ (#newOwner :! newOwner)
 
 -- Nothing to randomize, simply for consistency
-genAcceptOwnership :: GeneratorT cep (Parameter' cep)
+genAcceptOwnership :: GeneratorT var (Parameter'' var)
 genAcceptOwnership = do
   pure $ XtzAllowed $ ConcreteEp $ Accept_ownership ()
 

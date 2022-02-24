@@ -24,7 +24,6 @@ import Test.Cleveland.Lorentz (contractConsumer)
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.RegistryDAO.Types as Registry
-import Ligo.BaseDAO.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
 import SMT.Common.Gen
 import SMT.Common.Types
@@ -40,11 +39,11 @@ import Test.Ligo.BaseDAO.Common
 --   - Originate basedao contract
 -- For Haskell:
 --   - Setup `ModelState`
-runBaseDaoSMT :: forall cep. Typeable cep => SmtOption cep -> PropertyT IO ()
+runBaseDaoSMT :: forall var. (Typeable var, IsoValue (VariantToExtra var), Default (VariantToExtra var), T.HasNoOp (ToT (VariantToExtra var))) => SmtOption var -> PropertyT IO ()
 runBaseDaoSMT option@SmtOption{..} = do
 
   -- Run the generator to get a function that will generate a list of entrypoint calls.
-  mkModelInput <- forAll (runGeneratorT (genMkModelInput @cep option) $ initGeneratorState soMkPropose)
+  mkModelInput <- forAll (runGeneratorT (genMkModelInput @var option) $ initGeneratorState soMkPropose)
 
   testScenarioProps $
     (scenarioEmulated $ do
@@ -66,14 +65,14 @@ runBaseDaoSMT option@SmtOption{..} = do
         -- as well as in the model state
         let currentLevel = (dummyLevel + (ms & msLevel))
 
-        let fullStorage = msFullStorage ms
-        let storage = (fsStorage fullStorage) { sStartLevel = currentLevel, sExtra = sExtra (fsStorage fullStorage) }
+        let (fullStorage :: FullStorageSkeleton (VariantToExtra var)) = msFullStorage ms
+        let storage :: StorageSkeleton (VariantToExtra var) = (fsStorage fullStorage) { sStartLevel = currentLevel, sExtra = sExtra (fsStorage fullStorage) }
 
         -- Set initial level for the Nettest
         advanceToLevel currentLevel
 
         -- Modify `FullStorage` from the generator with registry/treasury configuration.
-        let newMs = ms { msLevel = currentLevel, msFullStorage = soModifyFs (fullStorage { fsStorage = storage }) }
+        let newMs :: ModelState var = ms { msLevel = currentLevel, msFullStorage = soModifyFs (fullStorage { fsStorage = storage }) }
 
         -- Originate Dao for Nettest
         dao <- case soContractType of
@@ -105,17 +104,15 @@ runBaseDaoSMT option@SmtOption{..} = do
               }
 
         -- Call ligo dao and run haskell model then compare the results.
-        case eqT @cep @() of
+        case eqT @var @'Base of
           Just Refl ->
-            handleCallLoop (TAddress @(Parameter' ()) dao, tokenContract, registryDaoConsumer) contractCalls newMs_
-          Nothing -> case eqT @cep @RegistryCustomEpParam of
+            handleCallLoop @'Base (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
+          Nothing -> case eqT @var @'Registry of
             Just Refl ->
-              handleCallLoop (TAddress @(Parameter' RegistryCustomEpParam) dao, tokenContract, registryDaoConsumer) contractCalls newMs_
-            Nothing -> case eqT @cep @TreasuryCustomEpParam of
-              Just Refl -> handleCallLoop (TAddress @(Parameter' TreasuryCustomEpParam) dao, tokenContract, registryDaoConsumer) contractCalls newMs_
+              handleCallLoop @'Registry (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
+            Nothing -> case eqT @var @'Treasury of
+              Just Refl -> handleCallLoop @'Treasury (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
               Nothing -> error "Unknown contract"
-
-
     )
 
 -- | For each generated entrypoint calls, this function does 3 things:
@@ -123,9 +120,9 @@ runBaseDaoSMT option@SmtOption{..} = do
 -- 2. Call ligo dao with the call
 -- 3. Compare the result. If it is to be expected, loop to the next call, else throw the error.
 handleCallLoop
-  :: (Buildable cep, CallCustomEp cep, HasBaseDAOEp (Parameter' cep), MonadEmulated caps base m)
-  => (TAddress (Parameter' cep), TAddress FA2.Parameter, TAddress (MText, (Maybe MText)))
-  -> [ModelCall cep] -> ModelState cep -> m ()
+  :: (ContractExtraConstrain (VariantToExtra var), Eq (VariantToExtra var), Buildable (VariantToExtra var), Buildable (VariantToParam var), CallCustomEp (VariantToParam var), HasBaseDAOEp (Parameter' (VariantToParam var)), MonadEmulated caps base m)
+  => (TAddress (Parameter' (VariantToParam var)), TAddress FA2.Parameter, TAddress (MText, (Maybe MText)))
+  -> [ModelCall var] -> ModelState var -> m ()
 handleCallLoop _ [] _ = pure ()
 handleCallLoop (dao, gov, viewC) (mc:mcs) ms = do
 
@@ -133,8 +130,8 @@ handleCallLoop (dao, gov, viewC) (mc:mcs) ms = do
   let (haskellErrors, updatedMs) = handleCallViaHaskell mc ms
       haskellStoreE = case haskellErrors of
         Just err -> Left err
-        Nothing -> Right (updatedMs & msFullStorage & fsStorage)
-      haskellDaoBalance = updatedMs & msMutez
+        Nothing -> Right (fsStorage $ msFullStorage updatedMs)
+      haskellDaoBalance = msMutez updatedMs
 
       govContract = updatedMs & msContracts
         & Map.lookup (unTAddress gov)
@@ -164,10 +161,10 @@ handleCallLoop (dao, gov, viewC) (mc:mcs) ms = do
 -- We simply need a FA2 contract to do various operation in the haskell model, and gov contract
 -- just happen to be a convenience FA2 contract that we can use.
 printResult
-  :: (Buildable cep, MonadEmulated caps base m)
-  => ModelCall cep
-  -> (Either ModelError Storage, Mutez, [FA2.TransferParams], Mutez, [Text])
-  -> (Either ModelError Storage, Mutez, [FA2.TransferParams], Mutez, [Text])
+  :: (Buildable (VariantToParam var), Buildable (VariantToExtra var), Eq (VariantToExtra var), MonadEmulated caps base m)
+  => ModelCall var
+  -> (Either ModelError (StorageSkeleton (VariantToExtra var)), Mutez, [FA2.TransferParams], Mutez, [Text])
+  -> (Either ModelError (StorageSkeleton (VariantToExtra var)), Mutez, [FA2.TransferParams], Mutez, [Text])
   -> m ()
 printResult mc
   (haskellStoreE, haskellDaoBalance, haskellGovStore, haskellGovBalance, haskellViewStore)
@@ -248,10 +245,10 @@ type HasBaseDAOEp a = (HasDefEntrypointArg a (EntrypointRef 'Nothing) (), Parame
 -- Return the result of the call (storage or error) and the storage of
 -- auxiliary contracts.
 handleCallViaLigo
-  :: (CallCustomEp cep, HasBaseDAOEp (Parameter' cep), MonadEmulated caps base m)
-  => (TAddress (Parameter' cep), TAddress FA2.Parameter, TAddress (MText, Maybe MText))
-  -> ModelCall cep
-  -> m (Either ModelError Storage, Mutez, [FA2.TransferParams], Mutez, [Text])
+  :: (ContractExtraConstrain (VariantToExtra var), CallCustomEp (VariantToParam var), HasBaseDAOEp (Parameter' (VariantToParam var)), MonadEmulated caps base m)
+  => (TAddress (Parameter' (VariantToParam var)), TAddress FA2.Parameter, TAddress (MText, Maybe MText))
+  -> ModelCall var
+  -> m (Either ModelError (StorageSkeleton (VariantToExtra var)), Mutez, [FA2.TransferParams], Mutez, [Text])
 handleCallViaLigo (dao, gov, viewC) mc = do
   case (mc & mcAdvanceLevel) of
     Just lvl -> advanceLevel lvl
@@ -274,9 +271,9 @@ handleCallViaLigo (dao, gov, viewC) mc = do
 
 
 callLigoEntrypoint ::
-  ( CallCustomEp cep, HasBaseDAOEp (Parameter' cep)
+  ( CallCustomEp (VariantToParam var), HasBaseDAOEp (Parameter' (VariantToParam var))
   , MonadCleveland caps base m
-  ) => ModelCall cep -> TAddress (Parameter' cep) -> m ()
+  ) => ModelCall var -> TAddress (Parameter' (VariantToParam var)) -> m ()
 callLigoEntrypoint mc dao = withSender (mc & mcSource & msoSender) $ case mc & mcParameter of
   XtzAllowed (ConcreteEp (Propose p)) -> call dao (Call @"Propose") p
   XtzAllowed (ConcreteEp (Transfer_contract_tokens p)) -> call dao (Call @"Transfer_contract_tokens") p
