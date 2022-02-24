@@ -68,7 +68,7 @@ data SmtOption (var :: Variants) = SmtOption
   { soMkPropose :: MkGenPropose var
   , soMkCustomCalls :: MkGenCustomCalls var
 
-  , soModifyFs :: (FullStorage -> FullStorage)
+  , soModifyFs :: (FullStorageSkeleton (VariantToExtra var) -> FullStorageSkeleton (VariantToExtra var))
     -- ^ Used by `registry/treasury` dao to add their configurations (sExtra, cProposalCheck ..)
     -- to the generated storage.
 
@@ -77,7 +77,7 @@ data SmtOption (var :: Variants) = SmtOption
 
   , soProposalCheck :: (ProposeParams, VariantToExtra var) -> ModelT var ()
   , soRejectedProposalSlashValue :: (Proposal, VariantToExtra var) -> ModelT var Natural
-  , soDecisionLambda :: DecisionLambdaInput -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
+  , soDecisionLambda :: DecisionLambdaInput' (VariantToExtra var) -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
   , soCustomEps :: VariantToParam var -> ModelT var ()
   }
 

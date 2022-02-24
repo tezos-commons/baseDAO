@@ -11,6 +11,7 @@ module Ligo.BaseDAO.Types
   , baseDaoAnnOptions
 
     -- * Proposals
+  , DecisionLambdaInput'(..)
   , DecisionLambdaInput
   , DecisionLambdaOutput
   , ProposalKey
