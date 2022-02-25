@@ -19,7 +19,7 @@ Its `proposal_metadata` contains proposal types:
    - This proposal takes a `keyhash` `option` parameter and usees it to update the delegate address of the contract. Please note that this different from the `Update_delegate` entrypoint which updates the delegates of an account.
 
 
-## Configuration lambdas
+## Configuration callbacks
 
 ### Proposal check
 
@@ -41,10 +41,10 @@ Additionally, for XTZ transfers `CONTRACT unit` instruction must pass for the `r
 When a proposal is rejected, the amount of tokens to slash is computed as
 `slash_scale_value * frozen / slash_division_value`, just like in Registry DAO.
 
-### Decision lambda
+### Decision callback
 
 For the Transfer proposal, it makes all requested transfers one by one.
- - In case of insufficient balance the decision lambda can fail.
+ - In case of insufficient balance the decision callback can fail.
     + For XTZ transfers it sends `amount` to the `recepient` address with `unit` parameter. I. e. it returns a single `TRANSFER_TOKENS` operation.
     + For FA2 transfers it calls `transfer` entrypoint of the `fa2` contract with given argument.
 

@@ -19,15 +19,15 @@
 let proposal_check (_, _ : propose_params * contract_extra) : unit = unit
 
 // -----------------------------------------------------------------
-// Decision_lambda
+// decision_callback
 //
-// The decision lambda is executed based on a successful proposal.  It has
+// The decision callback is executed based on a successful proposal.  It has
 // access to the proposal, can modify `contractExtra` and perform arbitrary
 // operations.
 // -----------------------------------------------------------------
 
-let decision_lambda (input : decision_lambda_input)
-    : decision_lambda_output = { operations = ([] : operation list); extras = input.extras; guardian = (None : address option) }
+let decision_callback (input : decision_callback_input)
+    : decision_callback_output = { operations = ([] : operation list); extras = input.extras; guardian = (None : address option) }
 
 // -----------------------------------------------------------------
 // Rejected proposal slash value is called when a proposal is rejected, and the

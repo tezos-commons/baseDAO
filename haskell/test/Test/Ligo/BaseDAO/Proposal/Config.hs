@@ -150,9 +150,9 @@ instance IsConfigDescExt DAO.ContractExtra RejectedProposalSlashValue where
   fillConfig (RejectedProposalSlashValue toSlashValue) c = DAO.DynamicRec' $
     BigMap Nothing $ Map.insert [mt|rejected_proposal_slash_value|] (lPackValueRaw toSlashValue) $ bmMap $ DAO.unDynamic c
 
-instance IsConfigDescExt DAO.ContractExtra DecisionLambdaAction where
-  fillConfig (DecisionLambdaAction lam) c = DAO.DynamicRec' $
-    BigMap Nothing $ Map.insert [mt|decision_lambda|] (lPackValueRaw lam) $ bmMap $ DAO.unDynamic c
+instance IsConfigDescExt DAO.ContractExtra DecisionCallbackAction where
+  fillConfig (DecisionCallbackAction lam) c = DAO.DynamicRec' $
+    BigMap Nothing $ Map.insert [mt|decision_callback|] (lPackValueRaw lam) $ bmMap $ DAO.unDynamic c
 
 instance IsConfigDescExt DAO.Config ("changePercent" :! Natural) where
   fillConfig (N cp) DAO.Config{..} =

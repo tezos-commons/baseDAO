@@ -59,7 +59,7 @@ data ModelState var = ModelState
 
   , msProposalCheck :: (ProposeParams, VariantToExtra var) -> ModelT var ()
   , msRejectedProposalSlashValue :: (Proposal, VariantToExtra var) -> ModelT var Natural
-  , msDecisionLambda :: DecisionLambdaInput' (VariantToExtra var) -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
+  , msDecisionCallback :: DecisionCallbackInput' (VariantToExtra var) -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
   , msCustomEps :: VariantToParam var -> ModelT var ()
   } deriving stock (Generic)
 
@@ -68,13 +68,13 @@ data ModelState var = ModelState
 deriving stock instance Show (VariantToExtra var) => Show (ModelState var)
 
 instance Show ((ProposeParams, a) -> ModelT var ()) where
-  show _ = "<lambda>"
+  show _ = "<callback>"
 instance Show ((Proposal, a) -> ModelT cep Natural) where
   show _ = "<msRejectedProposalSlashValue>"
-instance Show (DecisionLambdaInput' b -> ModelT var ([SimpleOperation], a, Maybe Address)) where
-  show _ = "<msDecisionLambda>"
+instance Show (DecisionCallbackInput' b -> ModelT var ([SimpleOperation], a, Maybe Address)) where
+  show _ = "<msDecisionCallback>"
 instance {-# INCOHERENT #-} Show (a -> ModelT var ()) where
-  show _ = "<lambda>"
+  show _ = "<callback>"
 
 runModelT :: ModelT cep a -> ModelState cep -> (Either ModelError (ModelState cep))
 runModelT (ModelT model) initState =

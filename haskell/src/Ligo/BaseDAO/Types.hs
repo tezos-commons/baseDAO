@@ -11,9 +11,9 @@ module Ligo.BaseDAO.Types
   , baseDaoAnnOptions
 
     -- * Proposals
-  , DecisionLambdaInput'(..)
-  , DecisionLambdaInput
-  , DecisionLambdaOutput
+  , DecisionCallbackInput'(..)
+  , DecisionCallbackInput
+  , DecisionCallbackOutput
   , ProposalKey
   , ProposeParams(..)
   , GovernanceToken(..)
@@ -745,35 +745,35 @@ newtype FixedFee = FixedFee Natural
 
 type instance AsRPC FixedFee = FixedFee
 
-data DecisionLambdaInput' ce = DecisionLambdaInput'
+data DecisionCallbackInput' ce = DecisionCallbackInput'
   { diProposal :: Proposal
   , diExtra :: ce
   }
 
-customGeneric "DecisionLambdaInput'" ligoLayout
+customGeneric "DecisionCallbackInput'" ligoLayout
 
-deriving anyclass instance IsoValue ce => IsoValue (DecisionLambdaInput' ce)
-deriving stock instance Show ce => Show (DecisionLambdaInput' ce)
+deriving anyclass instance IsoValue ce => IsoValue (DecisionCallbackInput' ce)
+deriving stock instance Show ce => Show (DecisionCallbackInput' ce)
 
-type DecisionLambdaInput = DecisionLambdaInput' ()
+type DecisionCallbackInput = DecisionCallbackInput' ()
 
-instance HasAnnotation ce => HasAnnotation (DecisionLambdaInput' ce) where
+instance HasAnnotation ce => HasAnnotation (DecisionCallbackInput' ce) where
   annOptions = baseDaoAnnOptions
 
-data DecisionLambdaOutput' ce = DecisionLambdaOutput'
+data DecisionCallbackOutput' ce = DecisionCallbackOutput'
   { doOperations :: List Operation
   , doExtra :: ce
   , doGuardian :: Maybe Address
   }
 
-type DecisionLambdaOutput = DecisionLambdaOutput' ()
+type DecisionCallbackOutput = DecisionCallbackOutput' ()
 
-customGeneric "DecisionLambdaOutput'" ligoLayout
+customGeneric "DecisionCallbackOutput'" ligoLayout
 
-deriving anyclass instance IsoValue ce => IsoValue (DecisionLambdaOutput' ce)
-deriving stock instance Show ce => Show (DecisionLambdaOutput' ce)
+deriving anyclass instance IsoValue ce => IsoValue (DecisionCallbackOutput' ce)
+deriving stock instance Show ce => Show (DecisionCallbackOutput' ce)
 
-instance HasAnnotation ce => HasAnnotation (DecisionLambdaOutput' ce) where
+instance HasAnnotation ce => HasAnnotation (DecisionCallbackOutput' ce) where
   annOptions = baseDaoAnnOptions
 
 data Config = Config

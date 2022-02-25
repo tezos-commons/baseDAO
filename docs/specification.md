@@ -590,7 +590,7 @@ Parameter (in Michelson):
   - The token return to voters are not immediate.
     The voters should call `unstake_vote` with the proposal key to get their
     tokens back after `flush` is called.
-- If proposal is accepted, the decision lambda is called.
+- If proposal is accepted, the decision callback is called.
 - The `quorum_threshold` at the cycle in which the proposal was raised will be
   stored in the proposal, and this threshold will be used to check if the votes
   meet the quorum threshold.

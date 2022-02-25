@@ -34,7 +34,7 @@ hprop_SMT =
       , soRejectedProposalSlashValue = \_ -> do
         pure 1
 
-      , soDecisionLambda = \DecisionLambdaInput'{..} -> do
+      , soDecisionCallback = \DecisionCallbackInput'{..} -> do
         pure $ ([], diExtra, Nothing)
 
       , soCustomEps = \_ -> pure ()

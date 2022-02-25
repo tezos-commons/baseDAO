@@ -18,7 +18,7 @@ Extra storage data:
 We store these two `big_map`s separately because we want to include `proposalId` for deleted keys as well.
 Alternatively, we can merge them and store `option v` values.
 It should be treated as an implementation detail.
-There is additional data to implement configuration lambdas, it's an implementation detail as well.
+There is additional data to implement configuration callbacks, it's an implementation detail as well.
 
 Proposals can be of different type and include (`proposal_metadata`) different data:
 
@@ -46,7 +46,7 @@ registry. This includes:
 5. Proposal to update the contract delegate:
    - This proposal takes a `keyhash` `option` parameter and usees it to update the delegate address of the contract. Please note that this different from the `Update_delegate` entrypoint which updates the delegates of an account.
 
-## Configuration lambdas
+## Configuration callbacks
 
 ### Proposal check
 
@@ -70,7 +70,7 @@ When a proposal is rejected, the amount of tokens to slash is computed as
 `slash_scale_value` and `slash_division_value` are specified by the DAO creator.
 One can set them to 1 and 1 by default to always slash all staked tokens.
 
-### Decision lambda
+### Decision callback
 
 Except for the Guardian updates, It simply applies all updates from the accepted
 proposal one by one.  They are applied in the same order as specified in the

@@ -273,11 +273,11 @@ handleProposalIsOver proposal = do
   cond <- getStore <&> \s ->
             doTotalVoteMeetQuorumThreshold proposal s && ((proposal & plUpvotes) > (proposal & plDownvotes))
   unstakeProposerToken cond proposal
-  -- Execute decision lambda if the proposal is passed.
+  -- Execute decision callback if the proposal is passed.
   when cond $ do
     store <- getStore
     (ops, newExtra, guardianMaybe) <-
-      get <&> msDecisionLambda >>= \f -> f (DecisionLambdaInput' proposal (store & sExtra))
+      get <&> msDecisionCallback >>= \f -> f (DecisionCallbackInput' proposal (store & sExtra))
 
     case guardianMaybe of
       Just g -> modifyStore $ \s -> pure $ s { sGuardian = g }

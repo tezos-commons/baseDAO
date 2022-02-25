@@ -95,9 +95,9 @@ emptyFlush = 119
 notDelegate :: Natural
 notDelegate = 120
 
--- | Executing the proposal's decision lambda results in failure.
-failDecisionLambda :: Natural
-failDecisionLambda = 121
+-- | Executing the proposal's decision callback results in failure.
+failDecisionCallback :: Natural
+failDecisionCallback = 121
 
 -- | Cannot call `unstake_vote` on the proposal that is not flushed or dropped.
 unstakeInvalidProposal :: Natural
@@ -243,8 +243,8 @@ tzipErrorList = [
     }
   ,
   EStatic $ StaticError
-    { seError = toExpression $ toVal @Integer $ toInteger failDecisionLambda
-    , seExpansion = toExpression $ toVal @MText [mt|Executing the proposal's decision lambda results in failure.|]
+    { seError = toExpression $ toVal @Integer $ toInteger failDecisionCallback
+    , seExpansion = toExpression $ toVal @MText [mt|Executing the proposal's decision callback results in failure.|]
     , seLanguages = ["en"]
     }
   ,

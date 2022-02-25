@@ -77,7 +77,7 @@ data SmtOption (var :: Variants) = SmtOption
 
   , soProposalCheck :: (ProposeParams, VariantToExtra var) -> ModelT var ()
   , soRejectedProposalSlashValue :: (Proposal, VariantToExtra var) -> ModelT var Natural
-  , soDecisionLambda :: DecisionLambdaInput' (VariantToExtra var) -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
+  , soDecisionCallback :: DecisionCallbackInput' (VariantToExtra var) -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
   , soCustomEps :: VariantToParam var -> ModelT var ()
   }
 

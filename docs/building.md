@@ -31,7 +31,7 @@ If you prefer to build it manually, the contract's main entrypoint is
 
 Imagine you want to implement a DAO called 'acme'. For this first
 copy `src/template.mligo` to a new file `src/acmeDAO.mligo` and follow the instructions
-in the comments to implement your logic for proposal check, decision lambda and rejection
+in the comments to implement your logic for proposal check, decision callback and rejection
 slash value procedures.
 
 If your variant should support custom entrypoints, then define the type of your custom entrypoints

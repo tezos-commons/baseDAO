@@ -255,7 +255,7 @@ let propose (param, config, store : propose_params * config * storage): return =
   (nil_op, store)
 
 (*
- * Unstake proposer token and execute decision lambda based on if the proposal is passed or not.
+ * Unstake proposer token and execute decision callback based on if the proposal is passed or not.
  *)
 [@inline]
 let handle_proposal_is_over
@@ -271,7 +271,7 @@ let handle_proposal_is_over
   let (new_ops, store) =
     if cond
     then
-      let dl_out = decision_lambda { proposal = proposal; extras = store.extra } in
+      let dl_out = decision_callback { proposal = proposal; extras = store.extra } in
       let guardian = match dl_out.guardian with
         | Some g -> g
         | None -> store.guardian
@@ -302,7 +302,7 @@ let rec flush_each (n, config, store, ops : int * config * storage * operation l
 
         // Ensure counter is not reached yet and the the proposal is flushable.
         if (n > 0 && is_proposal_age (proposal, config.proposal_flush_level)) then
-          // Unstake tokens, and execute proposal's decision_lambda.
+          // Unstake tokens, and execute proposal's decision_callback.
           let (ops, store) = handle_proposal_is_over (config, proposal, store, ops) in
           // Update the stored plist.
           let store = { store with ongoing_proposals_dlist = plist_new } in

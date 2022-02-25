@@ -41,7 +41,7 @@ hprop_TreasuryDaoSMT =
 
       , soProposalCheck = treasuryDaoProposalCheck
       , soRejectedProposalSlashValue = treasuryDaoRejectedProposalSlashValue
-      , soDecisionLambda = treasuryDaoDecisionLambda
+      , soDecisionCallback = treasuryDaoDecisionCallback
       , soCustomEps = \_ -> pure ()
       }
   in
@@ -117,8 +117,8 @@ treasuryDaoRejectedProposalSlashValue (p, extras) = do
       slashDivisionValue = teSlashDivisionValue extras
   pure $ (slashScaleValue * (p & plProposerFrozenToken) `div` slashDivisionValue)
 
-treasuryDaoDecisionLambda :: DecisionLambdaInput' (VariantToExtra 'Treasury) -> ModelT 'Treasury ([SimpleOperation], VariantToExtra 'Treasury, Maybe Address)
-treasuryDaoDecisionLambda DecisionLambdaInput'{..} = do
+treasuryDaoDecisionCallback :: DecisionCallbackInput' (VariantToExtra 'Treasury) -> ModelT 'Treasury ([SimpleOperation], VariantToExtra 'Treasury, Maybe Address)
+treasuryDaoDecisionCallback DecisionCallbackInput'{..} = do
   let metadata = (diProposal & plMetadata)
         & lUnpackValueRaw @TreasuryDaoProposalMetadata
         & fromRight (error "UNPACKING_PROPOSAL_METADATA_FAILED")

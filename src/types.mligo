@@ -239,12 +239,12 @@ type allow_xtz_params_contract =
   | Accept_ownership of unit
   | Default of unit
 
-type decision_lambda_input =
+type decision_callback_input =
   { proposal : proposal
   ; extras : contract_extra
   }
 
-type decision_lambda_output =
+type decision_callback_output =
   { operations : operation list
   ; extras : contract_extra
   ; guardian : address option
@@ -281,7 +281,7 @@ type initial_data =
   ; config_data : initial_config_data
   }
 
-type decision_lambda = decision_lambda_input -> decision_lambda_output
+type decision_callback = decision_callback_input -> decision_callback_output
 
 type config =
   { max_quorum_threshold : quorum_fraction

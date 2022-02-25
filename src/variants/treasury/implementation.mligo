@@ -59,18 +59,18 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
           : transfer_params contract option) with
       | Some contract ->
           (Tezos.transaction tt.transfer_list 0mutez contract) :: ops
-      | None -> (failwith fail_decision_lambda : operation list)
+      | None -> (failwith fail_decision_callback : operation list)
     end
   | Xtz_transfer_type xt ->
     begin
       match (Tezos.get_contract_opt xt.recipient : unit contract option) with
       | Some contract ->
           (Tezos.transaction unit xt.amount contract) :: ops
-      | None -> (failwith fail_decision_lambda : operation list)
+      | None -> (failwith fail_decision_callback : operation list)
     end
 
-let decision_lambda (input : decision_lambda_input)
-    : decision_lambda_output =
+let decision_callback (input : decision_callback_input)
+    : decision_callback_output =
   let (proposal, extras) = (input.proposal, input.extras) in
   let ops = ([] : operation list) in
 

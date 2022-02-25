@@ -46,7 +46,7 @@ let apply_diff_affected
   in { ce with registry_affected = new_registry_af }
 
 (*
- * Proposal check lambda : returns true if following checks are true.
+ * Proposal check callback : returns true if following checks are true.
  * 1. if proposer has locked frozen_scale_value * s + frozen_extra_value
  * where s = size(pack(proposalMetadata)) and frozen_scale_value and frozen_extra_value
  * are from storage configuration.
@@ -90,7 +90,7 @@ let proposal_check (params, extras : propose_params * contract_extra) : unit =
   | Update_contract_delegate _ -> unit
 
 (*
- * Proposal rejection slash lambda: returns `slash_scale_value * frozen / slash_division_value`
+ * Proposal rejection slash callback: returns `slash_scale_value * frozen / slash_division_value`
  * where slash_scale_value and slash_division_value are specified by the DAO creator
  * in configuration and frozen is the amount that was frozen by the proposer.
  *)
@@ -113,14 +113,14 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
           : transfer_params contract option) with
       | Some contract ->
           (Tezos.transaction tt.transfer_list 0mutez contract) :: ops
-      | None -> (failwith fail_decision_lambda : operation list)
+      | None -> (failwith fail_decision_callback : operation list)
     end
   | Xtz_transfer_type xt ->
     begin
       match (Tezos.get_contract_opt xt.recipient : unit contract option) with
       | Some contract ->
           (Tezos.transaction unit xt.amount contract) :: ops
-      | None -> (failwith fail_decision_lambda : operation list)
+      | None -> (failwith fail_decision_callback : operation list)
     end
 
 (*
@@ -139,8 +139,8 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
  * and `slash_division_value`. `None` values are ignored and `Some` values are
  * used for updating corresponding configuraton.
  *)
-let decision_lambda (input : decision_lambda_input)
-    : decision_lambda_output =
+let decision_callback (input : decision_callback_input)
+    : decision_callback_output =
   let (proposal, extras) = (input.proposal, input.extras) in
   let propose_param : propose_params = {
     from = proposal.proposer;

@@ -711,10 +711,10 @@ test_RegistryDAO =
   where
 
     -- Here we parse the storage value from compiled ligo storage, which
-    -- contains the RegistryDAO lambdas implemented in LIGO, and we just use
+    -- contains the RegistryDAO callbacks implemented in LIGO, and we just use
     -- `fromVal` to convert it to a 'FullStorage'. Then we can set the
     -- RegistryDAO configuration values using the setExtra function below, and
-    -- initialize the contract using it. This let us have the lambdas from LIGO
+    -- initialize the contract using it. This let us have the callbacks from LIGO
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
     initialStorage :: Address -> RegistryFullStorage
     initialStorage admin = let

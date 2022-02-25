@@ -10,7 +10,7 @@ This has only demonstration purposes.
 
 This DAO has no `extra` information associated to it.
 
-## Configuration lambdas
+## Configuration callbacks
 
 ### Proposal check
 
@@ -23,7 +23,7 @@ When a proposal is rejected, the amount to be slashed is a constant value of `0`
 
 In other words, the proposer will receive back all the staked tokens.
 
-### Decision lambda
+### Decision callback
 
 This behaves like an identity:
 - no change to the contract `extra` is performed

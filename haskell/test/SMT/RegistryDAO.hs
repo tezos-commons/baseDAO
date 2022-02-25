@@ -43,7 +43,7 @@ hprop_RegistryDaoSMT =
 
       , soProposalCheck = registryDaoProposalCheck
       , soRejectedProposalSlashValue = registryDaoRejectedProposalSlashValue
-      , soDecisionLambda = registryDaoDecisionLambda
+      , soDecisionCallback = registryDaoDecisionCallback
       , soCustomEps = \case
           Lookup_registry p -> lookupRegistryEntrypoint p
           _ -> pass
@@ -118,8 +118,8 @@ registryDaoRejectedProposalSlashValue (p, extras) = do
 
   pure $ (slashScaleValue * (p & plProposerFrozenToken) `div` slashDivisionValue)
 
-registryDaoDecisionLambda :: DecisionLambdaInput' (VariantToExtra 'Registry) -> ModelT cep ([SimpleOperation], VariantToExtra 'Registry, Maybe Address)
-registryDaoDecisionLambda DecisionLambdaInput' {..} = do
+registryDaoDecisionCallback :: DecisionCallbackInput' (VariantToExtra 'Registry) -> ModelT cep ([SimpleOperation], VariantToExtra 'Registry, Maybe Address)
+registryDaoDecisionCallback DecisionCallbackInput' {..} = do
   let metadata = (diProposal & plMetadata)
         & lUnpackValueRaw @RegistryDaoProposalMetadata
         & fromRight (error "UNPACKING_PROPOSAL_METADATA_FAILED")

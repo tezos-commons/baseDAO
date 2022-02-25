@@ -177,7 +177,7 @@ genModelState SmtOption{..} = do
         , msContracts = mempty
         , msProposalCheck = soProposalCheck
         , msRejectedProposalSlashValue = soRejectedProposalSlashValue
-        , msDecisionLambda = soDecisionLambda
+        , msDecisionCallback = soDecisionCallback
         , msCustomEps = soCustomEps
         }
 
