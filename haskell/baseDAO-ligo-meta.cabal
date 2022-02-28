@@ -20,6 +20,7 @@ extra-source-files:
     resources/trivialDAO_storage.tz
     resources/registryDAO_storage.tz
     resources/treasuryDAO_storage.tz
+    resources/plist_contract.tz
 extra-doc-files:
     README.md
 
@@ -220,6 +221,9 @@ test-suite baseDAO-test
       Test.Ligo.RegistryDAO.Types
       Test.Ligo.TreasuryDAO
       Test.Ligo.TreasuryDAO.Types
+      Test.Plist.Contract
+      Test.Plist.Property
+      Test.Plist.Type
       Tree
       Paths_baseDAO_ligo_meta
   hs-source-dirs:

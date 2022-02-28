@@ -34,10 +34,10 @@ TS_OUT ?= typescript
 
 .PHONY: all clean test typescript
 
-all: $(OUT)/trivialDAO.tz $(OUT)/registryDAO.tz $(OUT)/treasuryDAO.tz
+all: $(OUT)/trivialDAO.tz $(OUT)/registryDAO.tz $(OUT)/treasuryDAO.tz $(OUT)/plist_contract.tz
 
 # Compile LIGO contract into its michelson representation.
-$(OUT)/%DAO.tz: src/**
+$(OUT)/%DAO.tz: src/**/**
 	cp src/variants/$*/implementation.mligo src/implementation.mligo
 	cp src/variants/$*/storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
@@ -276,6 +276,20 @@ typescript: haskell-resources
 		STACK_DEV_OPTIONS="--fast --ghc-options -Wwarn"
 	rm -rf $(TS_OUT)/baseDAO/src/generated/*
 	stack exec -- baseDAO-ligo-meta generate-typescript --target=$(TS_OUT)/baseDAO/src/generated/
+
+$(OUT)/plist_contract.tz: haskell/test/Test/Plist/**
+	mkdir -p $(OUT)
+	# ============== Compiling contract ============== #
+	$(BUILD) haskell/test/Test/Plist/plist_contract.mligo -e plist_contract --output-file $(OUT)/plist_contract.tz
+	# ============== Compilation successful ============== #
+	# See "$(OUT)/plist_contract.tz" for compilation result #
+
+	# strip the surrounding braces and indentation,
+	# note that dollar char is escaped as part of Makefile
+	sed -i '/^ *$$/d' $(OUT)/plist_contract.tz
+	sed -i 's/^[{ ] //g' $(OUT)/plist_contract.tz
+	sed -i '$$s/[}] *$$//' $(OUT)/plist_contract.tz
+
 
 clean:
 	rm -rf $(OUT)
