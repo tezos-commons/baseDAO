@@ -11,7 +11,7 @@ in particular its CameLIGO dialect.
 To generate the contract code, or the storage for one of the provided examples,
 you will need the [ligo executable](https://ligolang.org/docs/intro/installation) installed.
 
-The latest working version tested is [0.33.0](https://gitlab.com/ligolang/ligo/-/releases/0.33.0).
+The latest working version tested is [0.37.0](https://gitlab.com/ligolang/ligo/-/releases/0.37.0).
 
 ## Generating the contract code
 
@@ -29,16 +29,27 @@ If you prefer to build it manually, the contract's main entrypoint is
 
 ## Generating the contract code for a custom variant
 
-Imagine you want to implement a DAO called 'acme'. For this first
-copy `src/template.mligo` to a new file `src/acmeDAO.mligo` and follow the instructions
-in the comments to implement your logic for proposal check, decision callback and rejection
-slash value procedures.
+Imagine you want to implement a DAO called 'acme'. Variants can differ among each
+other in a couple of ways.
 
-If your variant should support custom entrypoints, then define the type of your custom entrypoints
-using the type `custom_ep_para`, which is also included in the template file with a placeholder unit
-type.
+1. Different type for the contract-extra field, and hence completely different storage type.
+2. Different type for the custom entrypoint parameter, and hence completely different parameter type.
+3. Different logic for various variant specific callbacks, like decision callback and proposal check.
 
-For example, if you have custom entrypoints 'my_custom_ep1' of type `(nat, nat)` and
+To accomodate this, we need to create two ligo source files that wraps these differences. Specifically
+these are the steps one should follow to accomplish this.
+
+1. Create a new folder `src/variants/acme`.
+2. Copy `src/variants/template/implementation.mligo` to `src/variants/acme/implementation.mligo`
+   and `src/variants/template/storage.mligo` to `src/variants/acme/storage.mligo`.
+
+Now you can follow the instructions in the comments for these files, to define the contract extra field
+implement your logic for proposal check, decision callback and proposal check as well as the handler
+for the custom entrypoint.
+
+#### Defining a custom entrypoint type for the variant
+
+For your custom variant, If you need to have two custom custom entrypoints of'my_custom_ep1' of type `(nat, nat)` and
 'my_custom_ep2' of type `(int, int)` change the line:
 
 ```
@@ -64,13 +75,12 @@ type custom_ep_param =
   | MyCustomEpDummy of unit
 ```
 
-After this, you can implement the handlers for this entrypoints by modifying the `custom_ep` function
-that is included in the template.
+#### Building the variant
 
-Then you can build this DAO variant by using the make command:
+After defining implementation.mligo and storage.mligo files for your variant, you can build it by using the make command:
 
 ```
-export VARIANT=acme && make baseDAO
+make out/acmeDAO.tz
 ```
 
 ## Generating a contract metadata
@@ -152,7 +162,7 @@ values.
 
 ### RegistryDAO
 
-This storage is defined in [src/registryDAO.mligo](../src/registryDAO.mligo), can be
+This storage is defined in [src/variants/registry/implementation.mligo](../src/variants/registry/implementation.mligo), can be
 compiled with `make`, as usual:
 ```sh
 make out/registryDAO_storage.tz \
@@ -188,7 +198,7 @@ arguments are optional and will be equal to the values above if not specified.
 
 ### TreasuryDAO
 
-This storage is defined in [src/treasuryDAO.mligo](../src/treasuryDAO.mligo) and
+This storage is defined in [src/variants/treasury/implementation.mligo](../src/variants/treasury/implementation.mligo) and
 can be compiled once again with `make`:
 ```sh
 make out/treasuryDAO_storage.tz \

@@ -6,7 +6,8 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 # Treasury DAO
 
 Treasury is a DAO that holds XTZ and FA2 tokens and lets its users decide how to
-spend its XTZ and tokens. Its extra storage data is empty.
+spend its XTZ and tokens. Its extra storage data is a unit value and thus contains
+no data.
 
 Its `proposal_metadata` contains proposal types:
 - Transfer proposal that includes:
@@ -63,3 +64,5 @@ Here is a summary of all the strings used as error messages thrown by `proposal_
 | `LARGE_PROPOSAL`                 | Proposal size is bigger than 'max_proposal_size'                                                            |
 
 ## Custom entrypoints
+
+Treasury DAO does not contain any custom entrypoints and its custom entrypoint type is unit.
