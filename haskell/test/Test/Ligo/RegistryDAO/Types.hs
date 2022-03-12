@@ -6,7 +6,6 @@ module Test.Ligo.RegistryDAO.Types
   , TransferProposal (..)
   , ConfigProposal (..)
   , UpdateReceiverParam (..)
-  , LookupRegistryParam
   ) where
 
 import Universum
@@ -55,8 +54,6 @@ data ConfigProposal = ConfigProposal
 
 instance HasAnnotation ConfigProposal where
   annOptions = baseDaoAnnOptions
-
-type LookupRegistryParam = (MText, Address)
 
 customGeneric "RegistryDaoProposalMetadata" ligoLayout
 deriving anyclass instance IsoValue RegistryDaoProposalMetadata

@@ -16,7 +16,7 @@ import SMT.Model.BaseDAO.Types
 
 -- | Advance level of the blockchain then run haskell model against the call.
 -- Return the new `ModelState` and error from the call if there is any.
-handleCallViaHaskell :: ModelCall -> ModelState -> (Maybe ModelError, ModelState)
+handleCallViaHaskell :: ModelCall cep -> ModelState cep -> (Maybe ModelError, ModelState cep)
 handleCallViaHaskell mc ms =
   case runModelT action ms' of
     Right updatedMs -> (Nothing, updatedMs)
@@ -29,12 +29,12 @@ handleCallViaHaskell mc ms =
 
     action =
       case mc & mcParameter of
-        XtzAllowed (Propose p) -> applyPropose (mc & mcSource) p
-        XtzAllowed (Transfer_contract_tokens p) -> applyTransferContractTokens (mc & mcSource) p
-        XtzAllowed (Transfer_ownership p) -> applyTransferOwnership (mc & mcSource) p
-        XtzAllowed (Accept_ownership _) -> applyAcceptOwnership (mc & mcSource)
-        XtzAllowed (CallCustom p) -> applyCallCustom (mc & mcSource) p
-        XtzAllowed (Default _) -> pure ()
+        XtzAllowed (ConcreteEp (Propose p)) -> applyPropose (mc & mcSource) p
+        XtzAllowed (ConcreteEp (Transfer_contract_tokens p)) -> applyTransferContractTokens (mc & mcSource) p
+        XtzAllowed (ConcreteEp (Transfer_ownership p)) -> applyTransferOwnership (mc & mcSource) p
+        XtzAllowed (ConcreteEp (Accept_ownership _)) -> applyAcceptOwnership (mc & mcSource)
+        XtzAllowed (ConcreteEp (Default _)) -> pure ()
+        XtzAllowed (CustomEp p) -> applyCallCustom (mc & mcSource) p
         XtzForbidden (Vote p) -> applyVote (mc & mcSource) p
         XtzForbidden (Flush p) -> applyFlush (mc & mcSource) p
         XtzForbidden (Freeze p) -> applyFreeze (mc & mcSource) p

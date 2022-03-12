@@ -93,23 +93,11 @@ test_BaseDAO_Management =
   ]
 
   where
-    testCustomEntrypoint :: ('[(ByteString, FullStorage)] :-> '[([Operation], Storage)])
-    testCustomEntrypoint =
-      -- Unpack an address from packed bytes and set it as admin
-      L.unpair #
-      L.unpackRaw @Address #
-      L.ifNone
-        (L.unit # L.failWith)
-        (L.dip (L.toField #fsStorage) # setField #sAdmin) #
-      L.nil # pair
 
-    initialStorage currentLevel admin = mkFullStorage
+    initialStorage currentLevel admin = mkFullStorage @'Base
       ! #admin admin
-      ! #extra dynRecUnsafe
+      ! #extra ()
       ! #metadata mempty
       ! #level currentLevel
       ! #tokenAddress genesisAddress
-      ! #customEps
-          [ ([mt|testCustomEp|], lPackValueRaw testCustomEntrypoint)
-          ]
       ! defaults

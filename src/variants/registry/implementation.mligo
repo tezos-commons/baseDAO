@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
+#if !VARIANT
+#define VARIANT
+
 #include "error_codes.mligo"
 #include "common/errors.mligo"
 #include "common/types.mligo"
 #include "defaults.mligo"
 #include "types.mligo"
-#include "proposal.mligo"
+#include "proposal/helpers.mligo"
 #include "helper/unpack.mligo"
 
-#include "registryDAO/types.mligo"
+#include "variants/registry/types.mligo"
 
-// The following include is required so that we have a function with an
-// entrypoint type to use with `compile-storage` command to make Michelson
-// storage expression.
-#include "base_DAO.mligo"
+type custom_ep_param = custom_ep_param_private
 
 let apply_diff_registry (diff, registry : registry_diff * registry) : registry =
   let
@@ -34,19 +34,19 @@ let apply_diff_registry_affected
   in List.fold foldFn diff registry_affected
 
 let apply_diff (diff, ce : registry_diff * contract_extra) : contract_extra =
-  let registry = unpack_registry(find_big_map("registry", ce)) in
+  let registry = ce.registry in
   let new_registry : registry = apply_diff_registry (diff, registry) in
-  Map.update "registry" (Some (Bytes.pack new_registry)) ce
+  { ce with registry = new_registry }
 
 let apply_diff_affected
   (proposal_key, diff, ce : proposal_key * registry_diff * contract_extra)
     : contract_extra =
-  let registry_af = unpack_registry_affected(find_big_map("registry_affected", ce)) in
+  let registry_af = ce.registry_affected in
   let new_registry_af : registry_affected = apply_diff_registry_affected (proposal_key, diff, registry_af)
-  in Map.update "registry_affected" (Some (Bytes.pack new_registry_af)) ce
+  in { ce with registry_affected = new_registry_af }
 
 (*
- * Proposal check lambda : returns true if following checks are true.
+ * Proposal check callback : returns true if following checks are true.
  * 1. if proposer has locked frozen_scale_value * s + frozen_extra_value
  * where s = size(pack(proposalMetadata)) and frozen_scale_value and frozen_extra_value
  * are from storage configuration.
@@ -56,11 +56,11 @@ let apply_diff_affected
  *   3.b. is a token transfer
  * where min_xtz_amount and max_xtz_amount are from storage configuration.
  *)
-let registry_DAO_proposal_check (params, extras : propose_params * contract_extra) : unit =
+let proposal_check (params, extras : propose_params * contract_extra) : unit =
   let proposal_size = Bytes.size(params.proposal_metadata) in
-  let frozen_scale_value = unpack_nat(find_big_map("frozen_scale_value", extras)) in
-  let frozen_extra_value = unpack_nat(find_big_map("frozen_extra_value", extras)) in
-  let max_proposal_size = unpack_nat(find_big_map("max_proposal_size", extras)) in
+  let frozen_scale_value = extras.frozen_scale_value in
+  let frozen_extra_value = extras.frozen_extra_value in
+  let max_proposal_size = extras.max_proposal_size in
 
   let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
 
@@ -71,8 +71,8 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
 
   match unpack_proposal_metadata(params.proposal_metadata) with
   | Transfer_proposal tp ->
-      let min_xtz_amount = unpack_tez(find_big_map("min_xtz_amount", extras)) in
-      let max_xtz_amount = unpack_tez(find_big_map("max_xtz_amount", extras)) in
+      let min_xtz_amount = extras.min_xtz_amount in
+      let max_xtz_amount = extras.max_xtz_amount in
       let is_all_transfers_valid (transfer_type: transfer_type) =
         match transfer_type with
         | Token_transfer_type _tt -> unit
@@ -90,13 +90,13 @@ let registry_DAO_proposal_check (params, extras : propose_params * contract_extr
   | Update_contract_delegate _ -> unit
 
 (*
- * Proposal rejection slash lambda: returns `slash_scale_value * frozen / slash_division_value`
+ * Proposal rejection slash callback: returns `slash_scale_value * frozen / slash_division_value`
  * where slash_scale_value and slash_division_value are specified by the DAO creator
  * in configuration and frozen is the amount that was frozen by the proposer.
  *)
-let registry_DAO_rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
-  let slash_scale_value = unpack_nat(find_big_map ("slash_scale_value", extras)) in
-  let slash_division_value = unpack_nat(find_big_map ("slash_division_value", extras))
+let rejected_proposal_slash_value (params, extras : proposal * contract_extra) : nat =
+  let slash_scale_value = extras.slash_scale_value in
+  let slash_division_value = extras.slash_division_value
   in (slash_scale_value * params.proposer_frozen_token) / slash_division_value
 
 type update_fn = (address set * address) -> proposal_receivers
@@ -113,14 +113,14 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
           : transfer_params contract option) with
       | Some contract ->
           (Tezos.transaction tt.transfer_list 0mutez contract) :: ops
-      | None -> (failwith fail_decision_lambda : operation list)
+      | None -> (failwith fail_decision_callback : operation list)
     end
   | Xtz_transfer_type xt ->
     begin
       match (Tezos.get_contract_opt xt.recipient : unit contract option) with
       | Some contract ->
           (Tezos.transaction unit xt.amount contract) :: ops
-      | None -> (failwith fail_decision_lambda : operation list)
+      | None -> (failwith fail_decision_callback : operation list)
     end
 
 (*
@@ -139,8 +139,8 @@ let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (o
  * and `slash_division_value`. `None` values are ignored and `Some` values are
  * used for updating corresponding configuraton.
  *)
-let registry_DAO_decision_lambda (input : decision_lambda_input)
-    : decision_lambda_output =
+let decision_callback (input : decision_callback_input)
+    : decision_callback_output =
   let (proposal, extras) = (input.proposal, input.extras) in
   let propose_param : propose_params = {
     from = proposal.proposer;
@@ -151,40 +151,40 @@ let registry_DAO_decision_lambda (input : decision_lambda_input)
   let ops = ([] : operation list) in
   match unpack_proposal_metadata(proposal.metadata) with
   | Update_receivers_proposal urp ->
-      let current_set = unpack_proposal_receivers(find_big_map("proposal_receivers", extras)) in
+      let current_set = extras.proposal_receivers in
       let new_set = match urp with
         | Add_receivers receivers ->
             update_receivers(current_set, receivers, (fun (c, i : address set * address) -> Set.add i c))
         | Remove_receivers receivers ->
             update_receivers(current_set, receivers, (fun (c, i : address set * address) -> Set.remove i c))
       in { operations = ops
-         ; extras = Big_map.update "proposal_receivers" (Some (Bytes.pack new_set)) extras
+         ; extras = { extras with proposal_receivers = new_set }
          ; guardian = (None : (address option))
          }
   | Configuration_proposal cp ->
       let new_ce = match cp.frozen_scale_value with
         | Some (frozen_scale_value) ->
-            Big_map.update "frozen_scale_value" (Some (Bytes.pack (frozen_scale_value))) extras
+            { extras with frozen_scale_value = frozen_scale_value }
         | None -> extras in
 
       let new_ce = match cp.frozen_extra_value with
         | Some (frozen_extra_value) ->
-            Big_map.update "frozen_extra_value" (Some (Bytes.pack (frozen_extra_value))) new_ce
+            { extras with frozen_extra_value = frozen_extra_value }
         | None -> new_ce in
 
       let new_ce = match cp.max_proposal_size with
         | Some (max_proposal_size) ->
-            Big_map.update "max_proposal_size" (Some (Bytes.pack (max_proposal_size))) new_ce
+            { extras with max_proposal_size = max_proposal_size }
         | None -> new_ce in
 
       let new_ce = match cp.slash_scale_value with
         | Some (slash_scale_value) ->
-            Big_map.update "slash_scale_value" (Some (Bytes.pack (slash_scale_value))) new_ce
+            { extras with slash_scale_value = slash_scale_value }
         | None -> new_ce in
 
       let new_ce = match cp.slash_division_value with
         | Some (slash_division_value) ->
-            Big_map.update "slash_division_value" (Some (Bytes.pack (slash_division_value))) new_ce
+            { extras with slash_division_value = slash_division_value }
         | None -> new_ce
       in { operations = ops; extras = new_ce; guardian = (None : (address option)) }
   | Transfer_proposal tp ->
@@ -203,14 +203,13 @@ let registry_DAO_decision_lambda (input : decision_lambda_input)
       { operations = ((Tezos.set_delegate mdelegate) :: ops); extras = extras ; guardian = (None : (address option))}
 
 // A custom entrypoint to fetch values from Registry
-let lookup_registry (bytes_param, full_store : bytes * full_storage) : operation list * storage =
-  let param : lookup_registry_param = unpack_lookup_registry_param ("lookup_registry_param", bytes_param) in
+let lookup_registry (param, full_store : lookup_registry_param * full_storage) : operation list * storage =
   let view_contract : lookup_registry_view =
       match (Tezos.get_contract_opt(param.callback) : lookup_registry_view option) with
       | Some callback_contract -> callback_contract
       | None -> (failwith bad_view_contract: lookup_registry_view) in
   let contract_extra = full_store.0.extra in
-  let registry : registry = unpack_registry(find_big_map("registry", contract_extra)) in
+  let registry : registry = contract_extra.registry in
   let value_at_key : registry_value option = Big_map.find_opt param.key registry in
   let operation : operation = Tezos.transaction (param.key, value_at_key) 0mutez view_contract
   in ((operation :: nil_op), full_store.0)
@@ -218,37 +217,17 @@ let lookup_registry (bytes_param, full_store : bytes * full_storage) : operation
 let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : full_storage =
   let (store, config) = default_full_storage (data.base_data) in
   let new_storage = { store with
-    extra = Big_map.literal [
-      ("registry" , Bytes.pack (Map.empty : registry));
-      ("registry_affected" , Bytes.pack (Map.empty : registry_affected));
-      ("proposal_receivers" , Bytes.pack (Set.empty : proposal_receivers));
-      ("frozen_scale_value" , Bytes.pack data.frozen_scale_value);
-      ("frozen_extra_value" , Bytes.pack data.frozen_extra_value);
-      ("max_proposal_size" , Bytes.pack data.max_proposal_size);
-      ("slash_scale_value" , Bytes.pack data.slash_scale_value);
-      ("slash_division_value" , Bytes.pack data.slash_division_value);
-      ("min_xtz_amount" , Bytes.pack data.min_xtz_amount);
-      ("max_xtz_amount" , Bytes.pack data.max_xtz_amount);
-      ];
-  } in
-  let new_config = { config with
-    proposal_check = registry_DAO_proposal_check;
-    rejected_proposal_slash_value = registry_DAO_rejected_proposal_slash_value;
-    decision_lambda = registry_DAO_decision_lambda;
-    custom_entrypoints = Big_map.literal
-      [ "lookup_registry", Bytes.pack lookup_registry
-      ];
-    } in
-  (new_storage, new_config)
+    extra = default_extra
+  } in (new_storage, config)
 
 // We are not using this right now, but just leaving here in case we might want it
 // soon.
 let successful_proposal_receiver_view (full_storage : full_storage): proposal_receivers =
-  match ((Big_map.find_opt "proposal_receivers" full_storage.0.extra) : bytes option) with
-  | Some (packed_b) ->
-      begin
-        match (Bytes.unpack packed_b : proposal_receivers option) with
-        | Some r -> r
-        | None -> ((failwith unpacking_failed) : proposal_receivers)
-      end
-  | None -> (failwith "'proposal_receivers' key not found" : proposal_receivers)
+  full_storage.0.extra.proposal_receivers
+
+let custom_ep (custom_ep_param, storage, config : custom_ep_param * storage * config): operation list * storage
+  = match custom_ep_param with
+  | Lookup_registry p -> lookup_registry(p, (storage, config))
+  | _ -> (([]: operation list), storage)
+
+#endif

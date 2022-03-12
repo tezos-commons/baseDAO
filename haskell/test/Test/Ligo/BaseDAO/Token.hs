@@ -22,14 +22,14 @@ import Test.Ligo.BaseDAO.Common
 test_BaseDAO_Token :: TestTree
 test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   [ testScenario "can call transfer tokens entrypoint" $ scenario
-      $ transferContractTokensScenario originateLigoDao
+      $ transferContractTokensScenario (originateLigoDao @'Base)
   ,  testScenario "can transfer funds to the contract" $ scenario
-      $ ensureXtzTransfer originateLigoDao
+      $ ensureXtzTransfer (originateLigoDao @'Base)
   ]
 
 transferContractTokensScenario
   :: MonadCleveland caps base m
-  => OriginateFn m -> m ()
+  => OriginateFn 'Base m -> m ()
 transferContractTokensScenario originateFn = do
   DaoOriginateData{..} <- originateFn defaultQuorumThreshold
   let target_owner1 = genesisAddress1
@@ -63,7 +63,7 @@ transferContractTokensScenario originateFn = do
 
 ensureXtzTransfer
   :: MonadCleveland caps base m
-  => OriginateFn m -> m ()
+  => OriginateFn a m -> m ()
 ensureXtzTransfer originateFn = do
   DaoOriginateData{..} <- originateFn defaultQuorumThreshold
   sendXtz dodDao

@@ -44,12 +44,16 @@ steps:
     if: *not_scheduled
     commands:
     - nix-build ci.nix -A build-ligo -o ./ligo-out/
-    - nix run -f ci.nix morley -c morley optimize --contract ./ligo-out/baseDAO.tz --output baseDAO.tz
+    - nix run -f ci.nix morley -c morley optimize --contract ./ligo-out/trivialDAO.tz --output trivialDAO.tz
+    - nix run -f ci.nix morley -c morley optimize --contract ./ligo-out/registryDAO.tz --output registryDAO.tz
+    - nix run -f ci.nix morley -c morley optimize --contract ./ligo-out/treasuryDAO.tz --output treasuryDAO.tz
     - cp ./ligo-out/trivialDAO_storage.tz trivialDAO_storage.tz
     - cp ./ligo-out/registryDAO_storage.tz registryDAO_storage.tz
     - cp ./ligo-out/treasuryDAO_storage.tz treasuryDAO_storage.tz
     artifact_paths:
-      - baseDAO.tz
+      - trivialDAO.tz
+      - registryDAO.tz
+      - treasuryDAO.tz
       - trivialDAO_storage.tz
       - registryDAO_storage.tz
       - treasuryDAO_storage.tz
@@ -150,7 +154,9 @@ steps:
     depends_on: ligo-test
     commands:
       - mkdir assets
-      - buildkite-agent artifact download baseDAO.tz assets --step "build-ligo"
+      - buildkite-agent artifact download trivialDAO.tz assets --step "build-ligo"
+      - buildkite-agent artifact download registryDAO.tz assets --step "build-ligo"
+      - buildkite-agent artifact download treasuryDAO.tz assets --step "build-ligo"
       - buildkite-agent artifact download trivialDAO_storage.tz assets --step "build-ligo"
       - buildkite-agent artifact download treasuryDAO_storage.tz assets --step "build-ligo"
       - buildkite-agent artifact download registryDAO_storage.tz assets --step "build-ligo"

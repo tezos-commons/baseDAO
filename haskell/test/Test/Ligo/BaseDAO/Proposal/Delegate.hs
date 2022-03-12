@@ -21,14 +21,14 @@ test_UpdateDelegates :: TestTree
 test_UpdateDelegates =
   testGroup "Update_delegates:"
     [ testScenario "add/remove a delgate" $ scenario $
-        addRemoveDelegate (originateLigoDaoWithConfigDesc dynRecUnsafe)
+        addRemoveDelegate (originateLigoDaoWithConfigDesc @'Base ())
     , testScenario "update multiple delegates" $ scenario $
-        updateDelegates (originateLigoDaoWithConfigDesc dynRecUnsafe) checkIfDelegateExists
+        updateDelegates (originateLigoDaoWithConfigDesc @'Base ()) checkIfDelegateExists
     ]
 
 addRemoveDelegate
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 addRemoveDelegate originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -70,10 +70,9 @@ addRemoveDelegate originateFn = do
   withSender dodOperator1 $ call dodDao (Call @"Propose") (params 2)
     & expectFailedWith notDelegate
 
-
 updateDelegates
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> (TAddress Parameter -> Delegate -> m Bool)
   -> m ()
 updateDelegates originateFn isDelegateFn = do

@@ -12,13 +12,13 @@ MORLEY ?= morley
 OPTIMIZE ?= false
 
 # Compile code
-BUILD = $(LIGO) compile-contract --syntax cameligo
+BUILD = $(LIGO) compile contract --syntax cameligo
 
 # Compile storage
-BUILD_STORAGE = $(LIGO) compile-storage --syntax cameligo
+BUILD_STORAGE = $(LIGO) compile storage --syntax cameligo
 
 # Compile parameter
-BUILD_PARAMETER = $(LIGO) compile-parameter --syntax cameligo
+BUILD_PARAMETER = $(LIGO) compile parameter --syntax cameligo
 
 # Utility function to escape single quotes
 escape_quote = $(subst ','\'',$(1))
@@ -34,27 +34,27 @@ TS_OUT ?= typescript
 
 .PHONY: all clean test typescript
 
-all: \
-	$(OUT)/baseDAO.tz
+all: $(OUT)/trivialDAO.tz $(OUT)/registryDAO.tz $(OUT)/treasuryDAO.tz
 
 # Compile LIGO contract into its michelson representation.
-$(OUT)/baseDAO.tz: src/**
+$(OUT)/%DAO.tz: src/**
+	cp src/variants/$*/implementation.mligo src/implementation.mligo
+	cp src/variants/$*/storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	# ============== Compiling contract ============== #
-	$(BUILD) src/base_DAO.mligo base_DAO_contract --output-file $(OUT)/baseDAO.tz
+	$(BUILD) src/base_DAO.mligo -e base_DAO_contract --output-file $@
 	# ============== Compilation successful ============== #
-	# See "$(OUT)/baseDAO.tz" for compilation result #
+	# See "$@" for compilation result #
 
 	# strip the surrounding braces and indentation,
 	# note that dollar char is escaped as part of Makefile
-	sed -i '/^ *$$/d' $(OUT)/baseDAO.tz
-	sed -i 's/^[{ ] //g' $(OUT)/baseDAO.tz
-	sed -i '$$s/[}] *$$//' $(OUT)/baseDAO.tz
+	sed -i '/^ *$$/d' $@
+	sed -i 's/^[{ ] //g' $@
+	sed -i '$$s/[}] *$$//' $@
 ifeq ($(OPTIMIZE), true)
 	# ============== Optimizing contract ============== #
-	$(MORLEY) optimize --contract $(OUT)/baseDAO.tz --output $(OUT)/baseDAO.tz
+	$(MORLEY) optimize --contract $@ --output $@
 endif
-	#
 
 $(OUT)/trivialDAO_storage.tz : metadata_map = Big_map.empty
 $(OUT)/trivialDAO_storage.tz : freeze_history = []
@@ -70,9 +70,11 @@ $(OUT)/trivialDAO_storage.tz : proposal_flush_level = 36000n
 $(OUT)/trivialDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/trivialDAO_storage.tz: src/**
 	# ============== Compiling TrivialDAO storage ============== #
+	cp src/variants/trivial/implementation.mligo src/implementation.mligo
+	cp src/variants/trivial/storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/trivialDAO_storage.tz \
-      src/base_DAO.mligo base_DAO_contract "default_full_storage( \
+      src/base_DAO.mligo -e base_DAO_contract "default_full_storage( \
         { storage_data = \
           { admin = (\"$(call require_defined,admin_address)\" : address) \
           ; guardian = (\"$(call require_defined,guardian_address)\" : address) \
@@ -99,7 +101,6 @@ $(OUT)/trivialDAO_storage.tz: src/**
         })"
 	# ================= Compilation successful ================= #
 	# See "$(OUT)/trivialDAO_storage.tz" for compilation result	#
-	#
 
 $(OUT)/registryDAO_storage.tz : frozen_scale_value = 1n
 $(OUT)/registryDAO_storage.tz : frozen_extra_value = 0n
@@ -122,9 +123,11 @@ $(OUT)/registryDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/registryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
+	cp src/variants/registry/implementation.mligo src/implementation.mligo
+	cp src/variants/registry/storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz \
-      src/registryDAO.mligo base_DAO_contract "default_registry_DAO_full_storage( \
+      src/base_DAO.mligo -e base_DAO_contract "default_registry_DAO_full_storage( \
         { base_data = \
           { storage_data = \
             { admin = (\"$(call require_defined,admin_address)\" : address) \
@@ -159,7 +162,6 @@ $(OUT)/registryDAO_storage.tz: src/**
           })"
 	# ================= Compilation successful ================= #
 	# See "$(OUT)/registryDAO_storage.tz" for compilation result #
-	#
 
 $(OUT)/treasuryDAO_storage.tz : frozen_scale_value = 1n
 $(OUT)/treasuryDAO_storage.tz : frozen_extra_value = 0n
@@ -182,9 +184,11 @@ $(OUT)/treasuryDAO_storage.tz : proposal_expired_level = 47520n
 $(OUT)/treasuryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
+	cp src/variants/treasury/implementation.mligo src/implementation.mligo
+	cp src/variants/treasury/storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz \
-       src/treasuryDAO.mligo base_DAO_contract "default_treasury_DAO_full_storage( \
+       src/base_DAO.mligo -e base_DAO_contract "default_treasury_DAO_full_storage( \
         { base_data = \
           { storage_data = \
             { admin = (\"$(call require_defined,admin_address)\" : address) \
@@ -221,7 +225,6 @@ $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compilation successful ============== #
 	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
 	#
-
 # For development and testing purpose
 test-storage:
 	make $(OUT)/trivialDAO_storage.tz \
@@ -245,7 +248,7 @@ test-storage:
 		governance_token_id=0n \
 		start_level=100n
 
-haskell-resources: test-storage all
+haskell-resources: all test-storage
 	# ============== Copying resources for Haskell library ============== #
 	mkdir -p haskell/resources
 	cp $(OUT)/* haskell/resources

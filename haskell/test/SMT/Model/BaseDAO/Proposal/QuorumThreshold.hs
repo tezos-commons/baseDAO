@@ -21,7 +21,7 @@ bound minQt maxQt qt
 stageToCycle :: Natural -> Natural
 stageToCycle p = (p + 1) `div` 2
 
-calculateNewQuorumThreshold :: ModelT QuorumThreshold
+calculateNewQuorumThreshold :: ModelT cep QuorumThreshold
 calculateNewQuorumThreshold = do
   store <- getStore
   config <- getConfig
@@ -61,7 +61,7 @@ calculateNewQuorumThreshold = do
   else
     pure $ QuorumThreshold $ fromIntegral newQuorum
 
-updateQuorum :: Natural -> ModelT ()
+updateQuorum :: Natural -> ModelT cep ()
 updateQuorum currentLevel = do
   store <- getStore
   let currentCycle = stageToCycle currentLevel

@@ -14,7 +14,10 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    resources/baseDAO.tz
+    resources/registryDAO.tz
+    resources/treasuryDAO.tz
+    resources/trivialDAO.tz
+    resources/trivialDAO_storage.tz
     resources/registryDAO_storage.tz
     resources/treasuryDAO_storage.tz
 extra-doc-files:
@@ -28,6 +31,8 @@ library
   exposed-modules:
       Ligo.BaseDAO.Common.Types
       Ligo.BaseDAO.ErrorCodes
+      Ligo.BaseDAO.RegistryDAO.Types
+      Ligo.BaseDAO.TreasuryDAO.Types
       Ligo.BaseDAO.Types
       Ligo.BaseDAO.TZIP16Metadata
       Ligo.Typescript

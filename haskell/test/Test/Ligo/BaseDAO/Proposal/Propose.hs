@@ -14,7 +14,6 @@ module Test.Ligo.BaseDAO.Proposal.Propose
   , nonUniqueProposal
   , nonUniqueProposalEvenAfterDrop
   , proposerIsReturnedFeeAfterSucceeding
-  , rejectProposal
   , validProposal
   , validProposalWithFixedFee
   , unstakesTokensForMultipleVotes
@@ -53,7 +52,7 @@ type instance AsRPC FA2.TransferItem = FA2.TransferItem
 
 validProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 validProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
@@ -95,7 +94,7 @@ validProposalWithFixedFee
   => m ()
 validProposalWithFixedFee = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 42)) defaultQuorumThreshold
+    originateLigoDaoWithConfigDesc @'Base () (ConfigDesc (FixedFee 42)) defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
   let params = ProposeParams
         { ppFrozenToken = 10
@@ -126,7 +125,7 @@ proposerIsReturnedFeeAfterSucceeding
   => m ()
 proposerIsReturnedFeeAfterSucceeding = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc dynRecUnsafe
+    originateLigoDaoWithConfigDesc @'Base ()
       ((ConfigDesc $ Period 60)
       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
@@ -175,7 +174,7 @@ cannotProposeWithInsufficientTokens
   => m ()
 cannotProposeWithInsufficientTokens = do
   DaoOriginateData{..} <-
-    originateLigoDaoWithConfigDesc dynRecUnsafe (ConfigDesc (FixedFee 100)) defaultQuorumThreshold
+    originateLigoDaoWithConfigDesc @'Base () (ConfigDesc (FixedFee 100)) defaultQuorumThreshold
   let proposer = dodOwner1
 
   withSender proposer $
@@ -192,30 +191,9 @@ cannotProposeWithInsufficientTokens = do
   withSender proposer $ call dodDao (Call @"Propose") params
     & expectFailedWith notEnoughFrozenTokens
 
-rejectProposal
-  :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
-rejectProposal originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
-  let params = ProposeParams
-        { ppFrozenToken = 9
-        , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = dodOwner1
-        }
-
-  withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
-
-  -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
-  advanceToLevel (startLevel + dodPeriod)
-
-  (withSender dodOwner1 $ call dodDao (Call @"Propose") params)
-    & expectFailedWith (failProposalCheck, tooSmallXtzErrMsg)
-
 nonUniqueProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 nonUniqueProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
@@ -231,7 +209,7 @@ nonUniqueProposal originateFn = do
 
 nonUniqueProposalEvenAfterDrop
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 nonUniqueProposalEvenAfterDrop originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
   startLevel <- getOriginationLevel dodDao
@@ -248,7 +226,7 @@ nonUniqueProposalEvenAfterDrop originateFn = do
 
 nonProposalPeriodProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 nonProposalPeriodProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
@@ -273,7 +251,7 @@ burnsFeeOnFailure
   => FailureReason -> m ()
 burnsFeeOnFailure reason = do
   DaoOriginateData{..} <-
-      originateLigoDaoWithConfigDesc dynRecUnsafe
+      originateLigoDaoWithConfigDesc @'Base ()
         (   (ConfigDesc $ Period 60)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
@@ -316,14 +294,14 @@ burnsFeeOnFailure reason = do
   -- frozen), except for the fee and slash amount. The latter is zero in this
   -- case, so we expect 42 tokens to be burnt
   let expectedBurn = 42
-  checkBalance dodDao proposer (52 - expectedBurn)
+  checkBalance dodDao proposer (52 - expectedBurn - 1)
 
 unstakesTokensForMultipleVotes
   :: forall caps base m. (MonadCleveland caps base m)
   => m ()
 unstakesTokensForMultipleVotes = do
   DaoOriginateData{..} <-
-      originateLigoDaoWithConfigDesc dynRecUnsafe
+      originateLigoDaoWithConfigDesc @'Base ()
         (   (ConfigDesc $ Period 60)
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 120 })
         >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 180 })
@@ -384,7 +362,7 @@ unstakesTokensForMultipleVotes = do
 
 insufficientTokenProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 insufficientTokenProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
   let params = ProposeParams
@@ -398,7 +376,7 @@ insufficientTokenProposal originateFn = do
 
 insufficientTokenVote
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 insufficientTokenVote originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner2 $
@@ -435,7 +413,7 @@ insufficientTokenVote originateFn = do
 
 dropProposal
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m) -> m ()
+  => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 dropProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
@@ -444,7 +422,7 @@ dropProposal originateFn = withFrozenCallStack $ do
        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
       ) (mkQuorumThreshold 1 50)
 
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Base dodDao
 
   withSender dodOwner1 $
     call dodDao (Call @"Freeze") (#amount :! 30)
@@ -470,8 +448,8 @@ dropProposal originateFn = withFrozenCallStack $ do
   advanceToLevel (startLevel + 3*dodPeriod)
 
   key3 <- createSampleProposal 3 dodOwner1 dodDao
-  proposalStart2 <- getProposalStartLevel dodDao key2
-  proposalStart3 <- getProposalStartLevel dodDao key3
+  proposalStart2 <- getProposalStartLevel' @'Base dodDao key2
+  proposalStart3 <- getProposalStartLevel' @'Base dodDao key3
 
   -- `guardian` contract can drop any proposal.
   withSender dodOwner2 $ do
@@ -502,15 +480,14 @@ dropProposal originateFn = withFrozenCallStack $ do
     call dodDao (Call @"Drop_proposal") key3
       & expectFailedWith proposalNotExist
 
-  -- 30 tokens are frozen in total, but only 15 tokens are returned after drop_proposal
-  checkBalance dodDao dodOwner1 15
-
-
-
+  -- 30 tokens are frozen in total, but only 27 tokens are returned after drop_proposal
+  -- because 3 proposals are droped, buring one token for each. (trivialDOA is supposed to
+  -- burn a single token when proposal is rejected).
+  checkBalance' @'Base dodDao dodOwner1 27
 
 unstakeVote
   :: (MonadCleveland caps base m, HasCallStack)
-  => (ConfigDesc Config -> OriginateFn m)
+  => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 unstakeVote originateFn = do
   let flushLevel = 20

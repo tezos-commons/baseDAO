@@ -2,16 +2,15 @@
 
 BaseDAO is a generic smart contract on Tezos that enables a community to collectively govern resources, registries, or rules.
 
-The contract enables the creator to customize their DAO based on a number of attributes, and uses a ‘decision lambda’ to specify arbitrary code that can be governed by a DAO’s proposals.
+The contract enables the creator to customize their DAO based on a number of attributes, and uses a ‘decision callback’ to specify arbitrary code that can be governed by a DAO’s proposals.
 BaseDAO also includes Permit (TZIP-17) to enable off-chain voting.
 
 ## Documentation and configurations
 
 The [specification](docs/specification.md) document contains more details and is used as a basis for the smart contract development.
 
-BaseDAO uses a runtime configuration, which is part of the overall storage of the
-contract, meaning that DAOs with different logic and needs can be obtained by
-providing a different initial storage.
+BaseDAO uses a build time configuration to generate the required
+variant of the BaseDAO.
 
 Aside from the specification, that contains detail about the configuration as
 well, there are also the [included DAOs](#included-daos) below.

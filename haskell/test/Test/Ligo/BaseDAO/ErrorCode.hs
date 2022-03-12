@@ -35,9 +35,14 @@ test_ErrorCodes = testGroup "FA2 off-chain views"
       expiredProposal @?= 118
       emptyFlush @?= 119
       notDelegate @?= 120
-      failDecisionLambda @?= 121
-      entrypointNotFound @?= 122
+      failDecisionCallback @?= 121
       unstakeInvalidProposal @?= 123
       voterDoesNotExist @?= 124
       badState @?= 300
+      -- WARNING!!! If you have to change error codes for defined errors in
+      -- this file, you probably didn't follow the instructions in
+      -- `./scripts/generate_error_code.hs` file.
+      --
+      -- If an error is no longer defined, it should be fine to remove the error
+      -- from this test.
   ]

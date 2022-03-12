@@ -71,11 +71,8 @@
 (* The sender has not been delegated the control of the required tokens. *)
 [@inline] let not_delegate = 120n
 
-(* Executing the proposal's decision lambda results in failure. *)
-[@inline] let fail_decision_lambda = 121n
-
-(* The chosen custom entrypoint does not exist. *)
-[@inline] let entrypoint_not_found = 122n
+(* Executing the proposal's decision callback results in failure. *)
+[@inline] let fail_decision_callback = 121n
 
 (* Cannot call `unstake_vote` on the proposal that is not flushed or dropped. *)
 [@inline] let unstake_invalid_proposal = 123n

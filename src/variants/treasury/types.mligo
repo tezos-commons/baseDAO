@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: 2021 TQ Tezos
 // SPDX-License-Identifier: LicenseRef-MIT-TQ
 
-#include "../types.mligo"
-#include "../error_codes.mligo"
-
+#include "../../types.mligo"
+#include "../../error_codes.mligo"
 
 (*
  * Contract Extra
@@ -35,4 +34,3 @@ let unpack_proposal_metadata (pm: proposal_metadata) : treasury_dao_proposal_met
   match ((Bytes.unpack pm) : (treasury_dao_proposal_metadata option)) with
   | Some (v) -> v
   | None -> (failwith unpacking_proposal_metadata_failed : treasury_dao_proposal_metadata)
-

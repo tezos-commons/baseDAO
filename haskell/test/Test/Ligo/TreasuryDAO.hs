@@ -17,6 +17,7 @@ import Test.Tasty (TestTree, testGroup)
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAOTreasuryStorageLigo)
 import Ligo.BaseDAO.ErrorCodes
+import Ligo.BaseDAO.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.TreasuryDAO.Types
@@ -52,7 +53,7 @@ validProposal
   => m ()
 validProposal = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Treasury dodDao
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       Transfer_proposal $ TransferProposal
@@ -75,14 +76,14 @@ validProposal = withFrozenCallStack $ do
   withSender dodOwner1 $
     call dodDao (Call @"Propose") (ProposeParams dodOwner1 proposalSize proposalMeta)
 
-  checkBalance dodDao dodOwner1 (proposalSize)
+  checkBalance' @'Treasury dodDao dodOwner1 (proposalSize)
 
 flushTokenTransfer
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
   => m ()
 flushTokenTransfer = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Treasury dodDao
 
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
@@ -105,7 +106,7 @@ flushTokenTransfer = withFrozenCallStack $ do
   withSender dodOwner1 $ call dodDao (Call @"Propose") proposeParams
   let key1 = makeProposalKey proposeParams
 
-  checkBalance dodDao dodOwner1 proposalSize
+  checkBalance' @'Treasury dodDao dodOwner1 proposalSize
 
   let
     upvote = NoPermit VoteParam
@@ -119,19 +120,19 @@ flushTokenTransfer = withFrozenCallStack $ do
   advanceToLevel (startLevel + 2*dodPeriod)
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  proposalStart <- getProposalStartLevel dodDao key1
+  proposalStart <- getProposalStartLevel' @'Treasury dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
-  checkBalance dodDao dodOwner1 proposalSize
-  checkBalance dodDao dodOwner2 20
+  checkBalance' @'Treasury dodDao dodOwner1 proposalSize
+  checkBalance' @'Treasury dodDao dodOwner2 20
 
 flushXtzTransfer
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
   => m ()
 flushXtzTransfer = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
-  originationLevel <- getOriginationLevel dodDao
+  originationLevel <- getOriginationLevel' @'Treasury dodDao
 
   let
     proposalMeta amt = lPackValueRaw @TreasuryDaoProposalMetadata $
@@ -163,7 +164,7 @@ flushXtzTransfer = withFrozenCallStack $ do
     call dodDao (Call @"Propose") (proposeParams 3)
   let key1 = makeProposalKey (proposeParams 3)
 
-  checkBalance dodDao dodOwner1 47
+  checkBalance' @'Treasury dodDao dodOwner1 47
 
   let
     upvote = NoPermit VoteParam
@@ -177,7 +178,7 @@ flushXtzTransfer = withFrozenCallStack $ do
   advanceToLevel (originationLevel + 2*dodPeriod + 1)
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  proposalStart <- getProposalStartLevel dodDao key1
+  proposalStart <- getProposalStartLevel' @'Treasury dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
 
@@ -202,7 +203,7 @@ flushUpdateGuardian = withFrozenCallStack $ do
     call dodDao (Call @"Freeze") (#amount :! 10)
   sendXtz (TAddress $ toAddress dodDao)
   -- Advance one voting period to a proposing stage.
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Treasury dodDao
   advanceToLevel (startLevel + dodPeriod)
 
   withSender dodOwner1 $
@@ -221,10 +222,10 @@ flushUpdateGuardian = withFrozenCallStack $ do
   advanceToLevel (startLevel + 2*dodPeriod)
   withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
   -- Advance one voting period to a proposing stage.
-  proposalStart <- getProposalStartLevel dodDao key1
+  proposalStart <- getProposalStartLevel' @'Treasury dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod + 1)
   withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  checkGuardian dodDao dodOwner2
+  checkGuardian' @'Treasury dodDao dodOwner2
 
 flushUpdateContractDelegate
   :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
@@ -247,7 +248,7 @@ flushUpdateContractDelegate = withFrozenCallStack $ do
         call dodDao (Call @"Freeze") (#amount :! 10)
       sendXtz (TAddress $ toAddress dodDao)
       -- Advance one voting period to a proposing stage.
-      startLevel <- getOriginationLevel dodDao
+      startLevel <- getOriginationLevel' @'Treasury dodDao
       advanceToLevel (startLevel + dodPeriod)
 
       withSender dodOwner1 $
@@ -266,7 +267,7 @@ flushUpdateContractDelegate = withFrozenCallStack $ do
       advanceToLevel (startLevel + 2*dodPeriod)
       withSender dodOwner2 $ call dodDao (Call @"Vote") [upvote]
       -- Advance one voting period to a proposing stage.
-      proposalStart <- getProposalStartLevel dodDao key1
+      proposalStart <- getProposalStartLevel' @'Treasury dodDao key1
       advanceToLevel (proposalStart + 2*dodPeriod + 1)
       withSender dodAdmin $ call dodDao (Call @"Flush") 100
       getDelegate dodDao @@== (Just delegate)
@@ -278,10 +279,10 @@ proposalCheckFailZeroMutez
 proposalCheckFailZeroMutez = withFrozenCallStack do
   DaoOriginateData{..} <-
     originateTreasuryDao
-      (\store -> setExtra @Natural [mt|min_xtz_amount|] 0 store)
+      (\store -> setExtra (\te -> te { teMinXtzAmount = 0 }) store)
       defaultQuorumThreshold
 
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Treasury dodDao
 
   let
     proposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
@@ -308,7 +309,7 @@ proposalCheckBiggerThanMaxProposalSize
 proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
   DaoOriginateData{..} <-
     originateTreasuryDao id defaultQuorumThreshold
-  startLevel <- getOriginationLevel dodDao
+  startLevel <- getOriginationLevel' @'Treasury dodDao
   let
     largeProposalMeta = lPackValueRaw @TreasuryDaoProposalMetadata $
       Transfer_proposal $ TransferProposal 1 $
@@ -353,21 +354,21 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
 
 originateTreasuryDao
  :: forall caps base m. (MonadCleveland caps base m)
- => (FullStorage -> FullStorage)
- -> OriginateFn m
+ => (TreasuryFullStorage -> TreasuryFullStorage)
+ -> OriginateFn 'Treasury m
 originateTreasuryDao modifyStorageFn =
   let fs = baseDAOTreasuryStorageLigo
-      FullStorage{..} = fs
-        & setExtra @Natural [mt|frozen_scale_value|] 1
-        & setExtra @Natural [mt|frozen_extra_value|] 0
-        & setExtra @Natural [mt|slash_scale_value|] 1
-        & setExtra @Natural [mt|slash_division_value|] 1
-        & setExtra @Natural [mt|max_proposal_size|] 1000
-        & setExtra @Natural [mt|min_xtz_amount|] 2
-        & setExtra @Natural [mt|max_xtz_amount|] 5
+      FullStorageSkeleton {..} = fs
+        & setExtra (\te -> te { teFrozenScaleValue = 1 })
+        & setExtra (\te -> te { teFrozenExtraValue = 0 })
+        & setExtra (\te -> te { teSlashScaleValue = 1 })
+        & setExtra (\te -> te { teSlashDivisionValue = 1 })
+        & setExtra (\te -> te { teMaxProposalSize = 1000 })
+        & setExtra (\te -> te { teMinXtzAmount = 2 })
+        & setExtra (\te -> te { teMaxXtzAmount = 5 })
         & modifyStorageFn
 
-  in originateLigoDaoWithConfig (sExtra fsStorage)
+  in originateLigoDaoWithConfig @'Treasury (sExtra fsStorage)
       (fsConfig
         { cMinQuorumThreshold = fromIntegral $ mkQuorumThreshold 1 100
         , cPeriod = 10

@@ -17,7 +17,6 @@ module SMT.Model.BaseDAO.Types
   , modifyStore
   , execOperation
 
-  , ContractType (..)
   , ModelCall (..)
   , ModelSource (..)
   , ModelError (..)
@@ -40,13 +39,13 @@ import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.ErrorCodes
 
 -- | Transformer used in haskell implementation of BaseDAO
-newtype ModelT a = ModelT
-  { unModelT :: (ExceptT ModelError $ State ModelState) a
-  } deriving newtype (Functor, Applicative, Monad, MonadState ModelState, MonadError ModelError)
+newtype ModelT var a = ModelT
+  { unModelT :: (ExceptT ModelError $ State (ModelState var)) a
+  } deriving newtype (Functor, Applicative, Monad, MonadState (ModelState var), MonadError ModelError)
 
 -- | A type that keep track of blockchain state
-data ModelState = ModelState
-  { msFullStorage :: FullStorage
+data ModelState var = ModelState
+  { msFullStorage :: FullStorageSkeleton (VariantToExtra var)
   , msMutez :: Mutez
   -- ^ Dao balance
 
@@ -58,23 +57,26 @@ data ModelState = ModelState
   -- ^ Keep track of originated contract in the blockchain.
   -- See `SimpleContractType` for detail.
 
-  , msProposalCheck :: (ProposeParams, ContractExtra) -> ModelT ()
-  , msRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
-  , msDecisionLambda :: DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
-  , msCustomEps :: Map MText (ByteString -> ModelT ())
-  } deriving stock (Generic, Show)
+  , msProposalCheck :: (ProposeParams, VariantToExtra var) -> ModelT var ()
+  , msRejectedProposalSlashValue :: (Proposal, VariantToExtra var) -> ModelT var Natural
+  , msDecisionCallback :: DecisionCallbackInput' (VariantToExtra var) -> ModelT var ([SimpleOperation], VariantToExtra var, Maybe Address)
+  , msCustomEps :: VariantToParam var -> ModelT var ()
+  } deriving stock (Generic)
 
 -- Needed by `forall`
-instance Show ((ProposeParams, ContractExtra) -> ModelT ()) where
-  show _ = "<msProposalCheck>"
-instance Show ((Proposal, ContractExtra) -> ModelT Natural) where
-  show _ = "<msRejectedProposalSlashValue>"
-instance Show (DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)) where
-  show _ = "<msDecisionLambda>"
-instance Show (ByteString -> ModelT ()) where
-  show _ = "<customEps>"
+--
+deriving stock instance Show (VariantToExtra var) => Show (ModelState var)
 
-runModelT :: ModelT a -> ModelState -> (Either ModelError ModelState)
+instance Show ((ProposeParams, a) -> ModelT var ()) where
+  show _ = "<callback>"
+instance Show ((Proposal, a) -> ModelT cep Natural) where
+  show _ = "<msRejectedProposalSlashValue>"
+instance Show (DecisionCallbackInput' b -> ModelT var ([SimpleOperation], a, Maybe Address)) where
+  show _ = "<msDecisionCallback>"
+instance {-# INCOHERENT #-} Show (a -> ModelT var ()) where
+  show _ = "<callback>"
+
+runModelT :: ModelT cep a -> ModelState cep -> (Either ModelError (ModelState cep))
 runModelT (ModelT model) initState =
   runExceptT model
     & (`runState` initState)
@@ -83,7 +85,7 @@ runModelT (ModelT model) initState =
           Right _ -> Right updatedMs
       )
 
-execOperation :: SimpleOperation -> ModelT ()
+execOperation :: SimpleOperation -> ModelT cep ()
 execOperation op = do
   contracts <- get <&> msContracts
 
@@ -117,16 +119,16 @@ execOperation op = do
 
   modify $ \ms -> ms { msContracts = updatedContracts, msMutez = newBal }
 
-getStore :: ModelT Storage
+getStore :: ModelT var (StorageSkeleton (VariantToExtra var))
 getStore = get <&> msFullStorage <&> fsStorage
 
-getConfig :: ModelT Config
+getConfig :: ModelT cep Config
 getConfig = get <&> msFullStorage <&> fsConfig
 
-modifyStore :: (Storage -> ModelT Storage) -> ModelT ()
+modifyStore :: (StorageSkeleton (VariantToExtra var) -> ModelT var (StorageSkeleton (VariantToExtra var))) -> ModelT var ()
 modifyStore f = do
-  ms <- get
-  updatedStorage <- f (ms & msFullStorage & fsStorage)
+  ms :: ModelState var <- get
+  updatedStorage :: StorageSkeleton (VariantToExtra var) <- f (fsStorage $ msFullStorage $ ms)
   put $ ms
     { msFullStorage = (ms & msFullStorage)
         { fsStorage = updatedStorage }
@@ -171,16 +173,18 @@ instance Buildable OtherContract where
   build = genericF
 
 -- | Definition of an entrypoint call to emulate in the SMTs
-data ModelCall = ModelCall
+data ModelCall var = ModelCall
   { mcAdvanceLevel :: Maybe Natural -- Advance level before calling the entrypoint
-  , mcParameter :: Parameter
+  , mcParameter :: Parameter' (VariantToParam var)
   , mcSource :: ModelSource
-  } deriving stock (Eq, Show, Generic)
+  } deriving stock (Generic)
+
+deriving stock instance Show (VariantToParam var) => Show (ModelCall var)
 
 instance Buildable ContractHash where
   build = genericF
 
-instance Buildable ModelCall where
+instance Buildable (Parameter' (VariantToParam var)) => Buildable (ModelCall var) where
   build = genericF
 
 -- | Definition of an @source@ and @sender@ for a call to emulate in the SMTs
@@ -191,14 +195,6 @@ data ModelSource = ModelSource
 
 instance Buildable ModelSource where
   build = genericF
-
--- | We need this type since we need to do certain things for specific dao
--- Ex. `CallCustom`, Needed to `sendXtz` for treasury/registry dao
-data ContractType
-  = BaseDaoContract
-  | RegistryDaoContract
-  | TreasuryDaoContract
-  deriving stock Eq
 
 -- | The possible contract errors for the models
 data ModelError
@@ -215,10 +211,7 @@ data ModelError
   | NOT_ADMIN
   | NOT_PENDING_ADMIN
   | BAD_TOKEN_CONTRACT
-  | ENTRYPOINT_NOT_FOUND
-  | UNPACKING_FAILED
   | FAIL_PROPOSAL_CHECK
-  | MISSING_VALUE
   | UNSTAKE_INVALID_PROPOSAL
   | VOTER_DOES_NOT_EXIST
   deriving stock (Generic, Eq, Show)
@@ -244,8 +237,6 @@ contractErrorToModelError errorCode
   | (errorCode == toInteger notAdmin) = NOT_ADMIN
   | (errorCode == toInteger notPendingAdmin) = NOT_PENDING_ADMIN
   | (errorCode == toInteger badTokenContract) = BAD_TOKEN_CONTRACT
-  | (errorCode == toInteger entrypointNotFound) = ENTRYPOINT_NOT_FOUND
-  | (errorCode == toInteger unpackingFailed) = UNPACKING_FAILED
   | (errorCode == toInteger failProposalCheck) = FAIL_PROPOSAL_CHECK
   | (errorCode == toInteger unstakeInvalidProposal) = UNSTAKE_INVALID_PROPOSAL
   | (errorCode == toInteger voterDoesNotExist) = VOTER_DOES_NOT_EXIST

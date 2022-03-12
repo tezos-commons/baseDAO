@@ -37,8 +37,7 @@ Here is a summary of all the error codes thrown by the contract.
 | 118 | `expired_proposal` | The proposal has expired and can no longer be flushed. |
 | 119 | `empty_flush` | There are no available proposals to flush. |
 | 120 | `not_delegate` | The sender has not been delegated the control of the required tokens. |
-| 121 | `fail_decision_lambda` | Executing the proposal's decision lambda results in failure. |
-| 122 | `entrypoint_not_found` | The chosen custom entrypoint does not exist. |
+| 121 | `fail_decision_callback` | Executing the proposal's decision callback results in failure. |
 | 123 | `unstake_invalid_proposal` | Cannot call `unstake_vote` on the proposal that is not flushed or dropped. |
 | 124 | `voter_does_not_exist` | The sender did not vote on the proposal or already unstaked tokens from the proposal. |
 

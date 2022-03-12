@@ -17,7 +17,7 @@ import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
 
-makeTransferOnToken :: FA2.TransferParams -> Address -> ModelT ()
+makeTransferOnToken :: FA2.TransferParams -> Address -> ModelT cep ()
 makeTransferOnToken params addr = do
   ms <- get
   case Map.lookup addr (ms & msContracts) of
@@ -25,7 +25,7 @@ makeTransferOnToken params addr = do
     _ -> throwError BAD_TOKEN_CONTRACT
   execOperation $ FA2TransferOperation addr params (toMutez 0)
 
-applyTransferContractTokens :: ModelSource -> TransferContractTokensParam -> ModelT ()
+applyTransferContractTokens :: ModelSource -> TransferContractTokensParam -> ModelT cep ()
 applyTransferContractTokens mso param = do
 
   store <- getStore

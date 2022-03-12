@@ -14,24 +14,22 @@ import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
-import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Hedgehog.Gen.Michelson (genMText)
 import Hedgehog.Gen.Tezos.Address (genAddress)
 import Lorentz hiding (and, div, now, (>>))
-import Morley.Michelson.Text (unsafeMkMText)
 import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAORegistryStorageLigo)
+import Ligo.BaseDAO.RegistryDAO.Types
 import Ligo.BaseDAO.Types
 import SMT.Common.Gen
 import SMT.Common.Helper
 import SMT.Common.Run
 import SMT.Common.Types
 import SMT.Model.BaseDAO.Types
-import Test.Ligo.BaseDAO.Common (makeProposalKey, metadataSize)
+import Test.Ligo.BaseDAO.Common (ContractType(..), makeProposalKey, metadataSize)
 import Test.Ligo.RegistryDAO.Types
-
 
 hprop_RegistryDaoSMT :: Property
 hprop_RegistryDaoSMT =
@@ -45,44 +43,45 @@ hprop_RegistryDaoSMT =
 
       , soProposalCheck = registryDaoProposalCheck
       , soRejectedProposalSlashValue = registryDaoRejectedProposalSlashValue
-      , soDecisionLambda = registryDaoDecisionLambda
-      , soCustomEps = Map.fromList
-          [ ( unsafeMkMText "lookup_registry", lookupRegistryEntrypoint)
-          ]
+      , soDecisionCallback = registryDaoDecisionCallback
+      , soCustomEps = \case
+          Lookup_registry p -> lookupRegistryEntrypoint p
+          _ -> pass
       }
   in
     withTests 30 $ property $ do
-      runBaseDaoSMT option
+      runBaseDaoSMT @'Registry option
 
-addRegistryDaoConfig :: ("registryFs" :! FullStorage) -> FullStorage -> FullStorage
+addRegistryDaoConfig :: ("registryFs" :! RegistryFullStorage) -> RegistryFullStorage -> RegistryFullStorage
 addRegistryDaoConfig (Arg registryFs) fs =
-  let registryStore = registryFs & fsStorage
-      registryConfig = registryFs & fsConfig
+  let registryStore = fsStorage registryFs
   in fs
-      { fsStorage = (fs & fsStorage)
-          { sExtra = registryStore & sExtra
+      { fsStorage = (fsStorage fs)
+          { sExtra = (sExtra registryStore)
+              { reFrozenScaleValue = 1
+              , reFrozenExtraValue = 0
+              , reMaxProposalSize = 100
+              , reSlashScaleValue = 1
+              , reSlashDivisionValue = 1
+              , reMinXtzAmount = 0
+              , reMaxXtzAmount = 100
+              }
           }
-      , fsConfig = (fs & fsConfig)
-          { cProposalCheck = registryConfig & cProposalCheck
-          , cRejectedProposalSlashValue = registryConfig & cRejectedProposalSlashValue
-          , cDecisionLambda = registryConfig & cDecisionLambda
-          , cCustomEntrypoints = registryConfig & cCustomEntrypoints
-          }
+      , fsConfig = (fsConfig fs)
       }
-
 
 -------------------------------------------------------------------------------
 -- Lambdas
 -------------------------------------------------------------------------------
 
-registryDaoProposalCheck :: (ProposeParams, ContractExtra) -> ModelT ()
+registryDaoProposalCheck :: (ProposeParams, VariantToExtra 'Registry) -> ModelT 'Registry ()
 registryDaoProposalCheck (params, extras) = do
   let proposalSize = metadataSize (params & ppProposalMetadata)
-      frozenScaleValue = unpackWithError @Natural $ findBigMap "frozen_scale_value" extras
-      frozenExtraValue = unpackWithError @Natural $ findBigMap "frozen_extra_value" extras
-      maxProposalSize = unpackWithError @Natural $ findBigMap "max_proposal_size" extras
-      minXtzAmount = unpackWithError @Mutez $ findBigMap "min_xtz_amount" extras
-      maxXtzAmount = unpackWithError @Mutez $ findBigMap "max_xtz_amount" extras
+      frozenScaleValue = reFrozenScaleValue extras
+      frozenExtraValue = reFrozenExtraValue extras
+      maxProposalSize = reMaxProposalSize extras
+      minXtzAmount = reMinXtzAmount extras
+      maxXtzAmount = reMaxXtzAmount extras
       requiredTokenLock = frozenScaleValue * proposalSize + frozenExtraValue
 
   when
@@ -112,15 +111,15 @@ registryDaoProposalCheck (params, extras) = do
     Update_guardian _ -> pure ()
     Update_contract_delegate _ -> pure ()
 
-registryDaoRejectedProposalSlashValue :: (Proposal, ContractExtra) -> ModelT Natural
+registryDaoRejectedProposalSlashValue :: (Proposal, VariantToExtra 'Registry) -> ModelT 'Registry Natural
 registryDaoRejectedProposalSlashValue (p, extras) = do
-  let slashScaleValue = unpackWithError @Natural $ findBigMap "slash_scale_value" extras
-      slashDivisionValue = unpackWithError @Natural $ findBigMap "slash_division_value" extras
+  let slashScaleValue = reSlashScaleValue extras
+      slashDivisionValue = reSlashDivisionValue extras
 
   pure $ (slashScaleValue * (p & plProposerFrozenToken) `div` slashDivisionValue)
 
-registryDaoDecisionLambda :: DecisionLambdaInput -> ModelT ([SimpleOperation], ContractExtra, Maybe Address)
-registryDaoDecisionLambda DecisionLambdaInput{..} = do
+registryDaoDecisionCallback :: DecisionCallbackInput' (VariantToExtra 'Registry) -> ModelT cep ([SimpleOperation], VariantToExtra 'Registry, Maybe Address)
+registryDaoDecisionCallback DecisionCallbackInput' {..} = do
   let metadata = (diProposal & plMetadata)
         & lUnpackValueRaw @RegistryDaoProposalMetadata
         & fromRight (error "UNPACKING_PROPOSAL_METADATA_FAILED")
@@ -129,36 +128,35 @@ registryDaoDecisionLambda DecisionLambdaInput{..} = do
 
   case metadata of
     Update_receivers_proposal urp -> do
-      let currentSet = unpackWithError @(Set Address) $ findBigMap "proposal_receivers" diExtra
+      let currentSet = reProposalReceivers diExtra
           updatedReceivers = case urp of
             Add_receivers receivers ->
               foldl' (\cSet addr -> Set.insert addr cSet) currentSet receivers
             Remove_receivers receivers ->
               foldl' (\cSet addr -> Set.delete addr cSet) currentSet receivers
-          newExtra = Map.insert "proposal_receivers" (lPackValueRaw @(Set Address) updatedReceivers) (bmMap $ unDynamic diExtra)
-      pure ([], DynamicRec' $ BigMap Nothing $ newExtra, Nothing)
+          newExtra = diExtra { reProposalReceivers = updatedReceivers }
+      pure ([], newExtra, Nothing)
     Configuration_proposal cp -> do
-      let newExtras = (bmMap $ unDynamic diExtra)
+      let newExtras = diExtra
             & (\ce -> case (cp & cpFrozenScaleValue) of
-                  Just val -> Map.insert "frozen_scale_value" (lPackValueRaw @Natural val) ce
+                  Just val -> ce { reFrozenScaleValue = val }
                   Nothing -> ce)
             & (\ce -> case (cp & cpFrozenExtraValue) of
-                  Just val -> Map.insert "frozen_extra_value" (lPackValueRaw @Natural val) ce
+                  Just val -> ce { reFrozenExtraValue = val }
                   Nothing -> ce)
             & (\ce -> case (cp & cpMaxProposalSize) of
-                  Just val -> Map.insert "max_proposal_size" (lPackValueRaw @Natural val) ce
+                  Just val -> ce { reMaxProposalSize = val }
                   Nothing -> ce)
             & (\ce -> case (cp & cpSlashScaleValue) of
-                  Just val -> Map.insert "slash_scale_value" (lPackValueRaw @Natural val) ce
+                  Just val -> ce { reSlashScaleValue = val }
                   Nothing -> ce)
             & (\ce -> case (cp & cpSlashDivisionValue) of
-                  Just val -> Map.insert "slash_division_value" (lPackValueRaw @Natural val) ce
+                  Just val -> ce { reSlashDivisionValue = val }
                   Nothing -> ce)
-      pure $ ([], DynamicRec' $ BigMap Nothing $ newExtras, Nothing)
+      pure $ ([], newExtras, Nothing)
     Transfer_proposal tp -> do
-      let extras = diExtra
-            & applyDiff (tp & tpRegistryDiff)
-            & applyDiffAffected proposalKey (tp & tpRegistryDiff)
+      let extras =
+            applyDiffAffected proposalKey (tp & tpRegistryDiff) $ applyDiff (tp & tpRegistryDiff) $ diExtra
 
       let ops = foldl' handleTransfer [] (tp & tpTransfers)
       pure $ (ops, extras, Nothing)
@@ -167,11 +165,10 @@ registryDaoDecisionLambda DecisionLambdaInput{..} = do
     Update_contract_delegate _ ->
       pure $ ([], diExtra, Nothing)
 
-applyDiffAffected :: ProposalKey -> [(MText, Maybe MText)] -> ContractExtra -> ContractExtra
+applyDiffAffected :: ProposalKey -> [(MText, Maybe MText)] -> (VariantToExtra 'Registry) -> (VariantToExtra 'Registry)
 applyDiffAffected proposalKey diffs ce =
-  let registryAff = applyDiffRegistryAffected proposalKey diffs $ unpackWithError @(Map MText ProposalKey) $ findBigMap "registry_affected" ce
-  in DynamicRec' $ BigMap Nothing $
-      Map.insert "registry_affected" (lPackValueRaw @(Map MText ProposalKey) registryAff) (bmMap $ unDynamic ce)
+  let registryAff = applyDiffRegistryAffected proposalKey diffs $ reRegistryAffected ce
+  in  ce { reRegistryAffected = registryAff }
 
 applyDiffRegistryAffected :: ProposalKey -> [(MText, Maybe MText)] -> Map MText ProposalKey -> Map MText ProposalKey
 applyDiffRegistryAffected proposalKey diffs registryAff =
@@ -181,11 +178,10 @@ applyDiffRegistryAffected proposalKey diffs registryAff =
     ) registryAff diffs
 
 
-applyDiff :: [(MText, Maybe MText)] -> ContractExtra -> ContractExtra
+applyDiff :: [(MText, Maybe MText)] -> (VariantToExtra 'Registry) -> (VariantToExtra 'Registry)
 applyDiff diffs ce =
-  let newRegistry = applyDiffRegistry diffs $ unpackWithError @(Map MText MText) $ findBigMap "registry" ce
-  in DynamicRec' $ BigMap Nothing $
-      Map.insert "registry" (lPackValueRaw @(Map MText MText) newRegistry) (bmMap $ unDynamic ce)
+  let newRegistry = applyDiffRegistry diffs $ reRegistry ce
+  in ce { reRegistry =  newRegistry }
 
 applyDiffRegistry :: [(MText, Maybe MText)] -> Map MText MText -> Map MText MText
 applyDiffRegistry diffs registry =
@@ -200,32 +196,20 @@ applyDiffRegistry diffs registry =
 -- Custom entrypoints
 -------------------------------------------------------------------------------
 
-lookupRegistryEntrypoint :: ByteString -> ModelT ()
-lookupRegistryEntrypoint packedParam  = do
-  store <- getStore
-  let (unpackVal :: Either ModelError (MText, Address, Map MText MText)) = do
-        (key, addr) <- first (const UNPACKING_FAILED) $ lUnpackValueRaw @LookupRegistryParam packedParam
-
-        packedRegistry <- case Map.lookup "registry" (store & sExtra & unDynamic & bmMap) of
-          Just val -> Right val
-          Nothing -> Left MISSING_VALUE
-        registry <- first (const UNPACKING_FAILED) $ lUnpackValueRaw @(Map MText MText) packedRegistry
-        Right (key, addr, registry)
-  case unpackVal of
-    Right (key, addr, registry) -> do
-      let val = Map.lookup key registry
-      let consumerParam :: (MText, (Maybe MText)) = (key, val)
-
-      execOperation $ OtherOperation addr (show consumerParam) (toMutez 0)
-
-    Left err -> throwError err
+lookupRegistryEntrypoint :: LookupRegistryParam -> ModelT 'Registry ()
+lookupRegistryEntrypoint (LookupRegistryParam key addr)  = do
+  store <- getStore @'Registry
+  let registry = reRegistry $ sExtra $ store
+  let val = Map.lookup key registry
+  let consumerParam :: (MText, (Maybe MText)) = (key, val)
+  execOperation $ OtherOperation addr (show consumerParam) (toMutez 0)
 
 
 -------------------------------------------------------------------------------
 -- Gen Functions
 -------------------------------------------------------------------------------
 
-genProposeRegistryDao :: MkGenPropose
+genProposeRegistryDao :: MkGenPropose 'Registry
 genProposeRegistryDao senderInput delegate1 invalidFrom = do
   from <- Gen.element [senderInput, invalidFrom, delegate1]
   mkMetadata <- genRegistryDaoProposalMetadata
@@ -239,21 +223,22 @@ genProposeRegistryDao senderInput delegate1 invalidFrom = do
           , ppProposalMetadata = proposalMeta
           }
         proposalKey = makeProposalKey param
-    in (XtzAllowed $ Propose param, metaSize, proposalKey)
+    in (XtzAllowed $ ConcreteEp $ Propose param, metaSize, proposalKey)
 
-genCustomCallsRegistryDao :: MkGenCustomCalls
+genCustomCallsRegistryDao :: MkGenCustomCalls 'Registry
 genCustomCallsRegistryDao = do
   mkLookupRegistryParam <- genLookupRegistryParam
   pure
-    [ \ModelInputArg{..} -> ([mt|lookup_registry|], lPackValueRaw @LookupRegistryParam (mkLookupRegistryParam miaViewContractAddr))
+    [ \ModelInputArg{..} ->
+          Lookup_registry (mkLookupRegistryParam miaViewContractAddr)
     ]
 
-genLookupRegistryParam :: GeneratorT (TAddress (MText, Maybe MText) -> LookupRegistryParam)
+genLookupRegistryParam :: GeneratorT 'Registry (TAddress (MText, Maybe MText) -> LookupRegistryParam)
 genLookupRegistryParam = do
   key <- genMText
-  pure $ \viewContractAddr -> (key, (unTAddress viewContractAddr))
+  pure $ \viewContractAddr -> (LookupRegistryParam key (unTAddress viewContractAddr))
 
-genRegistryDaoProposalMetadata :: GeneratorT (Address -> Address -> RegistryDaoProposalMetadata)
+genRegistryDaoProposalMetadata :: GeneratorT 'Registry (Address -> Address -> RegistryDaoProposalMetadata)
 genRegistryDaoProposalMetadata = do
   guardAddr <- genAddress
   Gen.choice
@@ -261,7 +246,7 @@ genRegistryDaoProposalMetadata = do
     , pure $ \_ _ -> Update_guardian guardAddr
     ]
 
-genConfigProposal :: GeneratorT (Address -> Address -> RegistryDaoProposalMetadata)
+genConfigProposal :: GeneratorT 'Registry (Address -> Address -> RegistryDaoProposalMetadata)
 genConfigProposal = do
   valMaybe <- Gen.maybe $ Gen.integral (Range.constant 1 10)
   pure $ \_ _ -> Configuration_proposal $ ConfigProposal
@@ -272,7 +257,7 @@ genConfigProposal = do
     , cpMaxProposalSize = valMaybe
     }
 
-genTransferProposal :: GeneratorT (Address -> Address -> RegistryDaoProposalMetadata)
+genTransferProposal :: GeneratorT 'Registry (Address -> Address -> RegistryDaoProposalMetadata)
 genTransferProposal = do
   agoraId <- Gen.integral (Range.constant 1 10)
   registryDiff <- Gen.list (Range.linear 1 3) do
@@ -291,7 +276,7 @@ genTransferProposal = do
         , tpRegistryDiff = registryDiff
         }
 
-genUpdateReceiverParam :: GeneratorT (Address -> Address -> RegistryDaoProposalMetadata)
+genUpdateReceiverParam :: GeneratorT 'Registry (Address -> Address -> RegistryDaoProposalMetadata)
 genUpdateReceiverParam = do
   amt <- Gen.integral (Range.constant 1 5)
   updateParams <-  Gen.list (Range.linear 1 amt) genAddress

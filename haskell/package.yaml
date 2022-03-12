@@ -12,7 +12,10 @@ copyright:           2021 TQ Tezos
 extra-doc-files:
 - README.md
 extra-source-files:
-- resources/baseDAO.tz
+- resources/registryDAO.tz
+- resources/treasuryDAO.tz
+- resources/trivialDAO.tz
+- resources/trivialDAO_storage.tz
 - resources/registryDAO_storage.tz
 - resources/treasuryDAO_storage.tz
 

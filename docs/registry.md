@@ -7,18 +7,17 @@ SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 Registry DAO is a decentralized key-value storage of arbitrary data.
 It's parameterized by two types: `k` (for key) and `v` (for value).
-In UI, these `k` and `v` parameters both will be `bytes` and will be converted to application-level types externally.
-Application-level types can be stored as part of the contract's metadata as specified in TZIP-016.
+In the bundled in RegistryDAO, these `k` and `v` parameters are set as `string`s.
 
 Extra storage data:
-1. `big_map k v` is the actual key-value storage.
-2. `big_map k proposalId` for each `k` stores IDs of the proposal that affected `k` last time.
+1. `map k v` is the actual key-value storage.
+2. `map k proposalId` for each `k` stores IDs of the proposal that affected `k` last time.
 3. `set address` is the set of successful-proposal receiver contract addresses.
 
-We store these two `big_map`s separately because we want to include `proposalId` for deleted keys as well.
+We store these two `map`s separately because we want to include `proposalId` for deleted keys as well.
 Alternatively, we can merge them and store `option v` values.
 It should be treated as an implementation detail.
-There is additional data to implement configuration lambdas, it's an implementation detail as well.
+There is additional data to implement configuration callbacks, it's an implementation detail as well.
 
 Proposals can be of different type and include (`proposal_metadata`) different data:
 
@@ -46,7 +45,7 @@ registry. This includes:
 5. Proposal to update the contract delegate:
    - This proposal takes a `keyhash` `option` parameter and usees it to update the delegate address of the contract. Please note that this different from the `Update_delegate` entrypoint which updates the delegates of an account.
 
-## Configuration lambdas
+## Configuration callbacks
 
 ### Proposal check
 
@@ -70,7 +69,7 @@ When a proposal is rejected, the amount of tokens to slash is computed as
 `slash_scale_value` and `slash_division_value` are specified by the DAO creator.
 One can set them to 1 and 1 by default to always slash all staked tokens.
 
-### Decision lambda
+### Decision callback
 
 Except for the Guardian updates, It simply applies all updates from the accepted
 proposal one by one.  They are applied in the same order as specified in the
