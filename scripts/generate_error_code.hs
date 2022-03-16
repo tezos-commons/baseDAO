@@ -140,8 +140,8 @@ errorItemToLigoText ErrorItem{..} =
 
 ligoErrorsTemplate :: Text
 ligoErrorsTemplate =
-  [i|// SPDX-FileCopyrightText: 2021 TQ Tezos
-// SPDX-License-Identifier: LicenseRef-MIT-TQ
+  [i|// SPDX-FileCopyrightText: 2021 Tezos Commons
+// SPDX-License-Identifier: LicenseRef-MIT-TC
 
 // NOTE: This file should not be modified directly.
 // Use `stack scripts/generate_error_code.hs` instead.
@@ -251,8 +251,8 @@ errorItemToTzipError err@ErrorItem{eiDesc, eiCode, eiArg} =
 
 haskellErrorsTemplate :: Text
 haskellErrorsTemplate =
-  [i|-- SPDX-FileCopyrightText: 2021 TQ Tezos
--- SPDX-License-Identifier: LicenseRef-MIT-TQ
+  [i|-- SPDX-FileCopyrightText: 2021 Tezos Commons
+-- SPDX-License-Identifier: LicenseRef-MIT-TC
 
 -- NOTE: This file should not be modified directly.
 -- Use @stack scripts/generate_error_code.hs@ instead.

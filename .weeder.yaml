@@ -1,6 +1,5 @@
-# SPDX-FileCopyrightText: 2021 Tocqueville Group
-#
-# SPDX-License-Identifier: LicenseRef-MIT-TQ
+# SPDX-FileCopyrightText: 2021 Tezos Commons
+# SPDX-License-Identifier: LicenseRef-MIT-TC
 
 - message:
   - name: Redundant build-depends entry

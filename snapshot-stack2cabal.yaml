@@ -1,6 +1,5 @@
-# SPDX-FileCopyrightText: 2021 Tocqueville Group
-#
-# SPDX-License-Identifier: LicenseRef-MIT-TQ
+# SPDX-FileCopyrightText: 2021 Tezos Commons
+# SPDX-License-Identifier: LicenseRef-MIT-TC
 
 # snapshot used for ./scripts/generate-cabal-files.sh script
 name: stack2cabal-snapshot

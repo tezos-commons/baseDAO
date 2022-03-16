@@ -1,5 +1,5 @@
--- SPDX-FileCopyrightText: 2021 TQ Tezos
--- SPDX-License-Identifier: LicenseRef-MIT-TQ
+-- SPDX-FileCopyrightText: 2021 Tezos Commons
+-- SPDX-License-Identifier: LicenseRef-MIT-TC
 
 -- | `Model` refer to Haskell implementation of BaseDAO
 module SMT.Model.BaseDAO.Contract

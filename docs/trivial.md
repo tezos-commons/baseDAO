@@ -1,6 +1,6 @@
 <!--
-SPDX-FileCopyrightText: 2021 TQ Tezos
-SPDX-License-Identifier: LicenseRef-MIT-TQ
+SPDX-FileCopyrightText: 2022 Tezos Commons
+SPDX-License-Identifier: LicenseRef-MIT-TC
 -->
 
 # Trivial DAO

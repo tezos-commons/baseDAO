@@ -1,5 +1,5 @@
--- SPDX-FileCopyrightText: 2021 TQ Tezos
--- SPDX-License-Identifier: LicenseRef-MIT-TQ
+-- SPDX-FileCopyrightText: 2021 Tezos Commons
+-- SPDX-License-Identifier: LicenseRef-MIT-TC
 
 -- | Contains tests on @propose@ entrypoint logic for testing the  behaviour
 -- associated with quorum threshold and its dynamic updates.
