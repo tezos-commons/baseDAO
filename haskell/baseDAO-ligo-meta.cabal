@@ -9,7 +9,7 @@ version:        0.4.0.0
 description:    Tools and tests for the LIGO baseDAO contract.
 author:         Serokell, Tocqueville Group
 maintainer:     Serokell, Tocqueville Group
-copyright:      2021 TQ Tezos
+copyright:      2020-2021 TQ Tezos, 2021-2022 Tezos Commons
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple

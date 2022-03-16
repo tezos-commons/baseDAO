@@ -7,7 +7,7 @@ license:             MIT
 license-file:        LICENSE
 author:              Serokell, Tocqueville Group
 git:                 git@github.com:tezos-commons/baseDAO.git
-copyright:           2021 TQ Tezos
+copyright:           2020-2021 TQ Tezos, 2021-2022 Tezos Commons
 
 extra-doc-files:
 - README.md
