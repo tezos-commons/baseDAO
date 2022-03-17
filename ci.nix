@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: 2021 TQ Tezos
-# SPDX-License-Identifier: LicenseRef-MIT-TQ
+# SPDX-FileCopyrightText: 2021 Tezos Commons
+# SPDX-License-Identifier: LicenseRef-MIT-TC
 
 # This file is derived from
 # https://gitlab.com/morley-framework/morley/-/blob/99426dc89cf8c03eaeae4d62cbe67a0c008b60fc/ci.nix

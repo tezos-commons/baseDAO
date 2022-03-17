@@ -1,5 +1,5 @@
--- SPDX-FileCopyrightText: 2021 TQ Tezos
--- SPDX-License-Identifier: LicenseRef-MIT-TQ
+-- SPDX-FileCopyrightText: 2021 Tezos Commons
+-- SPDX-License-Identifier: LicenseRef-MIT-TC
 --
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 -- For all the incomplete list pattern matches in the calls to the

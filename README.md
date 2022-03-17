@@ -70,4 +70,4 @@ Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for more information.
 
 ## License
 
-[MIT License](./LICENSES/LicenseRef-MIT-TQ.txt) Copyright (c) 2021 TQ Tezos
+[MIT License](./LICENSES/LicenseRef-MIT-TC.txt) Copyright (c) 2022 Tezos Commons
