@@ -2,7 +2,9 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
 
 module Test.Ligo.BaseDAO.Plist
-  ( test_Plist
+  ( genProposalKeyList
+
+  , test_Plist
   ) where
 
 import Universum hiding (drop, swap, toList)

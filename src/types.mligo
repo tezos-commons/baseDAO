@@ -138,7 +138,13 @@ type plist_direction = bool
 let prev = false
 let next = true
 
-// Proposal Doubly Linked List
+(*
+ * Proposal Doubly Linked List
+ *
+ * Behave like `OrderedSet`.
+ * When inserting a new key, it should be ensured that the key does not exist in the list or else
+ * it will corrupt the data structure.
+ *)
 type proposal_doubly_linked_list =
   [@layout:comb]
   { first: proposal_key // First proposal_key in the list

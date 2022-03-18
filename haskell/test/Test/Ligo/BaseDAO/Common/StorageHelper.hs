@@ -9,7 +9,6 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
   , checkIfDelegateExists
   , getFreezeHistory
   , getFrozenTotalSupply
-  , getFullStorage
   , getProposal
   , getProposalStartLevel
   , getProposalStartLevel'

@@ -57,9 +57,8 @@ let plist_insert (key, plist_o : proposal_key * (proposal_doubly_linked_list opt
 let plist_delete (key, plist_o : proposal_key * proposal_doubly_linked_list option): proposal_doubly_linked_list option =
   match plist_o with
     | None ->
-        // Expect to have at least a proposal to delete it.
-        ([%Michelson ({| { FAILWITH } |} : (nat * string) -> proposal_doubly_linked_list option)]
-            (bad_state, "no proposal") : proposal_doubly_linked_list option)
+        // Do nothing in case of no proposal key.
+        plist_o
     | Some plist ->
         // Special case: there is a single key.
         if plist.first = plist.last
