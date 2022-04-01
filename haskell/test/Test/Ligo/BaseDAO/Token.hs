@@ -8,7 +8,7 @@ module Test.Ligo.BaseDAO.Token
 import Universum
 
 import Lorentz hiding (assert, (>>))
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Runtime.GState (genesisAddress1, genesisAddress2)
 import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)

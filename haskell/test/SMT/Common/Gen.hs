@@ -11,14 +11,14 @@ module SMT.Common.Gen
 import Prelude hiding (drop, swap)
 
 import Crypto.Random (drgNewSeed, seedFromInteger, withDRG)
-import qualified Data.Map as Map
-import qualified Hedgehog.Gen as Gen
+import Data.Map qualified as Map
+import Hedgehog.Gen qualified as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
-import qualified Hedgehog.Range as Range
+import Hedgehog.Range qualified as Range
 
 import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
 import Lorentz hiding (cast, concat, get, not)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Morley.Tezos.Address (Address(..), mkKeyAddress, parseContractHash)
 import Morley.Tezos.Core (dummyChainId)

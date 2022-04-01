@@ -9,7 +9,7 @@ module Ligo.BaseDAO.Common.Types
   ) where
 
 import Lorentz
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 
 import Ligo.BaseDAO.Types
 

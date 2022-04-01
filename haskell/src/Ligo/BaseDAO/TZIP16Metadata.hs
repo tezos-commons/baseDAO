@@ -14,7 +14,7 @@ module Ligo.BaseDAO.TZIP16Metadata
   , governanceTokenView
   ) where
 
-import qualified Universum as U
+import Universum qualified as U
 
 import Data.Aeson.TH (deriveJSON)
 import Data.Version (showVersion)
@@ -26,7 +26,7 @@ import Morley.Metadata.Util.Aeson (aesonOptions)
 
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
-import qualified Paths_baseDAO_ligo_meta as Paths
+import Paths_baseDAO_ligo_meta qualified as Paths
 
 -- | Piece of metadata defined by user.
 data MetadataConfig = MetadataConfig

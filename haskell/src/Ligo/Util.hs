@@ -9,7 +9,7 @@ module Ligo.Util
 import Universum
 
 import Data.FileEmbed (makeRelativeToProject)
-import qualified Data.Text.IO.Utf8 as Utf8 (readFile)
+import Data.Text.IO.Utf8 qualified as Utf8 (readFile)
 import Fmt (pretty)
 import Language.Haskell.TH (ExpQ)
 import Language.Haskell.TH.Syntax (qAddDependentFile)

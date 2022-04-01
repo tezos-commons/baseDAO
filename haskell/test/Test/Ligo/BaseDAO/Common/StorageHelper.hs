@@ -23,7 +23,8 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
 import Lorentz hiding (assert, (>>))
 import Universum
 
-import Morley.Michelson.Typed.Scope (HasNoBigMap, HasNoTicket, HasNoContract, HasNoNestedBigMaps, HasNoOp)
+import Morley.Michelson.Typed.Scope
+  (HasNoBigMap, HasNoContract, HasNoNestedBigMaps, HasNoOp, HasNoTicket)
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types

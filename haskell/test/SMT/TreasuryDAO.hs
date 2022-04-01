@@ -9,9 +9,9 @@ import Universum hiding (drop, swap)
 
 import Control.Monad.Except (throwError)
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
+import Hedgehog.Gen qualified as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
-import qualified Hedgehog.Range as Range
+import Hedgehog.Range qualified as Range
 
 import Lorentz hiding (and, div, now, (>>))
 import Morley.Util.Named

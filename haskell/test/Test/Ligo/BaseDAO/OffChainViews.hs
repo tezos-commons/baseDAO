@@ -22,7 +22,7 @@ import Test.Tasty.HUnit (testCase)
 
 import Ligo.BaseDAO.TZIP16Metadata
 import Ligo.BaseDAO.Types
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Lorentz.Contracts.Spec.TZIP16Interface
 
 offChainViewStorage :: Storage

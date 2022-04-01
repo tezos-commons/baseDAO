@@ -15,16 +15,16 @@ module Ligo.Typescript
 import Universum
 
 import Data.Char (toUpper)
-import qualified Data.Map as Map
-import qualified Data.Text as T
+import Data.Map qualified as Map
+import Data.Text qualified as T
 import Fmt (Buildable(build), blockListF', (+|), (|+))
-import qualified Fmt
+import Fmt qualified
 import System.FilePath
 
 import Lorentz.Entrypoints
 import Morley.Michelson.Typed.Annotation
 import Morley.Michelson.Typed.Entrypoints (pnNotes)
-import qualified Morley.Michelson.Untyped as U
+import Morley.Michelson.Untyped qualified as U
 import Morley.Michelson.Untyped.Annotation
 import Morley.Util.Peano
 

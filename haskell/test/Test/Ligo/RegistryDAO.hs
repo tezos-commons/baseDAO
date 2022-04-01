@@ -10,12 +10,12 @@ module Test.Ligo.RegistryDAO
 
 import Prelude
 
-import qualified Data.Map as M
-import qualified Data.Set as S
+import Data.Map qualified as M
+import Data.Set qualified as S
 import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (assert, div)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Text (mkMText)
 import Morley.Michelson.Typed (convertContract)
 import Morley.Michelson.Typed.Convert (untypeValue)
@@ -27,8 +27,8 @@ import Test.Cleveland.Lorentz (contractConsumer)
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.ErrorCodes
-import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.RegistryDAO.Types
+import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.RegistryDAO.Types
 

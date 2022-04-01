@@ -26,17 +26,17 @@ module SMT.Model.BaseDAO.Types
 import Universum hiding (show)
 
 import Control.Monad.Except (MonadError)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Fmt
 import Text.Show (show)
 
 import Lorentz hiding (cast, get, not)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Tezos.Address (ContractHash(..))
 import Morley.Tezos.Core
 
-import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.ErrorCodes
+import Ligo.BaseDAO.Types
 
 -- | Transformer used in haskell implementation of BaseDAO
 newtype ModelT var a = ModelT

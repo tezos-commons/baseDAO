@@ -17,9 +17,9 @@ import Universum
 
 import Data.Typeable (eqT, (:~:)(..))
 
-import Test.Cleveland.Lorentz (embedContract)
+import Lorentz qualified as L
 import Morley.Michelson.Typed
-import qualified Lorentz as L
+import Test.Cleveland.Lorentz (embedContract)
 
 import Ligo.BaseDAO.RegistryDAO.Types
 import Ligo.BaseDAO.TreasuryDAO.Types

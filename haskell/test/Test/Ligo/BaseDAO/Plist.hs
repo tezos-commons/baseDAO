@@ -8,12 +8,12 @@ module Test.Ligo.BaseDAO.Plist
   ) where
 
 import Universum hiding (drop, swap, toList)
-import qualified Unsafe ((!!))
+import Unsafe qualified ((!!))
 
-import qualified Data.List as DL
+import Data.List qualified as DL
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 import Test.Tasty (TestTree)
 import Test.Tasty.Hedgehog (testProperty)
 

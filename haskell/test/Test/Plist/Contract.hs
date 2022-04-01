@@ -5,9 +5,9 @@ module Test.Plist.Contract
   ( plistContractLigo
   ) where
 
-import Test.Cleveland.Lorentz (embedContract)
+import Lorentz qualified as L
 import Morley.Michelson.Typed
-import qualified Lorentz as L
+import Test.Cleveland.Lorentz (embedContract)
 
 import Test.Plist.Type
 

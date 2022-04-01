@@ -65,6 +65,7 @@ library
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       LambdaCase
       MultiParamTypeClasses
       MultiWayIf
@@ -140,6 +141,7 @@ executable baseDAO-ligo-meta
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       LambdaCase
       MultiParamTypeClasses
       MultiWayIf
@@ -248,6 +250,7 @@ test-suite baseDAO-test
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       LambdaCase
       MultiParamTypeClasses
       MultiWayIf

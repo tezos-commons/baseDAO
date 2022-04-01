@@ -10,18 +10,18 @@ import Universum
 
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.Version (showVersion)
-import qualified Options.Applicative as Opt
+import Options.Applicative qualified as Opt
 import Paths_baseDAO_ligo_meta (version)
 
 import Morley.Util.Main
 
-import Ligo.BaseDAO.Types (Parameter, Parameter')
 import Ligo.BaseDAO.RegistryDAO.Types (RegistryCustomEpParam)
+import Ligo.BaseDAO.TZIP16Metadata
 import Ligo.BaseDAO.TreasuryDAO.Types (TreasuryCustomEpParam)
+import Ligo.BaseDAO.Types (Parameter, Parameter')
 import Ligo.Typescript
 import Morley.Util.CLI
 import Morley.Util.Named
-import Ligo.BaseDAO.TZIP16Metadata
 
 main :: IO ()
 main = wrapMain $ do

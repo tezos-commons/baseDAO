@@ -6,22 +6,22 @@ module Test.Plist.Property
   ) where
 
 import Universum hiding (drop, swap)
-import qualified Unsafe ((!!))
+import Unsafe qualified ((!!))
 
-import qualified Data.List as DL
+import Data.List qualified as DL
 import Fmt (build, unlinesF)
 import Hedgehog hiding (assert)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
-import Lorentz hiding (abs, assert, and, div, not, now, (>>))
+import Lorentz hiding (abs, and, assert, div, not, now, (>>))
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Proposal.Plist
 import Test.Ligo.BaseDAO.Plist (genProposalKeyList)
-import Test.Plist.Type
 import Test.Plist.Contract
+import Test.Plist.Type
 
 
 genPlistParameter :: MonadGen m => [ProposalKey] -> [ProposalKey] -> m PlistParameter

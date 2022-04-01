@@ -15,8 +15,8 @@ module Test.Ligo.BaseDAO.Proposal.Quorum
 import Universum
 
 import Lorentz hiding (assert, div, (>>))
-import Test.Cleveland
 import Morley.Util.Named
+import Test.Cleveland
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common

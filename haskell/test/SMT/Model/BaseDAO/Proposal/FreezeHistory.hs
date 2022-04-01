@@ -12,7 +12,7 @@ module SMT.Model.BaseDAO.Proposal.FreezeHistory
 import Universum
 
 import Control.Monad.Except (throwError)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import GHC.Natural (minusNaturalMaybe)
 
 import Lorentz hiding (cast, div, fromInteger, get, not, or, take)

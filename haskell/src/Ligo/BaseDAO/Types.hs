@@ -96,9 +96,9 @@ import Fmt (Buildable, build, genericF)
 
 import Lorentz hiding (div, now)
 import Lorentz.Annotation ()
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
-import Morley.AsRPC (deriveRPC, deriveRPCWithStrategy, HasRPCRepr(..))
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
+import Lorentz.Contracts.Spec.TZIP16Interface qualified as TZIP16
+import Morley.AsRPC (HasRPCRepr(..), deriveRPC, deriveRPCWithStrategy)
 import Morley.Michelson.Typed.Annotation
 import Morley.Michelson.Typed.T (T(TUnit))
 import Morley.Michelson.Untyped.Annotation

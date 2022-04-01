@@ -8,7 +8,7 @@ module SMT.Model.BaseDAO.Permit
 import Universum
 
 import Control.Monad.Except (throwError)
-import Lorentz hiding (not, cast, checkSignature, get)
+import Lorentz hiding (cast, checkSignature, get, not)
 import Morley.Tezos.Address (mkKeyAddress)
 import Morley.Tezos.Crypto (checkSignature)
 

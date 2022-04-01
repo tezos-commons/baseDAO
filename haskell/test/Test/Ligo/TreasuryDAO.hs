@@ -8,7 +8,7 @@ module Test.Ligo.TreasuryDAO
 import Universum
 
 import Lorentz
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland

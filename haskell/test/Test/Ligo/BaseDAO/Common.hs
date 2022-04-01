@@ -35,9 +35,9 @@ module Test.Ligo.BaseDAO.Common
 
 import Universum hiding (drop, swap)
 
-import qualified Data.ByteString as BS
+import Data.ByteString qualified as BS
 import Lorentz hiding (assert, now, (>>))
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Michelson.Typed.Scope (HasNoOp)
 import Test.Cleveland

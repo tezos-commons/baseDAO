@@ -10,8 +10,8 @@ module Ligo.BaseDAO.RegistryDAO.Types
 
 import Universum hiding (fromInteger)
 
-import qualified Data.Set as S
-import qualified Data.Map as M
+import Data.Map qualified as M
+import Data.Set qualified as S
 
 import Fmt (Buildable, build, genericF)
 import Lorentz as L

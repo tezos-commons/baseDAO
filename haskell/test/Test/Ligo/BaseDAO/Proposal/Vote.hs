@@ -17,8 +17,8 @@ module Test.Ligo.BaseDAO.Proposal.Vote
 import Universum
 
 import Lorentz hiding (assert, (>>))
-import Test.Cleveland
 import Morley.Util.Named
+import Test.Cleveland
 
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types

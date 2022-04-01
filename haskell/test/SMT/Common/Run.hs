@@ -7,19 +7,20 @@ module SMT.Common.Run
 
 import Universum hiding (drop, swap)
 
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Data.Typeable (eqT, (:~:)(..))
 import Fmt (Buildable, build, pretty, unlinesF)
 import Hedgehog hiding (assert)
 
 import Lorentz hiding (assert, now, (>>))
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import qualified Morley.Micheline as MM
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
+import Morley.Micheline qualified as MM
 import Morley.Michelson.Runtime.Dummy (dummyLevel)
-import qualified Morley.Michelson.Typed as T
-import qualified Morley.Michelson.Untyped as U
+import Morley.Michelson.Typed qualified as T
+import Morley.Michelson.Untyped qualified as U
 import Test.Cleveland
-import Test.Cleveland.Internal.Abstract (ExpressionOrTypedValue(..), TransferFailure(..), TransferFailureReason(..))
+import Test.Cleveland.Internal.Abstract
+  (ExpressionOrTypedValue(..), TransferFailure(..), TransferFailureReason(..))
 import Test.Cleveland.Lorentz (contractConsumer)
 
 import Ligo.BaseDAO.Contract
