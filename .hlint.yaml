@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Serokell <https://serokell.io>
+# SPDX-FileCopyrightText: 2019 Serokell <https://serokell.io>
 #
 # SPDX-License-Identifier: Unlicense
 
@@ -6,7 +6,8 @@
 # Settings
 ###########################################################################
 
-- arguments: [-XTypeApplications, -XRecursiveDo, -XBlockArguments]
+- arguments: [-XTypeApplications, -XRecursiveDo, -XBlockArguments,
+    -XTemplateHaskell, -XQuasiQuotes]
 
 # These are just too annoying
 - ignore: { name: Redundant do }
@@ -67,3 +68,50 @@
 - warn: { lhs: either (const False) (const True), rhs: isRight }
 
 - warn: { lhs: map fst &&& map snd, rhs: unzip }
+
+- warn:
+    name: "'fromIntegral' is unsafe without type annotations."
+    lhs: Unsafe.fromIntegral x
+    rhs: Unsafe.fromIntegral @t1 @t2 x
+    note: "Use 'import Unsafe qualified (fromIntegral)'"
+- warn:
+    name: "'fromIntegral' is unsafe without TWO type annotations."
+    lhs: Unsafe.fromIntegral @t1 x
+    rhs: Unsafe.fromIntegral @t1 @t2 x
+    note: "Use 'import Unsafe qualified (fromIntegral)'"
+- warn:
+    name: "Avoid the use of '(+||)' and '(||+)'"
+    lhs: '(Fmt.+||)'
+    rhs: '(Fmt.+|)'
+    note: "The use of '(+||)' may result in outputting raw Haskell into user-facing code"
+- warn:
+    name: "Avoid the use of '(+||)' and '(||+)'"
+    lhs: '(Fmt.||+)'
+    rhs: '(Fmt.|+)'
+    note: "The use of '(||+)' may result in outputting raw Haskell into user-facing code"
+- warn:
+    name: "Avoid the use of '(||++||)'"
+    lhs: '(Fmt.||++||)'
+    rhs: '(Fmt.|++|)'
+    note: "The use of '(||++||)' may result in outputting raw Haskell into user-facing code"
+- warn:
+    name: "Avoid the use of '(||++|)'"
+    lhs: '(Fmt.||++|)'
+    rhs: '(Fmt.|++|)'
+    note: "The use of '(||++|)' may result in outputting raw Haskell into user-facing code"
+- warn:
+    name: "fromLabel needs a type annotaton/application."
+    lhs: Prelude.fromLabel Morley.Util.Named.:! x
+    rhs: Prelude.fromLabel @"label" Morley.Util.Named.:! x
+- warn:
+    name: "fromLabel needs a type annotaton/application."
+    lhs: Prelude.fromLabel Morley.Util.Named.:? x
+    rhs: Prelude.fromLabel @"label" Morley.Util.Named.:? x
+- warn:
+    name: "fromLabel needs a type annotaton/application."
+    lhs: Prelude.fromLabel Morley.Util.Named.<:!> x
+    rhs: Prelude.fromLabel @"label" Morley.Util.Named.<:!> x
+- warn:
+    name: "fromLabel needs a type annotaton/application."
+    lhs: Prelude.fromLabel Morley.Util.Named.<:?> x
+    rhs: Prelude.fromLabel @"label" Morley.Util.Named.<:?> x

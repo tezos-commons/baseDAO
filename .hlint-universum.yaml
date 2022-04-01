@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021 Serokell <https://serokell.io>
+# SPDX-FileCopyrightText: 2019 Serokell <https://serokell.io>
 #
 # SPDX-License-Identifier: Unlicense
 
@@ -283,7 +283,7 @@
 - warn: { name: "Use 'empty' from Universum"
         , lhs: Control.Applicative.empty, rhs: Universum.empty }
 - warn: { name: "Use '(<|>)' from Universum"
-        , lhs: Control.Applicative.(<|>), rhs: Universum.(<|>) }
+        , lhs: (Control.Applicative.<|>), rhs: (Universum.<|>) }
 - warn: { name: "Use 'some' from Universum"
         , lhs: Control.Applicative.some, rhs: Universum.some }
 - warn: { name: "Use 'many' from Universum"
@@ -303,7 +303,7 @@
 - warn: { name: "Use 'optional' from Universum"
         , lhs: Control.Applicative.optional, rhs: Universum.optional }
 - warn: { name: "Use '(<**>)' from Universum"
-        , lhs: Control.Applicative.(<**>), rhs: Universum.(<**>) }
+        , lhs: (Control.Applicative.<**>), rhs: (Universum.<**>) }
 
 ## Base
 - warn: { name: "Use 'xor' from Universum"
@@ -529,7 +529,7 @@
 - warn: { name: "Use 'force' from Universum"
         , lhs: Control.DeepSeq.force, rhs: Universum.force }
 - warn: { name: "Use '($!!)' from Universum"
-        , lhs: "Control.DeepSeq.($!!)", rhs: "Universum.($!!)" }
+        , lhs: "(Control.DeepSeq.$!!)", rhs: "(Universum.$!!)" }
 
 ## Exception
 - warn: { name: "Use 'Exception' from Universum"
@@ -590,7 +590,7 @@
 
 ## Functor
 - warn: { name: "Use '(&&&)' from Universum"
-        , lhs: Control.Arrow.(&&&), rhs: Universum.(&&&) }
+        , lhs: (Control.Arrow.&&&), rhs: (Universum.&&&) }
 - warn: { name: "Use 'Bifunctor' from Universum"
         , lhs: Data.Bifunctor.Bifunctor, rhs: Universum.Bifunctor }
 - warn: { name: "Use 'bimap' from Universum"
@@ -602,7 +602,7 @@
 - warn: { name: "Use 'void' from Universum"
         , lhs: Data.Functor.void, rhs: Universum.void }
 - warn: { name: "Use '($>)' from Universum"
-        , lhs: Data.Functor.($>), rhs: Universum.($>) }
+        , lhs: (Data.Functor.$>), rhs: (Universum.$>) }
 - warn: { name: "Use 'Compose' from Universum"
         , lhs: Data.Functor.Compose.Compose, rhs: Universum.Compose }
 - warn: { name: "Use 'getCompose' from Universum"
@@ -653,7 +653,7 @@
 - warn: { name: "Use 'NonEmpty' from Universum"
         , lhs: Data.List.NonEmpty.NonEmpty, rhs: Universum.NonEmpty }
 - warn: { name: "Use '(:|)' from Universum"
-        , lhs: "Data.List.NonEmpty.(:|)", rhs: "Universum.(:|)"}
+        , lhs: "(Data.List.NonEmpty.:|)", rhs: "(Universum.:|)"}
 - warn: { name: "Use 'nonEmpty' from Universum"
         , lhs: Data.List.NonEmpty.nonEmpty, rhs: Universum.nonEmpty}
 - warn: { name: "Use 'head' from Universum"
@@ -669,9 +669,9 @@
 
 ## Monad
 - warn: { name: "Use '(>=>)' from Universum"
-        , lhs: Control.Monad.(>=>), rhs: Universum.(>=>) }
+        , lhs: (Control.Monad.>=>), rhs: (Universum.>=>) }
 - warn: { name: "Use '(<=<)' from Universum"
-        , lhs: Control.Monad.(<=<), rhs: Universum.(<=<) }
+        , lhs: (Control.Monad.<=<), rhs: (Universum.<=<) }
 - warn: { name: "Use 'forever' from Universum"
         , lhs: Control.Monad.forever, rhs: Universum.forever }
 - warn: { name: "Use 'join' from Universum"
@@ -705,7 +705,7 @@
 - warn: { name: "Use 'ap' from Universum"
         , lhs: Control.Monad.ap, rhs: Universum.ap }
 - warn: { name: "Use '(<$!>)' from Universum"
-        , lhs: Control.Monad.(<$!>), rhs: Universum.(<$!>) }
+        , lhs: (Control.Monad.<$!>), rhs: (Universum.<$!>) }
 
 - warn: { name: "Use 'ExceptT' from Universum"
         , lhs: Control.Monad.Except.ExceptT, rhs: Universum.ExceptT }
@@ -872,7 +872,7 @@
 - warn: { name: "Use 'stimes' from Universum"
         , lhs: Data.Semigroup.stimes, rhs: Universum.stimes }
 - warn: { name: "Use '(<>)' from Universum"
-        , lhs: Data.Semigroup.(<>), rhs: Universum.(<>) }
+        , lhs: (Data.Semigroup.<>), rhs: (Universum.<>) }
 - warn: { name: "Use 'WrappedMonoid' from Universum"
         , lhs: Data.Semigroup.WrappedMonoid, rhs: Universum.WrappedMonoid }
 - warn: { name: "Use 'cycle1' from Universum"
@@ -948,22 +948,22 @@
 ## Unsafe
 - warn: { name: "Use 'head' from Universum.Unsafe"
         , lhs: Data.List.head, rhs: Universum.Unsafe.head
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (head)'" }
+        , note: "Use 'import Universum.Unsafe qualified as Unsafe (head)'" }
 - warn: { name: "Use 'tail' from Universum.Unsafe"
         , lhs: Data.List.tail, rhs: Universum.Unsafe.tail
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (tail)'" }
+        , note: "Use 'import Universum.Unsafe qualified as Unsafe (tail)'" }
 - warn: { name: "Use 'init' from Universum.Unsafe"
         , lhs: Data.List.init, rhs: Universum.Unsafe.init
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (init)'" }
+        , note: "Use 'import Universum.Unsafe qualified as Unsafe (init)'" }
 - warn: { name: "Use 'last' from Universum.Unsafe"
         , lhs: Data.List.last, rhs: Universum.Unsafe.last
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (last)'" }
+        , note: "Use 'import Universum.Unsafe qualified as Unsafe (last)'" }
 - warn: { name: "Use '(!!)' from Universum.Unsafe"
-        , lhs: "Data.List.(!!)", rhs: "Universum.Unsafe.(!!)"
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe ((!!))'" }
+        , lhs: "(Data.List.!!)", rhs: "(Universum.Unsafe.!!)"
+        , note: "Use 'import Universum.Unsafe qualified as Unsafe ((!!))'" }
 - warn: { name: "Use 'fromJust' from Universum.Unsafe"
         , lhs: "Data.Maybe.fromJust", rhs: "Universum.Unsafe.fromJust"
-        , note: "Use 'import qualified Universum.Unsafe as Unsafe (fromJust)'" }
+        , note: "Use 'import Universum.Unsafe qualified as Unsafe (fromJust)'" }
 
 ############################################################################
 ## Lifted functions in Universum

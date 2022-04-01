@@ -8,8 +8,8 @@ module Test.Ligo.BaseDAO.Plist
   ) where
 
 import Universum hiding (drop, swap, toList)
+import qualified Unsafe ((!!))
 
-import Data.List ((!!))
 import qualified Data.List as DL
 import Hedgehog
 import qualified Hedgehog.Gen as Gen
@@ -59,7 +59,7 @@ test_Plist =
       keyList <- forAll $ genProposalKeyList 1
 
       (i :: Int) <- forAll $ Gen.integral (Range.constant 0 (length keyList - 1))
-      let k = keyList !! i
+      let k = keyList Unsafe.!! i
 
       (k `elem` keyList) === (plistMem k $ plistFromList keyList)
 
@@ -67,7 +67,7 @@ test_Plist =
       keyList <- forAll $ genProposalKeyList 0
       keyList2 <- forAll $ genProposalKeyList 1
       (i :: Int) <- forAll $ Gen.integral (Range.constant 0 (length keyList2 - 1))
-      let k = keyList2 !! i
+      let k = keyList2 Unsafe.!! i
 
       (keyList <> [k]) === (plistToList $ plistInsert k $ plistFromList keyList)
 
@@ -75,7 +75,7 @@ test_Plist =
       keyList <- forAll $ genProposalKeyList 1
 
       (i :: Int) <- forAll $ Gen.integral (Range.constant 0 (length keyList - 1))
-      let k = keyList !! i
+      let k = keyList Unsafe.!! i
 
       (DL.delete k keyList) === (plistToList $ plistDelete k $ plistFromList keyList)
 
@@ -89,4 +89,3 @@ test_Plist =
       (plistToList pRest) === lRest
 
   ]
-

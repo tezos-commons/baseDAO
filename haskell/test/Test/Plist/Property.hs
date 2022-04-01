@@ -6,9 +6,9 @@ module Test.Plist.Property
   ) where
 
 import Universum hiding (drop, swap)
+import qualified Unsafe ((!!))
 
 import qualified Data.List as DL
-import Data.List ((!!))
 import Fmt (build, unlinesF)
 import Hedgehog hiding (assert)
 import qualified Hedgehog.Gen as Gen
@@ -29,7 +29,7 @@ genPlistParameter keyList keyList2 = do
   requireExistingKeyEps <-
     if (not $ null keyList) then do
       (i :: Int) <- Gen.integral (Range.constant 0 (length keyList - 1))
-      let k = keyList !! i
+      let k = keyList Unsafe.!! i
       pure [ Mem k
            , Delete k
            ]
@@ -38,7 +38,7 @@ genPlistParameter keyList keyList2 = do
   notRequireExistingKeyEps <-
     if (not $ null keyList2) then do
       (i2 :: Int) <- Gen.integral (Range.constant 0 (length keyList2 - 1))
-      let k2 = keyList2 !! i2
+      let k2 = keyList2 Unsafe.!! i2
       pure [ Insert k2
            , Mem k2
            , Delete k2
