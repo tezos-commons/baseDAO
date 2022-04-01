@@ -28,7 +28,7 @@ test_BaseDAO_Token = testGroup "BaseDAO non-FA2 token tests:"
   ]
 
 transferContractTokensScenario
-  :: MonadCleveland caps base m
+  :: MonadCleveland caps m
   => OriginateFn 'Base m -> m ()
 transferContractTokensScenario originateFn = do
   DaoOriginateData{..} <- originateFn defaultQuorumThreshold
@@ -62,7 +62,7 @@ transferContractTokensScenario originateFn = do
       ])) "Unexpected FA2 transfers"
 
 ensureXtzTransfer
-  :: MonadCleveland caps base m
+  :: MonadCleveland caps m
   => OriginateFn a m -> m ()
 ensureXtzTransfer originateFn = do
   DaoOriginateData{..} <- originateFn defaultQuorumThreshold

@@ -47,7 +47,7 @@ calculateThreshold mcp cp (GovernanceTotalSupply gts) staked oldQt =
     fractionToNumerator = mkQuorumThreshold
 
 checkQuorumThresholdDynamicUpdate
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkQuorumThresholdDynamicUpdate originateFn = do
@@ -93,7 +93,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkQuorumThresholdDynamicUpdateUpperBound
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
@@ -138,7 +138,7 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkQuorumThresholdDynamicUpdateLowerBound
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
@@ -183,7 +183,7 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   assert (quorumThresholdActual == quorumThresholdExpected) "Unexpected quorumThreshold after update"
 
 checkProposalSavesQuorum
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkProposalSavesQuorum originateFn = do
@@ -228,7 +228,7 @@ checkProposalSavesQuorum originateFn = do
     "BaseDAO contract did not store quorum threshold in proposal as expected"
 
 proposalIsRejectedIfNoQuorum
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => m ()
 proposalIsRejectedIfNoQuorum = do
   DaoOriginateData{..} <-
@@ -279,7 +279,7 @@ proposalIsRejectedIfNoQuorum = do
   checkBalance dao proposer 9 -- We expect 42 + 1 tokens to have burned
 
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => m ()
 proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   DaoOriginateData{..} <-
@@ -328,4 +328,3 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   withSender admin $ call dao (Call @"Flush") 100
 
   checkBalance dao proposer 52
-

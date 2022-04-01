@@ -90,7 +90,7 @@ module Ligo.BaseDAO.Types
   , next
   ) where
 
-import Universum (Enum, Integral, Num, One(..), Real, Type, div, fromIntegral, maybe, show, (*))
+import Universum (Enum, Integral, Num, One(..), Real, Type, div, fromIntegral, maybe, (*))
 
 import Fmt (Buildable, build, genericF)
 
@@ -98,7 +98,7 @@ import Lorentz hiding (div, now)
 import Lorentz.Annotation ()
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
-import Morley.Client
+import Morley.AsRPC (deriveRPC, deriveRPCWithStrategy, HasRPCRepr(..))
 import Morley.Michelson.Typed.Annotation
 import Morley.Michelson.Typed.T (T(TUnit))
 import Morley.Michelson.Untyped.Annotation
@@ -308,9 +308,6 @@ instance HasAnnotation Delegate where
 instance Buildable Delegate where
   build = genericF
 
-instance Buildable () where
-  build = build . show @Text
-
 type Delegates' big_map = big_map Delegate ()
 
 type Delegates = Delegates' BigMap
@@ -466,9 +463,6 @@ instance a `CanCastTo` SomeType
 ------------------------------------------------------------------------
 -- Storage/Parameter
 ------------------------------------------------------------------------
-
-instance Buildable (ByteString) where
-  build = build . show @Text
 
 type TransferOwnershipParam = ("newOwner" :! Address)
 
@@ -636,14 +630,22 @@ instance HasAnnotation ProposalDoublyLinkedList where
 
 deriveRPC "ProposalDoublyLinkedList"
 
-type instance AsRPC (DynamicRec s) = DynamicRecView s
-type instance AsRPC FA2.TokenId = FA2.TokenId
-type instance AsRPC GovernanceToken = GovernanceToken
-type instance AsRPC Nonce = Nonce
-type instance AsRPC QuorumThresholdAtCycle = QuorumThresholdAtCycle
-type instance AsRPC GovernanceTotalSupply = GovernanceTotalSupply
-type instance AsRPC QuorumFraction = QuorumFraction
-type instance AsRPC Period = Period
+instance HasRPCRepr (DynamicRec s) where
+  type AsRPC (DynamicRec s) = DynamicRecView s
+instance HasRPCRepr FA2.TokenId where
+  type AsRPC FA2.TokenId = FA2.TokenId
+instance HasRPCRepr GovernanceToken where
+  type AsRPC GovernanceToken = GovernanceToken
+instance HasRPCRepr Nonce where
+  type AsRPC Nonce = Nonce
+instance HasRPCRepr QuorumThresholdAtCycle where
+  type AsRPC QuorumThresholdAtCycle = QuorumThresholdAtCycle
+instance HasRPCRepr GovernanceTotalSupply where
+  type AsRPC GovernanceTotalSupply = GovernanceTotalSupply
+instance HasRPCRepr QuorumFraction where
+  type AsRPC QuorumFraction = QuorumFraction
+instance HasRPCRepr Period where
+  type AsRPC Period = Period
 
 data StorageSkeleton ce = Storage
   { sAdmin :: Address
@@ -654,7 +656,7 @@ data StorageSkeleton ce = Storage
   , sFrozenTotalSupply :: Natural
   , sGovernanceToken :: GovernanceToken
   , sGuardian :: Address
-  , sMetadata :: TZIP16.MetadataMap BigMap
+  , sMetadata :: TZIP16.MetadataMap
   , sOngoingProposalsDlist :: Maybe ProposalDoublyLinkedList
   , sPendingOwner :: Address
   , sPermitsCounter :: Nonce
@@ -696,12 +698,18 @@ instance HasFieldOfType Storage name field => StoreHasField Storage name field w
 mkStorage
   :: "admin" :! Address
   -> "extra" :! ce
-  -> "metadata" :! TZIP16.MetadataMap BigMap
+  -> "metadata" :! TZIP16.MetadataMap
   -> "level" :! Natural
   -> "tokenAddress" :! Address
   -> "quorumThreshold" :! QuorumThreshold
   -> StorageSkeleton ce
-mkStorage (N admin) (N extra) (N metadata) (N lvl) (N tokenAddress) (N qt) =
+mkStorage
+  (arg #admin -> admin)
+  (arg #extra -> extra)
+  (arg #metadata -> metadata)
+  (arg #level -> lvl)
+  (arg #tokenAddress -> tokenAddress)
+  (arg #quorumThreshold -> qt) =
   Storage
     { sAdmin = admin
     , sGuardian = admin
@@ -728,8 +736,11 @@ mkMetadataMap
   :: "metadataHostAddress" :! Address
   -> "metadataHostChain" :? TZIP16.ExtChainId
   -> "metadataKey" :! MText
-  -> TZIP16.MetadataMap BigMap
-mkMetadataMap (N hostAddress) (M hostChain) (N key) =
+  -> TZIP16.MetadataMap
+mkMetadataMap
+  (arg #metadataHostAddress -> hostAddress)
+  (argF #metadataHostChain -> hostChain)
+  (arg #metadataKey -> key) =
   TZIP16.metadataURI . TZIP16.tezosStorageUri host $ key
   where
     host = maybe
@@ -743,7 +754,8 @@ newtype FixedFee = FixedFee Natural
   deriving newtype (Num)
   deriving anyclass IsoValue
 
-type instance AsRPC FixedFee = FixedFee
+instance HasRPCRepr FixedFee where
+  type AsRPC FixedFee = FixedFee
 
 data DecisionCallbackInput' ce = DecisionCallbackInput'
   { diProposal :: Proposal
@@ -855,7 +867,7 @@ mkFullStorage
   -> "changePercent" :? Natural
   -> "governanceTotalSupply" :? GovernanceTotalSupply
   -> "extra" :! (VariantToExtra cep)
-  -> "metadata" :! TZIP16.MetadataMap BigMap
+  -> "metadata" :! TZIP16.MetadataMap
   -> "level" :! Natural
   -> "tokenAddress" :! Address
   -> FullStorageSkeleton (VariantToExtra cep)
@@ -899,4 +911,3 @@ instance ParameterHasEntrypoints (Parameter' ()) where
 
 customGeneric "VoteParam" ligoLayout
 deriving anyclass instance IsoValue VoteParam
-

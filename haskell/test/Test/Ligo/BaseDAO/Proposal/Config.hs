@@ -155,21 +155,21 @@ instance IsConfigDescExt DAO.ContractExtra DecisionCallbackAction where
     BigMap Nothing $ Map.insert [mt|decision_callback|] (lPackValueRaw lam) $ bmMap $ DAO.unDynamic c
 
 instance IsConfigDescExt DAO.Config ("changePercent" :! Natural) where
-  fillConfig (N cp) DAO.Config{..} =
+  fillConfig (arg #changePercent -> cp) DAO.Config{..} =
     DAO.Config
     { cQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
     , ..
     }
 
 instance IsConfigDescExt DAO.Config ("maxChangePercent" :! Natural) where
-  fillConfig (N cp) DAO.Config{..} =
+  fillConfig (arg #maxChangePercent -> cp) DAO.Config{..} =
     DAO.Config
     { cMaxQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
     , ..
     }
 
 instance IsConfigDescExt DAO.Config ("governanceTotalSupply" :! Natural) where
-  fillConfig (N ts) DAO.Config{..} =
+  fillConfig (arg #governanceTotalSupply -> ts) DAO.Config{..} =
     DAO.Config
     { cGovernanceTotalSupply = DAO.GovernanceTotalSupply ts
     , ..

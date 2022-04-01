@@ -8,7 +8,7 @@ module Test.Ligo.RegistryDAO
   ( test_RegistryDAO
   ) where
 
-import Universum
+import Prelude
 
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -16,7 +16,7 @@ import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (assert, div)
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Morley.Michelson.Text (unsafeMkMText)
+import Morley.Michelson.Text (mkMText)
 import Morley.Michelson.Typed (convertContract)
 import Morley.Michelson.Typed.Convert (untypeValue)
 import Morley.Tezos.Address
@@ -32,14 +32,14 @@ import Ligo.BaseDAO.RegistryDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.RegistryDAO.Types
 
-getStorageRPCRegistry :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m (FullStorageRPC' (VariantToExtra 'Registry))
+getStorageRPCRegistry :: forall p vd caps m. MonadCleveland caps m => TAddress p vd ->  m (FullStorageRPC' (VariantToExtra 'Registry))
 getStorageRPCRegistry addr = getStorage @(FullStorageSkeleton (VariantToExtra 'Registry)) (unTAddress addr)
 
 withOriginated
-  :: MonadCleveland caps base m
+  :: MonadCleveland caps m
   => Integer
   -> ([Address] -> RegistryFullStorage)
-  -> ([Address] -> RegistryFullStorage -> TAddress (Parameter' RegistryCustomEpParam) -> TAddress FA2.Parameter -> m a)
+  -> ([Address] -> RegistryFullStorage -> TAddress (Parameter' RegistryCustomEpParam) () -> TAddress FA2.Parameter () -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
@@ -96,7 +96,7 @@ test_RegistryDAO =
             -- And here we create a proposal that is bigger then 100.
             proposalMeta = lPackValueRaw @RegistryDaoProposalMetadata $
               Transfer_proposal $ TransferProposal 1 [] $
-                [(unsafeMkMText ("long_key" <> (show @_ @Int t)), Just [mt|long_value|]) | t <- [1..10]]
+                [(unsafe $ mkMText ("long_key" <> (show @_ @Int t)), Just [mt|long_value|]) | t <- [1..10]]
             proposalSize = metadataSize proposalMeta
             in withSender wallet1 $ call
                baseDao (Call @"Propose") (ProposeParams wallet1 proposalSize proposalMeta)
@@ -704,7 +704,7 @@ test_RegistryDAO =
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
             receiversSet <- (reProposalReceivers . sExtraRPC . fsStorageRPC) <$> getStorageRPCRegistry baseDao
-            assert (Universum.not (wallet1 `S.member` receiversSet))
+            assert (Prelude.not (wallet1 `S.member` receiversSet))
               "Proposal receivers was not updated as expected"
     ]
   ]
@@ -748,7 +748,7 @@ test_RegistryDAO =
       & setExtra (\re -> re { reMaxProposalSize = 100 })
 
 expectFailProposalCheck
-  :: (MonadCleveland caps base m)
+  :: (MonadCleveland caps m)
   => MText -> m a -> m ()
 expectFailProposalCheck err =
   expectFailedWith (failProposalCheck, err)

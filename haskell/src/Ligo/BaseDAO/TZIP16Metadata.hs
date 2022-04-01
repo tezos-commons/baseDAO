@@ -19,7 +19,7 @@ import qualified Universum as U
 import Data.Aeson.TH (deriveJSON)
 import Data.Version (showVersion)
 
-import Lorentz hiding (View)
+import Lorentz hiding (View_)
 import Lorentz.Contracts.Spec.TZIP16Interface
 import Morley.Metadata
 import Morley.Metadata.Util.Aeson (aesonOptions)

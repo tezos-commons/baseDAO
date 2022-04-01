@@ -37,7 +37,7 @@ offChainViewStorage =
   ! defaults
   )
   where
-    addr = unsafeParseAddress "tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE"
+    addr = [ta|tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE|]
 
 test_FA2 :: TestTree
 test_FA2 =

@@ -27,7 +27,7 @@ test_UpdateDelegates =
     ]
 
 addRemoveDelegate
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 addRemoveDelegate originateFn = do
@@ -71,9 +71,9 @@ addRemoveDelegate originateFn = do
     & expectFailedWith notDelegate
 
 updateDelegates
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
-  -> (TAddress Parameter -> Delegate -> m Bool)
+  -> (TAddress Parameter () -> Delegate -> m Bool)
   -> m ()
 updateDelegates originateFn isDelegateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold

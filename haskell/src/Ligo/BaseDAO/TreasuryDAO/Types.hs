@@ -11,7 +11,7 @@ import Universum hiding (fromInteger)
 
 import Fmt (Buildable, build, genericF)
 import Lorentz as L
-import Morley.Client
+import Morley.AsRPC
 
 import Ligo.BaseDAO.Types
 
@@ -33,12 +33,13 @@ data TreasuryExtra = TreasuryExtra
   } deriving stock (Eq)
 
 instance Default TreasuryExtra where
-  def = TreasuryExtra 1 0 1000 1 1 zeroMutez (toMutez 1)
+  def = TreasuryExtra 1 0 1000 1 1 zeroMutez [tz|1u|]
 
 instance Buildable TreasuryExtra where
   build = genericF
 
-type instance AsRPC TreasuryExtra = TreasuryExtra
+instance HasRPCRepr TreasuryExtra where
+  type AsRPC TreasuryExtra = TreasuryExtra
 
 customGeneric "TreasuryExtra" ligoLayout
 deriving anyclass instance IsoValue TreasuryExtra

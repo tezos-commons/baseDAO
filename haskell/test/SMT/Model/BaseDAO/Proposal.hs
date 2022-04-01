@@ -203,7 +203,7 @@ applyVote mso = mapM_ acceptVote
       submitVote proposal voteParam validFrom
 
 applyFreeze :: ModelSource -> FreezeParam -> ModelT cep ()
-applyFreeze mso (N param) = do
+applyFreeze mso (arg #amount -> param) = do
   let senderAddr = mso & msoSender
   let amt = param
 
@@ -250,7 +250,7 @@ unlockGovernanceTokens tokens addr = do
 
 
 applyUnfreeze :: ModelSource -> UnfreezeParam -> ModelT cep ()
-applyUnfreeze mso (N amt) = do
+applyUnfreeze mso (arg #amount -> amt) = do
   let senderAddr = mso & msoSender
 
   freezingUpdateFh senderAddr (negate $ fromIntegral amt)

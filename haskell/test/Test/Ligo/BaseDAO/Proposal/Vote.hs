@@ -28,7 +28,7 @@ import Test.Ligo.BaseDAO.Proposal.Config
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 voteNonExistingProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteNonExistingProposal originateFn = do
   DaoOriginateData{..} <-
@@ -58,7 +58,7 @@ voteNonExistingProposal originateFn = do
     & expectFailedWith proposalNotExist
 
 voteMultiProposals
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteMultiProposals originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -103,7 +103,7 @@ voteMultiProposals originateFn = do
     Nothing -> error "Did not find proposal"
 
 proposalCorrectlyTrackVotes
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 proposalCorrectlyTrackVotes originateFn = do
@@ -207,7 +207,7 @@ proposalCorrectlyTrackVotes originateFn = do
 
 
 voteOutdatedProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteOutdatedProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -243,7 +243,7 @@ voteOutdatedProposal originateFn = do
       & expectFailedWith votingStageOver
 
 voteValidProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 voteValidProposal originateFn = do
@@ -280,7 +280,7 @@ voteValidProposal originateFn = do
     Nothing -> error "Did not find proposal"
   --
 voteDeletedProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 voteDeletedProposal originateFn = do
@@ -312,7 +312,7 @@ voteDeletedProposal originateFn = do
     & expectFailedWith proposalNotExist
 
 voteWithPermit
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteWithPermit originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -341,7 +341,7 @@ voteWithPermit originateFn = do
   checkBalance dodDao dodOwner1 12
 
 voteWithPermitNonce
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteWithPermitNonce originateFn = do
 

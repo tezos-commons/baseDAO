@@ -17,7 +17,7 @@ import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
 
 applyTransferOwnership :: ModelSource -> TransferOwnershipParam -> ModelT cep ()
-applyTransferOwnership mso (N param) = do
+applyTransferOwnership mso (arg #newOwner -> param) = do
   selfAddr <- get <&> msSelfAddress
 
   modifyStore $ \s -> do

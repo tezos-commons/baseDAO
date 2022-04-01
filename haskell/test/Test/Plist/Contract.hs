@@ -13,5 +13,4 @@ import Test.Plist.Type
 
 plistContractLigo :: Contract (ToT PlistParameter) (ToT PlistStorage)
 plistContractLigo = L.toMichelsonContract
-  $$(embedContract @PlistParameter @PlistStorage "resources/plist_contract.tz")
-
+  $$(embedContract @PlistParameter @PlistStorage @() "resources/plist_contract.tz")

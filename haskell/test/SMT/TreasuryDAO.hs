@@ -101,7 +101,7 @@ treasuryDaoProposalCheck (params, extras) = do
                       Xtz_transfer_type xt ->
                            (xt & xtAmount) >= minXtzAmount
                         && (xt & xtAmount) <= maxXtzAmount
-                        && (xt & xtAmount) /= (toMutez 0)
+                        && (xt & xtAmount) /= zeroMutez
                   )
               & and
       unless isValid $

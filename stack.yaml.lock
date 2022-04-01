@@ -5,65 +5,83 @@
 
 packages:
 - completed:
-    hackage: morley-prelude-0.5.0@sha256:ae44467bdec7a2c1567b91441b2989126e5f79b5625cb725933d66547a3c3f33,2541
-    pantry-tree:
-      size: 417
-      sha256: 9056e1e523e07a3713ec1c9ac0137824d58aba6c52f0525094314ea61edfe241
-  original:
-    hackage: morley-prelude-0.5.0
-- completed:
-    hackage: morley-1.16.0@sha256:4e4ba4062fcc00e30c6d899180104637d18a971479a58355aaf0fc1d9c074002,9668
-    pantry-tree:
-      size: 10362
-      sha256: 8628e7ab0791eb7aa44567bc951d23928787a5ec191d8345e8f01b953ff6578d
-  original:
-    hackage: morley-1.16.0
-- completed:
-    hackage: lorentz-0.13.0@sha256:c335265b29a9b59076bf287ddbf8f7a55b5326b5add5667206bd77bd2b98cfef,4196
-    pantry-tree:
-      size: 3603
-      sha256: ae342fd63f6407bb5126b9faf3e068b7907714bad7d344cdfcd7b5baed77ec39
-  original:
-    hackage: lorentz-0.13.0
-- completed:
-    subdir: code/cleveland
-    name: cleveland
-    version: 0.1.0
+    subdir: code/morley
+    name: morley
+    version: 1.16.2
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 16032
-      sha256: 8755116409aa9b72b090b08e4bc779779a90e69abb5e880a526167acf40e6325
-    commit: 60a8106894929d75531f57e3e517aba9fe55f91f
+      size: 11547
+      sha256: bddc166f5a874175f041858330953abe91dd7e44c4d511e284dc68af302308bb
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
   original:
-    subdir: code/cleveland
+    subdir: code/morley
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 60a8106894929d75531f57e3e517aba9fe55f91f
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
+- completed:
+    subdir: code/morley-prelude
+    name: morley-prelude
+    version: 0.5.0
+    git: https://gitlab.com/morley-framework/morley.git
+    pantry-tree:
+      size: 778
+      sha256: 6b6f51d20254877e2118341dfc03b73ae328f81ecd9ac8d150cb913c7b92b4c7
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
+  original:
+    subdir: code/morley-prelude
+    git: https://gitlab.com/morley-framework/morley.git
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
 - completed:
     subdir: code/morley-client
     name: morley-client
     version: 0.1.0
     git: https://gitlab.com/morley-framework/morley.git
     pantry-tree:
-      size: 3603
-      sha256: 45408097cd82f5347649de7d1d70e3232888ce8fd196156d2995ed82f0dc3b96
-    commit: 60a8106894929d75531f57e3e517aba9fe55f91f
+      size: 3578
+      sha256: ca92de0cc67da2dbe40012092220cee7fe78031f65142289b79bcba14a33fc33
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
   original:
     subdir: code/morley-client
     git: https://gitlab.com/morley-framework/morley.git
-    commit: 60a8106894929d75531f57e3e517aba9fe55f91f
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
+- completed:
+    subdir: code/lorentz
+    name: lorentz
+    version: 0.13.2
+    git: https://gitlab.com/morley-framework/morley.git
+    pantry-tree:
+      size: 4139
+      sha256: 434c17a76c386713a7195ee86630990d8b3aefd47a37c904e61db11658da11aa
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
+  original:
+    subdir: code/lorentz
+    git: https://gitlab.com/morley-framework/morley.git
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
+- completed:
+    subdir: code/cleveland
+    name: cleveland
+    version: 0.1.0
+    git: https://gitlab.com/morley-framework/morley.git
+    pantry-tree:
+      size: 17962
+      sha256: cd5699887ac3f350aa65fe418aed2bbb2db58f4b46682b8eaa7807a0c66fdfce
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
+  original:
+    subdir: code/cleveland
+    git: https://gitlab.com/morley-framework/morley.git
+    commit: 146da727ff486c46b0ec9f392d955f07d797848e
 - completed:
     subdir: .
     name: indigo
     version: 0.5.0
     git: https://gitlab.com/morley-framework/indigo.git
     pantry-tree:
-      size: 14359
-      sha256: 5cf00e8cc2f9f81ea26bfe54db281fb86c40048cd30e5d63c5ee38c5db839bae
-    commit: 702b4de313d671a10d1cee78c38f6bd2e9e55c4f
+      size: 14509
+      sha256: b81b372a299745ec4959ef1d6c2b5ef61bd9d48fb42e5f38eef1c102c2aac7b2
+    commit: e879e5f282afb8d25d72d8ba132f22d3d9e628a1
   original:
     subdir: .
     git: https://gitlab.com/morley-framework/indigo.git
-    commit: 702b4de313d671a10d1cee78c38f6bd2e9e55c4f
+    commit: e879e5f282afb8d25d72d8ba132f22d3d9e628a1
 - completed:
     subdir: code/morley-ledgers
     name: morley-ledgers
@@ -71,12 +89,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley-ledgers.git
     pantry-tree:
       size: 1524
-      sha256: 90286b9f178ec6f35730b49249fd54c79eb25159ce11df6ec18c8fc2b28e9e02
-    commit: 53c772f9bbeb4fc4ae2922e96d39ef126d0e933c
+      sha256: 9690c3fa22bad0b1f31ed7092ee01a1912b300d41d4c9e16dc46b30a2a4a1b76
+    commit: b39a971f42bb113a5b3e23c9145253e27ad6e049
   original:
     subdir: code/morley-ledgers
     git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 53c772f9bbeb4fc4ae2922e96d39ef126d0e933c
+    commit: b39a971f42bb113a5b3e23c9145253e27ad6e049
 - completed:
     subdir: code/morley-metadata
     name: morley-metadata
@@ -84,12 +102,12 @@ packages:
     git: https://gitlab.com/morley-framework/morley-metadata.git
     pantry-tree:
       size: 1216
-      sha256: 5ccab2fb36c87209795055f772edb022d78a9c1fc6f70f2e1c7d3f1bbfa7c601
-    commit: 66c15c45d090f12761cf2452cf7fa4756c48072f
+      sha256: 1bde89ea8f02d8d35687afd0a4e607bba8c052e244f57d557948a395df5ca9d2
+    commit: 81b947ca1d74f3487a5b5c8e2141c37bf374f747
   original:
     subdir: code/morley-metadata
     git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 66c15c45d090f12761cf2452cf7fa4756c48072f
+    commit: 81b947ca1d74f3487a5b5c8e2141c37bf374f747
 - completed:
     name: base-noprelude
     version: 4.14.3.0
@@ -102,56 +120,19 @@ packages:
     git: https://github.com/serokell/base-noprelude.git
     commit: 1282e0b992b00089d55228a2aa9edc4a3581c319
 - completed:
-    name: galois-field
-    version: 1.0.4
-    git: https://github.com/serokell/galois-field.git
+    hackage: hex-text-0.1.0.4@sha256:0ea54d08f85324498b2db3480f05efc17eb03177c564fce81dadef53752db2c5,1277
     pantry-tree:
-      size: 4657
-      sha256: 1c5f35fa2f128d1341fffb29300ebc09f2ac463220bf76425fe12ffc2d171d48
-    commit: 576ba98ec947370835a1f308895037c7aa7f8b71
+      size: 367
+      sha256: b71a67b4c35b8f2650fc833f0a226f2ab8472ff35050f53c0df7bd0ec4da8d17
   original:
-    git: https://github.com/serokell/galois-field.git
-    commit: 576ba98ec947370835a1f308895037c7aa7f8b71
+    hackage: hex-text-0.1.0.4
 - completed:
-    name: elliptic-curve
-    version: 0.3.1
-    git: https://github.com/serokell/elliptic-curve.git
+    hackage: show-type-0.1.1@sha256:24f681a3481b3f9630e619d816054804ba1bd6cc05b5978ddd2cece8499ff2fa,1154
     pantry-tree:
-      size: 12030
-      sha256: f4f032b7ef9a23afbd65a765e3a335ec8cdd219a5dfe6ee276f72e15d644a0fd
-    commit: b8a3d0cf8f7bacfed77dc3b697f5d08bd33396a8
+      size: 214
+      sha256: c07e39492e0b8da34f87b3f7516f7739d60543013e7f22bc7db0dbe99eb57540
   original:
-    git: https://github.com/serokell/elliptic-curve.git
-    commit: b8a3d0cf8f7bacfed77dc3b697f5d08bd33396a8
-- completed:
-    name: pairing
-    version: 1.1.0
-    git: https://github.com/serokell/pairing.git
-    pantry-tree:
-      size: 8733
-      sha256: cc187e182595c780607ec09e1f01e7d85fbb901c2e04d8c6331e65851aa878c7
-    commit: cf86cf1f6b03f478a439703b050c520a9d455353
-  original:
-    git: https://github.com/serokell/pairing.git
-    commit: cf86cf1f6b03f478a439703b050c520a9d455353
-- completed:
-    name: caps
-    version: '0'
-    git: https://github.com/int-index/caps.git
-    pantry-tree:
-      size: 374
-      sha256: 3a80cb98282b5cc87b8c9907bfdf4d7185818e89901dc9b17d53caecbf21e607
-    commit: c5d61837eb358989b581ed82b1e79158c4823b1b
-  original:
-    git: https://github.com/int-index/caps.git
-    commit: c5d61837eb358989b581ed82b1e79158c4823b1b
-- completed:
-    hackage: hex-text-0.1.0.0@sha256:abda1204c93d7d2c272088876eacd1de9bb9bf9adaaaa23ed32ac232a8436252,1139
-    pantry-tree:
-      size: 314
-      sha256: 3a5b60f43c0dc4c3d5db342e23fded691065abd316af6124c8c55973367a4ef4
-  original:
-    hackage: hex-text-0.1.0.0
+    hackage: show-type-0.1.1
 - completed:
     hackage: named-0.3.0.1@sha256:2975d50c9c5d88095026ffc1303d2d9be52e5f588a8f8bcb7003a04b79f10a06,2312
     pantry-tree:
@@ -160,12 +141,96 @@ packages:
   original:
     hackage: named-0.3.0.1
 - completed:
-    hackage: show-type-0.1.1@sha256:24f681a3481b3f9630e619d816054804ba1bd6cc05b5978ddd2cece8499ff2fa,1154
+    hackage: co-log-0.4.0.1@sha256:3d4c17f37693c80d1aa2c41669bc3438fac3e89dc5f479e57d79bc3ddc4dfcc5,5087
     pantry-tree:
-      size: 214
-      sha256: c07e39492e0b8da34f87b3f7516f7739d60543013e7f22bc7db0dbe99eb57540
+      size: 1126
+      sha256: e73165ff8f744709428e2e87984c9d60ca1cec43d8455c413181c7c466e7497c
   original:
-    hackage: show-type-0.1.1
+    hackage: co-log-0.4.0.1
+- completed:
+    hackage: colourista-0.1.0.1@sha256:98353ee0e2f5d97d2148513f084c1cd37dfda03e48aa9dd7a017c9d9c0ba710e,3307
+    pantry-tree:
+      size: 571
+      sha256: aa027b21ac1ed1d446a4b20b9a1708fabed9042edf7a28ef05f3fc6278b07841
+  original:
+    hackage: colourista-0.1.0.1
+- completed:
+    hackage: ansi-terminal-0.10.3@sha256:e2fbcef5f980dc234c7ad8e2fa433b0e8109132c9e643bc40ea5608cd5697797,3226
+    pantry-tree:
+      size: 1461
+      sha256: 02f05d52be3ffcf36c78876629cbab80b63420672685371aea4fd10e1c4aabb6
+  original:
+    hackage: ansi-terminal-0.10.3
+- completed:
+    hackage: galois-field-1.0.2@sha256:1f7d31836da8553caf50682e9e0d7cb7edf2146bafb67bed1b6b68031278bbaf,4876
+    pantry-tree:
+      size: 1451
+      sha256: b0c9ff182961bc0d8972f43755fab68b0a7eed558a65872e21398698e66189aa
+  original:
+    hackage: galois-field-1.0.2
+- completed:
+    hackage: elliptic-curve-0.3.0@sha256:7d314ff56011de62370bdd1b840866d1e5ce061972e54be673f5768cbf8d3d42,7072
+    pantry-tree:
+      size: 9500
+      sha256: 650191792bfc8b119e8a0ab1103383ddfa395ed692573519c27cc3d198089cb5
+  original:
+    hackage: elliptic-curve-0.3.0
+- completed:
+    hackage: pairing-1.1.0@sha256:3082ceef0e970114202675b565bf015e01186b01c9a722b0bdfc75475fecb9ce,5270
+    pantry-tree:
+      size: 1750
+      sha256: 89348e8838bd4a34d9b9997c24cee19ac966711c36f30b5dcf0920455d0cab52
+  original:
+    hackage: pairing-1.1.0
+- completed:
+    hackage: protolude-0.2.4@sha256:ec6c01be631050f8c1b9153a782d329a52609d058cb4b461104222862f7792af,2292
+    pantry-tree:
+      size: 1438
+      sha256: f16b5dec82649b23d3530f1bbc8e4c9e7618d70706052fe8c8ac9c8d19970126
+  original:
+    hackage: protolude-0.2.4
+- completed:
+    hackage: poly-0.4.0.0@sha256:75c243113712745dab5d2f4a52643705e146473770af212f9e0ce3d87a83f2ed,2123
+    pantry-tree:
+      size: 1896
+      sha256: 06f435980848905d2bcf23b85782863b1608f7a78dbdaea42e33a2e865adf476
+  original:
+    hackage: poly-0.4.0.0
+- completed:
+    hackage: groups-0.4.1.0@sha256:019c80b002e2df85e0f047206f6ab7a409f92e8fd0b9ba8150ed4c463585b6e7,600
+    pantry-tree:
+      size: 207
+      sha256: cadf47d3d6ad9c3f5d4575c714b547388d66ae0b49f669bb62060885744c2477
+  original:
+    hackage: groups-0.4.1.0
+- completed:
+    hackage: crypto-sodium-0.0.5.0@sha256:05a6cc03c407d62a999bace5fef6ed925395cb11265675052e8f39ce6f95a6ef,5590
+    pantry-tree:
+      size: 2047
+      sha256: 77f2cd6cf5b768790ee3c099ca2711a1491e08cc01e959ff7b6fc6771af572d1
+  original:
+    hackage: crypto-sodium-0.0.5.0
+- completed:
+    hackage: NaCl-0.0.5.0@sha256:626d6e41ab736143f7ef7c5ccc9a2c7c85d166e3bdc466734404facf089fc79d,4579
+    pantry-tree:
+      size: 1659
+      sha256: f4ab97e315f3b3600b10287c1ac737e7d7e9b6f9cfa89d0178f6b57fd82eeb18
+  original:
+    hackage: NaCl-0.0.5.0
+- completed:
+    hackage: libsodium-1.0.18.2@sha256:f15b874e74e0cf33ab1343310f5392f1f33c406bec5252098d7dd6153e797fb1,1052
+    pantry-tree:
+      size: 387
+      sha256: dcb484e5255ec64013d0c7dd9c0dec62f79b094e1634d15ed142958dda90bb91
+  original:
+    hackage: libsodium-1.0.18.2
+- completed:
+    hackage: OddWord-1.0.2.0@sha256:1d7c46b2de539739ba2cb50fd5b0c7032fbe84a22f853f2e0b460d096e325569,1965
+    pantry-tree:
+      size: 476
+      sha256: 91d6f851595aed111288502134412c617e6a3ecae48f4281ca313daabf80adc9
+  original:
+    hackage: OddWord-1.0.2.0
 - completed:
     hackage: summoner-2.0.1.1@sha256:8ced26ff256e012447e2c6a49a20102511adbea605624f00a059e1e85c366719,6993
     pantry-tree:
@@ -188,96 +253,19 @@ packages:
   original:
     hackage: neat-interpolation-0.3.2.6
 - completed:
+    hackage: optparse-applicative-0.15.1.0@sha256:29ff6146aabf54d46c4c8788e8d1eadaea27c94f6d360c690c5f6c93dac4b07e,4810
+    pantry-tree:
+      size: 2904
+      sha256: 04ad3816bc580cbe0834d3d1f4729ddd386abfe31b43e5b14968885f636d1b0d
+  original:
+    hackage: optparse-applicative-0.15.1.0
+- completed:
     hackage: megaparsec-8.0.0@sha256:362f85e243ecbcb550e1de6e5c74ba5a50c09edaa1208c99bc5b9fd242227fc6,3808
     pantry-tree:
       size: 1446
       sha256: 955117c00a86970f2d0c215f33cf5293b16589c04678a0a790c03368ab6fd0aa
   original:
     hackage: megaparsec-8.0.0
-- completed:
-    hackage: tasty-1.4@sha256:6b28c0512f83255dc07cc2ef6a1fc7922076c1d9ba03a1083f3e66b672ce9388,2518
-    pantry-tree:
-      size: 1804
-      sha256: c19b7e4e10627e5102309ea3a65c9ba8ad9c1e3416f8dcc2ae6bbee9fddf1507
-  original:
-    hackage: tasty-1.4
-- completed:
-    hackage: tasty-ant-xml-1.1.8@sha256:562a52a7a61235f1a3e87ccf4476f6055d56a1dde3d044be21d661c74a79dea4,916
-    pantry-tree:
-      size: 278
-      sha256: b3d05f4eb2542fed1d66b36156f5ae8c1b5e64e42f879146ae7bc8e2daa28452
-  original:
-    hackage: tasty-ant-xml-1.1.8
-- completed:
-    hackage: fmt-0.6.3.0@sha256:2c10630e2fd36a652273973f60e72dcd52867559d0e5f4f08030ef5b5c6c4c47,5370
-    pantry-tree:
-      size: 1004
-      sha256: 19b0d53555f2789b99898d17118a3dab3cc8d7bb26ec7c9d2553331f528ef58e
-  original:
-    hackage: fmt-0.6.3.0@sha256:2c10630e2fd36a652273973f60e72dcd52867559d0e5f4f08030ef5b5c6c4c47,5370
-- completed:
-    hackage: int-cast-0.2.0.0@sha256:06820c1c5335100c5021e01314cd498e4d248582622c36d8e7203fa4341cb6d0,1668
-    pantry-tree:
-      size: 316
-      sha256: 14ac1ac61570594503174ad96e61168e55fa3f562975c028afd854656bac11d9
-  original:
-    hackage: int-cast-0.2.0.0@sha256:06820c1c5335100c5021e01314cd498e4d248582622c36d8e7203fa4341cb6d0,1668
-- completed:
-    hackage: vinyl-0.13.3@sha256:4031f1cb791185fccd2237bf412fa831363812b95987b433159520d1a511fcac,4046
-    pantry-tree:
-      size: 1811
-      sha256: cff722cef25fce568f3e6bb9320e0a43f3b14b52b47418407d3b88ad9dde6810
-  original:
-    hackage: vinyl-0.13.3@sha256:4031f1cb791185fccd2237bf412fa831363812b95987b433159520d1a511fcac,4046
-- completed:
-    hackage: formatting-7.1.3@sha256:04fcfd730dd11c961ebf921b4271d52913922d9a7e90e0353b718d581d37f38c,3426
-    pantry-tree:
-      size: 1243
-      sha256: 7623059dc9897a8656fd7ac40cf9874806ed3d9a6c3f359de80480331f097656
-  original:
-    hackage: formatting-7.1.3@sha256:04fcfd730dd11c961ebf921b4271d52913922d9a7e90e0353b718d581d37f38c,3426
-- completed:
-    hackage: base16-bytestring-0.1.1.7@sha256:0021256a9628971c08da95cb8f4d0d72192f3bb8a7b30b55c080562d17c43dd3,2231
-    pantry-tree:
-      size: 454
-      sha256: 2dc99cd67293b09204098202d0bdcdcf89d2b8c69ce6c8f4e31deadbdab2a7f9
-  original:
-    hackage: base16-bytestring-0.1.1.7@sha256:0021256a9628971c08da95cb8f4d0d72192f3bb8a7b30b55c080562d17c43dd3,2231
-- completed:
-    hackage: bitvec-1.0.3.0@sha256:f69ed0e463045cb497a7cf1bc808a2e84ea0ce286cf9507983bb6ed8b4bd3993,3977
-    pantry-tree:
-      size: 2372
-      sha256: e3cf4b28e01c3eb9b0cf46a8a2e7eef1ced133d5ad626aaba099cf468007dd90
-  original:
-    hackage: bitvec-1.0.3.0@sha256:f69ed0e463045cb497a7cf1bc808a2e84ea0ce286cf9507983bb6ed8b4bd3993,3977
-- completed:
-    hackage: co-log-0.4.0.1@sha256:3d4c17f37693c80d1aa2c41669bc3438fac3e89dc5f479e57d79bc3ddc4dfcc5,5087
-    pantry-tree:
-      size: 1126
-      sha256: e73165ff8f744709428e2e87984c9d60ca1cec43d8455c413181c7c466e7497c
-  original:
-    hackage: co-log-0.4.0.1@sha256:3d4c17f37693c80d1aa2c41669bc3438fac3e89dc5f479e57d79bc3ddc4dfcc5,5087
-- completed:
-    hackage: colourista-0.1.0.1@sha256:98353ee0e2f5d97d2148513f084c1cd37dfda03e48aa9dd7a017c9d9c0ba710e,3307
-    pantry-tree:
-      size: 571
-      sha256: aa027b21ac1ed1d446a4b20b9a1708fabed9042edf7a28ef05f3fc6278b07841
-  original:
-    hackage: colourista-0.1.0.1@sha256:98353ee0e2f5d97d2148513f084c1cd37dfda03e48aa9dd7a017c9d9c0ba710e,3307
-- completed:
-    hackage: optparse-applicative-0.15.1.0@sha256:29ff6146aabf54d46c4c8788e8d1eadaea27c94f6d360c690c5f6c93dac4b07e,4810
-    pantry-tree:
-      size: 2904
-      sha256: 04ad3816bc580cbe0834d3d1f4729ddd386abfe31b43e5b14968885f636d1b0d
-  original:
-    hackage: optparse-applicative-0.15.1.0@sha256:29ff6146aabf54d46c4c8788e8d1eadaea27c94f6d360c690c5f6c93dac4b07e,4810
-- completed:
-    hackage: ansi-terminal-0.10.3@sha256:e2fbcef5f980dc234c7ad8e2fa433b0e8109132c9e643bc40ea5608cd5697797,3226
-    pantry-tree:
-      size: 1461
-      sha256: 02f05d52be3ffcf36c78876629cbab80b63420672685371aea4fd10e1c4aabb6
-  original:
-    hackage: ansi-terminal-0.10.3@sha256:e2fbcef5f980dc234c7ad8e2fa433b0e8109132c9e643bc40ea5608cd5697797,3226
 snapshots:
 - completed:
     size: 587546

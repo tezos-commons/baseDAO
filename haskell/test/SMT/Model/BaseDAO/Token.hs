@@ -23,7 +23,7 @@ makeTransferOnToken params addr = do
   case Map.lookup addr (ms & msContracts) of
     Just (SimpleFA2ContractType _) -> pass
     _ -> throwError BAD_TOKEN_CONTRACT
-  execOperation $ FA2TransferOperation addr params (toMutez 0)
+  execOperation $ FA2TransferOperation addr params zeroMutez
 
 applyTransferContractTokens :: ModelSource -> TransferContractTokensParam -> ModelT cep ()
 applyTransferContractTokens mso param = do

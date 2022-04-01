@@ -72,10 +72,10 @@ plistTests = do
       let defaultStore = PlistStorage (plistFromList keyList) False Nothing
       let haskellStore = (keyList, False, Nothing)
       -- Originate plist contract
-      plistContract <- originateTypedSimple @PlistParameter "PlistContract" defaultStore plistContractLigo
+      plistContract <- originateTypedSimple @PlistParameter @_ @() "PlistContract" defaultStore plistContractLigo
       callContractLoop params (TAddress $ chAddress plistContract) haskellStore
 
-callContractLoop :: MonadEmulated caps base m => [PlistParameter] -> TAddress PlistParameter -> ([ProposalKey], Bool, Maybe ProposalKey) -> m ()
+callContractLoop :: MonadEmulated caps m => [PlistParameter] -> TAddress PlistParameter () -> ([ProposalKey], Bool, Maybe ProposalKey) -> m ()
 callContractLoop param addr haskellStore =
   case param of
     p:ps -> do
@@ -111,7 +111,7 @@ callHaskell (keyList, memResult, popResult) param =
       in (list, memResult, newPopResult)
 
 -- | Call ligo plist contract.
-callLigo :: MonadEmulated caps base m => TAddress PlistParameter -> PlistParameter -> m ([ProposalKey], Bool, Maybe ProposalKey)
+callLigo :: MonadEmulated caps m => TAddress PlistParameter () -> PlistParameter -> m ([ProposalKey], Bool, Maybe ProposalKey)
 callLigo addr param = do
   nettestResult <- attempt @TransferFailure $ case param of
     Insert k -> do

@@ -27,7 +27,7 @@ import Test.Ligo.BaseDAO.Proposal.Config
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 freezeTokens
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 freezeTokens originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -44,7 +44,7 @@ freezeTokens originateFn = do
       }]])) "Unexpected FA2 transfers"
 
 checkFreezeHistoryTracking
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 checkFreezeHistoryTracking originateFn = do
@@ -72,7 +72,7 @@ checkFreezeHistoryTracking originateFn = do
   assert (fh == (Just expected)) "Unexpected freeze history"
 
 canUnfreezeFromPreviousPeriod
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 canUnfreezeFromPreviousPeriod originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -99,7 +99,7 @@ canUnfreezeFromPreviousPeriod originateFn = do
       }]])) "Unexpected FA2 transfers"
 
 cannotUnfreezeStakedTokens
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 cannotUnfreezeStakedTokens originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -122,7 +122,7 @@ cannotUnfreezeStakedTokens originateFn = do
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 40)
 
 cannotUnfreezeFromSamePeriod
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 cannotUnfreezeFromSamePeriod originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -133,4 +133,3 @@ cannotUnfreezeFromSamePeriod originateFn = do
   -- Cannot unfreeze in the same period
   withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 10)
     & expectFailedWith notEnoughFrozenTokens
-
