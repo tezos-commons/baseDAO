@@ -65,6 +65,7 @@ library
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       LambdaCase
       MultiParamTypeClasses
       MultiWayIf
@@ -103,7 +104,6 @@ library
     , fmt
     , lorentz
     , morley
-    , morley-client
     , morley-ledgers
     , morley-metadata
     , morley-prelude
@@ -141,6 +141,7 @@ executable baseDAO-ligo-meta
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       LambdaCase
       MultiParamTypeClasses
       MultiWayIf
@@ -249,6 +250,7 @@ test-suite baseDAO-test
       FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
+      ImportQualifiedPost
       LambdaCase
       MultiParamTypeClasses
       MultiWayIf

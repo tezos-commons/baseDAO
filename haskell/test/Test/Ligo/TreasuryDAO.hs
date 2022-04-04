@@ -8,7 +8,7 @@ module Test.Ligo.TreasuryDAO
 import Universum
 
 import Lorentz
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
@@ -49,7 +49,7 @@ test_TreasuryDAO = testGroup "TreasuryDAO Tests"
   ]
 
 validProposal
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 validProposal = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
@@ -79,7 +79,7 @@ validProposal = withFrozenCallStack $ do
   checkBalance' @'Treasury dodDao dodOwner1 (proposalSize)
 
 flushTokenTransfer
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 flushTokenTransfer = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
@@ -128,7 +128,7 @@ flushTokenTransfer = withFrozenCallStack $ do
   checkBalance' @'Treasury dodDao dodOwner2 20
 
 flushXtzTransfer
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 flushXtzTransfer = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
@@ -185,7 +185,7 @@ flushXtzTransfer = withFrozenCallStack $ do
   --TODO: check xtz balance
 
 flushUpdateGuardian
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 flushUpdateGuardian = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
@@ -228,7 +228,7 @@ flushUpdateGuardian = withFrozenCallStack $ do
   checkGuardian' @'Treasury dodDao dodOwner2
 
 flushUpdateContractDelegate
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 flushUpdateContractDelegate = withFrozenCallStack $ do
   DaoOriginateData{..} <- originateTreasuryDao id defaultQuorumThreshold
@@ -274,7 +274,7 @@ flushUpdateContractDelegate = withFrozenCallStack $ do
     _ -> error "impossible"
 
 proposalCheckFailZeroMutez
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 proposalCheckFailZeroMutez = withFrozenCallStack do
   DaoOriginateData{..} <-
@@ -304,7 +304,7 @@ proposalCheckFailZeroMutez = withFrozenCallStack do
       & expectFailedWith (failProposalCheck, zeroMutezErrMsg)
 
 proposalCheckBiggerThanMaxProposalSize
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack do
   DaoOriginateData{..} <-
@@ -353,7 +353,7 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
   }
 
 originateTreasuryDao
- :: forall caps base m. (MonadCleveland caps base m)
+ :: forall caps m. (MonadCleveland caps m)
  => (TreasuryFullStorage -> TreasuryFullStorage)
  -> OriginateFn 'Treasury m
 originateTreasuryDao modifyStorageFn =

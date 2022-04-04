@@ -8,19 +8,19 @@ module SMT.Common.Gen
   , genTokenTransferType
   ) where
 
-import Universum hiding (drop, swap)
+import Prelude hiding (drop, swap)
 
 import Crypto.Random (drgNewSeed, seedFromInteger, withDRG)
-import qualified Data.Map as Map
-import qualified Hedgehog.Gen as Gen
+import Data.Map qualified as Map
+import Hedgehog.Gen qualified as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
-import qualified Hedgehog.Range as Range
+import Hedgehog.Range qualified as Range
 
 import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
 import Lorentz hiding (cast, concat, get, not)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
-import Morley.Tezos.Address (Address(..), mkKeyAddress, unsafeParseContractHash)
+import Morley.Tezos.Address (Address(..), mkKeyAddress, parseContractHash)
 import Morley.Tezos.Core (dummyChainId)
 import Morley.Tezos.Crypto (SecretKey, sign, toPublic)
 import Morley.Util.Named
@@ -168,7 +168,7 @@ genModelState SmtOption{..} = do
     let fs = mkFs guardian gov
     in ModelState
         { msFullStorage = fs
-        , msMutez = toMutez 0
+        , msMutez = zeroMutez
 
         , msLevel = fs & fsStorage & sStartLevel
         , msChainId = dummyChainId
@@ -332,7 +332,7 @@ genVote = do
               ds = DataToSign
                   { dsChainId = dummyChainId
                   , dsContract =
-                      ContractAddress $ unsafeParseContractHash "KT1WsLzQ61xtMNJHfwgCHh2RnALGgFAzeSx9"
+                      ContractAddress $ unsafe $ parseContractHash "KT1WsLzQ61xtMNJHfwgCHh2RnALGgFAzeSx9"
                   , dsNonce = Nonce 0
                   , dsData = voteParam
                   }
@@ -390,7 +390,7 @@ genXtzTransferType :: GeneratorT cep (Address -> TransferType)
 genXtzTransferType = do
   amt <- Gen.integral (Range.constant 0 10)
   pure $ \contractAddr -> Xtz_transfer_type XtzTransfer
-    { xtAmount = toMutez amt
+    { xtAmount = toMutez @Word63 amt
     , xtRecipient = contractAddr
     }
 

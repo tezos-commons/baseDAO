@@ -28,7 +28,7 @@ import Test.Cleveland
 
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
 
@@ -48,10 +48,8 @@ vote how addr key =
 downvote :: Address -> ProposalKey -> PermitProtected VoteParam
 downvote = vote False
 
-type instance AsRPC FA2.TransferItem = FA2.TransferItem
-
 validProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 validProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -90,7 +88,7 @@ validProposal originateFn = do
     }
 
 validProposalWithFixedFee
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 validProposalWithFixedFee = do
   DaoOriginateData{..} <-
@@ -121,7 +119,7 @@ validProposalWithFixedFee = do
     }
 
 proposerIsReturnedFeeAfterSucceeding
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 proposerIsReturnedFeeAfterSucceeding = do
   DaoOriginateData{..} <-
@@ -170,7 +168,7 @@ proposerIsReturnedFeeAfterSucceeding = do
   checkBalance dodDao proposer 52
 
 cannotProposeWithInsufficientTokens
-  :: forall caps base m. (MonadCleveland caps base m, HasCallStack)
+  :: forall caps m. (MonadCleveland caps m, HasCallStack)
   => m ()
 cannotProposeWithInsufficientTokens = do
   DaoOriginateData{..} <-
@@ -192,7 +190,7 @@ cannotProposeWithInsufficientTokens = do
     & expectFailedWith notEnoughFrozenTokens
 
 nonUniqueProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 nonUniqueProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -208,7 +206,7 @@ nonUniqueProposal originateFn = do
     & expectFailedWith proposalNotUnique
 
 nonUniqueProposalEvenAfterDrop
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 nonUniqueProposalEvenAfterDrop originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -225,7 +223,7 @@ nonUniqueProposalEvenAfterDrop originateFn = do
     & expectFailedWith proposalNotUnique
 
 nonProposalPeriodProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 nonProposalPeriodProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -247,7 +245,7 @@ nonProposalPeriodProposal originateFn = do
     & expectFailedWith notProposingStage
 
 burnsFeeOnFailure
-  :: forall caps base m. (MonadCleveland caps base m)
+  :: forall caps m. (MonadCleveland caps m)
   => FailureReason -> m ()
 burnsFeeOnFailure reason = do
   DaoOriginateData{..} <-
@@ -297,7 +295,7 @@ burnsFeeOnFailure reason = do
   checkBalance dodDao proposer (52 - expectedBurn - 1)
 
 unstakesTokensForMultipleVotes
-  :: forall caps base m. (MonadCleveland caps base m)
+  :: forall caps m. (MonadCleveland caps m)
   => m ()
 unstakesTokensForMultipleVotes = do
   DaoOriginateData{..} <-
@@ -361,7 +359,7 @@ unstakesTokensForMultipleVotes = do
   assert (fh_after_flush == expected_after_flush) "Unexpected freeze history after flush"
 
 insufficientTokenProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 insufficientTokenProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -375,7 +373,7 @@ insufficientTokenProposal originateFn = do
     & expectFailedWith notEnoughFrozenTokens
 
 insufficientTokenVote
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 insufficientTokenVote originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
@@ -412,7 +410,7 @@ insufficientTokenVote originateFn = do
     & expectFailedWith notEnoughFrozenTokens
 
 dropProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 dropProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
@@ -486,7 +484,7 @@ dropProposal originateFn = withFrozenCallStack $ do
   checkBalance' @'Base dodDao dodOwner1 27
 
 unstakeVote
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 unstakeVote originateFn = do
@@ -577,4 +575,3 @@ unstakeVote originateFn = do
   (fhOwner2__ <&> fhStaked) @== Just 0
   (fhOwner2__ <&> fhPastUnstaked) @== Just 10
   (fhOwner2__ <&> fhCurrentUnstaked) @== Just 0
-

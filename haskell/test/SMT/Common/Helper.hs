@@ -18,7 +18,7 @@ handleTransfer ops transferType =
     Token_transfer_type tt ->
       ( FA2TransferOperation
           (tt & ttContractAddress)
-          (tt & ttTransferList) (toMutez 0)
+          (tt & ttTransferList) zeroMutez
       ) : ops
     Xtz_transfer_type xt ->
       ( OtherOperation (xt & xtRecipient) (show ()) (xt & xtAmount)

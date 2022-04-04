@@ -17,9 +17,9 @@ import Universum
 
 import Data.Typeable (eqT, (:~:)(..))
 
-import Test.Cleveland.Lorentz (embedContract)
+import Lorentz qualified as L
 import Morley.Michelson.Typed
-import qualified Lorentz as L
+import Test.Cleveland.Lorentz (embedContract)
 
 import Ligo.BaseDAO.RegistryDAO.Types
 import Ligo.BaseDAO.TreasuryDAO.Types
@@ -37,15 +37,15 @@ getBaseDAOContract = case eqT @cep @'Base of
 
 baseDAOContractLigo :: Contract (ToT Parameter) (ToT FullStorage)
 baseDAOContractLigo = L.toMichelsonContract
-  $$(embedContract @(Parameter' ()) @FullStorage "resources/trivialDAO.tz")
+  $$(embedContract @(Parameter' ()) @FullStorage @() "resources/trivialDAO.tz")
 
 baseDAORegistryLigo :: Contract (ToT (Parameter' RegistryCustomEpParam)) (ToT RegistryFullStorage)
 baseDAORegistryLigo = L.toMichelsonContract
-  $$(embedContract @(Parameter' RegistryCustomEpParam) @RegistryFullStorage "resources/registryDAO.tz")
+  $$(embedContract @(Parameter' RegistryCustomEpParam) @RegistryFullStorage @() "resources/registryDAO.tz")
 
 baseDAOTreasuryLigo :: Contract (ToT (Parameter' TreasuryCustomEpParam)) (ToT TreasuryFullStorage)
 baseDAOTreasuryLigo = L.toMichelsonContract
-  $$(embedContract @(Parameter' TreasuryCustomEpParam) @TreasuryFullStorage "resources/treasuryDAO.tz")
+  $$(embedContract @(Parameter' TreasuryCustomEpParam) @TreasuryFullStorage @() "resources/treasuryDAO.tz")
 
 baseDAOStorageLigo :: FullStorage
 baseDAOStorageLigo =

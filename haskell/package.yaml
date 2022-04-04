@@ -46,6 +46,7 @@ default-extensions:
   - FlexibleInstances
   - GADTs
   - GeneralizedNewtypeDeriving
+  - ImportQualifiedPost
   - LambdaCase
   - MultiParamTypeClasses
   - MultiWayIf
@@ -109,7 +110,6 @@ library:
     - fmt
     - lorentz
     - morley
-    - morley-client
     - morley-ledgers
     - morley-metadata
     - morley-prelude

@@ -8,11 +8,11 @@ module SMT.RegistryDAO
 import Universum hiding (drop, swap)
 
 import Control.Monad.Except (throwError)
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Data.Map qualified as Map
+import Data.Set qualified as Set
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 import Hedgehog.Gen.Michelson (genMText)
 import Hedgehog.Gen.Tezos.Address (genAddress)
@@ -101,7 +101,7 @@ registryDaoProposalCheck (params, extras) = do
                       Xtz_transfer_type xt ->
                            (xt & xtAmount) >= minXtzAmount
                         && (xt & xtAmount) <= maxXtzAmount
-                        && (xt & xtAmount) /= (toMutez 0)
+                        && (xt & xtAmount) /= zeroMutez
                   )
               & and
       unless isValid $
@@ -202,7 +202,7 @@ lookupRegistryEntrypoint (LookupRegistryParam key addr)  = do
   let registry = reRegistry $ sExtra $ store
   let val = Map.lookup key registry
   let consumerParam :: (MText, (Maybe MText)) = (key, val)
-  execOperation $ OtherOperation addr (show consumerParam) (toMutez 0)
+  execOperation $ OtherOperation addr (show consumerParam) zeroMutez
 
 
 -------------------------------------------------------------------------------
@@ -233,7 +233,7 @@ genCustomCallsRegistryDao = do
           Lookup_registry (mkLookupRegistryParam miaViewContractAddr)
     ]
 
-genLookupRegistryParam :: GeneratorT 'Registry (TAddress (MText, Maybe MText) -> LookupRegistryParam)
+genLookupRegistryParam :: GeneratorT 'Registry (TAddress (MText, Maybe MText) () -> LookupRegistryParam)
 genLookupRegistryParam = do
   key <- genMText
   pure $ \viewContractAddr -> (LookupRegistryParam key (unTAddress viewContractAddr))

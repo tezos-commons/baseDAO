@@ -7,53 +7,36 @@ packages:
 
 source-repository-package
     type: git
-    location: https://github.com/int-index/caps.git
-    tag: c5d61837eb358989b581ed82b1e79158c4823b1b
-
-source-repository-package
-    type: git
     location: https://github.com/serokell/base-noprelude.git
     tag: 1282e0b992b00089d55228a2aa9edc4a3581c319
 
 source-repository-package
     type: git
-    location: https://github.com/serokell/elliptic-curve.git
-    tag: b8a3d0cf8f7bacfed77dc3b697f5d08bd33396a8
-
-source-repository-package
-    type: git
-    location: https://github.com/serokell/galois-field.git
-    tag: 576ba98ec947370835a1f308895037c7aa7f8b71
-
-source-repository-package
-    type: git
-    location: https://github.com/serokell/pairing.git
-    tag: cf86cf1f6b03f478a439703b050c520a9d455353
-
-source-repository-package
-    type: git
     location: https://gitlab.com/morley-framework/indigo.git
-    tag: 702b4de313d671a10d1cee78c38f6bd2e9e55c4f
+    tag: e879e5f282afb8d25d72d8ba132f22d3d9e628a1
     subdir: .
 
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley-ledgers.git
-    tag: 53c772f9bbeb4fc4ae2922e96d39ef126d0e933c
+    tag: b39a971f42bb113a5b3e23c9145253e27ad6e049
     subdir: code/morley-ledgers
 
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley-metadata.git
-    tag: 66c15c45d090f12761cf2452cf7fa4756c48072f
+    tag: 81b947ca1d74f3487a5b5c8e2141c37bf374f747
     subdir: code/morley-metadata
 
 source-repository-package
     type: git
     location: https://gitlab.com/morley-framework/morley.git
-    tag: 60a8106894929d75531f57e3e517aba9fe55f91f
+    tag: 146da727ff486c46b0ec9f392d955f07d797848e
     subdir: code/cleveland
+            code/lorentz
+            code/morley
             code/morley-client
+            code/morley-prelude
 
 allow-older: *
 allow-newer: *

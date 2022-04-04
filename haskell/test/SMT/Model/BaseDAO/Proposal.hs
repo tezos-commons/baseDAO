@@ -15,19 +15,19 @@ module SMT.Model.BaseDAO.Proposal
 import Universum
 
 import Control.Monad.Except (throwError)
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Data.Map qualified as Map
+import Data.Set qualified as Set
 import GHC.Natural
 
 import Lorentz hiding (cast, div, get, not, or, take)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Morley.Util.Named
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Permit
-import SMT.Model.BaseDAO.Proposal.Plist
 import SMT.Model.BaseDAO.Proposal.FreezeHistory
+import SMT.Model.BaseDAO.Proposal.Plist
 import SMT.Model.BaseDAO.Proposal.QuorumThreshold
 import SMT.Model.BaseDAO.Token
 import SMT.Model.BaseDAO.Types
@@ -203,7 +203,7 @@ applyVote mso = mapM_ acceptVote
       submitVote proposal voteParam validFrom
 
 applyFreeze :: ModelSource -> FreezeParam -> ModelT cep ()
-applyFreeze mso (N param) = do
+applyFreeze mso (arg #amount -> param) = do
   let senderAddr = mso & msoSender
   let amt = param
 
@@ -250,7 +250,7 @@ unlockGovernanceTokens tokens addr = do
 
 
 applyUnfreeze :: ModelSource -> UnfreezeParam -> ModelT cep ()
-applyUnfreeze mso (N amt) = do
+applyUnfreeze mso (arg #amount -> amt) = do
   let senderAddr = mso & msoSender
 
   freezingUpdateFh senderAddr (negate $ fromIntegral amt)

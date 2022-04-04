@@ -12,8 +12,8 @@ import Universum hiding (drop, swap)
 import Hedgehog
 import Lorentz hiding (div, fromInteger, now, (>>))
 
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 import Ligo.BaseDAO.Types
 import SMT.Common.Run

@@ -28,7 +28,7 @@ import Test.Ligo.BaseDAO.Proposal.Config
 {-# ANN module ("HLint: ignore Reduce duplication" :: Text) #-}
 
 flushAcceptedProposals
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 flushAcceptedProposals originateFn = do
 -- Use 60s for voting period, since in real network by the time we call
@@ -111,7 +111,7 @@ flushAcceptedProposals originateFn = do
     }
 
 flushAcceptedProposalsWithAnAmount
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushAcceptedProposalsWithAnAmount originateFn = do
@@ -169,7 +169,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   checkBalance' @'Base dodDao dodOwner1 29
 
 flushRejectProposalQuorum
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushRejectProposalQuorum originateFn = do
@@ -214,7 +214,7 @@ flushRejectProposalQuorum originateFn = do
   checkBalance' @'Base dodDao dodOwner2 05 -- Since voter tokens are not burned
 
 flushRejectProposalNegativeVotes
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushRejectProposalNegativeVotes originateFn = do
@@ -275,7 +275,7 @@ flushRejectProposalNegativeVotes originateFn = do
   checkBalance' @'Base dodDao dodOwner2 03
 
 flushFailOnExpiredProposal
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
@@ -323,7 +323,7 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   checkBalance dodDao dodOwner1 18 -- One proposal dropped, one rejected.
 
 flushProposalFlushTimeNotReach
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 flushProposalFlushTimeNotReach originateFn = do
@@ -354,7 +354,7 @@ flushProposalFlushTimeNotReach originateFn = do
   checkIfAProposalExist key2 dodDao False
 
 flushNotEmpty
-  :: (MonadCleveland caps base m, HasCallStack)
+  :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 flushNotEmpty originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-

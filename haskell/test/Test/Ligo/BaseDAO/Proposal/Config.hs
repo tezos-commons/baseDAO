@@ -16,15 +16,15 @@ module Test.Ligo.BaseDAO.Proposal.Config
   , voteConfig
   ) where
 
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 
 import Lorentz
 import Universum (Constraint, fromIntegral, (?:))
 
-import Morley.Util.Named
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
+import Morley.Util.Named
 
-import qualified Ligo.BaseDAO.Types as DAO
+import Ligo.BaseDAO.Types qualified as DAO
 
 -- | Configuration descriptor.
 --
@@ -155,21 +155,21 @@ instance IsConfigDescExt DAO.ContractExtra DecisionCallbackAction where
     BigMap Nothing $ Map.insert [mt|decision_callback|] (lPackValueRaw lam) $ bmMap $ DAO.unDynamic c
 
 instance IsConfigDescExt DAO.Config ("changePercent" :! Natural) where
-  fillConfig (N cp) DAO.Config{..} =
+  fillConfig (arg #changePercent -> cp) DAO.Config{..} =
     DAO.Config
     { cQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
     , ..
     }
 
 instance IsConfigDescExt DAO.Config ("maxChangePercent" :! Natural) where
-  fillConfig (N cp) DAO.Config{..} =
+  fillConfig (arg #maxChangePercent -> cp) DAO.Config{..} =
     DAO.Config
     { cMaxQuorumChange = DAO.QuorumFraction $ fromIntegral $ DAO.percentageToFractionNumerator cp
     , ..
     }
 
 instance IsConfigDescExt DAO.Config ("governanceTotalSupply" :! Natural) where
-  fillConfig (N ts) DAO.Config{..} =
+  fillConfig (arg #governanceTotalSupply -> ts) DAO.Config{..} =
     DAO.Config
     { cGovernanceTotalSupply = DAO.GovernanceTotalSupply ts
     , ..

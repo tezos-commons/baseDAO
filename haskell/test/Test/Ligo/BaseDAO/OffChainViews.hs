@@ -22,7 +22,7 @@ import Test.Tasty.HUnit (testCase)
 
 import Ligo.BaseDAO.TZIP16Metadata
 import Ligo.BaseDAO.Types
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Lorentz.Contracts.Spec.TZIP16Interface
 
 offChainViewStorage :: Storage
@@ -37,7 +37,7 @@ offChainViewStorage =
   ! defaults
   )
   where
-    addr = unsafeParseAddress "tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE"
+    addr = [ta|tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE|]
 
 test_FA2 :: TestTree
 test_FA2 =

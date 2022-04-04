@@ -6,22 +6,22 @@ module Test.Plist.Property
   ) where
 
 import Universum hiding (drop, swap)
+import Unsafe qualified ((!!))
 
-import qualified Data.List as DL
-import Data.List ((!!))
+import Data.List qualified as DL
 import Fmt (build, unlinesF)
 import Hedgehog hiding (assert)
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
-import Lorentz hiding (abs, assert, and, div, not, now, (>>))
+import Lorentz hiding (abs, and, assert, div, not, now, (>>))
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Proposal.Plist
 import Test.Ligo.BaseDAO.Plist (genProposalKeyList)
-import Test.Plist.Type
 import Test.Plist.Contract
+import Test.Plist.Type
 
 
 genPlistParameter :: MonadGen m => [ProposalKey] -> [ProposalKey] -> m PlistParameter
@@ -29,7 +29,7 @@ genPlistParameter keyList keyList2 = do
   requireExistingKeyEps <-
     if (not $ null keyList) then do
       (i :: Int) <- Gen.integral (Range.constant 0 (length keyList - 1))
-      let k = keyList !! i
+      let k = keyList Unsafe.!! i
       pure [ Mem k
            , Delete k
            ]
@@ -38,7 +38,7 @@ genPlistParameter keyList keyList2 = do
   notRequireExistingKeyEps <-
     if (not $ null keyList2) then do
       (i2 :: Int) <- Gen.integral (Range.constant 0 (length keyList2 - 1))
-      let k2 = keyList2 !! i2
+      let k2 = keyList2 Unsafe.!! i2
       pure [ Insert k2
            , Mem k2
            , Delete k2
@@ -72,10 +72,10 @@ plistTests = do
       let defaultStore = PlistStorage (plistFromList keyList) False Nothing
       let haskellStore = (keyList, False, Nothing)
       -- Originate plist contract
-      plistContract <- originateTypedSimple @PlistParameter "PlistContract" defaultStore plistContractLigo
+      plistContract <- originateTypedSimple @PlistParameter @_ @() "PlistContract" defaultStore plistContractLigo
       callContractLoop params (TAddress $ chAddress plistContract) haskellStore
 
-callContractLoop :: MonadEmulated caps base m => [PlistParameter] -> TAddress PlistParameter -> ([ProposalKey], Bool, Maybe ProposalKey) -> m ()
+callContractLoop :: MonadEmulated caps m => [PlistParameter] -> TAddress PlistParameter () -> ([ProposalKey], Bool, Maybe ProposalKey) -> m ()
 callContractLoop param addr haskellStore =
   case param of
     p:ps -> do
@@ -111,7 +111,7 @@ callHaskell (keyList, memResult, popResult) param =
       in (list, memResult, newPopResult)
 
 -- | Call ligo plist contract.
-callLigo :: MonadEmulated caps base m => TAddress PlistParameter -> PlistParameter -> m ([ProposalKey], Bool, Maybe ProposalKey)
+callLigo :: MonadEmulated caps m => TAddress PlistParameter () -> PlistParameter -> m ([ProposalKey], Bool, Maybe ProposalKey)
 callLigo addr param = do
   nettestResult <- attempt @TransferFailure $ case param of
     Insert k -> do

@@ -23,7 +23,8 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
 import Lorentz hiding (assert, (>>))
 import Universum
 
-import Morley.Michelson.Typed.Scope (HasNoBigMap, HasNoTicket, HasNoContract, HasNoNestedBigMaps, HasNoOp)
+import Morley.Michelson.Typed.Scope
+  (HasNoBigMap, HasNoContract, HasNoNestedBigMaps, HasNoOp, HasNoTicket)
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -46,35 +47,35 @@ type CEConatraints cep =
   , HasNoOp (ToT (VariantToExtra cep))
   )
 
-getStorageRPC' :: forall cep p base caps m. (HasCallStack, CEConatraints cep, MonadCleveland caps base m) => TAddress p ->  m (FullStorageRPC' (VariantToExtra cep))
+getStorageRPC' :: forall cep p vd caps m. (HasCallStack, CEConatraints cep, MonadCleveland caps m) => TAddress p vd ->  m (FullStorageRPC' (VariantToExtra cep))
 getStorageRPC' addr = getStorage @(FullStorageSkeleton (VariantToExtra cep)) (unTAddress addr)
 
-getStorageRPC :: forall p base caps m. (HasCallStack, MonadCleveland caps base m) => TAddress p ->  m FullStorageRPC
+getStorageRPC :: forall p vd caps m. (HasCallStack, MonadCleveland caps m) => TAddress p vd ->  m FullStorageRPC
 getStorageRPC addr = getStorageRPC' @'Base addr
 
-getFrozenTotalSupply' :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m) => TAddress p -> m Natural
+getFrozenTotalSupply' :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m) => TAddress p vd -> m Natural
 getFrozenTotalSupply' addr = (sFrozenTotalSupplyRPC . fsStorageRPC) <$> (getStorageRPC' @cep addr)
 
-getFrozenTotalSupply :: forall p base caps m. MonadCleveland caps base m => TAddress p -> m Natural
+getFrozenTotalSupply :: forall p vd caps m. MonadCleveland caps m => TAddress p vd -> m Natural
 getFrozenTotalSupply addr = getFrozenTotalSupply' @'Base addr
 
-getFreezeHistory' :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m) => TAddress p -> Address -> m (Maybe AddressFreezeHistory)
+getFreezeHistory' :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m) => TAddress p vd -> Address -> m (Maybe AddressFreezeHistory)
 getFreezeHistory' addr owner = do
   freezeHistoryBmId <- (sFreezeHistoryRPC . fsStorageRPC) <$> (getStorageRPC' @cep addr)
   getBigMapValueMaybe freezeHistoryBmId owner
 
-getFreezeHistory :: forall p base caps m. (MonadCleveland caps base m) => TAddress p -> Address -> m (Maybe AddressFreezeHistory)
+getFreezeHistory :: forall p vd caps m. (MonadCleveland caps m) => TAddress p vd -> Address -> m (Maybe AddressFreezeHistory)
 getFreezeHistory addr owner = getFreezeHistory' @'Base addr owner
 
-getQtAtCycle' :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m) => TAddress p -> m QuorumThresholdAtCycle
+getQtAtCycle' :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m) => TAddress p vd -> m QuorumThresholdAtCycle
 getQtAtCycle' addr = (sQuorumThresholdAtCycleRPC . fsStorageRPC) <$> getStorageRPC' @cep addr
 
-getQtAtCycle :: forall p base caps m. MonadCleveland caps base m => TAddress p -> m QuorumThresholdAtCycle
+getQtAtCycle :: forall p vd caps m. MonadCleveland caps m => TAddress p vd -> m QuorumThresholdAtCycle
 getQtAtCycle = getQtAtCycle' @'Base
 
 getProposal'
-  :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
-  => TAddress p
+  :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m)
+  => TAddress p vd
   -> ProposalKey
   -> m (Maybe Proposal)
 getProposal' addr pKey = do
@@ -82,15 +83,15 @@ getProposal' addr pKey = do
   getBigMapValueMaybe bId pKey
 
 getProposal
-  :: forall p base caps m. MonadCleveland caps base m
-  => TAddress p
+  :: forall p vd caps m. MonadCleveland caps m
+  => TAddress p vd
   -> ProposalKey
   -> m (Maybe Proposal)
 getProposal addr pKey = getProposal' @'Base addr pKey
 
 getVoter
-  :: forall p base caps m. MonadCleveland caps base m
-  => TAddress p
+  :: forall p vd caps m. MonadCleveland caps m
+  => TAddress p vd
   -> (Address, ProposalKey)
   -> m (Maybe StakedVote)
 getVoter addr key = do
@@ -98,23 +99,23 @@ getVoter addr key = do
   getBigMapValueMaybe bId key
 
 getProposalStartLevel'
-  :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
-  => TAddress p
+  :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m)
+  => TAddress p vd
   -> ProposalKey
   -> m Natural
 getProposalStartLevel' addr pKey =
    plStartLevel . fromMaybe (error "proposal not found") <$> getProposal' @cep addr pKey
 
 getProposalStartLevel
-  :: forall p base caps m. (MonadCleveland caps base m)
-  => TAddress p
+  :: forall p vd caps m. (MonadCleveland caps m)
+  => TAddress p vd
   -> ProposalKey
   -> m Natural
 getProposalStartLevel addr pKey = getProposalStartLevel' @'Base addr pKey
 
 checkIfDelegateExists'
-  :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
-  => TAddress p
+  :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m)
+  => TAddress p vd
   -> Delegate
   -> m Bool
 checkIfDelegateExists' addr delegate = do
@@ -122,15 +123,15 @@ checkIfDelegateExists' addr delegate = do
   isJust <$> getBigMapValueMaybe bId delegate
 
 checkIfDelegateExists
-  :: forall p base caps m. MonadCleveland caps base m
-  => TAddress p
+  :: forall p vd caps m. MonadCleveland caps m
+  => TAddress p vd
   -> Delegate
   -> m Bool
 checkIfDelegateExists addr delegate = checkIfDelegateExists' @'Base addr delegate
 
 plistMemRPC'
-  :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
-  => TAddress p -> ProposalKey -> m Bool
+  :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m)
+  => TAddress p vd -> ProposalKey -> m Bool
 plistMemRPC' addr key = do
   plistMb <- (sOngoingProposalsDlistRPC . fsStorageRPC) <$> getStorageRPC' @cep addr
   case plistMb of
@@ -145,8 +146,8 @@ plistMemRPC' addr key = do
     Nothing -> pure False
 
 checkIfAProposalExist'
-  :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
-  => ProposalKey -> TAddress p -> Bool -> m ()
+  :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m)
+  => ProposalKey -> TAddress p vd -> Bool -> m ()
 checkIfAProposalExist' proposalKey dodDao expected = do
   found <- getProposal' @cep dodDao proposalKey >>= \case
     Nothing -> pure False
@@ -156,18 +157,18 @@ checkIfAProposalExist' proposalKey dodDao expected = do
     "Unexpected proposal status, expected:" <> (show expected) <> ", found: " <> (show found)
 
 checkIfAProposalExist
-  :: forall p base caps m. MonadCleveland caps base m
-  => ProposalKey -> TAddress p -> Bool -> m ()
+  :: forall p vd caps m. MonadCleveland caps m
+  => ProposalKey -> TAddress p vd -> Bool -> m ()
 checkIfAProposalExist = checkIfAProposalExist' @'Base
 
-checkGuardian' :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m) => TAddress p -> Address -> m ()
+checkGuardian' :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m) => TAddress p vd -> Address -> m ()
 checkGuardian' addr guardianToChk = do
   actual <- (sGuardianRPC . fsStorageRPC) <$> (getStorageRPC' @cep addr)
   actual @== guardianToChk
 
 checkBalance'
-  :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m)
-  => TAddress p
+  :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m)
+  => TAddress p vd
   -> Address
   -> Natural
   -> m ()
@@ -176,8 +177,8 @@ checkBalance' addr owner bal = do
   (sumAddressFreezeHistory <$> fh) @== Just bal
 
 checkBalance
-  :: forall p base caps m. MonadCleveland caps base m
-  => TAddress p
+  :: forall p vd caps m. MonadCleveland caps m
+  => TAddress p vd
   -> Address
   -> Natural
   -> m ()
@@ -186,15 +187,15 @@ checkBalance = checkBalance' @'Base
 sumAddressFreezeHistory :: AddressFreezeHistory -> Natural
 sumAddressFreezeHistory AddressFreezeHistory{..} = fhCurrentUnstaked + fhPastUnstaked + fhStaked
 
-getVotePermitsCounter' :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m) => TAddress p ->  m Nonce
+getVotePermitsCounter' :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m) => TAddress p vd ->  m Nonce
 getVotePermitsCounter' addr =
   (sPermitsCounterRPC . fsStorageRPC) <$> getStorageRPC' @cep addr
 
-getVotePermitsCounter :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m Nonce
+getVotePermitsCounter :: forall p vd caps m. MonadCleveland caps m => TAddress p vd ->  m Nonce
 getVotePermitsCounter = getVotePermitsCounter' @'Base
 
-getOriginationLevel' :: forall cep p base caps m. (CEConatraints cep, MonadCleveland caps base m) => TAddress p ->  m Natural
+getOriginationLevel' :: forall cep p vd caps m. (CEConatraints cep, MonadCleveland caps m) => TAddress p vd ->  m Natural
 getOriginationLevel' dodDao = (sStartLevelRPC . fsStorageRPC) <$> (getStorageRPC' @cep dodDao)
 
-getOriginationLevel :: forall p base caps m. MonadCleveland caps base m => TAddress p ->  m Natural
+getOriginationLevel :: forall p vd caps m. MonadCleveland caps m => TAddress p vd ->  m Natural
 getOriginationLevel = getOriginationLevel' @'Base

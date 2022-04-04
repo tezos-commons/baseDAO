@@ -14,7 +14,7 @@ module SMT.Model.BaseDAO.Proposal.Plist
 
 import Universum
 
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 

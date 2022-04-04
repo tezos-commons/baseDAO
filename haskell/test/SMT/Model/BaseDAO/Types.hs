@@ -26,17 +26,17 @@ module SMT.Model.BaseDAO.Types
 import Universum hiding (show)
 
 import Control.Monad.Except (MonadError)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Fmt
 import Text.Show (show)
 
 import Lorentz hiding (cast, get, not)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Tezos.Address (ContractHash(..))
 import Morley.Tezos.Core
 
-import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.ErrorCodes
+import Ligo.BaseDAO.Types
 
 -- | Transformer used in haskell implementation of BaseDAO
 newtype ModelT var a = ModelT
@@ -100,7 +100,7 @@ execOperation op = do
                       }
                 in (Map.insert addr (SimpleFA2ContractType updatedSc) contracts, tez)
               _ ->
-                (contracts, toMutez 0)
+                (contracts, zeroMutez)
           OtherOperation addr param tez ->
             case Map.lookup addr contracts of
               Just (OtherContractType oc) ->
@@ -110,7 +110,7 @@ execOperation op = do
                       }
                 in (Map.insert addr (OtherContractType updatedSc) contracts, tez)
               _ ->
-                (contracts, toMutez 0)
+                (contracts, zeroMutez)
 
   currentBal <- get <&> msMutez
   let newBal = case currentBal `subMutez` minusBal of
@@ -217,9 +217,6 @@ data ModelError
   deriving stock (Generic, Eq, Show)
 
 instance Buildable ModelError where
-  build = genericF
-
-instance (Buildable a, Buildable b) => Buildable (Either a b) where
   build = genericF
 
 contractErrorToModelError :: Integer -> ModelError

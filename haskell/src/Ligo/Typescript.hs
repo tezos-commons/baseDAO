@@ -15,17 +15,18 @@ module Ligo.Typescript
 import Universum
 
 import Data.Char (toUpper)
-import qualified Data.Map as Map
-import qualified Data.Text as T
+import Data.Map qualified as Map
+import Data.Text qualified as T
 import Fmt (Buildable(build), blockListF', (+|), (|+))
-import qualified Fmt
+import Fmt qualified
 import System.FilePath
 
 import Lorentz.Entrypoints
 import Morley.Michelson.Typed.Annotation
 import Morley.Michelson.Typed.Entrypoints (pnNotes)
-import qualified Morley.Michelson.Untyped as U
+import Morley.Michelson.Untyped qualified as U
 import Morley.Michelson.Untyped.Annotation
+import Morley.Util.Peano
 
 data AnnotatedField = AnnotatedField
   { afNote :: FieldAnn
@@ -71,12 +72,19 @@ nToType (NTBls12381G1 _) = toType U.TBls12381G1
 nToType (NTBls12381G2 _) = toType U.TBls12381G2
 nToType (NTNever _) = toType U.TNever
 nToType (NTTicket _ a) = toType $ U.TTicket (nToType a)
+nToType (NTChest _) = toType $ U.TChest
+nToType (NTChestKey _) = toType $ U.TChestKey
+nToType (NTSaplingState _ a) = toType $ U.TSaplingState (singNatToNatural a)
+nToType (NTSaplingTransaction _ a) = toType $ U.TSaplingTransaction (singNatToNatural a)
+
+singNatToNatural :: SingNat n -> Natural
+singNatToNatural SZ = 0
+singNatToNatural (SS n) = 1 + singNatToNatural n
 
 -- looks up the entrypoints in the 'Notes t' for the whole parameter.
 lookupEntryPointsAndTypes :: Notes t -> [Entrypoint]
 lookupEntryPointsAndTypes n =
-    catMaybes $
-      mkEntrypoint <$> (Map.assocs $ U.mkEntrypointsMap (U.ParameterType (nToType n) noAnn))
+    mapMaybe mkEntrypoint $ Map.assocs $ U.mkEntrypointsMap (U.ParameterType (nToType n) noAnn)
   where
     mkEntrypoint (a, b) = let
       epTxt = U.unEpName a
@@ -320,6 +328,12 @@ mkTypesFor typename epType = case U.unwrapT epType of
     ticketFields = [("ticketer", toType U.TAddress), ("value", a), ("amount", toType U.TNat)]
     tDecls = map (mkTypesForField False) ticketFields
     in (TsType typename $ TsInterface (map fst tDecls)) : (concatMap snd tDecls)
+  U.TChest -> [TsType typename (TsAlias TsString)]
+  U.TChestKey -> [TsType typename (TsAlias TsString)]
+  U.TSaplingState _ ->
+    error "In Ligo.Typescript.mkTypesFor: sappling state values not yet supported"
+  U.TSaplingTransaction _ ->
+    error "In Ligo.Typescript.mkTypesFor: sappling transaction values not yet supported"
 
   where
 

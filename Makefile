@@ -294,3 +294,6 @@ $(OUT)/plist_contract.tz: haskell/test/Test/Plist/**
 clean:
 	rm -rf $(OUT)
 	rm -rf haskell/resources
+
+stylish:
+	find haskell/ -name '*.hs' -exec stylish-haskell -i '{}' \;

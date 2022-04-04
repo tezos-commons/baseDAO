@@ -11,7 +11,7 @@ module Test.Ligo.BaseDAO.Management
 
 import Universum
 
-import Named (defaults, (!))
+import Named (defaults)
 import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (now, (>>))
@@ -29,10 +29,10 @@ import Test.Ligo.BaseDAO.Management.TransferOwnership
 -- the tests. It is not pretty, but IMO it makes the test a bit less
 -- verbose.
 withOriginated
-  :: MonadCleveland caps base m
+  :: MonadCleveland caps m
   => Integer
   -> ([Address] -> FullStorage)
-  -> ([Address] -> TAddress Parameter -> m a)
+  -> ([Address] -> TAddress Parameter () -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]

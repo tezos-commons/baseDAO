@@ -10,12 +10,12 @@ module Ligo.BaseDAO.RegistryDAO.Types
 
 import Universum hiding (fromInteger)
 
-import qualified Data.Set as S
-import qualified Data.Map as M
+import Data.Map qualified as M
+import Data.Set qualified as S
 
 import Fmt (Buildable, build, genericF)
 import Lorentz as L
-import Morley.Client
+import Morley.AsRPC
 
 import Ligo.BaseDAO.Types
 
@@ -72,12 +72,13 @@ data RegistryExtra = RegistryExtra
   } deriving stock (Eq)
 
 instance Default RegistryExtra where
-  def = RegistryExtra M.empty M.empty S.empty 1 0 1000 1 1 zeroMutez (toMutez 1)
+  def = RegistryExtra M.empty M.empty S.empty 1 0 1000 1 1 zeroMutez [tz|1u|]
 
 instance Buildable RegistryExtra where
   build = genericF
 
-type instance AsRPC RegistryExtra = RegistryExtra
+instance HasRPCRepr RegistryExtra where
+  type AsRPC RegistryExtra = RegistryExtra
 
 customGeneric "RegistryExtra" ligoLayout
 deriving anyclass instance IsoValue RegistryExtra
