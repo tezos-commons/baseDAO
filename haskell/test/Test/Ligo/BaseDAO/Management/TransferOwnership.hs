@@ -30,11 +30,11 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 
 type WithOriginateFn m = Integer
-  -> ([Address] -> FullStorage)
+  -> ([Address] -> Storage)
   -> ([Address] -> TAddress Parameter () -> m ())
   -> m ()
 
-type WithStorage = Address -> FullStorage
+type WithStorage = Address -> Storage
 
 transferOwnership
   :: MonadCleveland caps m
@@ -50,7 +50,7 @@ transferOwnershipSetsPendingOwner
 transferOwnershipSetsPendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[owner, wallet1] baseDao -> do
     withSender owner $ call baseDao (Call @"Transfer_ownership") (#newOwner :! wallet1)
-    mNewPendingOwner <- (sPendingOwnerRPC . fsStorageRPC) <$> getStorageRPC baseDao
+    mNewPendingOwner <- sPendingOwnerRPC <$> getStorageRPC baseDao
     assert (mNewPendingOwner == wallet1) "Pending owner was not set as expected"
 
 authenticateSender
@@ -73,7 +73,7 @@ changeToPendingAdmin withOriginatedFn initialStorage =
       withSender owner $ call baseDao (Call @"Transfer_ownership")
         (#newOwner :! wallet1)
       withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
-      administrator <- (sAdminRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
+      administrator <- sAdminRPC <$> (getStorageRPC baseDao)
       assert (administrator == wallet1) "Administrator was not set from pending owner"
 
 noPendingAdmin
@@ -124,7 +124,7 @@ rewritePendingOwner withOriginatedFn initialStorage =
         call baseDao (Call @"Transfer_ownership")
           (#newOwner :! wallet2)
         pure ()
-      pendingOwner <- (sPendingOwnerRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
+      pendingOwner <- sPendingOwnerRPC <$> (getStorageRPC baseDao)
       assert (pendingOwner == wallet2) "Pending owner from earlier call was not re-written"
 
 invalidatePendingOwner
@@ -139,7 +139,7 @@ invalidatePendingOwner withOriginatedFn initialStorage =
           call baseDao (Call @"Transfer_ownership")
             (#newOwner :! owner)
           pure ()
-      administrator <- (sAdminRPC . fsStorageRPC) <$> (getStorageRPC baseDao)
+      administrator <- sAdminRPC <$> (getStorageRPC baseDao)
       assert (administrator == owner) "Pending owner from earlier call was not re-written"
 
 bypassAcceptForSelf
@@ -151,7 +151,7 @@ bypassAcceptForSelf withOriginatedFn initialStorage =
       withSender owner $ do
         call baseDao (Call @"Transfer_ownership")
           (#newOwner :! (unTAddress baseDao))
-      currentAdmin <- (sAdminRPC . fsStorageRPC) <$> getStorage @FullStorage (unTAddress baseDao)
+      currentAdmin <- sAdminRPC <$> getStorage @Storage (unTAddress baseDao)
       assert (currentAdmin == (unTAddress baseDao)) "Admin address was not set"
 
 expectNotAdmin

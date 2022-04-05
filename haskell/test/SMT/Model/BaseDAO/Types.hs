@@ -45,7 +45,7 @@ newtype ModelT var a = ModelT
 
 -- | A type that keep track of blockchain state
 data ModelState var = ModelState
-  { msFullStorage :: FullStorageSkeleton (VariantToExtra var)
+  { msStorage :: StorageSkeleton (VariantToExtra var)
   , msMutez :: Mutez
   -- ^ Dao balance
 
@@ -120,18 +120,17 @@ execOperation op = do
   modify $ \ms -> ms { msContracts = updatedContracts, msMutez = newBal }
 
 getStore :: ModelT var (StorageSkeleton (VariantToExtra var))
-getStore = get <&> msFullStorage <&> fsStorage
+getStore = get <&> msStorage
 
 getConfig :: ModelT cep Config
-getConfig = get <&> msFullStorage <&> fsConfig
+getConfig = get <&> msStorage <&> sConfig
 
 modifyStore :: (StorageSkeleton (VariantToExtra var) -> ModelT var (StorageSkeleton (VariantToExtra var))) -> ModelT var ()
 modifyStore f = do
   ms :: ModelState var <- get
-  updatedStorage :: StorageSkeleton (VariantToExtra var) <- f (fsStorage $ msFullStorage $ ms)
+  updatedStorage :: StorageSkeleton (VariantToExtra var) <- f (msStorage $ ms)
   put $ ms
-    { msFullStorage = (ms & msFullStorage)
-        { fsStorage = updatedStorage }
+    { msStorage =  updatedStorage
     }
 
 -- Simple operation that only allows transfering to `FA2.TransferItem` entrypoint

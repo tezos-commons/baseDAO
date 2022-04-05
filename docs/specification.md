@@ -106,10 +106,8 @@ type config =
 
 Note:
 - see the [ligo source](../src/types.mligo) for more info about the types involved.
-- `storage` is the storage type of the contract without the configuration.
+- `storage` is the storage type of the contract.
 - `storage` can vary between variants owning to the difference in the `contract extra` field.
-- `full_storage` is instead the full storage of the contract, including its configuration,
-which is to say: `type full_storage = storage * config`.
 
 ```ocaml
 type proposal_key = bytes

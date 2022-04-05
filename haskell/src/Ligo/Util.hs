@@ -31,7 +31,7 @@ fetchValue rawPath = do
   case readValue @(ToT st) (MSFile path) valueLiteral of
     Left e ->
       -- Emit a compiler error if the value cannot be read.
-      fail (pretty e)
+      fail (pretty (untypeDemoteT @(ToT st)) <> pretty e)
     Right _ ->
       -- Emit a haskell expression that reads the value.
       [|

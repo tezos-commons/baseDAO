@@ -29,11 +29,12 @@ offChainViewStorage :: Storage
 offChainViewStorage =
   (mkStorage
   ! #admin addr
-  ! #extra dynRecUnsafe
+  ! #extra ()
   ! #metadata mempty
   ! #level 100
   ! #tokenAddress genesisAddress
   ! #quorumThreshold (mkQuorumThreshold 1 100)
+  ! #config defaultConfig
   ! defaults
   )
   where

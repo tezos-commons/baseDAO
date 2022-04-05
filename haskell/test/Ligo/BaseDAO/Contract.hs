@@ -9,7 +9,6 @@ module Ligo.BaseDAO.Contract
   , baseDAORegistryStorageLigo
   , baseDAOTreasuryStorageLigo
 
-  , baseDAOStorageLigo
   , getBaseDAOContract
   ) where
 
@@ -26,7 +25,7 @@ import Ligo.BaseDAO.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
 import Ligo.Util
 
-getBaseDAOContract :: forall cep. (Typeable cep) => Contract (ToT (Parameter' (VariantToParam cep))) (ToT (FullStorageSkeleton (VariantToExtra cep)))
+getBaseDAOContract :: forall cep. (Typeable cep) => Contract (ToT (Parameter' (VariantToParam cep))) (ToT (StorageSkeleton (VariantToExtra cep)))
 getBaseDAOContract = case eqT @cep @'Base of
   Just Refl -> baseDAOContractLigo
   Nothing -> case eqT @cep @'Registry of
@@ -35,26 +34,22 @@ getBaseDAOContract = case eqT @cep @'Base of
       Just Refl -> baseDAOTreasuryLigo
       Nothing -> error "Unknown contract"
 
-baseDAOContractLigo :: Contract (ToT Parameter) (ToT FullStorage)
+baseDAOContractLigo :: Contract (ToT Parameter) (ToT Storage)
 baseDAOContractLigo = L.toMichelsonContract
-  $$(embedContract @(Parameter' ()) @FullStorage @() "resources/trivialDAO.tz")
+  $$(embedContract @(Parameter' ()) @Storage @() "resources/trivialDAO.tz")
 
-baseDAORegistryLigo :: Contract (ToT (Parameter' RegistryCustomEpParam)) (ToT RegistryFullStorage)
+baseDAORegistryLigo :: Contract (ToT (Parameter' RegistryCustomEpParam)) (ToT RegistryStorage)
 baseDAORegistryLigo = L.toMichelsonContract
-  $$(embedContract @(Parameter' RegistryCustomEpParam) @RegistryFullStorage @() "resources/registryDAO.tz")
+  $$(embedContract @(Parameter' RegistryCustomEpParam) @RegistryStorage @() "resources/registryDAO.tz")
 
-baseDAOTreasuryLigo :: Contract (ToT (Parameter' TreasuryCustomEpParam)) (ToT TreasuryFullStorage)
+baseDAOTreasuryLigo :: Contract (ToT (Parameter' TreasuryCustomEpParam)) (ToT TreasuryStorage)
 baseDAOTreasuryLigo = L.toMichelsonContract
-  $$(embedContract @(Parameter' TreasuryCustomEpParam) @TreasuryFullStorage @() "resources/treasuryDAO.tz")
+  $$(embedContract @(Parameter' TreasuryCustomEpParam) @TreasuryStorage @() "resources/treasuryDAO.tz")
 
-baseDAOStorageLigo :: FullStorage
-baseDAOStorageLigo =
-  fromVal ($(fetchValue @FullStorage "resources/trivialDAO_storage.tz"))
-
-baseDAORegistryStorageLigo :: RegistryFullStorage
+baseDAORegistryStorageLigo :: RegistryStorage
 baseDAORegistryStorageLigo =
-  fromVal ($(fetchValue @RegistryFullStorage "resources/registryDAO_storage.tz"))
+  fromVal ($(fetchValue @RegistryStorage "resources/registryDAO_storage.tz"))
 
-baseDAOTreasuryStorageLigo :: TreasuryFullStorage
+baseDAOTreasuryStorageLigo :: TreasuryStorage
 baseDAOTreasuryStorageLigo =
-  fromVal ($(fetchValue @TreasuryFullStorage "resources/treasuryDAO_storage.tz"))
+  fromVal ($(fetchValue @TreasuryStorage "resources/treasuryDAO_storage.tz"))

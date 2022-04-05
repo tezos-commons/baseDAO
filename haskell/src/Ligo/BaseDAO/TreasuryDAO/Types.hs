@@ -4,7 +4,7 @@
 module Ligo.BaseDAO.TreasuryDAO.Types
   ( TreasuryCustomEpParam
   , TreasuryExtra (..)
-  , TreasuryFullStorage
+  , TreasuryStorage
   ) where
 
 import Universum hiding (fromInteger)
@@ -18,7 +18,7 @@ import Ligo.BaseDAO.Types
 type instance VariantToParam 'Treasury = TreasuryCustomEpParam
 type instance VariantToExtra 'Treasury = TreasuryExtra
 
-type TreasuryFullStorage = FullStorageSkeleton (VariantToExtra 'Treasury)
+type TreasuryStorage = StorageSkeleton (VariantToExtra 'Treasury)
 
 type TreasuryCustomEpParam = ()
 

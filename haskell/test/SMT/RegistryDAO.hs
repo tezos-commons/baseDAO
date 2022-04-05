@@ -38,7 +38,7 @@ hprop_RegistryDaoSMT =
     option = SmtOption
       { soMkPropose = genProposeRegistryDao
       , soMkCustomCalls = genCustomCallsRegistryDao
-      , soModifyFs = addRegistryDaoConfig registryFs
+      , soModifyS = addRegistryDaoConfig registryFs
       , soContractType = RegistryDaoContract
 
       , soProposalCheck = registryDaoProposalCheck
@@ -52,12 +52,10 @@ hprop_RegistryDaoSMT =
     withTests 30 $ property $ do
       runBaseDaoSMT @'Registry option
 
-addRegistryDaoConfig :: ("registryFs" :! RegistryFullStorage) -> RegistryFullStorage -> RegistryFullStorage
+addRegistryDaoConfig :: ("registryFs" :! RegistryStorage) -> RegistryStorage -> RegistryStorage
 addRegistryDaoConfig (Arg registryFs) fs =
-  let registryStore = fsStorage registryFs
-  in fs
-      { fsStorage = (fsStorage fs)
-          { sExtra = (sExtra registryStore)
+  let registryStore = registryFs
+  in fs { sExtra = (sExtra registryStore)
               { reFrozenScaleValue = 1
               , reFrozenExtraValue = 0
               , reMaxProposalSize = 100
@@ -67,8 +65,6 @@ addRegistryDaoConfig (Arg registryFs) fs =
               , reMaxXtzAmount = 100
               }
           }
-      , fsConfig = (fsConfig fs)
-      }
 
 -------------------------------------------------------------------------------
 -- Lambdas

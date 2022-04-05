@@ -354,11 +354,11 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
 
 originateTreasuryDao
  :: forall caps m. (MonadCleveland caps m)
- => (TreasuryFullStorage -> TreasuryFullStorage)
+ => (TreasuryStorage -> TreasuryStorage)
  -> OriginateFn 'Treasury m
 originateTreasuryDao modifyStorageFn =
   let fs = baseDAOTreasuryStorageLigo
-      FullStorageSkeleton {..} = fs
+      Storage {..} = fs
         & setExtra (\te -> te { teFrozenScaleValue = 1 })
         & setExtra (\te -> te { teFrozenExtraValue = 0 })
         & setExtra (\te -> te { teSlashScaleValue = 1 })
@@ -368,8 +368,8 @@ originateTreasuryDao modifyStorageFn =
         & setExtra (\te -> te { teMaxXtzAmount = 5 })
         & modifyStorageFn
 
-  in originateLigoDaoWithConfig @'Treasury (sExtra fsStorage)
-      (fsConfig
+  in originateLigoDaoWithConfig @'Treasury sExtra
+      (sConfig
         { cMinQuorumThreshold = fromIntegral $ mkQuorumThreshold 1 100
         , cPeriod = 10
         , cProposalFlushLevel = 20
