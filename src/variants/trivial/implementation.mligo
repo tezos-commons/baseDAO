@@ -12,6 +12,6 @@ let decision_callback (input : decision_callback_input)
 let rejected_proposal_slash_value (_, _ : proposal * contract_extra) : nat = 1n
 
 type custom_ep_param = unit
-let custom_ep (_, storage, _ : custom_ep_param * storage * config): operation list * storage
+let custom_ep (_, storage : custom_ep_param * storage): operation list * storage
   = (([] : operation list), storage)
 #endif

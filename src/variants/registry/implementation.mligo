@@ -203,31 +203,31 @@ let decision_callback (input : decision_callback_input)
       { operations = ((Tezos.set_delegate mdelegate) :: ops); extras = extras ; guardian = (None : (address option))}
 
 // A custom entrypoint to fetch values from Registry
-let lookup_registry (param, full_store : lookup_registry_param * full_storage) : operation list * storage =
+let lookup_registry (param, store : lookup_registry_param * storage) : operation list * storage =
   let view_contract : lookup_registry_view =
       match (Tezos.get_contract_opt(param.callback) : lookup_registry_view option) with
       | Some callback_contract -> callback_contract
       | None -> (failwith bad_view_contract: lookup_registry_view) in
-  let contract_extra = full_store.0.extra in
+  let contract_extra = store.extra in
   let registry : registry = contract_extra.registry in
   let value_at_key : registry_value option = Big_map.find_opt param.key registry in
   let operation : operation = Tezos.transaction (param.key, value_at_key) 0mutez view_contract
-  in ((operation :: nil_op), full_store.0)
+  in ((operation :: nil_op), store)
 
-let default_registry_DAO_full_storage (data : initial_registryDAO_storage) : full_storage =
-  let (store, config) = default_full_storage (data.base_data) in
-  let new_storage = { store with
+let default_registry_DAO_storage (data : initial_registryDAO_storage) : storage =
+  let store = default_storage (data.base_data) in
+  { store with
     extra = default_extra
-  } in (new_storage, config)
+  }
 
 // We are not using this right now, but just leaving here in case we might want it
 // soon.
-let successful_proposal_receiver_view (full_storage : full_storage): proposal_receivers =
-  full_storage.0.extra.proposal_receivers
+let successful_proposal_receiver_view (storage : storage): proposal_receivers =
+  storage.extra.proposal_receivers
 
-let custom_ep (custom_ep_param, storage, config : custom_ep_param * storage * config): operation list * storage
+let custom_ep (custom_ep_param, storage : custom_ep_param * storage): operation list * storage
   = match custom_ep_param with
-  | Lookup_registry p -> lookup_registry(p, (storage, config))
+  | Lookup_registry p -> lookup_registry(p, storage)
   | _ -> (([]: operation list), storage)
 
 #endif

@@ -74,18 +74,16 @@ $(OUT)/trivialDAO_storage.tz: src/**
 	cp src/variants/trivial/storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/trivialDAO_storage.tz \
-      src/base_DAO.mligo -e base_DAO_contract "default_full_storage( \
-        { storage_data = \
-          { admin = (\"$(call require_defined,admin_address)\" : address) \
-          ; guardian = (\"$(call require_defined,guardian_address)\" : address) \
-          ; governance_token = \
-            { address = (\"$(call require_defined,governance_token_address)\" : address) \
-            ; token_id = ($(call require_defined,governance_token_id) : nat) \
-            } \
-          ; start_level = {blocks = $(call require_defined,start_level)} \
-          ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
-          ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
-          } \
+      src/base_DAO.mligo -e base_DAO_contract "default_storage( \
+        { admin = (\"$(call require_defined,admin_address)\" : address) \
+				; guardian = (\"$(call require_defined,guardian_address)\" : address) \
+				; governance_token = \
+					{ address = (\"$(call require_defined,governance_token_address)\" : address) \
+					; token_id = ($(call require_defined,governance_token_id) : nat) \
+					} \
+				; start_level = {blocks = $(call require_defined,start_level)} \
+				; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+				; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
         ; config_data = \
           { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
           ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
@@ -127,19 +125,17 @@ $(OUT)/registryDAO_storage.tz: src/**
 	cp src/variants/registry/storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/registryDAO_storage.tz \
-      src/base_DAO.mligo -e base_DAO_contract "default_registry_DAO_full_storage( \
+      src/base_DAO.mligo -e base_DAO_contract "default_registry_DAO_storage( \
         { base_data = \
-          { storage_data = \
-            { admin = (\"$(call require_defined,admin_address)\" : address) \
-            ; guardian = (\"$(call require_defined,guardian_address)\" : address) \
-            ; governance_token = \
-              { address = (\"$(call require_defined,governance_token_address)\" : address) \
-              ; token_id = ($(call require_defined,governance_token_id) : nat) \
-              } \
-            ; start_level = {blocks = $(call require_defined,start_level)} \
-            ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
-            ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
-            } \
+          { admin = (\"$(call require_defined,admin_address)\" : address) \
+					; guardian = (\"$(call require_defined,guardian_address)\" : address) \
+					; governance_token = \
+						{ address = (\"$(call require_defined,governance_token_address)\" : address) \
+						; token_id = ($(call require_defined,governance_token_id) : nat) \
+						} \
+					; start_level = {blocks = $(call require_defined,start_level)} \
+					; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+					; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
             ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
@@ -188,19 +184,17 @@ $(OUT)/treasuryDAO_storage.tz: src/**
 	cp src/variants/treasury/storage.mligo src/implementation_storage.mligo
 	mkdir -p $(OUT)
 	$(BUILD_STORAGE) --output-file $(OUT)/treasuryDAO_storage.tz \
-       src/base_DAO.mligo -e base_DAO_contract "default_treasury_DAO_full_storage( \
+       src/base_DAO.mligo -e base_DAO_contract "default_treasury_DAO_storage( \
         { base_data = \
-          { storage_data = \
-            { admin = (\"$(call require_defined,admin_address)\" : address) \
-            ; guardian = (\"$(call require_defined,guardian_address)\" : address) \
-            ; governance_token = \
-              { address = (\"$(call require_defined,governance_token_address)\" : address) \
-              ; token_id = ($(call require_defined,governance_token_id) : nat) \
-              } \
-            ; start_level = {blocks = $(call require_defined,start_level)} \
-            ; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
-            ; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
-            } \
+          { admin = (\"$(call require_defined,admin_address)\" : address) \
+					; guardian = (\"$(call require_defined,guardian_address)\" : address) \
+					; governance_token = \
+						{ address = (\"$(call require_defined,governance_token_address)\" : address) \
+						; token_id = ($(call require_defined,governance_token_id) : nat) \
+						} \
+					; start_level = {blocks = $(call require_defined,start_level)} \
+					; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+					; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
             ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
