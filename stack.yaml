@@ -9,25 +9,24 @@ packages:
   - haskell
 
 extra-deps:
-- git: https://gitlab.com/morley-framework/morley.git
-  # ^ CI cannot use ssh, so we use http clone here
-  commit: 146da727ff486c46b0ec9f392d955f07d797848e # master
-  subdirs:
-    - code/morley
-    - code/morley-prelude
-    - code/morley-client
-    - code/lorentz
-    - code/cleveland
+
+# Stable versions available on Hackage
+- cleveland-0.1.1
+- morley-1.16.3
+- morley-client-0.1.1
+- morley-prelude-0.5.1
+- lorentz-0.13.3
+
 - git: https://gitlab.com/morley-framework/indigo.git
-  commit: e879e5f282afb8d25d72d8ba132f22d3d9e628a1 # master
+  commit: 8074d3c6a03d6e79b7ddb48b323bca72bf6c2767 # master
   subdirs:
     - .
 - git: https://gitlab.com/morley-framework/morley-ledgers.git
-  commit: b39a971f42bb113a5b3e23c9145253e27ad6e049 # master
+  commit: 81ce02e733b6c33e4d4fe8034e65d95f03a5f0a7 # master
   subdirs:
     - code/morley-ledgers
 - git: https://gitlab.com/morley-framework/morley-metadata.git
-  commit: 81b947ca1d74f3487a5b5c8e2141c37bf374f747 # master
+  commit: c7d545897bad10bc98ceb1d9672f184b108dd40e # master
   subdirs:
     - code/morley-metadata
 
