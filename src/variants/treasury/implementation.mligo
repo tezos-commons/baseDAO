@@ -87,13 +87,13 @@ let decision_callback (input : decision_callback_input)
 // Storage Generator
 // -------------------------------------
 
-let default_treasury_DAO_full_storage (data : initial_treasuryDAO_storage) : full_storage =
-  let (store, config) = default_full_storage (data.base_data) in
-  let new_storage = { store with
+let default_treasury_DAO_storage (data : initial_treasuryDAO_storage) : storage =
+  let store = default_storage (data.base_data)
+  in { store with
     extra = default_extra
-  } in (new_storage, config)
+  }
 
-let custom_ep (_, storage, _ : custom_ep_param * storage * config): operation list * storage
+let custom_ep (_, storage : custom_ep_param * storage): operation list * storage
   =  (([]: operation list), storage)
 
 #endif

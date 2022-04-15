@@ -32,14 +32,14 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.RegistryDAO.Types
 
-getStorageRPCRegistry :: forall p vd caps m. MonadCleveland caps m => TAddress p vd ->  m (FullStorageRPC' (VariantToExtra 'Registry))
-getStorageRPCRegistry addr = getStorage @(FullStorageSkeleton (VariantToExtra 'Registry)) (unTAddress addr)
+getStorageRPCRegistry :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra 'Registry))
+getStorageRPCRegistry addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) (unTAddress addr)
 
 withOriginated
   :: MonadCleveland caps m
   => Integer
-  -> ([Address] -> RegistryFullStorage)
-  -> ([Address] -> RegistryFullStorage -> TAddress (Parameter' RegistryCustomEpParam) () -> TAddress FA2.Parameter () -> m a)
+  -> ([Address] -> RegistryStorage)
+  -> ([Address] -> RegistryStorage -> TAddress (Parameter' RegistryCustomEpParam) () -> TAddress FA2.Parameter () -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
@@ -47,13 +47,11 @@ withOriginated addrCount storageFn tests = do
   let storageInitial = storageFn addresses
   now_level <- getLevel
   let storage = storageInitial
-        { fsStorage = (fsStorage storageInitial)
-          { sGovernanceToken = GovernanceToken
+        { sGovernanceToken = GovernanceToken
               { gtAddress = dodTokenContract
               , gtTokenId = FA2.theTokenId
               }
           , sStartLevel = now_level
-          }
         }
 
   baseDao <- originateUntyped $ UntypedOriginateData
@@ -64,8 +62,8 @@ withOriginated addrCount storageFn tests = do
     }
   tests addresses storage (TAddress baseDao) (TAddress dodTokenContract)
 
-toPeriod :: RegistryFullStorage -> Natural
-toPeriod = unPeriod . cPeriod . fsConfig
+toPeriod :: RegistryStorage -> Natural
+toPeriod = unPeriod . cPeriod . sConfig
 
 -- | We test non-token entrypoints of the BaseDAO contract here
 test_RegistryDAO :: [TestTree]
@@ -264,7 +262,7 @@ test_RegistryDAO =
               withSender admin $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
-              maxProposalSize <- (reMaxProposalSize . sExtraRPC . fsStorageRPC) <$> getStorageRPCRegistry baseDao
+              maxProposalSize <- (reMaxProposalSize . sExtraRPC) <$> getStorageRPCRegistry baseDao
               assert (maxProposalSize == 341) "Unexpected max_proposal_size update"
 
     , testScenario "checks on-chain view correctly returns the registry value" $ scenario $ do
@@ -653,7 +651,7 @@ test_RegistryDAO =
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            receiversSet <- (reProposalReceivers . sExtraRPC . fsStorageRPC) <$> getStorageRPCRegistry baseDao
+            receiversSet <- (reProposalReceivers . sExtraRPC) <$> getStorageRPCRegistry baseDao
             assert ((wallet1 `S.member` receiversSet) && (wallet2 `S.member` receiversSet))
               "Proposal receivers was not updated as expected"
 
@@ -703,7 +701,7 @@ test_RegistryDAO =
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            receiversSet <- (reProposalReceivers . sExtraRPC . fsStorageRPC) <$> getStorageRPCRegistry baseDao
+            receiversSet <- (reProposalReceivers . sExtraRPC) <$> getStorageRPCRegistry baseDao
             assert (Prelude.not (wallet1 `S.member` receiversSet))
               "Proposal receivers was not updated as expected"
     ]
@@ -712,29 +710,22 @@ test_RegistryDAO =
 
     -- Here we parse the storage value from compiled ligo storage, which
     -- contains the RegistryDAO callbacks implemented in LIGO, and we just use
-    -- `fromVal` to convert it to a 'FullStorage'. Then we can set the
+    -- `fromVal` to convert it to a 'Storage'. Then we can set the
     -- RegistryDAO configuration values using the setExtra function below, and
     -- initialize the contract using it. This let us have the callbacks from LIGO
     -- in storage, and allows to tweak RegistryDAO configuration in tests.
-    initialStorage :: Address -> RegistryFullStorage
+    initialStorage :: Address -> RegistryStorage
     initialStorage admin = let
-      fs = baseDAORegistryStorageLigo { fsStorage = (fsStorage baseDAOStorageLigo) { sExtra = def } }
-      oldStorage = fsStorage fs
-      oldConfig = fsConfig fs
-
-      newStorage = oldStorage
-        { sAdmin = admin
-        }
-      in fs { fsStorage = newStorage
-            , fsConfig = oldConfig
+      fs = baseDAORegistryStorageLigo { sExtra = def }
+      in fs { sAdmin = admin, sConfig = (sConfig fs)
                 { cPeriod = 11
                 , cProposalFlushLevel = 22
                 , cProposalExpiredLevel = 33
                 , cGovernanceTotalSupply = 100
-                }
-            }
 
-    initialStorageWithExplictRegistryDAOConfig :: Address -> RegistryFullStorage
+          }}
+
+    initialStorageWithExplictRegistryDAOConfig :: Address -> RegistryStorage
     initialStorageWithExplictRegistryDAOConfig admin = (initialStorage admin)
       & setExtra (\re -> re { reRegistry = M.empty })
       & setExtra (\re -> re { reRegistryAffected = M.empty })

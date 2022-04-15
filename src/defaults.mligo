@@ -46,13 +46,12 @@ let default_config (data : initial_config_data) : config =
     proposal_expired_level = data.proposal_expired_level;
   }
 
-
-let default_storage (data, config_data : initial_storage_data * initial_config_data ) : storage =
+let default_storage (data: initial_data) : storage =
   let quorum_threshold =
         bound_qt
-          (  to_signed(config_data.quorum_threshold)
-          ,  to_signed(config_data.min_quorum)
-          ,  to_signed(config_data.max_quorum) ) in
+          (  to_signed(data.config_data.quorum_threshold)
+          ,  to_signed(data.config_data.min_quorum)
+          ,  to_signed(data.config_data.max_quorum) ) in
   let frozen_token_id: nat = 0n in
   let (freeze_history, total) =
     List.fold freeze_history_constructor data.freeze_history ((Big_map.empty : freeze_history), 0n) in
@@ -79,7 +78,5 @@ let default_storage (data, config_data : initial_storage_data * initial_config_d
       };
     frozen_total_supply = total;
     delegates = (Big_map.empty : delegates);
+    config = default_config (data.config_data);
   }
-
-let default_full_storage (data : initial_data) : full_storage =
-  ( default_storage (data.storage_data, data.config_data), default_config (data.config_data) )

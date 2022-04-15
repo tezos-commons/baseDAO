@@ -152,6 +152,36 @@ type proposal_doubly_linked_list =
   ; map: ((proposal_key * plist_direction), proposal_key) big_map
   }
 
+type config =
+  { max_quorum_threshold : quorum_fraction
+  // ^ Determine the maximum value of quorum threshold that is allowed.
+  ; min_quorum_threshold : quorum_fraction
+  // ^ Determine the minimum value of quorum threshold that is allowed.
+
+  ; period : period
+  // ^ Determines the stages length.
+
+  ; fixed_proposal_fee_in_token : nat
+  // ^ A base fee paid for submitting a new proposal.
+
+  ; max_quorum_change : quorum_fraction
+  // ^ A percentage value that limits the quorum_threshold change during
+  // every update of the same.
+  ; quorum_change : quorum_fraction
+  // ^ A percentage value that is used in the computation of new quorum
+  // threshold value.
+  ; governance_total_supply : nat
+  // ^ The total supply of governance tokens used in the computation of
+  // of new quorum threshold value at each stage.
+
+  ; proposal_flush_level : blocks
+  // ^ The proposal age at (and above) which the proposal is considered flushable.
+  // Has to be bigger than `period * 2`
+  ; proposal_expired_level : blocks
+  // ^ The proposal age at (and above) which the proposal is considered expired.
+  // Has to be bigger than `proposal_flush_time`
+  }
+
 type storage =
   { governance_token : governance_token
   ; admin : address
@@ -169,6 +199,7 @@ type storage =
   ; quorum_threshold_at_cycle : quorum_threshold_at_cycle
   ; frozen_total_supply : nat
   ; delegates : delegates
+  ; config : config
   }
 
 // -- Parameter -- //
@@ -273,59 +304,21 @@ type initial_config_data =
   ; governance_total_supply : nat
   }
 
-type initial_storage_data =
+type initial_data =
   { admin : address
   ; guardian : address
   ; governance_token : governance_token
   ; start_level : blocks
   ; metadata_map : metadata_map
   ; freeze_history : freeze_history_list
-  }
-
-type initial_data =
-  { storage_data : initial_storage_data
   ; config_data : initial_config_data
   }
 
 type decision_callback = decision_callback_input -> decision_callback_output
 
-type config =
-  { max_quorum_threshold : quorum_fraction
-  // ^ Determine the maximum value of quorum threshold that is allowed.
-  ; min_quorum_threshold : quorum_fraction
-  // ^ Determine the minimum value of quorum threshold that is allowed.
-
-  ; period : period
-  // ^ Determines the stages length.
-
-  ; fixed_proposal_fee_in_token : nat
-  // ^ A base fee paid for submitting a new proposal.
-
-  ; max_quorum_change : quorum_fraction
-  // ^ A percentage value that limits the quorum_threshold change during
-  // every update of the same.
-  ; quorum_change : quorum_fraction
-  // ^ A percentage value that is used in the computation of new quorum
-  // threshold value.
-  ; governance_total_supply : nat
-  // ^ The total supply of governance tokens used in the computation of
-  // of new quorum threshold value at each stage.
-
-  ; proposal_flush_level : blocks
-  // ^ The proposal age at (and above) which the proposal is considered flushable.
-  // Has to be bigger than `period * 2`
-  ; proposal_expired_level : blocks
-  // ^ The proposal age at (and above) which the proposal is considered expired.
-  // Has to be bigger than `proposal_flush_time`
-  }
-
-type full_storage = storage * config
-
 // -- Misc -- //
 
 type return = operation list * storage
-
-type return_with_full_storage = operation list * full_storage
 
 let nil_op = ([] : operation list)
 

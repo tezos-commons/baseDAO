@@ -4,7 +4,7 @@
 module Ligo.BaseDAO.RegistryDAO.Types
   ( RegistryCustomEpParam (..)
   , RegistryExtra (..)
-  , RegistryFullStorage
+  , RegistryStorage
   , LookupRegistryParam (..)
   ) where
 
@@ -88,4 +88,4 @@ instance HasAnnotation RegistryExtra where
 type instance VariantToParam 'Registry = RegistryCustomEpParam
 type instance VariantToExtra 'Registry = RegistryExtra
 
-type RegistryFullStorage = FullStorageSkeleton (VariantToExtra 'Registry)
+type RegistryStorage = StorageSkeleton (VariantToExtra 'Registry)

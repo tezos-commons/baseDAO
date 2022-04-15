@@ -36,7 +36,7 @@ hprop_TreasuryDaoSMT =
     option = SmtOption
       { soMkPropose = genProposeTreasuryDao
       , soMkCustomCalls = genCustomCallsTreasuryDao
-      , soModifyFs = addTreasuryDaoConfig treasuryFs
+      , soModifyS = addTreasuryDaoConfig treasuryFs
       , soContractType = TreasuryDaoContract
 
       , soProposalCheck = treasuryDaoProposalCheck
@@ -49,13 +49,9 @@ hprop_TreasuryDaoSMT =
       runBaseDaoSMT @'Treasury option
 
 
-addTreasuryDaoConfig :: ("treasuryFs" :! TreasuryFullStorage) -> TreasuryFullStorage -> TreasuryFullStorage
+addTreasuryDaoConfig :: ("treasuryFs" :! TreasuryStorage) -> TreasuryStorage -> TreasuryStorage
 addTreasuryDaoConfig (Arg treasuryFs) fs =
-  let treasuryStore = treasuryFs & fsStorage
-      treasuryConfig = treasuryFs & fsConfig
-  in fs
-      { fsStorage = (fs & fsStorage)
-          { sExtra = (sExtra treasuryStore)
+  fs { sExtra = (sExtra treasuryFs)
               { teFrozenScaleValue = 1
               , teFrozenExtraValue = 0
               , teMaxProposalSize = 100
@@ -64,9 +60,8 @@ addTreasuryDaoConfig (Arg treasuryFs) fs =
               , teMinXtzAmount = 0
               , teMaxXtzAmount = 100
               }
+          , sConfig = sConfig treasuryFs
           }
-      , fsConfig = treasuryConfig
-      }
 
 -------------------------------------------------------------------------------
 -- Lambdas

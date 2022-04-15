@@ -71,11 +71,6 @@ module Ligo.BaseDAO.Types
   , Config (..)
   , ConfigRPC (..)
   , ContractExtraConstrain
-  , FullStorage
-  , FullStorageRPC
-  , FullStorageRPC'
-  , FullStorageSkeleton (..)
-  , FullStorageSkeletonRPC (..)
   , AddressFreezeHistory (..)
   , DynamicRec
   , DynamicRec' (..)
@@ -84,7 +79,7 @@ module Ligo.BaseDAO.Types
   , mkMetadataMap
   , mkConfig
   , defaultConfig
-  , mkFullStorage
+  , mkStorage'
   , setExtra
   , prev
   , next
@@ -96,9 +91,9 @@ import Fmt (Buildable, build, genericF)
 
 import Lorentz hiding (div, now)
 import Lorentz.Annotation ()
-import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Lorentz.Contracts.Spec.TZIP16Interface qualified as TZIP16
-import Morley.AsRPC (HasRPCRepr(..), deriveRPC, deriveRPCWithStrategy)
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
+import Morley.AsRPC (HasRPCRepr(..), TAsRPC, deriveRPC, deriveRPCWithStrategy)
 import Morley.Michelson.Typed.Annotation
 import Morley.Michelson.Typed.T (T(TUnit))
 import Morley.Michelson.Untyped.Annotation
@@ -647,8 +642,42 @@ instance HasRPCRepr QuorumFraction where
 instance HasRPCRepr Period where
   type AsRPC Period = Period
 
+newtype FixedFee = FixedFee Natural
+  deriving stock (Show, Generic, Eq)
+  deriving newtype (Num)
+  deriving anyclass IsoValue
+
+instance HasRPCRepr FixedFee where
+  type AsRPC FixedFee = FixedFee
+
+data Config = Config
+  { cMaxQuorumThreshold :: QuorumFraction
+  , cMinQuorumThreshold :: QuorumFraction
+
+  , cFixedProposalFee :: FixedFee
+  , cPeriod :: Period
+  , cMaxQuorumChange :: QuorumFraction
+  , cQuorumChange :: QuorumFraction
+  , cGovernanceTotalSupply :: GovernanceTotalSupply
+  , cProposalFlushLevel :: Natural
+  , cProposalExpiredLevel :: Natural
+  }
+
+customGeneric "Config" ligoLayout
+
+deriving stock instance Show Config
+deriving stock instance Eq Config
+deriving anyclass instance IsoValue Config
+instance HasAnnotation Config where
+  annOptions = baseDaoAnnOptions
+instance Buildable Config where
+  build = genericF
+
+deriveRPCWithStrategy "Config" ligoLayout
+
 data StorageSkeleton ce = Storage
   { sAdmin :: Address
+  , sConfig :: Config
   , sDelegates :: Delegates' BigMap
   , sExtra :: ce
   , sFreezeHistory :: BigMap Address AddressFreezeHistory
@@ -664,19 +693,48 @@ data StorageSkeleton ce = Storage
   , sQuorumThresholdAtCycle :: QuorumThresholdAtCycle
   , sStakedVotes :: BigMap (Address, ProposalKey) StakedVote
   , sStartLevel :: Natural
-  } deriving stock (Generic, Eq)
-    deriving anyclass IsoValue
+  } deriving stock Eq
+
+customGeneric "StorageSkeleton" ligoLayout
 
 deriving stock instance Show ce => Show (StorageSkeleton ce)
 instance Buildable ce => Buildable (StorageSkeleton ce) where
   build = genericF
 instance HasAnnotation ce => HasAnnotation (StorageSkeleton ce) where
   annOptions = baseDaoAnnOptions
+deriving anyclass instance IsoValue ce => IsoValue (StorageSkeleton ce)
 
-deriveRPC "StorageSkeleton"
+-- We manually derive RPC counterpart of storage now.
+-- TODO: Revert this once https://gitlab.com/morley-framework/morley/-/issues/754
+-- is resolved.
+data StorageSkeletonRPC ce = StorageSkeletonRPC
+  { sAdminRPC :: Address
+  , sConfigRPC :: Config
+  , sDelegatesRPC :: Delegates' BigMapId
+  , sExtraRPC :: ce
+  , sFreezeHistoryRPC :: BigMapId Address AddressFreezeHistory
+  , sFrozenTokenIdRPC :: FA2.TokenId
+  , sFrozenTotalSupplyRPC :: Natural
+  , sGovernanceTokenRPC :: GovernanceToken
+  , sGuardianRPC :: Address
+  , sMetadataRPC :: TZIP16.MetadataMapId
+  , sOngoingProposalsDlistRPC :: Maybe ProposalDoublyLinkedListRPC
+  , sPendingOwnerRPC :: Address
+  , sPermitsCounterRPC :: Nonce
+  , sProposalsRPC :: BigMapId ProposalKey Proposal
+  , sQuorumThresholdAtCycleRPC :: QuorumThresholdAtCycle
+  , sStakedVotesRPC :: BigMapId (Address, ProposalKey) StakedVote
+  , sStartLevelRPC :: Natural
+  }
 
-type Storage = StorageSkeleton (ContractExtra' BigMap)
-type StorageRPC = StorageSkeletonRPC (ContractExtra' BigMap)
+customGeneric "StorageSkeletonRPC" ligoLayout
+deriving anyclass instance IsoValue ce => IsoValue (StorageSkeletonRPC ce)
+
+instance (TAsRPC (ToT ce) ~ ToT (AsRPC ce)) => HasRPCRepr (StorageSkeleton ce) where
+  type AsRPC (StorageSkeleton ce) = StorageSkeletonRPC (AsRPC ce)
+
+type Storage = StorageSkeleton (VariantToExtra 'Base)
+type StorageRPC = StorageSkeletonRPC (VariantToExtra 'Base)
 
 instance HasAnnotation GovernanceToken where
   annOptions = baseDaoAnnOptions
@@ -692,7 +750,7 @@ instance Buildable FixedFee where
 instance HasAnnotation AddressFreezeHistory where
   annOptions = baseDaoAnnOptions
 
-instance HasFieldOfType Storage name field => StoreHasField Storage name field where
+instance HasFieldOfType (StorageSkeleton (ContractExtra' BigMap)) name field => StoreHasField (StorageSkeleton (ContractExtra' BigMap)) name field where
   storeFieldOps = storeFieldOpsADT
 
 mkStorage
@@ -702,6 +760,7 @@ mkStorage
   -> "level" :! Natural
   -> "tokenAddress" :! Address
   -> "quorumThreshold" :! QuorumThreshold
+  -> "config" :! Config
   -> StorageSkeleton ce
 mkStorage
   (arg #admin -> admin)
@@ -709,9 +768,11 @@ mkStorage
   (arg #metadata -> metadata)
   (arg #level -> lvl)
   (arg #tokenAddress -> tokenAddress)
-  (arg #quorumThreshold -> qt) =
+  (arg #quorumThreshold -> qt)
+  (arg #config -> config) =
   Storage
     { sAdmin = admin
+    , sConfig = config
     , sGuardian = admin
     , sExtra = extra
     , sMetadata = metadata
@@ -749,14 +810,6 @@ mkMetadataMap
       hostChain
       hostAddress
 
-newtype FixedFee = FixedFee Natural
-  deriving stock (Show, Generic, Eq)
-  deriving newtype (Num)
-  deriving anyclass IsoValue
-
-instance HasRPCRepr FixedFee where
-  type AsRPC FixedFee = FixedFee
-
 data DecisionCallbackInput' ce = DecisionCallbackInput'
   { diProposal :: Proposal
   , diExtra :: ce
@@ -788,31 +841,6 @@ deriving stock instance Show ce => Show (DecisionCallbackOutput' ce)
 instance HasAnnotation ce => HasAnnotation (DecisionCallbackOutput' ce) where
   annOptions = baseDaoAnnOptions
 
-data Config = Config
-  { cMaxQuorumThreshold :: QuorumFraction
-  , cMinQuorumThreshold :: QuorumFraction
-
-  , cFixedProposalFee :: FixedFee
-  , cPeriod :: Period
-  , cMaxQuorumChange :: QuorumFraction
-  , cQuorumChange :: QuorumFraction
-  , cGovernanceTotalSupply :: GovernanceTotalSupply
-  , cProposalFlushLevel :: Natural
-  , cProposalExpiredLevel :: Natural
-  }
-
-customGeneric "Config" ligoLayout
-
-deriving stock instance Show Config
-deriving stock instance Eq Config
-deriving anyclass instance IsoValue Config
-instance HasAnnotation Config where
-  annOptions = baseDaoAnnOptions
-instance Buildable Config where
-  build = genericF
-
-deriveRPCWithStrategy "Config" ligoLayout
-
 mkConfig
   :: Period
   -> FixedFee
@@ -835,31 +863,12 @@ mkConfig votingPeriod fixedProposalFee maxChangePercent changePercent governance
 defaultConfig :: Config
 defaultConfig = mkConfig (Period 20) (FixedFee 0) 19 5 (GovernanceTotalSupply 500)
 
-data FullStorageSkeleton ce = FullStorageSkeleton
-  { fsStorage :: StorageSkeleton ce
-  , fsConfig :: Config
-  } deriving stock (Generic, Eq)
-    deriving anyclass IsoValue
-
-deriving stock instance Show ce => Show (FullStorageSkeleton ce)
-instance Buildable ce => Buildable (FullStorageSkeleton ce) where
-  build = genericF
-instance HasAnnotation ce => HasAnnotation (FullStorageSkeleton ce) where
-  annOptions = baseDaoAnnOptions
-
-deriveRPC "FullStorageSkeleton"
-
-type FullStorage = FullStorageSkeleton (VariantToExtra 'Base)
-
-type FullStorageRPC = FullStorageSkeletonRPC (VariantToExtra 'Base)
-type FullStorageRPC' ce = FullStorageSkeletonRPC ce
-
 type ContractExtraConstrain ce = (NiceStorage ce, NiceUnpackedValue (AsRPC ce))
 
-setExtra :: (ce -> ce) -> FullStorageSkeleton ce -> FullStorageSkeleton ce
-setExtra fn fsk = fsk { fsStorage = (fsStorage fsk) { sExtra = fn $ sExtra $ fsStorage fsk } }
+setExtra :: (ce -> ce) -> StorageSkeleton ce -> StorageSkeleton ce
+setExtra fn fsk = fsk { sExtra = fn $ sExtra fsk }
 
-mkFullStorage
+mkStorage'
   :: forall cep. "admin" :! Address
   -> "votingPeriod" :? Period
   -> "quorumThreshold" :? QuorumThreshold
@@ -870,12 +879,11 @@ mkFullStorage
   -> "metadata" :! TZIP16.MetadataMap
   -> "level" :! Natural
   -> "tokenAddress" :! Address
-  -> FullStorageSkeleton (VariantToExtra cep)
-mkFullStorage admin vp qt mcp cp gts extra mdt lvl tokenAddress = FullStorageSkeleton
-  { fsStorage = mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt))
-  , fsConfig  = mkConfig
+  -> StorageSkeleton (VariantToExtra cep)
+mkStorage' admin vp qt mcp cp gts extra mdt lvl tokenAddress = let
+  config = mkConfig
       (argDef #votingPeriod votingPeriodDef vp) (FixedFee 0) (argDef #maxChangePercent 19 mcp) (argDef #changePercent 5 cp) (argDef #governanceTotalSupply (GovernanceTotalSupply 100) gts)
-  }
+  in mkStorage admin extra mdt lvl tokenAddress (#quorumThreshold (argDef #quorumThreshold quorumThresholdDef qt)) (#config config)
   where
     quorumThresholdDef = mkQuorumThreshold 1 10 -- 10% of frozen total supply
     votingPeriodDef = Period $ 60 * 60 * 24 * 7  -- 7 days

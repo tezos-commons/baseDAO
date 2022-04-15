@@ -26,7 +26,7 @@ hprop_SMT =
     option = SmtOption
       { soMkPropose = genPropose
       , soMkCustomCalls = pure []
-      , soModifyFs = addBaseDaoConfig
+      , soModifyS = addBaseDaoConfig
       , soContractType = BaseDaoContract
 
       , soProposalCheck = \_ -> pass
@@ -43,10 +43,8 @@ hprop_SMT =
     withTests 30 $ property $ do
       runBaseDaoSMT @'Base option
 
-addBaseDaoConfig :: FullStorageSkeleton (VariantToExtra 'Base) -> FullStorageSkeleton (VariantToExtra 'Base)
-addBaseDaoConfig fs = fs
-  { fsStorage = (fsStorage fs) { sExtra = () }
-  }
+addBaseDaoConfig :: StorageSkeleton (VariantToExtra 'Base) -> StorageSkeleton (VariantToExtra 'Base)
+addBaseDaoConfig fs = fs { sExtra = () }
 
 genPropose :: MkGenPropose 'Base
 genPropose senderInput delegate1 invalidFrom = do

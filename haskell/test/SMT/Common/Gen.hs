@@ -62,6 +62,7 @@ genContractCallGroup = do
 
 genStorage :: Default (VariantToExtra var) => GeneratorT var (Address -> Address -> StorageSkeleton (VariantToExtra var))
 genStorage = do
+  config <- genConfig
   userPool <- get <&> gsAddresses
   admin <- userPool <&> fst & Gen.element
 
@@ -94,6 +95,7 @@ genStorage = do
         , sMetadata = mempty
         , sPendingOwner = admin
         , sPermitsCounter = Nonce 0
+        , sConfig = config
         }
 
 genConfig :: GeneratorT cep Config
@@ -160,17 +162,16 @@ genModelState :: Default (VariantToExtra var) => SmtOption var -> GeneratorT var
 genModelState SmtOption{..} = do
 
   mkStore <- genStorage
-  config <- genConfig
-  let mkFs = \guardian gov -> FullStorageSkeleton (mkStore guardian gov) config
+  let mkFs = \guardian gov -> mkStore guardian gov
 
   selfAddrPlaceholder <- genAddress
   pure $ \guardian gov ->
     let fs = mkFs guardian gov
     in ModelState
-        { msFullStorage = fs
+        { msStorage = fs
         , msMutez = zeroMutez
 
-        , msLevel = fs & fsStorage & sStartLevel
+        , msLevel = fs & sStartLevel
         , msChainId = dummyChainId
         , msSelfAddress = selfAddrPlaceholder -- This will be replace when dao is originated
         , msGovernanceTokenAddress = gov

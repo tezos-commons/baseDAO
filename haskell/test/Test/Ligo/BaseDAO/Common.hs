@@ -175,8 +175,7 @@ originateLigoDaoWithConfig extra config qt = do
   guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
 
   let originationOffset = 12
-  let fullStorage = FullStorageSkeleton
-        { fsStorage =
+  let storage =
             ( mkStorage
               ! #extra extra
               ! #admin admin
@@ -188,17 +187,16 @@ originateLigoDaoWithConfig extra config qt = do
                 -- to the actual block that includes origination so that the tests have a lesser chance
                 -- to fail due to this difference.
               ! #quorumThreshold qt
+              ! #config config
             )
             { sGuardian = guardianContract
             }
-        , fsConfig = config
-        }
   let
 
     originateData = UntypedOriginateData
       { uodName = "BaseDAO"
       , uodBalance = zeroMutez
-      , uodStorage = untypeValue $ toVal $ fullStorage
+      , uodStorage = untypeValue $ toVal storage
       , uodContract = convertContract $ getBaseDAOContract @cep
       }
 

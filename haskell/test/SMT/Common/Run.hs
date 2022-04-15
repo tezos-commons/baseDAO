@@ -66,23 +66,23 @@ runBaseDaoSMT option@SmtOption{..} = do
         -- as well as in the model state
         let currentLevel = (dummyLevel + (ms & msLevel))
 
-        let (fullStorage :: FullStorageSkeleton (VariantToExtra var)) = msFullStorage ms
-        let storage :: StorageSkeleton (VariantToExtra var) = (fsStorage fullStorage) { sStartLevel = currentLevel, sExtra = sExtra (fsStorage fullStorage) }
+        let (fullStorage :: StorageSkeleton (VariantToExtra var)) = msStorage ms
+        let storage :: StorageSkeleton (VariantToExtra var) = fullStorage { sStartLevel = currentLevel, sExtra = sExtra fullStorage }
 
         -- Set initial level for the Nettest
         advanceToLevel currentLevel
 
-        -- Modify `FullStorage` from the generator with registry/treasury configuration.
-        let newMs :: ModelState var = ms { msLevel = currentLevel, msFullStorage = soModifyFs (fullStorage { fsStorage = storage }) }
+        -- Modify `Storage` from the generator with registry/treasury configuration.
+        let newMs :: ModelState var = ms { msLevel = currentLevel, msStorage = soModifyS storage  }
 
         -- Originate Dao for Nettest
         dao <- case soContractType of
           BaseDaoContract ->
-            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msFullStorage)) (T.convertContract baseDAOContractLigo)
+            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msStorage)) (T.convertContract baseDAOContractLigo)
           RegistryDaoContract ->
-            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msFullStorage)) (T.convertContract baseDAORegistryLigo)
+            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msStorage)) (T.convertContract baseDAORegistryLigo)
           TreasuryDaoContract ->
-            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msFullStorage)) (T.convertContract baseDAOTreasuryLigo)
+            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msStorage)) (T.convertContract baseDAOTreasuryLigo)
 
         -- Send some mutez to registry/treasury dao since they can run out of mutez
         newBal <-
@@ -131,7 +131,7 @@ handleCallLoop (dao, gov, viewC) (mc:mcs) ms = do
   let (haskellErrors, updatedMs) = handleCallViaHaskell mc ms
       haskellStoreE = case haskellErrors of
         Just err -> Left err
-        Nothing -> Right (fsStorage $ msFullStorage updatedMs)
+        Nothing -> Right (msStorage updatedMs)
       haskellDaoBalance = msMutez updatedMs
 
       govContract = updatedMs & msContracts
@@ -260,7 +260,7 @@ handleCallViaLigo (dao, gov, viewC) mc = do
   fs <- getFullStorage (unTAddress dao)
   let fsE = case result of
         Just err -> Left err
-        Nothing -> Right (fs & fsStorage)
+        Nothing -> Right fs
 
   daoBalance <- getBalance dao
 

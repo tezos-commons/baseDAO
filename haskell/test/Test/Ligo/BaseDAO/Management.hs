@@ -31,7 +31,7 @@ import Test.Ligo.BaseDAO.Management.TransferOwnership
 withOriginated
   :: MonadCleveland caps m
   => Integer
-  -> ([Address] -> FullStorage)
+  -> ([Address] -> Storage)
   -> ([Address] -> TAddress Parameter () -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
@@ -94,7 +94,7 @@ test_BaseDAO_Management =
 
   where
 
-    initialStorage currentLevel admin = mkFullStorage @'Base
+    initialStorage currentLevel admin = mkStorage' @'Base
       ! #admin admin
       ! #extra ()
       ! #metadata mempty

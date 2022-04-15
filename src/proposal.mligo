@@ -103,9 +103,9 @@ let unstake_vote_one (config: config) (store , proposal_key : storage * proposal
 (*
  * Unstake voter's tokens on multiple proposals. Fail if an error occurred in one of the calls.
  *)
-let unstake_vote (params, config, store : unstake_vote_param * config * storage): return =
+let unstake_vote (params, store : unstake_vote_param * storage): return =
   ( nil_op
-  , List.fold (unstake_vote_one config) params store
+  , List.fold (unstake_vote_one store.config) params store
   )
 
 // -----------------------------------------------------------------
@@ -197,13 +197,13 @@ let submit_vote (proposal, vote_param, author, period, store : proposal * vote_p
   }
 
 
-let vote(votes, config, store : vote_param_permited list * config * storage): return =
+let vote(votes, store : vote_param_permited list * storage): return =
   let accept_vote = fun (store, pp : storage * vote_param_permited) ->
     let (param, author, store) = verify_permit_protected_vote (pp, store) in
     let valid_from = check_delegate (pp.argument.from, author, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
-    let store = ensure_proposal_voting_stage (proposal, config.period, store) in
-    let store = submit_vote (proposal, param, valid_from, config.period, store) in
+    let store = ensure_proposal_voting_stage (proposal, store.config.period, store) in
+    let store = submit_vote (proposal, param, valid_from, store.config.period, store) in
     store
   in
   (nil_op, List.fold accept_vote votes store)
@@ -244,7 +244,8 @@ let do_total_vote_meet_quorum_threshold (proposal, store: proposal * storage): b
   let reached_quorum = (votes_placed * quorum_denominator) / total_supply in
   (reached_quorum >= proposal.quorum_threshold.numerator)
 
-let propose (param, config, store : propose_params * config * storage): return =
+let propose (param, store : propose_params * storage): return =
+  let config = store.config in
   let valid_from = check_delegate (param.from, Tezos.sender, store) in
   let _ : unit = proposal_check (param, store.extra) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
@@ -289,25 +290,25 @@ let handle_proposal_is_over
 (*
  * Flush a proposal, starting from the first. Remove it when the flush is done, and move to the next proposal.
  *)
-let rec flush_each (n, config, store, ops : int * config * storage * operation list): (operation list * storage * int) =
+let rec flush_each (n, store, ops : int * storage * operation list): (operation list * storage * int) =
   let (plist_head, plist_new) = plist_pop store.ongoing_proposals_dlist in
   // Ensure plist is not empty.
   match plist_head with
     | Some first_key ->
         let proposal = check_if_proposal_exist (first_key, store) in
         // Ensure the proposal is not expired.
-        let _ = if is_proposal_age (proposal, config.proposal_expired_level)
+        let _ = if is_proposal_age (proposal, store.config.proposal_expired_level)
             then (failwith expired_proposal : unit)
             else unit in
 
         // Ensure counter is not reached yet and the the proposal is flushable.
-        if (n > 0 && is_proposal_age (proposal, config.proposal_flush_level)) then
+        if (n > 0 && is_proposal_age (proposal, store.config.proposal_flush_level)) then
           // Unstake tokens, and execute proposal's decision_callback.
-          let (ops, store) = handle_proposal_is_over (config, proposal, store, ops) in
+          let (ops, store) = handle_proposal_is_over (store.config, proposal, store, ops) in
           // Update the stored plist.
           let store = { store with ongoing_proposals_dlist = plist_new } in
           // Continue to the next proposal
-          flush_each (n - 1, config, store, ops)
+          flush_each (n - 1, store, ops)
         else
           (ops, store, n)
     | None ->
@@ -316,8 +317,8 @@ let rec flush_each (n, config, store, ops : int * config * storage * operation l
 (*
  * Flush all proposals that passed their voting stage.
  *)
-let flush(n, config, store : nat * config * storage): return =
-  let (ops, store, new_n) = flush_each (int(n), config, store, nil_op) in
+let flush(n, store : nat * storage): return =
+  let (ops, store, new_n) = flush_each (int(n), store, nil_op) in
 
   // prevent empty flushes to avoid gas costs when unnecessary.
   if new_n = int(n)
@@ -327,9 +328,9 @@ let flush(n, config, store : nat * config * storage): return =
 (*
  * Removes an accepted and finished proposal by key.
  *)
-let drop_proposal (proposal_key, config, store : proposal_key * config * storage): return =
+let drop_proposal (proposal_key, store : proposal_key * storage): return =
   let proposal = check_if_proposal_exist (proposal_key, store) in
-  let proposal_is_expired = is_proposal_age (proposal, config.proposal_expired_level) in
+  let proposal_is_expired = is_proposal_age (proposal, store.config.proposal_expired_level) in
 
   if   (sender = proposal.proposer)
     || (sender = store.guardian && sender <> source) // Guardian cannot be equal to SOURCE
@@ -338,8 +339,8 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
     let store = unstake_proposer_token
           ( false // A dropped proposal is treated as rejected regardless of its actual votes
           , proposal
-          , config.period
-          , config.fixed_proposal_fee_in_token
+          , store.config.period
+          , store.config.fixed_proposal_fee_in_token
           , store
           ) in
     let store =
@@ -350,12 +351,12 @@ let drop_proposal (proposal_key, config, store : proposal_key * config * storage
   else
     (failwith drop_proposal_condition_not_met : return)
 
-let freeze (amt, config, store : freeze_param * config * storage) : return =
+let freeze (amt, store : freeze_param * storage) : return =
   let addr = Tezos.sender in
   let (operations, frozen_total_supply) = lock_governance_tokens (amt, addr, store.frozen_total_supply, store.governance_token) in
 
   // Add the `amt` to the current stage frozen token count of the freeze-history.
-  let current_stage = get_current_stage_num(store.start_level, config.period) in
+  let current_stage = get_current_stage_num(store.start_level, store.config.period) in
   let new_freeze_history_for_address = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
         let fh = update_fh(current_stage, fh) in
@@ -367,9 +368,9 @@ let freeze (amt, config, store : freeze_param * config * storage) : return =
     ; freeze_history = Big_map.update addr (Some(new_freeze_history_for_address)) store.freeze_history
   })
 
-let unfreeze (amt, config, store : unfreeze_param * config * storage) : return =
+let unfreeze (amt, store : unfreeze_param * storage) : return =
   let addr = Tezos.sender in
-  let current_stage = get_current_stage_num(store.start_level, config.period) in
+  let current_stage = get_current_stage_num(store.start_level, store.config.period) in
 
   let new_freeze_history =
     match Big_map.find_opt addr store.freeze_history with
