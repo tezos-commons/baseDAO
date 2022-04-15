@@ -5,7 +5,7 @@ env:
   TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER: "Y"
   # this key is defined in local-chain bootstrap accounts list in
   # https://github.com/serokell/aquarius-infra/blob/master/servers/albali/chain.nix
-  TASTY_CLEVELAND_MONEYBAG_SECRET_KEY: "unencrypted:edsk3nAQ3uCP7vc2ccLhhWNNncgFfWQ5HgTyPawepQ8DURRRfzVQzB"
+  CHAIN_TEST_MONEYBAG_SECRET_KEY: "unencrypted:edsk3nAQ3uCP7vc2ccLhhWNNncgFfWQ5HgTyPawepQ8DURRRfzVQzB"
 
 steps:
   - label: hlint
@@ -103,9 +103,16 @@ steps:
       # from building the tests twice and 'ligo-test' running time is mostly that.
     commands: &ligo-nettest
     - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
-    - export TASTY_CLEVELAND_DATA_DIR="$(mktemp -d --tmpdir="$$PWD")"
-    - nix run -f ci.nix tezos-client -c
-      ./result/bin/baseDAO-test
+    # Note that 'refill-balance' below is the initial 'TASTY_CLEVELAND_MONEYBAG_SECRET_KEY' balance
+    # which may need to be adjusted in case of insufficient balance errors
+    - $(nix-build ci.nix -A run-chain-tests
+        --argstr refill-balance 400
+        --argstr node-endpoint $$TASTY_CLEVELAND_NODE_ENDPOINT
+        --argstr step-moneybag $$CHAIN_TEST_MONEYBAG_SECRET_KEY --no-out-link
+        --argstr scenario './result/bin/baseDAO-test
+          --color=always
+          --cleveland-mode=only-network
+          --xml=./test-report.xml')
 
   - label: check typescript api
     if: *not_scheduled

@@ -18,7 +18,7 @@ rec {
   inherit (pkgs.callPackage sources.nix-npm-buildpackage { }) buildYarnPackage;
   morley-infra = import sources.morley-infra;
 
-  inherit (morley-infra) stack2cabal tezos-client weeder-hacks;
+  inherit (morley-infra) stack2cabal tezos-client weeder-hacks run-chain-tests;
 
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
