@@ -13,11 +13,12 @@ rec {
     sourcesOverride = { hackage = sources."hackage.nix"; stackage = sources."stackage.nix"; };
   };
   pkgs = import sources.nixpkgs haskell-nix.nixpkgsArgs;
-  weeder-hacks = import sources.haskell-nix-weeder { inherit pkgs; };
-  tezos-client = (import "${sources.tezos-packaging}/nix/build/pkgs.nix" {}).ocamlPackages.tezos-client;
   ligo = (pkgs.runCommand "ligo" {} "mkdir -p $out/bin; cp ${sources.ligo} $out/bin/ligo; chmod +x $out/bin/ligo");
   morley = (import "${sources.morley}/ci.nix").packages.morley.exes.morley;
   inherit (pkgs.callPackage sources.nix-npm-buildpackage { }) buildYarnPackage;
+  morley-infra = import sources.morley-infra;
+
+  inherit (morley-infra) stack2cabal tezos-client weeder-hacks;
 
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
@@ -129,23 +130,9 @@ rec {
     '';
   };
 
-  # nixpkgs has weeder 2, but we use weeder 1
-  weeder-legacy = pkgs.haskellPackages.callHackageDirect {
-    pkg = "weeder";
-    ver = "1.0.9";
-    sha256 = "0gfvhw7n8g2274k74g8gnv1y19alr1yig618capiyaix6i9wnmpa";
-  } {};
-
   # a derivation which generates a script for running weeder
-  weeder-script = weeder-hacks.weeder-script {
-    weeder = weeder-legacy;
+  weeder-script = morley-infra.weeder-script {
     hs-pkgs = hs-pkgs-development;
-    local-packages = local-packages;
+    inherit local-packages;
   };
-
-  # stack2cabal is broken because of strict constraints, set 'jailbreak' to ignore them
-  stack2cabal = pkgs.haskell.lib.overrideCabal pkgs.haskellPackages.stack2cabal (drv: {
-    jailbreak = true;
-    broken = false;
-  });
 }

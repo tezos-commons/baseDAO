@@ -11,18 +11,6 @@
         "url": "https://github.com/input-output-hk/hackage.nix/archive/92a2b1faff6afb43b217bf8b34e48147d5505e77.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "haskell-nix-weeder": {
-        "branch": "master",
-        "description": "haskell.nix + weeder",
-        "homepage": null,
-        "owner": "serokell",
-        "repo": "haskell-nix-weeder",
-        "rev": "a959fce7499df473e13336959cba77fbc87f3b7f",
-        "sha256": "1pmlndvbhzxj1k5f87d9dxfa00zbvmkmvnbd1davzwg77bd639l0",
-        "type": "tarball",
-        "url": "https://github.com/serokell/haskell-nix-weeder/archive/a959fce7499df473e13336959cba77fbc87f3b7f.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "haskell.nix": {
         "branch": "zhenya/ops1122-fix-snapshot-path-pin",
         "description": "Alternative Haskell Infrastructure for Nixpkgs",
@@ -47,6 +35,13 @@
         "url": "https://gitlab.com/morley-framework/morley/-/archive/morley-1.13.0/morley-morley-1.13.0.tar.gz",
         "url_template": "https://gitlab.com/morley-framework/morley/-/archive/morley-<version>/morley-morley-<version>.tar.gz",
         "version": "1.13.0"
+    },
+    "morley-infra": {
+        "rev": "b67cb8a39061b20d11c11d30428b2ff7974f72b5",
+        "sha256": "0czn2k1njd6lhhrr41bkmc045bdjqdql510ars8ld8dvizwpgkg8",
+        "type": "tarball",
+        "url": "https://gitlab.com/morley-framework/morley-infra/-/archive/b67cb8a39061b20d11c11d30428b2ff7974f72b5/morley-infra-b67cb8a39061b20d11c11d30428b2ff7974f72b5.tar.gz",
+        "url_template": "https://gitlab.com/morley-framework/morley-infra/-/archive/<rev>/morley-infra-<rev>.tar.gz"
     },
     "nix-npm-buildpackage": {
         "branch": "master",
@@ -82,18 +77,6 @@
         "sha256": "0169qvd3xb3a3bcr2wj5yqrhb9v5i5198jp1zawlgimq4px8li1y",
         "type": "tarball",
         "url": "https://github.com/input-output-hk/stackage.nix/archive/8222c5eef15f0882412a4afc5bfc9d3a70edef1d.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "tezos-packaging": {
-        "branch": "master",
-        "description": "Various form of distribution for tezos-related executables",
-        "homepage": "",
-        "owner": "serokell",
-        "repo": "tezos-packaging",
-        "rev": "012636a917cddcad59d06ed80ec3b7d5d7a893e2",
-        "sha256": "1m9nnjrxb5iar926qdqsi9f2nb5r4rya8a23rmj8871815jwalcn",
-        "type": "tarball",
-        "url": "https://github.com/serokell/tezos-packaging/archive/012636a917cddcad59d06ed80ec3b7d5d7a893e2.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xrefcheck": {
