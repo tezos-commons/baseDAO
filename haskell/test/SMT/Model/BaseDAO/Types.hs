@@ -30,7 +30,7 @@ import Data.Map qualified as Map
 import Fmt
 import Text.Show (show)
 
-import Lorentz hiding (cast, get, not)
+import Lorentz hiding (cast, get, not, subMutez)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Tezos.Address (ContractHash(..))
 import Morley.Tezos.Core
