@@ -156,8 +156,8 @@ type config =
   ; min_quorum_threshold : quorum_fraction
   // ^ Determine the minimum value of quorum threshold that is allowed.
 
-  ; period : period
-  // ^ Determines the stages length.
+  ; voting_period_params : voting_period_params
+  // ^ Determines the length of a BaseDAO cycle and of its two stages.
 
   ; fixed_proposal_fee_in_token : nat
   // ^ A base fee paid for submitting a new proposal.
@@ -319,5 +319,14 @@ type decision_callback = decision_callback_input -> decision_callback_output
 type return = operation list * storage
 
 let nil_op = ([] : operation list)
+
+// Here we save both levels_per_cycle and cycles_per_period because we need to
+// answer two questions.
+// What cycle are we at?
+//   This is computed as `current_level - start_level/levels_per_cycle`.
+type voting_period_params =
+  { voting_stage_size : blocks
+  ; proposal_stage_size : blocks
+  }
 
 #endif  // TYPES_H included

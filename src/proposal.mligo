@@ -345,46 +345,18 @@ let drop_proposal (proposal_key, store : proposal_key * storage): return =
 
 let freeze (keyhash, store : freeze_param * storage) : return =
   // Procedure
-  // 1. Are there unstaked frozen tokens from past stages, If yes, we clear all of them, else proceed.
-  // 2. Are there frozen tokens already from the same stage. If yes, we fail, else proceed.
-  // 3. Freeze exactly the voting_power amount of tokens.
+  // 1. Check frozen_history and see if there are frozen tokens for current cycle, if yes, fail.
+  // 2. Else query voting power for the sender, and save it it frozen history with current cycle.
   let addr = Tezos.sender in
+  let current_cycle = get_current_cycle_num(storage.start_level, storage.config.voting_period_params.voting_stage_size + storage.config.voting_period_params.proposal_stage_size) in
   let amt = Tezos.voting_power (keyhash) in
-  let frozen_total_supply = store.frozen_total_supply + amt in
-
-  // Add the `amt` to the current stage frozen token count of the freeze-history.
-  let current_stage = get_current_stage_num(store.start_level, store.config.period) in
-  let new_freeze_history_for_address = match Big_map.find_opt addr store.freeze_history with
-    | Some fh ->
-        let fh = update_fh(current_stage, fh) in
-        add_frozen_fh(amt, fh)
-    | None -> { current_stage_num = current_stage; staked = 0n; current_unstaked = amt; past_unstaked = 0n;}
-  in
-  (([] : operation list), { store with
-      frozen_total_supply = frozen_total_supply
-    ; freeze_history = Big_map.update addr (Some(new_freeze_history_for_address)) store.freeze_history
-  })
-
-let unfreeze (amt, store : unfreeze_param * storage) : return =
-  // Procedure
-  // 1. Are there unstaked frozen tokens from past stages, If yes, we clear all of them, else proceed.
-  // 2. Are there frozen tokens already from the same stage. If yes, we fail, else proceed.
-  // 3. Freeze exactly the voting_power amount of tokens.
-  let addr = Tezos.sender in
-  let current_stage = get_current_stage_num(store.start_level, store.config.period) in
-
-  let new_freeze_history =
+  let nfh =
     match Big_map.find_opt addr store.freeze_history with
-    | Some fh ->
-        let fh = update_fh(current_stage, fh) in
-        let fh = sub_frozen_fh(amt, fh) in
-        Big_map.update addr (Some(fh)) store.freeze_history
-    | None ->
-        (failwith not_enough_frozen_tokens : freeze_history)
+    | Some fh -> if fh.current_cycle_num == current_cycle_num
+        then store.freeze_history
+        else Big_map.update addr (Some { current_cycle_num = current_cycle ; frozen_tokens = amt }) store.freeze_history
+    | None -> Big_map.add addr (Some { current_cycle_num = current_cycle ; frozen_tokens = amt }) store.freeze_history
   in
+  (([] : operation list), { store with freeze_history = nfh })
 
-    (([] : operation list), { store with
-        freeze_history = new_freeze_history
-      ; frozen_total_supply = frozen_total_supply
-    })
 #endif

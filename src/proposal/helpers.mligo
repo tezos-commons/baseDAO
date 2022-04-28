@@ -19,12 +19,13 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
     else (failwith proposal_not_exist : proposal)
 
 (*
- * Gets the current stage counting how many `period` s have passed since
- * the `start`. The stages are zero-index.
+ * Gets the current cycle counting how many `cycles` s have passed since
+ * the `start`. The stages are zero-index. Returns the cycle count and any
+ * reminder levels
  *)
-let get_current_stage_num(start, vp : blocks * period) : nat =
+let get_current_cycle_num(start, vp : blocks * blocks) : (nat, nat) =
   match is_nat((Tezos.level - start.blocks) : int) with
-  | Some (elapsed_levels) -> elapsed_levels/vp.blocks
+  | Some (elapsed_levels) -> ediv(elapsed_levels, vp.blocks)
   | None -> (failwith bad_state : nat)
 
 [@inline]
