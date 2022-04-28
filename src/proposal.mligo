@@ -113,14 +113,6 @@ let unstake_vote (params, store : unstake_vote_param * storage): return =
 // -----------------------------------------------------------------
 
 
-let lock_governance_tokens (tokens, addr, frozen_total_supply, governance_token : nat * address * nat * governance_token)
-    : (operation list * nat) =
-  // Call transfer on token_contract to transfer `token` number of
-  // tokens from `addr` to the address of this contract.
-  let param = { from_ = addr; txs = [{ amount = tokens; to_ = Tezos.self_address; token_id = governance_token.token_id }]} in
-  let operation = make_transfer_on_token ([param], governance_token.address) in
-  ([operation], frozen_total_supply + tokens)
-
 let stake_tk(token_amount, addr, period, store : nat * address * period * storage): storage =
   let current_stage = get_current_stage_num(store.start_level, period) in
   let new_cycle_staked = store.quorum_threshold_at_cycle.staked + token_amount in
@@ -351,9 +343,14 @@ let drop_proposal (proposal_key, store : proposal_key * storage): return =
   else
     (failwith drop_proposal_condition_not_met : return)
 
-let freeze (amt, store : freeze_param * storage) : return =
+let freeze (keyhash, store : freeze_param * storage) : return =
+  // Procedure
+  // 1. Are there unstaked frozen tokens from past stages, If yes, we clear all of them, else proceed.
+  // 2. Are there frozen tokens already from the same stage. If yes, we fail, else proceed.
+  // 3. Freeze exactly the voting_power amount of tokens.
   let addr = Tezos.sender in
-  let (operations, frozen_total_supply) = lock_governance_tokens (amt, addr, store.frozen_total_supply, store.governance_token) in
+  let amt = Tezos.voting_power (keyhash) in
+  let frozen_total_supply = store.frozen_total_supply + amt in
 
   // Add the `amt` to the current stage frozen token count of the freeze-history.
   let current_stage = get_current_stage_num(store.start_level, store.config.period) in
@@ -363,12 +360,16 @@ let freeze (amt, store : freeze_param * storage) : return =
         add_frozen_fh(amt, fh)
     | None -> { current_stage_num = current_stage; staked = 0n; current_unstaked = amt; past_unstaked = 0n;}
   in
-  ((operations : operation list), { store with
+  (([] : operation list), { store with
       frozen_total_supply = frozen_total_supply
     ; freeze_history = Big_map.update addr (Some(new_freeze_history_for_address)) store.freeze_history
   })
 
 let unfreeze (amt, store : unfreeze_param * storage) : return =
+  // Procedure
+  // 1. Are there unstaked frozen tokens from past stages, If yes, we clear all of them, else proceed.
+  // 2. Are there frozen tokens already from the same stage. If yes, we fail, else proceed.
+  // 3. Freeze exactly the voting_power amount of tokens.
   let addr = Tezos.sender in
   let current_stage = get_current_stage_num(store.start_level, store.config.period) in
 
@@ -382,9 +383,7 @@ let unfreeze (amt, store : unfreeze_param * storage) : return =
         (failwith not_enough_frozen_tokens : freeze_history)
   in
 
-  let (operations, frozen_total_supply) = unlock_governance_tokens (amt, Tezos.sender, store.frozen_total_supply, store.governance_token) in
-
-    ((operations : operation list), { store with
+    (([] : operation list), { store with
         freeze_history = new_freeze_history
       ; frozen_total_supply = frozen_total_supply
     })

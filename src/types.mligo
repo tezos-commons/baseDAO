@@ -9,15 +9,13 @@
 type token_id = nat
 
 // Frozen token history for an address.
-// This tracks the stage number in which it was last updated and differentiates between
-// tokens that were frozen during that stage and the ones frozen in any other before.
-// It does so because only tokens that were frozen in the past can be staked, which is
-// also why it tracks staked tokens in a single field.
+// This tracks the BaseDAO cycle number in which tokens for an address was frozen.
+// Frozen tokens essentially cache the voting_power of an address for a Tezos voting
+// period. This is becasue one BaseDAO cycle exactly overlaps one Tezos voting period.
+// And voting power for delegates is only updated at the start of the Tezos voting period.
 type address_freeze_history =
-  { current_stage_num : nat
-  ; staked : nat
-  ; current_unstaked : nat
-  ; past_unstaked : nat
+  { current_cycle_num : nat
+  ; frozen_tokens : nat
   }
 
 // Frozen token history for all addresses
@@ -204,7 +202,7 @@ type storage =
 
 // -- Parameter -- //
 
-type freeze_param = nat
+type freeze_param = key_hash
 type unfreeze_param = nat
 type unstake_vote_param = proposal_key list
 
