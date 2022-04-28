@@ -6,13 +6,12 @@
 
 type registry_key = string
 type registry_value = string
-type registry = (registry_key, registry_value) map
+type registry = (registry_key, registry_value) big_map
 type proposal_key = bytes
 
-type registry = (registry_key, registry_value) map
 type contract_extra =
   { registry : registry
-  ; registry_affected : (registry_key, proposal_key) map
+  ; registry_affected : (registry_key, proposal_key) big_map
   ; proposal_receivers : address set
   ; frozen_scale_value : nat
   ; frozen_extra_value : nat
@@ -24,8 +23,8 @@ type contract_extra =
   }
 
 let default_extra : contract_extra =
-  { registry = (Map.empty : registry)
-  ; registry_affected = (Map.empty : (registry_key, proposal_key) map)
+  { registry = (Big_map.empty : registry)
+  ; registry_affected = (Big_map.empty : (registry_key, proposal_key) big_map)
   ; proposal_receivers = (Set.empty : address set)
   ; frozen_scale_value = 1n
   ; frozen_extra_value = 0n

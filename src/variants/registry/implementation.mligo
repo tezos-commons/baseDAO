@@ -20,7 +20,7 @@ let apply_diff_registry (diff, registry : registry_diff * registry) : registry =
   let
     foldFn (registry, update: registry * (registry_key * registry_value option)) : registry =
       let (registry_key, registry_value) = update in
-      Map.update registry_key registry_value registry
+      Big_map.update registry_key registry_value registry
   in List.fold foldFn diff registry
 
 let apply_diff_registry_affected
@@ -30,7 +30,7 @@ let apply_diff_registry_affected
     foldFn (registry_affected, update: registry_affected * (registry_key *
       registry_value option)) : registry_affected =
       let registry_key = update.0 in
-      Map.update registry_key (Some (proposal_key)) registry_affected
+      Big_map.update registry_key (Some (proposal_key)) registry_affected
   in List.fold foldFn diff registry_affected
 
 let apply_diff (diff, ce : registry_diff * contract_extra) : contract_extra =

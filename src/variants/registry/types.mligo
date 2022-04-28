@@ -8,8 +8,8 @@
 type registry_key = string
 type registry_value = string
 
-type registry = (registry_key, registry_value) map
-type registry_affected = (registry_key, proposal_key) map
+type registry = (registry_key, registry_value) big_map
+type registry_affected = (registry_key, proposal_key) big_map
 type registry_diff = (registry_key * registry_value option) list
 type proposal_receivers = address set
 

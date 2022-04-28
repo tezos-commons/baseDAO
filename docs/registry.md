@@ -10,11 +10,11 @@ It's parameterized by two types: `k` (for key) and `v` (for value).
 In the bundled in RegistryDAO, these `k` and `v` parameters are set as `string`s.
 
 Extra storage data:
-1. `map k v` is the actual key-value storage.
-2. `map k proposalId` for each `k` stores IDs of the proposal that affected `k` last time.
+1. `big_map k v` is the actual key-value storage.
+2. `big_map k proposalId` for each `k` stores IDs of the proposal that affected `k` last time.
 3. `set address` is the set of successful-proposal receiver contract addresses.
 
-We store these two `map`s separately because we want to include `proposalId` for deleted keys as well.
+We store these two `big_map`s separately because we want to include `proposalId` for deleted keys as well.
 Alternatively, we can merge them and store `option v` values.
 It should be treated as an implementation detail.
 There is additional data to implement configuration callbacks, it's an implementation detail as well.
