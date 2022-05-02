@@ -7,7 +7,7 @@
 let validate_proposal_flush_expired_level (data : initial_config_data) : unit =
   if data.proposal_expired_level.blocks <= data.proposal_flush_level.blocks then
     failwith("proposal_expired_level needs to be bigger than proposal_flush_level")
-  else if data.proposal_flush_level.blocks < (data.period.blocks * 2n) then
+  else if data.proposal_flush_level.blocks < (to_basedao_period(data.voting_period_params) * 2n) then
     failwith("proposal_flush_level needs to be more than twice the 'period' length.")
   else unit
 
@@ -23,10 +23,8 @@ let freeze_history_constructor (acc, param : (freeze_history * nat) * (address *
   let (freeze_history, total) = acc in
   let (key, amt) = param in
   let entry : address_freeze_history =
-        { current_stage_num = 0n
-        ; staked = 0n
-        ; current_unstaked = amt
-        ; past_unstaked = 0n
+        { current_cycle_num = 0n
+        ; frozen_tokens = 0n
         } in
   ( Big_map.add key entry freeze_history
   , total + amt
@@ -36,7 +34,7 @@ let default_config (data : initial_config_data) : config =
   let _ : unit = validate_proposal_flush_expired_level(data) in
   let _ : unit = validate_quorum_threshold_bound(data) in {
     fixed_proposal_fee_in_token = data.fixed_proposal_fee_in_token;
-    period = data.period;
+    voting_period_params = data.voting_period_params;
     max_quorum_threshold = to_signed(data.max_quorum);
     min_quorum_threshold = to_signed(data.min_quorum);
     max_quorum_change = to_signed(data.max_quorum_change);

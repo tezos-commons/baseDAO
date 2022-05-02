@@ -25,12 +25,11 @@ let ensure_proposal_is_unique (propose_params, store : propose_params * storage)
     then (failwith proposal_not_unique: proposal_key)
     else proposal_key
 
-let unstake_tk(token_amount, burn_amount, addr, period, store : nat * nat * address * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, period) in
+let unstake_tk(token_amount, burn_amount, addr, store : nat * nat * address * storage): storage =
+  let current_stage = get_current_stage_num(store.start_level, store.config.voting_period_params) in
   match Big_map.find_opt addr store.freeze_history with
     | Some(fh) ->
-        let fh = update_fh(current_stage, fh) in
-        let fh = unstake_frozen_fh(token_amount, burn_amount, fh) in
+        let fh = unstake_frozen_fh(token_amount, fh) in
         let new_freeze_history = Big_map.update addr (Some(fh)) store.freeze_history in
         let new_total_supply =
           match Michelson.is_nat (store.frozen_total_supply - burn_amount) with
@@ -93,7 +92,7 @@ let unstake_vote_one (config: config) (store , proposal_key : storage * proposal
       | None -> (failwith voter_does_not_exist : staked_vote) in
 
   // Do the unstake
-  let store = unstake_tk(staked_vote_amount, 0n, Tezos.sender, config.period, store) in
+  let store = unstake_tk(staked_vote_amount, 0n, Tezos.sender, store) in
 
   // Remove voter's vote from staked amounts
   { store with
@@ -113,12 +112,11 @@ let unstake_vote (params, store : unstake_vote_param * storage): return =
 // -----------------------------------------------------------------
 
 
-let stake_tk(token_amount, addr, period, store : nat * address * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, period) in
+let stake_tk(token_amount, addr, store : nat * address * storage): storage =
+  let current_stage = get_current_stage_num(store.start_level, store.config.voting_period_params) in
   let new_cycle_staked = store.quorum_threshold_at_cycle.staked + token_amount in
   let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
-        let fh = update_fh(current_stage, fh) in
         let fh = stake_frozen_fh(token_amount, fh) in
         Big_map.update addr (Some(fh)) store.freeze_history
     | None ->
@@ -140,9 +138,9 @@ let unlock_governance_tokens (tokens, addr, frozen_total_supply, governance_toke
         (failwith bad_state : nat)
   in ([operation], new_total_supply)
 
-let add_proposal (propose_params, period, store : propose_params * period * storage): storage =
+let add_proposal (propose_params, store : propose_params * storage): storage =
   let proposal_key = ensure_proposal_is_unique (propose_params, store) in
-  let current_stage = get_current_stage_num(store.start_level, period) in
+  let current_stage = get_current_stage_num(store.start_level, store.config.voting_period_params) in
   let store = ensure_proposing_stage(current_stage, store) in
   let proposal : proposal =
     { upvotes = 0n
@@ -165,7 +163,7 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
 // Vote
 // -----------------------------------------------------------------
 
-let submit_vote (proposal, vote_param, author, period, store : proposal * vote_param * address * period * storage): storage =
+let submit_vote (proposal, vote_param, author, store : proposal * vote_param * address * storage): storage =
   let proposal_key = vote_param.proposal_key in
 
   // Check if voter is already existed or not.
@@ -181,7 +179,7 @@ let submit_vote (proposal, vote_param, author, period, store : proposal * vote_p
           then { proposal with upvotes = proposal.upvotes + vote_param.vote_amount }
           else { proposal with downvotes = proposal.downvotes + vote_param.vote_amount } in
 
-  let store = stake_tk(vote_param.vote_amount, author, period, store) in
+  let store = stake_tk(vote_param.vote_amount, author, store) in
 
   { store with
       proposals = Big_map.add proposal_key proposal store.proposals
@@ -194,15 +192,15 @@ let vote(votes, store : vote_param_permited list * storage): return =
     let (param, author, store) = verify_permit_protected_vote (pp, store) in
     let valid_from = check_delegate (pp.argument.from, author, store) in
     let proposal = check_if_proposal_exist (param.proposal_key, store) in
-    let store = ensure_proposal_voting_stage (proposal, store.config.period, store) in
-    let store = submit_vote (proposal, param, valid_from, store.config.period, store) in
+    let store = ensure_proposal_voting_stage (proposal, store.config.voting_period_params, store) in
+    let store = submit_vote (proposal, param, valid_from, store) in
     store
   in
   (nil_op, List.fold accept_vote votes store)
 
 let unstake_proposer_token
-  (is_accepted, proposal, period, fixed_fee, store :
-    bool * proposal * period * nat * storage): storage =
+  (is_accepted, proposal, fixed_fee, store :
+    bool * proposal * nat * storage): storage =
   // Get proposer token and burn amount
   let (tokens, burn_amount) =
     if is_accepted
@@ -220,7 +218,7 @@ let unstake_proposer_token
     in
 
   // Do the unstake for the proposer
-  unstake_tk(tokens, burn_amount, proposal.proposer, period, store)
+  unstake_tk(tokens, burn_amount, proposal.proposer, store)
 
 [@inline]
 let is_proposal_age (proposal, target : proposal * blocks): bool =
@@ -241,10 +239,10 @@ let propose (param, store : propose_params * storage): return =
   let valid_from = check_delegate (param.from, Tezos.sender, store) in
   let _ : unit = proposal_check (param, store.extra) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
-  let current_stage = get_current_stage_num(store.start_level, config.period) in
+  let current_stage = get_current_stage_num(store.start_level, store.config.voting_period_params) in
   let store = update_quorum(current_stage, store, config) in
-  let store = stake_tk(amount_to_freeze, valid_from, config.period, store) in
-  let store = add_proposal (param, config.period, store) in
+  let store = stake_tk(amount_to_freeze, valid_from, store) in
+  let store = add_proposal (param, store) in
   (nil_op, store)
 
 (*
@@ -260,7 +258,7 @@ let handle_proposal_is_over
           && proposal.upvotes > proposal.downvotes
   in
   let store = unstake_proposer_token
-        (cond, proposal, config.period, config.fixed_proposal_fee_in_token, store) in
+        (cond, proposal, config.fixed_proposal_fee_in_token, store) in
   let (new_ops, store) =
     if cond
     then
@@ -331,7 +329,6 @@ let drop_proposal (proposal_key, store : proposal_key * storage): return =
     let store = unstake_proposer_token
           ( false // A dropped proposal is treated as rejected regardless of its actual votes
           , proposal
-          , store.config.period
           , store.config.fixed_proposal_fee_in_token
           , store
           ) in
@@ -344,18 +341,29 @@ let drop_proposal (proposal_key, store : proposal_key * storage): return =
     (failwith drop_proposal_condition_not_met : return)
 
 let freeze (keyhash, store : freeze_param * storage) : return =
-  // Procedure
-  // 1. Check frozen_history and see if there are frozen tokens for current cycle, if yes, fail.
-  // 2. Else query voting power for the sender, and save it it frozen history with current cycle.
+  // This operation basically just caches the voting power for the sender
+  // for the current cycle. This value is considered as "Frozen" tokens.
+  // If there is a cached value for the current cycle, then this call is
+  // a NOP.
+
+  // The logic of this is tied to the BaseDAO cycle (proposal + voting period)
+  // being the exact duration of one tezos voting period. If this is not the
+  // case, then cached voting powers can get outdated and allow senders to stake
+  // more then their voting power for a particular period.
+
   let addr = Tezos.sender in
-  let current_cycle = get_current_cycle_num(storage.start_level, storage.config.voting_period_params.voting_stage_size + storage.config.voting_period_params.proposal_stage_size) in
+  let (current_cycle, _) = get_current_cycle_num(store.start_level, { blocks = store.config.voting_period_params.voting_stage_size.blocks + store.config.voting_period_params.proposal_stage_size.blocks }) in
   let amt = Tezos.voting_power (keyhash) in
   let nfh =
     match Big_map.find_opt addr store.freeze_history with
-    | Some fh -> if fh.current_cycle_num == current_cycle_num
+    | Some fh -> if fh.current_cycle_num = current_cycle
+        // Check frozen_history and see if there are frozen tokens for current cycle, if yes, do nothing.
         then store.freeze_history
+        // else save voting power for sender in frozen history with current cycle.
         else Big_map.update addr (Some { current_cycle_num = current_cycle ; frozen_tokens = amt }) store.freeze_history
-    | None -> Big_map.add addr (Some { current_cycle_num = current_cycle ; frozen_tokens = amt }) store.freeze_history
+    | None ->
+        // If there is not a stored freeze history, then insert one for the sender.
+        Big_map.add addr { current_cycle_num = current_cycle ; frozen_tokens = amt } store.freeze_history
   in
   (([] : operation list), { store with freeze_history = nfh })
 

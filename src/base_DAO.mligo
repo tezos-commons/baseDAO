@@ -25,7 +25,6 @@ let requiring_no_xtz (param, store: forbid_xtz_params * storage)
     | Vote (p)               -> vote(p, store)
     | Flush (p)              -> flush (p, store)
     | Freeze p               -> freeze(p, store)
-    | Unfreeze p             -> unfreeze(p, store)
     | Update_delegate p      -> update_delegates(p, store)
     | Unstake_vote p         -> unstake_vote(p, store)
 

@@ -150,6 +150,18 @@ type proposal_doubly_linked_list =
   ; map: ((proposal_key * plist_direction), proposal_key) big_map
   }
 
+// Here we save both levels_per_cycle and cycles_per_period because we need to
+// answer two questions.
+// What cycle are we at?
+//   This is computed as `current_level - start_level/levels_per_cycle`.
+type voting_period_params =
+  { voting_stage_size : blocks
+  ; proposal_stage_size : blocks
+  }
+
+let to_basedao_period(vpp : voting_period_params) : nat =
+   vpp.voting_stage_size.blocks + vpp.proposal_stage_size.blocks
+
 type config =
   { max_quorum_threshold : quorum_fraction
   // ^ Determine the maximum value of quorum threshold that is allowed.
@@ -203,7 +215,6 @@ type storage =
 // -- Parameter -- //
 
 type freeze_param = key_hash
-type unfreeze_param = nat
 type unstake_vote_param = proposal_key list
 
 type transfer_ownership_param = address
@@ -260,7 +271,6 @@ type forbid_xtz_params =
   | Vote of vote_param_permited list
   | Flush of nat
   | Freeze of freeze_param
-  | Unfreeze of unfreeze_param
   | Update_delegate of update_delegate_params
   | Unstake_vote of unstake_vote_param
 
@@ -293,7 +303,7 @@ type initial_config_data =
   { max_quorum : quorum_threshold
   ; min_quorum : quorum_threshold
   ; quorum_threshold : quorum_threshold
-  ; period : period
+  ; voting_period_params : voting_period_params
   ; proposal_flush_level: blocks
   ; proposal_expired_level: blocks
   ; fixed_proposal_fee_in_token: nat
@@ -319,14 +329,5 @@ type decision_callback = decision_callback_input -> decision_callback_output
 type return = operation list * storage
 
 let nil_op = ([] : operation list)
-
-// Here we save both levels_per_cycle and cycles_per_period because we need to
-// answer two questions.
-// What cycle are we at?
-//   This is computed as `current_level - start_level/levels_per_cycle`.
-type voting_period_params =
-  { voting_stage_size : blocks
-  ; proposal_stage_size : blocks
-  }
 
 #endif  // TYPES_H included

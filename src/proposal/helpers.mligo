@@ -23,14 +23,18 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
  * the `start`. The stages are zero-index. Returns the cycle count and any
  * reminder levels
  *)
-let get_current_cycle_num(start, vp : blocks * blocks) : (nat, nat) =
-  match is_nat((Tezos.level - start.blocks) : int) with
-  | Some (elapsed_levels) -> ediv(elapsed_levels, vp.blocks)
-  | None -> (failwith bad_state : nat)
+let get_current_cycle_num(start, cycle_size : blocks * blocks) : (nat * nat) =
+  match is_nat(Tezos.level - start.blocks) with
+  | Some (elapsed_levels) -> (match (ediv elapsed_levels cycle_size.blocks) with
+      | (Some (q, r)) -> (q, r)
+      | None -> (failwith bad_state : (nat * nat)))
+  | None -> (failwith bad_state : (nat * nat))
+
+let get_current_stage_num(start, vpp : blocks * voting_period_params) : nat = start.blocks
 
 [@inline]
-let ensure_proposal_voting_stage (proposal, period, store : proposal * period * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, period) in
+let ensure_proposal_voting_stage (proposal, vpp, store : proposal * voting_period_params * storage): storage =
+  let current_stage = get_current_stage_num(store.start_level, vpp) in
   if current_stage = proposal.voting_stage_num
   then store
   else (failwith voting_stage_over : storage)
