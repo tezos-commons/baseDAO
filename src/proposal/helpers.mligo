@@ -20,8 +20,8 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
 
 (*
  * Gets the current cycle counting how many `cycles` s have passed since
- * the `start`. The stages are zero-index. Returns the cycle count and any
- * reminder levels
+ * the `start`. The cycles are zero-indexed. Returns the cycle count and any
+ * reminder levels.
  *)
 let get_current_cycle_num(start, cycle_size : blocks * blocks) : (nat * nat) =
   match is_nat(Tezos.level - start.blocks) with
@@ -30,7 +30,8 @@ let get_current_cycle_num(start, cycle_size : blocks * blocks) : (nat * nat) =
       | None -> (failwith bad_state : (nat * nat)))
   | None -> (failwith bad_state : (nat * nat))
 
-let get_current_stage_num(start, vpp : blocks * voting_period_params) : nat = start.blocks
+let get_current_stage_num(start, vpp : blocks * voting_period_params) : nat =
+  let (c, r) = get_current_cycle_num(start, blocks_per_cycle) in 2n * c + r
 
 [@inline]
 let ensure_proposal_voting_stage (proposal, vpp, store : proposal * voting_period_params * storage): storage =

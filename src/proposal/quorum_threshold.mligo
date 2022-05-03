@@ -69,8 +69,7 @@ let to_unsigned(n : quorum_fraction): unsigned_quorum_fraction =
       | None   -> (failwith bad_state : nat)
   }
 
-let update_quorum(current_period, store, config : nat * storage * config): storage =
-  let current_cycle = stage_to_cycle(current_period) in
+let update_quorum(current_cycle, store, config : nat * storage * config): storage =
   if store.quorum_threshold_at_cycle.last_updated_cycle = current_cycle
   then store // Quorum has been updated in this period, so no change is required.
   else if current_cycle > store.quorum_threshold_at_cycle.last_updated_cycle

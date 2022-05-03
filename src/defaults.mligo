@@ -5,9 +5,10 @@
 #include "proposal/quorum_threshold.mligo"
 
 let validate_proposal_flush_expired_level (data : initial_config_data) : unit =
+  let period_length = to_basedao_period(data.voting_period_params) in
   if data.proposal_expired_level.blocks <= data.proposal_flush_level.blocks then
     failwith("proposal_expired_level needs to be bigger than proposal_flush_level")
-  else if data.proposal_flush_level.blocks < (to_basedao_period(data.voting_period_params) * 2n) then
+  else if data.proposal_flush_level.blocks < (period_length.blocks * 2n) then
     failwith("proposal_flush_level needs to be more than twice the 'period' length.")
   else unit
 

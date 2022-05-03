@@ -113,7 +113,7 @@ let unstake_vote (params, store : unstake_vote_param * storage): return =
 
 
 let stake_tk(token_amount, addr, store : nat * address * storage): storage =
-  let current_stage = get_current_stage_num(store.start_level, store.config.voting_period_params) in
+  let current_cycle = get_current_cycle_num(store.start_level, blocks_per_cycle) in
   let new_cycle_staked = store.quorum_threshold_at_cycle.staked + token_amount in
   let new_freeze_history = match Big_map.find_opt addr store.freeze_history with
     | Some fh ->
@@ -239,8 +239,8 @@ let propose (param, store : propose_params * storage): return =
   let valid_from = check_delegate (param.from, Tezos.sender, store) in
   let _ : unit = proposal_check (param, store.extra) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
-  let current_stage = get_current_stage_num(store.start_level, store.config.voting_period_params) in
-  let store = update_quorum(current_stage, store, config) in
+  let (current_cycle, _) = get_current_cycle_num(store.start_level, blocks_per_cycle) in
+  let store = update_quorum(current_cycle, store, config) in
   let store = stake_tk(amount_to_freeze, valid_from, store) in
   let store = add_proposal (param, store) in
   (nil_op, store)
@@ -352,7 +352,7 @@ let freeze (keyhash, store : freeze_param * storage) : return =
   // more then their voting power for a particular period.
 
   let addr = Tezos.sender in
-  let (current_cycle, _) = get_current_cycle_num(store.start_level, { blocks = store.config.voting_period_params.voting_stage_size.blocks + store.config.voting_period_params.proposal_stage_size.blocks }) in
+  let (current_cycle, _) = get_current_cycle_num(store.start_level, to_basedao_period(store.config.voting_period_params)) in
   let amt = Tezos.voting_power (keyhash) in
   let nfh =
     match Big_map.find_opt addr store.freeze_history with

@@ -47,8 +47,8 @@ type staked_vote = nat
 // Amount of blocks.
 type blocks = { blocks : nat }
 
-// Length of a stage, in number of blocks
-type period = blocks
+// Amount of cycles.
+type cycles = { cycles : nat }
 
 // Representation of a quorum fraction. For efficiency, we only keep a `nat`
 // for the numerator, whereas the denominator is not stored and has a fixed value
@@ -150,17 +150,19 @@ type proposal_doubly_linked_list =
   ; map: ((proposal_key * plist_direction), proposal_key) big_map
   }
 
-// Here we save both levels_per_cycle and cycles_per_period because we need to
-// answer two questions.
-// What cycle are we at?
-//   This is computed as `current_level - start_level/levels_per_cycle`.
+// Voting period params represents the length of the BaseDAO stages, voting
+// and proposing stages, in terms of number of Tezos cycles. Since a BaseDAO
+// period should fit exactly in one Tezos voting period, the sum of these should
+// be always the Tezos cycles/voting period, which is currently 5.
 type voting_period_params =
-  { voting_stage_size : blocks
-  ; proposal_stage_size : blocks
+  { voting_stage_size : cycles
+  ; proposal_stage_size : cycles
   }
 
-let to_basedao_period(vpp : voting_period_params) : nat =
-   vpp.voting_stage_size.blocks + vpp.proposal_stage_size.blocks
+let blocks_per_cycle = { blocks = 4096n }
+
+let to_basedao_period(vpp : voting_period_params) : blocks =
+   { blocks = (vpp.voting_stage_size.cycles + vpp.proposal_stage_size.cycles) * blocks_per_cycle.blocks }
 
 type config =
   { max_quorum_threshold : quorum_fraction

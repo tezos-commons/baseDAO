@@ -66,8 +66,8 @@ $(OUT)/trivialDAO_storage.tz : period = 15840n
 $(OUT)/trivialDAO_storage.tz : quorum_change = 5n
 $(OUT)/trivialDAO_storage.tz : max_quorum_change = 19n
 $(OUT)/trivialDAO_storage.tz : governance_total_supply = 1000n
-$(OUT)/trivialDAO_storage.tz : proposal_flush_level = 36000n
-$(OUT)/trivialDAO_storage.tz : proposal_expired_level = 47520n
+$(OUT)/trivialDAO_storage.tz : proposal_flush_level = 50000n
+$(OUT)/trivialDAO_storage.tz : proposal_expired_level = 60000n
 $(OUT)/trivialDAO_storage.tz: src/**
 	# ============== Compiling TrivialDAO storage ============== #
 	cp src/variants/trivial/implementation.mligo src/implementation.mligo
@@ -87,7 +87,7 @@ $(OUT)/trivialDAO_storage.tz: src/**
         ; config_data = \
           { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
           ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
-          ; period = { blocks = ($(period) : nat) } \
+          ; voting_period_params = { voting_stage_size = { cycles = 2n }; proposal_stage_size = { cycles = 3n }} \
           ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
           ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) }\
           ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
@@ -113,11 +113,11 @@ $(OUT)/registryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/registryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/registryDAO_storage.tz : min_quorum = 1n
 $(OUT)/registryDAO_storage.tz : max_quorum = 99n
-$(OUT)/registryDAO_storage.tz : period = 15840n
+$(OUT)/registryDAO_storage.tz : voting_period_params = {voting_stage_size = { cycles = 2n }; proposal_stage_size = { cycles = 3n }}
 $(OUT)/registryDAO_storage.tz : quorum_change = 5n
 $(OUT)/registryDAO_storage.tz : max_quorum_change = 19n
-$(OUT)/registryDAO_storage.tz : proposal_flush_level = 36000n
-$(OUT)/registryDAO_storage.tz : proposal_expired_level = 47520n
+$(OUT)/registryDAO_storage.tz : proposal_flush_level = 50000n
+$(OUT)/registryDAO_storage.tz : proposal_expired_level = 60000n
 $(OUT)/registryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/registryDAO_storage.tz: src/**
 	# ============== Compiling RegistryDAO storage ============== #
@@ -139,7 +139,7 @@ $(OUT)/registryDAO_storage.tz: src/**
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
             ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
-            ; period = { blocks = ($(period) : nat) } \
+            ; voting_period_params = $(voting_period_params) \
             ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
             ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) } \
             ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
@@ -172,11 +172,11 @@ $(OUT)/treasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
 $(OUT)/treasuryDAO_storage.tz : quorum_threshold = 10n
 $(OUT)/treasuryDAO_storage.tz : min_quorum = 1n
 $(OUT)/treasuryDAO_storage.tz : max_quorum = 99n
-$(OUT)/treasuryDAO_storage.tz : period = 15840n
+$(OUT)/treasuryDAO_storage.tz : voting_period_params = {voting_stage_size = { cycles = 2n }; proposal_stage_size = { cycles = 3n }}
 $(OUT)/treasuryDAO_storage.tz : quorum_change = 5n
 $(OUT)/treasuryDAO_storage.tz : max_quorum_change = 19n
-$(OUT)/treasuryDAO_storage.tz : proposal_flush_level = 36000n
-$(OUT)/treasuryDAO_storage.tz : proposal_expired_level = 47520n
+$(OUT)/treasuryDAO_storage.tz : proposal_flush_level = 50000n
+$(OUT)/treasuryDAO_storage.tz : proposal_expired_level = 60000n
 $(OUT)/treasuryDAO_storage.tz : governance_total_supply = 1000n
 $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compiling TreasuryDAO storage ============== #
@@ -198,7 +198,7 @@ $(OUT)/treasuryDAO_storage.tz: src/**
           ; config_data = \
             { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
             ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
-            ; period = { blocks = ($(period) : nat) } \
+            ; voting_period_params = $(voting_period_params) \
             ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
             ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) } \
             ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
