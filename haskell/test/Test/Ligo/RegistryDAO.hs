@@ -10,7 +10,6 @@ module Test.Ligo.RegistryDAO
 
 import Prelude
 
-import Data.Map qualified as M
 import Data.Set qualified as S
 import Test.Tasty (TestTree, testGroup)
 
@@ -32,7 +31,7 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.RegistryDAO.Types
 
-getStorageRPCRegistry :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra 'Registry))
+getStorageRPCRegistry :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (AsRPC (VariantToExtra 'Registry)))
 getStorageRPCRegistry addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) (unTAddress addr)
 
 withOriginated
@@ -262,7 +261,7 @@ test_RegistryDAO =
               withSender admin $
                 call baseDao (Call @"Flush") (1 :: Natural)
 
-              maxProposalSize <- (reMaxProposalSize . sExtraRPC) <$> getStorageRPCRegistry baseDao
+              maxProposalSize <- (reMaxProposalSizeRPC . sExtraRPC) <$> getStorageRPCRegistry baseDao
               assert (maxProposalSize == 341) "Unexpected max_proposal_size update"
 
     , testScenario "checks on-chain view correctly returns the registry value" $ scenario $ do
@@ -651,7 +650,7 @@ test_RegistryDAO =
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            receiversSet <- (reProposalReceivers . sExtraRPC) <$> getStorageRPCRegistry baseDao
+            receiversSet <- (reProposalReceiversRPC . sExtraRPC) <$> getStorageRPCRegistry baseDao
             assert ((wallet1 `S.member` receiversSet) && (wallet2 `S.member` receiversSet))
               "Proposal receivers was not updated as expected"
 
@@ -701,7 +700,7 @@ test_RegistryDAO =
             advanceToLevel (proposalStart + 2*period)
             withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
 
-            receiversSet <- (reProposalReceivers . sExtraRPC) <$> getStorageRPCRegistry baseDao
+            receiversSet <- (reProposalReceiversRPC . sExtraRPC) <$> getStorageRPCRegistry baseDao
             assert (Prelude.not (wallet1 `S.member` receiversSet))
               "Proposal receivers was not updated as expected"
     ]
@@ -727,8 +726,8 @@ test_RegistryDAO =
 
     initialStorageWithExplictRegistryDAOConfig :: Address -> RegistryStorage
     initialStorageWithExplictRegistryDAOConfig admin = (initialStorage admin)
-      & setExtra (\re -> re { reRegistry = M.empty })
-      & setExtra (\re -> re { reRegistryAffected = M.empty })
+      & setExtra (\re -> re { reRegistry = mempty })
+      & setExtra (\re -> re { reRegistryAffected = mempty })
       & setExtra (\re -> re { reProposalReceivers = S.empty })
       & setExtra (\re -> re { reFrozenScaleValue = 1 })
       & setExtra (\re -> re { reFrozenExtraValue = 0 })

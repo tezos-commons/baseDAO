@@ -18,6 +18,7 @@ import Hedgehog.Gen.Michelson (genMText)
 import Hedgehog.Gen.Tezos.Address (genAddress)
 import Lorentz hiding (and, div, now, (>>))
 import Morley.Util.Named
+import Morley.Michelson.Typed.Haskell.Value
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Contract (baseDAORegistryStorageLigo)
@@ -166,11 +167,11 @@ applyDiffAffected proposalKey diffs ce =
   let registryAff = applyDiffRegistryAffected proposalKey diffs $ reRegistryAffected ce
   in  ce { reRegistryAffected = registryAff }
 
-applyDiffRegistryAffected :: ProposalKey -> [(MText, Maybe MText)] -> Map MText ProposalKey -> Map MText ProposalKey
+applyDiffRegistryAffected :: ProposalKey -> [(MText, Maybe MText)] -> BigMap MText ProposalKey -> BigMap MText ProposalKey
 applyDiffRegistryAffected proposalKey diffs registryAff =
   foldl'
     (\regAff (key, _) ->
-        Map.insert key proposalKey regAff
+        insertToBigMap regAff key proposalKey
     ) registryAff diffs
 
 
@@ -179,14 +180,23 @@ applyDiff diffs ce =
   let newRegistry = applyDiffRegistry diffs $ reRegistry ce
   in ce { reRegistry =  newRegistry }
 
-applyDiffRegistry :: [(MText, Maybe MText)] -> Map MText MText -> Map MText MText
+applyDiffRegistry :: [(MText, Maybe MText)] -> BigMap MText MText -> BigMap MText MText
 applyDiffRegistry diffs registry =
   foldl'
     (\reg (key, value) ->
         case value of
-          Just v -> Map.insert key v reg
-          Nothing -> Map.delete key reg
+          Just v -> insertToBigMap reg key v
+          Nothing -> deleteFromBigMap reg key
     ) registry diffs
+
+insertToBigMap :: Ord k => BigMap k v -> k -> v -> BigMap k v
+insertToBigMap (BigMap bid m) k v = BigMap bid (Map.insert k v m)
+
+deleteFromBigMap :: Ord k => BigMap k v -> k -> BigMap k v
+deleteFromBigMap (BigMap bid m) k = BigMap bid (Map.delete k m)
+
+lookupInBigMap :: Ord k => BigMap k v -> k -> Maybe v
+lookupInBigMap (BigMap _ m) k = Map.lookup k m
 
 -------------------------------------------------------------------------------
 -- Custom entrypoints
@@ -196,7 +206,7 @@ lookupRegistryEntrypoint :: LookupRegistryParam -> ModelT 'Registry ()
 lookupRegistryEntrypoint (LookupRegistryParam key addr)  = do
   store <- getStore @'Registry
   let registry = reRegistry $ sExtra $ store
-  let val = Map.lookup key registry
+  let val = lookupInBigMap registry key
   let consumerParam :: (MText, (Maybe MText)) = (key, val)
   execOperation $ OtherOperation addr (show consumerParam) zeroMutez
 
