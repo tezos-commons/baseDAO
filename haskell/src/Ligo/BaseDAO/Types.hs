@@ -93,7 +93,7 @@ import Lorentz hiding (div, now)
 import Lorentz.Annotation ()
 import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
-import Morley.AsRPC (HasRPCRepr(..), TAsRPC, deriveRPC, deriveRPCWithStrategy)
+import Morley.AsRPC (HasRPCRepr(..), deriveRPC, deriveRPCWithStrategy)
 import Morley.Michelson.Typed.Annotation
 import Morley.Michelson.Typed.T (T(TUnit))
 import Morley.Michelson.Untyped.Annotation
@@ -704,37 +704,10 @@ instance HasAnnotation ce => HasAnnotation (StorageSkeleton ce) where
   annOptions = baseDaoAnnOptions
 deriving anyclass instance IsoValue ce => IsoValue (StorageSkeleton ce)
 
--- We manually derive RPC counterpart of storage now.
--- TODO: Revert this once https://gitlab.com/morley-framework/morley/-/issues/754
--- is resolved.
-data StorageSkeletonRPC ce = StorageSkeletonRPC
-  { sAdminRPC :: Address
-  , sConfigRPC :: Config
-  , sDelegatesRPC :: Delegates' BigMapId
-  , sExtraRPC :: ce
-  , sFreezeHistoryRPC :: BigMapId Address AddressFreezeHistory
-  , sFrozenTokenIdRPC :: FA2.TokenId
-  , sFrozenTotalSupplyRPC :: Natural
-  , sGovernanceTokenRPC :: GovernanceToken
-  , sGuardianRPC :: Address
-  , sMetadataRPC :: TZIP16.MetadataMapId
-  , sOngoingProposalsDlistRPC :: Maybe ProposalDoublyLinkedListRPC
-  , sPendingOwnerRPC :: Address
-  , sPermitsCounterRPC :: Nonce
-  , sProposalsRPC :: BigMapId ProposalKey Proposal
-  , sQuorumThresholdAtCycleRPC :: QuorumThresholdAtCycle
-  , sStakedVotesRPC :: BigMapId (Address, ProposalKey) StakedVote
-  , sStartLevelRPC :: Natural
-  }
-
-customGeneric "StorageSkeletonRPC" ligoLayout
-deriving anyclass instance IsoValue ce => IsoValue (StorageSkeletonRPC ce)
-
-instance (TAsRPC (ToT ce) ~ ToT (AsRPC ce)) => HasRPCRepr (StorageSkeleton ce) where
-  type AsRPC (StorageSkeleton ce) = StorageSkeletonRPC (AsRPC ce)
+deriveRPCWithStrategy "StorageSkeleton" ligoLayout
+type StorageRPC = StorageSkeletonRPC (VariantToExtra 'Base)
 
 type Storage = StorageSkeleton (VariantToExtra 'Base)
-type StorageRPC = StorageSkeletonRPC (VariantToExtra 'Base)
 
 instance HasAnnotation GovernanceToken where
   annOptions = baseDaoAnnOptions

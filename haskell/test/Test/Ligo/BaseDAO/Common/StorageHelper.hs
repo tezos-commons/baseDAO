@@ -48,7 +48,7 @@ type CEConatraints cep =
   , HasNoOp (ToT (VariantToExtra cep))
   )
 
-getStorageRPC' :: forall cep p vd caps m. (HasCallStack, CEConatraints cep, MonadCleveland caps m) => TAddress p vd ->  m (StorageSkeletonRPC (AsRPC (VariantToExtra cep)))
+getStorageRPC' :: forall cep p vd caps m. (HasCallStack, CEConatraints cep, MonadCleveland caps m) => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra cep))
 getStorageRPC' addr = getStorage @(StorageSkeleton (VariantToExtra cep)) (unTAddress addr)
 
 getStorageRPC :: forall p caps vd m. (HasCallStack, MonadCleveland caps m) => TAddress p vd ->  m StorageRPC

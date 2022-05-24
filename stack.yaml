@@ -12,10 +12,14 @@ extra-deps:
 
 # Stable versions available on Hackage
 - cleveland-0.1.1
-- morley-1.16.3
 - morley-client-0.1.1
 - morley-prelude-0.5.1
 - lorentz-0.13.3
+
+- git: https://gitlab.com/morley-framework/morley.git
+  commit: a7fad974928a1854379dee2cd1595e47115e8d91 # master
+  subdirs:
+    - code/morley
 
 - git: https://gitlab.com/morley-framework/indigo.git
   commit: 8074d3c6a03d6e79b7ddb48b323bca72bf6c2767 # master
