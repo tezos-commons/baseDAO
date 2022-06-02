@@ -28,5 +28,11 @@ source-repository-package
     tag: c7d545897bad10bc98ceb1d9672f184b108dd40e
     subdir: code/morley-metadata
 
+source-repository-package
+    type: git
+    location: https://gitlab.com/morley-framework/morley.git
+    tag: a7fad974928a1854379dee2cd1595e47115e8d91
+    subdir: code/morley
+
 allow-older: *
 allow-newer: *

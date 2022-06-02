@@ -31,7 +31,7 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.RegistryDAO.Types
 
-getStorageRPCRegistry :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (AsRPC (VariantToExtra 'Registry)))
+getStorageRPCRegistry :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra 'Registry))
 getStorageRPCRegistry addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) (unTAddress addr)
 
 withOriginated

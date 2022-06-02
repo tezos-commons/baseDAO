@@ -275,22 +275,24 @@ callLigoEntrypoint ::
   ( CallCustomEp (VariantToParam var), HasBaseDAOEp (Parameter' (VariantToParam var))
   , MonadCleveland caps m
   ) => ModelCall var -> TAddress (Parameter' (VariantToParam var)) () -> m ()
-callLigoEntrypoint mc dao = withSender (mc & mcSource & msoSender) $ case mc & mcParameter of
-  XtzAllowed (ConcreteEp (Propose p)) -> call dao (Call @"Propose") p
-  XtzAllowed (ConcreteEp (Transfer_contract_tokens p)) -> call dao (Call @"Transfer_contract_tokens") p
-  XtzAllowed (ConcreteEp (Transfer_ownership p)) -> call dao (Call @"Transfer_ownership") p
-  XtzAllowed (ConcreteEp (Accept_ownership p)) -> call dao (Call @"Accept_ownership") p
-  XtzAllowed (ConcreteEp (Default _)) -> call dao CallDefault ()
+callLigoEntrypoint mc dao = do
+  transferMoney (mc & mcSource & msoSender) oneMutez -- 0.9 XTZ
+  withSender (mc & mcSource & msoSender) $ case mc & mcParameter of
+    XtzAllowed (ConcreteEp (Propose p)) -> call dao (Call @"Propose") p
+    XtzAllowed (ConcreteEp (Transfer_contract_tokens p)) -> call dao (Call @"Transfer_contract_tokens") p
+    XtzAllowed (ConcreteEp (Transfer_ownership p)) -> call dao (Call @"Transfer_ownership") p
+    XtzAllowed (ConcreteEp (Accept_ownership p)) -> call dao (Call @"Accept_ownership") p
+    XtzAllowed (ConcreteEp (Default _)) -> call dao CallDefault ()
 
-  XtzForbidden (Vote p) -> call dao (Call @"Vote") p
-  XtzForbidden (Flush p) -> call dao (Call @"Flush") p
-  XtzForbidden (Freeze p) -> call dao (Call @"Freeze") p
-  XtzForbidden (Unfreeze p) -> call dao (Call @"Unfreeze") p
-  XtzForbidden (Update_delegate p) -> call dao (Call @"Update_delegate") p
-  XtzForbidden (Drop_proposal p) -> call dao (Call @"Drop_proposal") p
-  XtzForbidden (Unstake_vote p) -> call dao (Call @"Unstake_vote") p
+    XtzForbidden (Vote p) -> call dao (Call @"Vote") p
+    XtzForbidden (Flush p) -> call dao (Call @"Flush") p
+    XtzForbidden (Freeze p) -> call dao (Call @"Freeze") p
+    XtzForbidden (Unfreeze p) -> call dao (Call @"Unfreeze") p
+    XtzForbidden (Update_delegate p) -> call dao (Call @"Update_delegate") p
+    XtzForbidden (Drop_proposal p) -> call dao (Call @"Drop_proposal") p
+    XtzForbidden (Unstake_vote p) -> call dao (Call @"Unstake_vote") p
 
-  XtzAllowed (CustomEp p) -> callCustomEp dao p
+    XtzAllowed (CustomEp p) -> callCustomEp dao p
 
 class CallCustomEp p where
   callCustomEp :: MonadCleveland caps m => (TAddress (Parameter' p) vd) -> p -> m ()
