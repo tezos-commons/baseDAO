@@ -108,6 +108,7 @@ import Test.Cleveland.Instances ()
 data Variants
   = Registry
   | Treasury
+  | Lambda
   | Base
 
 -- | A type family to map a variant to the type that represents it's custom entrypoints.

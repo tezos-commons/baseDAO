@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -32,6 +32,7 @@ library
   exposed-modules:
       Ligo.BaseDAO.Common.Types
       Ligo.BaseDAO.ErrorCodes
+      Ligo.BaseDAO.LambdaDAO.Types
       Ligo.BaseDAO.RegistryDAO.Types
       Ligo.BaseDAO.TreasuryDAO.Types
       Ligo.BaseDAO.Types
@@ -117,6 +118,8 @@ library
 executable baseDAO-ligo-meta
   main-is: Main.hs
   other-modules:
+      Paths_baseDAO_ligo_meta
+  autogen-modules:
       Paths_baseDAO_ligo_meta
   hs-source-dirs:
       app
@@ -218,6 +221,8 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Proposal.Vote
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Types
+      Test.Ligo.LambdaDAO
+      Test.Ligo.LambdaDAO.Types
       Test.Ligo.RegistryDAO
       Test.Ligo.RegistryDAO.Types
       Test.Ligo.TreasuryDAO
@@ -226,6 +231,8 @@ test-suite baseDAO-test
       Test.Plist.Property
       Test.Plist.Type
       Tree
+      Paths_baseDAO_ligo_meta
+  autogen-modules:
       Paths_baseDAO_ligo_meta
   hs-source-dirs:
       test

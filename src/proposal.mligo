@@ -33,7 +33,7 @@ let unstake_tk(token_amount, burn_amount, addr, period, store : nat * nat * addr
         let fh = unstake_frozen_fh(token_amount, burn_amount, fh) in
         let new_freeze_history = Big_map.update addr (Some(fh)) store.freeze_history in
         let new_total_supply =
-          match Michelson.is_nat (store.frozen_total_supply - burn_amount) with
+          match is_nat (store.frozen_total_supply - burn_amount) with
             Some new_total_supply -> new_total_supply
           | None -> (failwith bad_state : nat) in
         { store with
@@ -142,7 +142,7 @@ let unlock_governance_tokens (tokens, addr, frozen_total_supply, governance_toke
   let param = { from_ = Tezos.self_address; txs = [{ amount = tokens; to_ = addr; token_id = governance_token.token_id }]} in
   let operation = make_transfer_on_token ([param], governance_token.address) in
   let new_total_supply =
-    match Michelson.is_nat (frozen_total_supply - tokens) with
+    match is_nat (frozen_total_supply - tokens) with
       Some new_total_supply -> new_total_supply
     | None ->
         (failwith bad_state : nat)
@@ -220,7 +220,7 @@ let unstake_proposer_token
       let frozen_tokens = proposal.proposer_frozen_token + fixed_fee in
       let desired_burn_amount = slash_amount + fixed_fee in
       let tokens =
-            match Michelson.is_nat(frozen_tokens - desired_burn_amount) with
+            match is_nat(frozen_tokens - desired_burn_amount) with
               Some value -> value
             | None -> 0n
             in
@@ -332,8 +332,8 @@ let drop_proposal (proposal_key, store : proposal_key * storage): return =
   let proposal = check_if_proposal_exist (proposal_key, store) in
   let proposal_is_expired = is_proposal_age (proposal, store.config.proposal_expired_level) in
 
-  if   (sender = proposal.proposer)
-    || (sender = store.guardian && sender <> source) // Guardian cannot be equal to SOURCE
+  if   (Tezos.sender = proposal.proposer)
+    || (Tezos.sender = store.guardian && Tezos.sender <> Tezos.source) // Guardian cannot be equal to SOURCE
     || proposal_is_expired
   then
     let store = unstake_proposer_token
