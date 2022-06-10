@@ -74,7 +74,7 @@ test_LambdaDAO =
            (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
            \(_:wallet1:_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
-                   Add_handler $ AddHandlerParam "proposal_1_handler" undefined undefined
+                   Add_handler $ AddHandlerParam "proposal_1_handler" (undefined # undefined) undefined
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
                call baseDao (Call @"Freeze") (#amount :! proposalSize)
