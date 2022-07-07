@@ -100,6 +100,10 @@ invalidInputErrors = errorsEnumerate 100
     :? ("Cannot call `unstake_vote` on the proposal that is not flushed or dropped.", NoArg)
   , "voter_does_not_exist"
     :? ("The sender did not vote on the proposal or already unstaked tokens from the proposal.", NoArg)
+  , "proposal_handler_exists"
+    :? ("A proposal handler with the same name exists already", NoArg)
+  , "proposal_handler_not_found"
+    :? ("A proposal handler with the given name was not found", NoArg)
   ]
 
 invalidConfigErrors :: [ErrorItem]

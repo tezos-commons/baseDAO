@@ -80,6 +80,12 @@
 (* The sender did not vote on the proposal or already unstaked tokens from the proposal. *)
 [@inline] let voter_does_not_exist = 124n
 
+(* A proposal handler with the same name exists already *)
+[@inline] let proposal_handler_exists = 125n
+
+(* A proposal handler with the given name was not found *)
+[@inline] let proposal_handler_not_found = 126n
+
 
 
 
