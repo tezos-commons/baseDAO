@@ -13,7 +13,7 @@ let plist_mem (key, plist_o : proposal_key * proposal_doubly_linked_list option)
     | Some plist ->
         if (key = plist.first)
           then true
-          else Map.mem (key, prev) plist.map
+          else Big_map.mem (key, prev) plist.map
 
 [@inline]
 let plist_pop (plist_o : proposal_doubly_linked_list option)
@@ -24,14 +24,14 @@ let plist_pop (plist_o : proposal_doubly_linked_list option)
     , (None : proposal_doubly_linked_list option)
     )
   | Some plist ->
-    let new_plist = match Map.find_opt (plist.first, next) plist.map with
+    let new_plist = match Big_map.find_opt (plist.first, next) plist.map with
       | Some next_key ->
         Some
           { plist with
             first = next_key // Make the next as the first key
           ; map =
-              Map.remove (next_key, prev) // Remove the previous link of the next key.
-                (Map.remove (plist.first, next) plist.map) // Remove the first key link.
+              Big_map.remove (next_key, prev) // Remove the previous link of the next key.
+                (Big_map.remove (plist.first, next) plist.map) // Remove the first key link.
           }
       | None -> (None : proposal_doubly_linked_list option) // Only the first key exist.
     in (Some plist.first, new_plist)
@@ -49,8 +49,8 @@ let plist_insert (key, plist_o : proposal_key * (proposal_doubly_linked_list opt
           { plist with
             last = key
           ; map =
-              Map.add (plist.last, next) key // Add next link of the old last key
-                (Map.add (key, prev) plist.last plist.map) // Add previous link of the new last key
+              Big_map.add (plist.last, next) key // Add next link of the old last key
+                (Big_map.add (key, prev) plist.last plist.map) // Add previous link of the new last key
           }
 
 [@inline]
@@ -68,8 +68,8 @@ let plist_delete (key, plist_o : proposal_key * proposal_doubly_linked_list opti
         else
           // We know that there are at least 2 keys in the list
           // find the keys near to key we are looking for (if any):
-          let m_prev_key = Map.find_opt (key, prev) plist.map in
-          let m_next_key = Map.find_opt (key, next) plist.map in
+          let m_prev_key = Big_map.find_opt (key, prev) plist.map in
+          let m_next_key = Big_map.find_opt (key, next) plist.map in
 
           // Remove both links from the map already:
           let new_map = Big_map.remove (key, prev)

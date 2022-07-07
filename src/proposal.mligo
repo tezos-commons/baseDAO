@@ -21,7 +21,7 @@
 [@inline]
 let ensure_proposal_is_unique (propose_params, store : propose_params * storage): proposal_key =
   let proposal_key = to_proposal_key(propose_params) in
-  if Map.mem proposal_key store.proposals
+  if Big_map.mem proposal_key store.proposals
     then (failwith proposal_not_unique: proposal_key)
     else proposal_key
 
@@ -33,7 +33,7 @@ let unstake_tk(token_amount, burn_amount, addr, period, store : nat * nat * addr
         let fh = unstake_frozen_fh(token_amount, burn_amount, fh) in
         let new_freeze_history = Big_map.update addr (Some(fh)) store.freeze_history in
         let new_total_supply =
-          match Michelson.is_nat (store.frozen_total_supply - burn_amount) with
+          match is_nat (store.frozen_total_supply - burn_amount) with
             Some new_total_supply -> new_total_supply
           | None -> (failwith bad_state : nat) in
         { store with
@@ -63,7 +63,7 @@ let update_delegate (delegates, param: delegates * update_delegate): delegates =
     then (Some unit)
     else (None : unit option) in
   let key: delegate =
-      { owner = Tezos.sender
+      { owner = Tezos.get_sender unit
       ; delegate = param.delegate
       } in
   let updated_delegates = Big_map.update key delegate_update delegates
@@ -88,16 +88,16 @@ let unstake_vote_one (config: config) (store , proposal_key : storage * proposal
             else unit in
 
   // Check if voter exist.
-  let staked_vote_amount = match Big_map.find_opt (Tezos.sender, proposal_key) store.staked_votes with
+  let staked_vote_amount = match Big_map.find_opt (Tezos.get_sender unit, proposal_key) store.staked_votes with
       | Some v -> v
       | None -> (failwith voter_does_not_exist : staked_vote) in
 
   // Do the unstake
-  let store = unstake_tk(staked_vote_amount, 0n, Tezos.sender, config.period, store) in
+  let store = unstake_tk(staked_vote_amount, 0n, Tezos.get_sender unit, config.period, store) in
 
   // Remove voter's vote from staked amounts
   { store with
-      staked_votes = Big_map.remove (Tezos.sender, proposal_key) store.staked_votes
+      staked_votes = Big_map.remove (Tezos.get_sender unit, proposal_key) store.staked_votes
   }
 
 (*
@@ -117,7 +117,7 @@ let lock_governance_tokens (tokens, addr, frozen_total_supply, governance_token 
     : (operation list * nat) =
   // Call transfer on token_contract to transfer `token` number of
   // tokens from `addr` to the address of this contract.
-  let param = { from_ = addr; txs = [{ amount = tokens; to_ = Tezos.self_address; token_id = governance_token.token_id }]} in
+  let param = { from_ = addr; txs = [{ amount = tokens; to_ = Tezos.get_self_address unit; token_id = governance_token.token_id }]} in
   let operation = make_transfer_on_token ([param], governance_token.address) in
   ([operation], frozen_total_supply + tokens)
 
@@ -139,10 +139,10 @@ let stake_tk(token_amount, addr, period, store : nat * address * period * storag
 let unlock_governance_tokens (tokens, addr, frozen_total_supply, governance_token : nat * address * nat * governance_token): (operation list * nat) =
   // Call transfer on token_contract to transfer `token` number of
   // tokens from `addr` to the address of this contract.
-  let param = { from_ = Tezos.self_address; txs = [{ amount = tokens; to_ = addr; token_id = governance_token.token_id }]} in
+  let param = { from_ = Tezos.get_self_address unit; txs = [{ amount = tokens; to_ = addr; token_id = governance_token.token_id }]} in
   let operation = make_transfer_on_token ([param], governance_token.address) in
   let new_total_supply =
-    match Michelson.is_nat (frozen_total_supply - tokens) with
+    match is_nat (frozen_total_supply - tokens) with
       Some new_total_supply -> new_total_supply
     | None ->
         (failwith bad_state : nat)
@@ -155,7 +155,7 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
   let proposal : proposal =
     { upvotes = 0n
     ; downvotes = 0n
-    ; start_level = {blocks = Tezos.level}
+    ; start_level = {blocks = Tezos.get_level unit}
     ; voting_stage_num = current_stage + 1n
     ; metadata = propose_params.proposal_metadata
     ; proposer = propose_params.from
@@ -164,7 +164,7 @@ let add_proposal (propose_params, period, store : propose_params * period * stor
     } in
   { store with
     proposals =
-      Map.add proposal_key proposal store.proposals
+      Big_map.add proposal_key proposal store.proposals
   ; ongoing_proposals_dlist =
       plist_insert (proposal_key, store.ongoing_proposals_dlist)
   }
@@ -220,7 +220,7 @@ let unstake_proposer_token
       let frozen_tokens = proposal.proposer_frozen_token + fixed_fee in
       let desired_burn_amount = slash_amount + fixed_fee in
       let tokens =
-            match Michelson.is_nat(frozen_tokens - desired_burn_amount) with
+            match is_nat(frozen_tokens - desired_burn_amount) with
               Some value -> value
             | None -> 0n
             in
@@ -232,7 +232,7 @@ let unstake_proposer_token
 
 [@inline]
 let is_proposal_age (proposal, target : proposal * blocks): bool =
-  Tezos.level >= proposal.start_level.blocks + target.blocks
+  Tezos.get_level unit >= proposal.start_level.blocks + target.blocks
 
 [@inline]
 let do_total_vote_meet_quorum_threshold (proposal, store: proposal * storage): bool =
@@ -246,7 +246,7 @@ let do_total_vote_meet_quorum_threshold (proposal, store: proposal * storage): b
 
 let propose (param, store : propose_params * storage): return =
   let config = store.config in
-  let valid_from = check_delegate (param.from, Tezos.sender, store) in
+  let valid_from = check_delegate (param.from, Tezos.get_sender unit, store) in
   let _ : unit = proposal_check (param, store.extra) in
   let amount_to_freeze = param.frozen_token + config.fixed_proposal_fee_in_token in
   let current_stage = get_current_stage_num(store.start_level, config.period) in
@@ -332,8 +332,8 @@ let drop_proposal (proposal_key, store : proposal_key * storage): return =
   let proposal = check_if_proposal_exist (proposal_key, store) in
   let proposal_is_expired = is_proposal_age (proposal, store.config.proposal_expired_level) in
 
-  if   (sender = proposal.proposer)
-    || (sender = store.guardian && sender <> source) // Guardian cannot be equal to SOURCE
+  if   (Tezos.get_sender unit = proposal.proposer)
+    || (Tezos.get_sender unit = store.guardian && Tezos.get_sender unit <> Tezos.get_source unit) // Guardian cannot be equal to SOURCE
     || proposal_is_expired
   then
     let store = unstake_proposer_token
@@ -352,7 +352,7 @@ let drop_proposal (proposal_key, store : proposal_key * storage): return =
     (failwith drop_proposal_condition_not_met : return)
 
 let freeze (amt, store : freeze_param * storage) : return =
-  let addr = Tezos.sender in
+  let addr = Tezos.get_sender unit in
   let (operations, frozen_total_supply) = lock_governance_tokens (amt, addr, store.frozen_total_supply, store.governance_token) in
 
   // Add the `amt` to the current stage frozen token count of the freeze-history.
@@ -369,7 +369,7 @@ let freeze (amt, store : freeze_param * storage) : return =
   })
 
 let unfreeze (amt, store : unfreeze_param * storage) : return =
-  let addr = Tezos.sender in
+  let addr = Tezos.get_sender unit in
   let current_stage = get_current_stage_num(store.start_level, store.config.period) in
 
   let new_freeze_history =
@@ -382,7 +382,7 @@ let unfreeze (amt, store : unfreeze_param * storage) : return =
         (failwith not_enough_frozen_tokens : freeze_history)
   in
 
-  let (operations, frozen_total_supply) = unlock_governance_tokens (amt, Tezos.sender, store.frozen_total_supply, store.governance_token) in
+  let (operations, frozen_total_supply) = unlock_governance_tokens (amt, Tezos.get_sender unit, store.frozen_total_supply, store.governance_token) in
 
     ((operations : operation list), { store with
         freeze_history = new_freeze_history

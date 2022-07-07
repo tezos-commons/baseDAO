@@ -7,7 +7,7 @@ let to_proposal_key (propose_params: propose_params): proposal_key =
   Crypto.blake2b (Bytes.pack propose_params)
 
 let fetch_proposal (proposal_key, store : proposal_key * storage): proposal =
-  match Map.find_opt proposal_key store.proposals with
+  match Big_map.find_opt proposal_key store.proposals with
   | Some p -> p
   | None -> (failwith proposal_not_exist : proposal)
 
@@ -23,7 +23,7 @@ let check_if_proposal_exist (proposal_key, store : proposal_key * storage): prop
  * the `start`. The stages are zero-index.
  *)
 let get_current_stage_num(start, vp : blocks * period) : nat =
-  match is_nat((Tezos.level - start.blocks) : int) with
+  match is_nat((Tezos.get_level unit - start.blocks) : int) with
   | Some (elapsed_levels) -> elapsed_levels/vp.blocks
   | None -> (failwith bad_state : nat)
 

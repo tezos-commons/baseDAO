@@ -47,7 +47,7 @@ type custom_ep_param = unit
 // Custom entrypoint handler for this variant
 //
 // -----------------------------------------------------------------
-let custom_ep (_, storage, _ : custom_ep_param * storage * config): operation list * storage
+let custom_ep (_, storage : custom_ep_param * storage): operation list * storage
   = (([] : operation list), storage)
 
 #endif

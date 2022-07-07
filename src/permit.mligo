@@ -8,7 +8,7 @@
 [@inline]
 let vote_param_to_signed_data (param, store : vote_param * storage) : bytes * storage =
   ( Bytes.pack
-    ( (Tezos.chain_id, Tezos.self_address)
+    ( (Tezos.get_chain_id unit, Tezos.get_self_address unit)
     , (store.permits_counter, param)
     )
   , { store with permits_counter = store.permits_counter + 1n }
@@ -39,5 +39,5 @@ let verify_permit_protected_vote
   (permited, store : vote_param_permited * storage)
     : vote_param * address * storage =
   match permited.permit with
-  | None -> (permited.argument, Tezos.sender, store)
+  | None -> (permited.argument, Tezos.get_sender unit, store)
   | Some permit -> verify_permit_vote (permit, permited.argument, store)
