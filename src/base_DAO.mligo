@@ -17,7 +17,7 @@
 let requiring_no_xtz (param, store: forbid_xtz_params * storage)
     : operation list * storage =
   // check for no xtz
-  if Tezos.amount > 0tez then
+  if Tezos.get_amount unit > 0tez then
     (failwith forbidden_xtz : return)
   else
     match param with
