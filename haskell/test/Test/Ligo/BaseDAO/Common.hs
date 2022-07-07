@@ -21,7 +21,6 @@ module Test.Ligo.BaseDAO.Common
   , createSampleProposal
   , createSampleProposals
   , defaultQuorumThreshold
-  , originateLigoDaoWithConfig
   , originateLigoDaoWithConfigDesc
   , originateLigoDao
 
@@ -148,21 +147,21 @@ sendXtzWithAmount amt addr = withFrozenCallStack $ do
 defaultQuorumThreshold :: QuorumThreshold
 defaultQuorumThreshold = mkQuorumThreshold 1 100
 
-type OriginationCEConatraints cep = (Typeable cep, Default (VariantToExtra cep), IsoValue (VariantToExtra cep), HasNoOp (ToT (VariantToExtra cep)))
+type OriginationCEConstraints cep = (Typeable cep, Default (VariantToExtra cep), IsoValue (VariantToExtra cep), HasNoOp (ToT (VariantToExtra cep)))
 
 originateLigoDaoWithConfig
- :: forall cep caps m. (OriginationCEConatraints cep, MonadCleveland caps m)
+ :: forall cep caps m. (OriginationCEConstraints cep, MonadCleveland caps m)
  => (VariantToExtra cep)
  -> Config
  -> OriginateFn cep m
 originateLigoDaoWithConfig extra config qt = do
 
-  owner1 :: Address <- newAddress "owner1"
-  operator1 :: Address <- newAddress "operator1"
-  owner2 :: Address <- newAddress "owner2"
-  operator2 :: Address <- newAddress "operator2"
+  owner1 :: Address <- refillable $ newAddress "owner1"
+  operator1 :: Address <- refillable $ newAddress "operator1"
+  owner2 :: Address <- refillable $ newAddress "owner2"
+  operator2 :: Address <- refillable $ newAddress "operator2"
 
-  admin :: Address <- newAddress "admin"
+  admin :: Address <- refillable $ newAddress "admin"
 
   owner1Balance <- getBalance owner1
 
@@ -209,14 +208,14 @@ originateLigoDaoWithConfig extra config qt = do
       admin (TAddress guardianContract) (unPeriod $ cPeriod config)
 
 originateLigoDaoWithConfigDesc
- :: forall cep caps m. (OriginationCEConatraints cep, MonadCleveland caps m)
+ :: forall cep caps m. (OriginationCEConstraints cep, MonadCleveland caps m)
  => VariantToExtra cep
  -> ConfigDesc Config
  -> OriginateFn cep m
 originateLigoDaoWithConfigDesc extra config =
   originateLigoDaoWithConfig @cep extra (fillConfig config defaultConfig)
 
-originateLigoDao :: forall cep caps m. (OriginationCEConatraints cep, MonadCleveland caps m) => OriginateFn cep m
+originateLigoDao :: forall cep caps m. (OriginationCEConstraints cep, MonadCleveland caps m) => OriginateFn cep m
 originateLigoDao =
   originateLigoDaoWithConfig @cep def defaultConfig
 

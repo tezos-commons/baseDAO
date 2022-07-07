@@ -14,3 +14,12 @@
     - identifier:
       - ingredients
       - main
+
+- message:
+  - name: Weeds exported
+  - module:
+    - name: Test.Ligo.Common
+    - identifier:
+      - getContract
+      - getInitialStorage
+      - toMetadata

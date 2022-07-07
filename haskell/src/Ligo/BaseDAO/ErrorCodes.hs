@@ -10,10 +10,10 @@ module Ligo.BaseDAO.ErrorCodes where
 
 import Universum
 
-import Lorentz.Contracts.Spec.TZIP16Interface
 import Morley.Micheline (toExpression)
 import Morley.Michelson.Text
 import Morley.Michelson.Typed (toVal)
+import Lorentz.Contracts.Spec.TZIP16Interface
 
 ----------------------------------------------------------------------------
 -- Invalid Input Error Codes
@@ -106,14 +106,6 @@ unstakeInvalidProposal = 123
 -- | The sender did not vote on the proposal or already unstaked tokens from the proposal.
 voterDoesNotExist :: Natural
 voterDoesNotExist = 124
-
--- | A proposal handler with the same name exists already
-proposalHandlerExists :: Natural
-proposalHandlerExists = 125
-
--- | A proposal handler with the given name was not found
-proposalHandlerNotFound :: Natural
-proposalHandlerNotFound = 126
 
 
 
@@ -265,18 +257,6 @@ tzipErrorList = [
   EStatic $ StaticError
     { seError = toExpression $ toVal @Integer $ toInteger voterDoesNotExist
     , seExpansion = toExpression $ toVal @MText [mt|The sender did not vote on the proposal or already unstaked tokens from the proposal.|]
-    , seLanguages = ["en"]
-    }
-  ,
-  EStatic $ StaticError
-    { seError = toExpression $ toVal @Integer $ toInteger proposalHandlerExists
-    , seExpansion = toExpression $ toVal @MText [mt|A proposal handler with the same name exists already|]
-    , seLanguages = ["en"]
-    }
-  ,
-  EStatic $ StaticError
-    { seError = toExpression $ toVal @Integer $ toInteger proposalHandlerNotFound
-    , seExpansion = toExpression $ toVal @MText [mt|A proposal handler with the given name was not found|]
     , seLanguages = ["en"]
     }
   ,

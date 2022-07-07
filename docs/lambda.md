@@ -64,19 +64,20 @@ In addition to this, there are separate proposal check logic for "add handler",
 
 #### add handler
 
-The proposal check for "add handler" proposal checks there are no proposal with the same
-name as the one being added.
+The proposal check for the "add handler" proposal checks there are no proposal
+handlers with the same name as the one being added.
 
 #### remove handler
 
-The proposal check for "remove handler" proposal checks there is an active proposal with input
-name.
+The proposal check for the "remove handler" proposal checks there is an active
+proposal handler with the given name.
 
 #### execute handler
 
-The proposal check for "execute handler" proposal checks there is an active proposal with input
-name. It also fetches the "handler check" procedure for the handler, and runs it with the input
-from this proposal.
+The proposal check for the "execute handler" proposal checks there is an active
+proposal handler with the given name.
+It also fetches the "handler check" procedure for the handler, and runs it with
+the input from this proposal.
 
 ### Rejected proposal slash amount
 
