@@ -24,7 +24,7 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.Common
 import Test.Ligo.RegistryDAO.Tests.Common
 import Test.Ligo.RegistryDAO.Tests.EmptyProposal
-import Test.Ligo.RegistryDAO.Tests.ExecuteWonProposal (executeWonProposal)
+import Test.Ligo.RegistryDAO.Tests.ExecuteWonProposal
 import Test.Ligo.RegistryDAO.Tests.FlushRegistryUpdates
 import Test.Ligo.RegistryDAO.Tests.FlushTransferProposal
 import Test.Ligo.RegistryDAO.Tests.LargeProposal
@@ -130,7 +130,7 @@ initialStorage admin = let
   in fs { sAdmin = admin, sConfig = (sConfig fs)
             { cPeriod = 11
             , cProposalFlushLevel = 22
-            , cProposalExpiredLevel = 33
+            , cProposalExpiredLevel = 100
             , cGovernanceTotalSupply = 100
 
       }}

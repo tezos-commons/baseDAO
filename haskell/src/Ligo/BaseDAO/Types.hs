@@ -53,7 +53,7 @@ module Ligo.BaseDAO.Types
   , ContractExtra
   , CustomEntrypoints
   , CallCustomParam
-  , CEConatraints
+  , CEConstraints
   , Proposal (..)
   , Parameter
   , Parameter' (..)
@@ -914,7 +914,7 @@ type HasBaseDAOEp a = (HasDefEntrypointArg a (EntrypointRef 'Nothing) (), Parame
    , "Unstake_vote" :> UnstakeVoteParam
    ])
 
-type CEConatraints cep =
+type CEConstraints cep =
   ( Typeable cep
   , Typeable (VariantToExtra cep)
   , Typeable (AsRPC (VariantToExtra cep))

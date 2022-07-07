@@ -1,6 +1,7 @@
 <!--
-- SPDX-FileCopyrightText: 2022 Tezos Commons
-- SPDX-License-Identifier: LicenseRef-MIT-TC
+- SPDX-FileCopyrightText: 2021 TQ Tezos
+
+- SPDX-License-Identifier: LicenseRef-MIT-TQ
 -->
 
 <!--
@@ -39,8 +40,6 @@ Here is a summary of all the error codes thrown by the contract.
 | 121 | `fail_decision_callback` | Executing the proposal's decision callback results in failure. |
 | 123 | `unstake_invalid_proposal` | Cannot call `unstake_vote` on the proposal that is not flushed or dropped. |
 | 124 | `voter_does_not_exist` | The sender did not vote on the proposal or already unstaked tokens from the proposal. |
-| 125 | `proposal_handler_exists` | A proposal handler with the same name exists already |
-| 126 | `proposal_handler_not_found` | A proposal handler with the given name was not found |
 
 
 

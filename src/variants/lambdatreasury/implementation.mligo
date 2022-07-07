@@ -10,18 +10,27 @@
 #include "variants/lambda/common.mligo"
 #include "types.mligo"
 
-// -----------------------------------------------------------------
-// Proposal check
-//
-// This should implement the proposal_check logic of the variant and should
-// verify whether a proposal can be submitted.  It checks 2 things: the
-// proposal itself and the amount of tokens frozen upon submission.  It allows
-// the DAO to reject a proposal by arbitrary logic and captures bond
-// requirements
-// -----------------------------------------------------------------
+let check_token_locked_and_proposal_size (frozen_token, required_token_lock, proposal_size, max_proposal_size
+  : nat * nat * nat * nat) : string option =
+    if (frozen_token <> required_token_lock) then Some (wrong_token_amount_err_msg)
+    else if (proposal_size >= max_proposal_size) then Some (large_proposal_err_msg)
+    else None
 
 let proposal_check (propose_params, ce : propose_params * contract_extra) : unit =
-  common_proposal_check (propose_params, ce)
+
+  let proposal_size = Bytes.length(propose_params.proposal_metadata) in
+  let frozen_scale_value = fetch_nat("frozen_scale_value", ce.handler_storage) in
+  let frozen_extra_value = fetch_nat("frozen_extra_value", ce.handler_storage) in
+  let max_proposal_size = fetch_nat("max_proposal_size", ce.handler_storage) in
+
+  let required_token_lock = frozen_scale_value * proposal_size + frozen_extra_value in
+
+  let _ : unit =
+    match check_token_locked_and_proposal_size(propose_params.frozen_token, required_token_lock, proposal_size, max_proposal_size) with
+    | Some err_msg -> fail_proposal_check(err_msg)
+    | None -> unit
+
+  in common_proposal_check(propose_params, ce)
 
 // -----------------------------------------------------------------
 // decision_callback
@@ -55,4 +64,5 @@ type custom_ep_param = unit
 let custom_ep (_, storage : custom_ep_param * storage): operation list * storage
   = (([] : operation list), storage)
 
+type contract_extra = unit
 #endif

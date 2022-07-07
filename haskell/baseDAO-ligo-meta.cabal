@@ -38,6 +38,7 @@ library
   exposed-modules:
       Ligo.BaseDAO.Common.Types
       Ligo.BaseDAO.ErrorCodes
+      Ligo.BaseDAO.LambdaDAO.Types
       Ligo.BaseDAO.RegistryDAO.Types
       Ligo.BaseDAO.TreasuryDAO.Types
       Ligo.BaseDAO.Types
@@ -224,7 +225,27 @@ test-suite baseDAO-test
       Test.Ligo.BaseDAO.Proposal.Vote
       Test.Ligo.BaseDAO.Token
       Test.Ligo.BaseDAO.Types
+      Test.Ligo.Common
+      Test.Ligo.LambdaDAO
+      Test.Ligo.LambdaRegistryDAO
+      Test.Ligo.LambdaTreasuryDAO
       Test.Ligo.RegistryDAO
+      Test.Ligo.RegistryDAO.Tests.Common
+      Test.Ligo.RegistryDAO.Tests.EmptyProposal
+      Test.Ligo.RegistryDAO.Tests.ExecuteWonProposal
+      Test.Ligo.RegistryDAO.Tests.FlushRegistryUpdates
+      Test.Ligo.RegistryDAO.Tests.FlushTransferProposal
+      Test.Ligo.RegistryDAO.Tests.LargeProposal
+      Test.Ligo.RegistryDAO.Tests.NotEnoughFrozen
+      Test.Ligo.RegistryDAO.Tests.ProposeXtzProposal
+      Test.Ligo.RegistryDAO.Tests.RegistryView
+      Test.Ligo.RegistryDAO.Tests.RequiredFrozen
+      Test.Ligo.RegistryDAO.Tests.TokensToBurn
+      Test.Ligo.RegistryDAO.Tests.UpdateDelegate
+      Test.Ligo.RegistryDAO.Tests.UpdateGuardian
+      Test.Ligo.RegistryDAO.Tests.UpdateReceivers
+      Test.Ligo.RegistryDAO.Tests.UpdateReceiversDelete
+      Test.Ligo.RegistryDAO.Tests.ZeroXtz
       Test.Ligo.RegistryDAO.Types
       Test.Ligo.TreasuryDAO
       Test.Ligo.TreasuryDAO.Types

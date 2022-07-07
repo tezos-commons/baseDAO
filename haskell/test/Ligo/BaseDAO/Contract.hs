@@ -6,8 +6,14 @@ module Ligo.BaseDAO.Contract
   ( baseDAOContractLigo
   , baseDAORegistryLigo
   , baseDAOTreasuryLigo
+  , baseDAOLambdaRegistryLigo
+  , baseDAOLambdaTreasuryLigo
+  , baseDAOLambdaLigo
   , baseDAORegistryStorageLigo
   , baseDAOTreasuryStorageLigo
+  , baseDAOLambdaStorageLigo
+  , baseDAOLambdaregistryStorageLigo
+  , baseDAOLambdatreasuryStorageLigo
 
   , getBaseDAOContract
   ) where
@@ -20,6 +26,7 @@ import Lorentz qualified as L
 import Morley.Michelson.Typed
 import Test.Cleveland.Lorentz (embedContract)
 
+import Ligo.BaseDAO.LambdaDAO.Types
 import Ligo.BaseDAO.RegistryDAO.Types
 import Ligo.BaseDAO.TreasuryDAO.Types
 import Ligo.BaseDAO.Types
@@ -32,11 +39,21 @@ getBaseDAOContract = case eqT @cep @'Base of
     Just Refl -> baseDAORegistryLigo
     Nothing -> case eqT @cep @'Treasury of
       Just Refl -> baseDAOTreasuryLigo
-      Nothing -> error "Unknown contract"
+      Nothing -> case eqT @cep @'Lambda of
+        Just Refl -> baseDAOLambdaLigo
+        Nothing -> error "Unknown contract"
 
 baseDAOContractLigo :: Contract (ToT Parameter) (ToT Storage)
 baseDAOContractLigo = L.toMichelsonContract
   $$(embedContract @(Parameter' ()) @Storage @() "resources/trivialDAO.tz")
+
+baseDAOLambdaRegistryLigo :: Contract (ToT (Parameter' (VariantToParam 'LambdaRegistry))) (ToT LambdaStorage)
+baseDAOLambdaRegistryLigo = L.toMichelsonContract
+  $$(embedContract @(Parameter' (VariantToParam 'LambdaRegistry)) @LambdaStorage @() "resources/lambdaregistryDAO.tz")
+
+baseDAOLambdaTreasuryLigo :: Contract (ToT (Parameter' (VariantToParam 'LambdaTreasury))) (ToT LambdaStorage)
+baseDAOLambdaTreasuryLigo = L.toMichelsonContract
+  $$(embedContract @(Parameter' (VariantToParam 'LambdaTreasury)) @LambdaStorage @() "resources/lambdatreasuryDAO.tz")
 
 baseDAORegistryLigo :: Contract (ToT (Parameter' RegistryCustomEpParam)) (ToT RegistryStorage)
 baseDAORegistryLigo = L.toMichelsonContract
@@ -45,6 +62,22 @@ baseDAORegistryLigo = L.toMichelsonContract
 baseDAOTreasuryLigo :: Contract (ToT (Parameter' TreasuryCustomEpParam)) (ToT TreasuryStorage)
 baseDAOTreasuryLigo = L.toMichelsonContract
   $$(embedContract @(Parameter' TreasuryCustomEpParam) @TreasuryStorage @() "resources/treasuryDAO.tz")
+
+baseDAOLambdaLigo :: Contract (ToT (Parameter' LambdaCustomEpParam)) (ToT LambdaStorage)
+baseDAOLambdaLigo = L.toMichelsonContract
+  $$(embedContract @(Parameter' LambdaCustomEpParam) @LambdaStorage @() "resources/lambdaDAO.tz")
+
+baseDAOLambdaregistryStorageLigo :: LambdaStorage
+baseDAOLambdaregistryStorageLigo =
+  fromVal ($(fetchValue @LambdaStorage "resources/lambdaregistryDAO_storage.tz"))
+
+baseDAOLambdatreasuryStorageLigo :: LambdaStorage
+baseDAOLambdatreasuryStorageLigo =
+  fromVal ($(fetchValue @LambdaStorage "resources/lambdatreasuryDAO_storage.tz"))
+
+baseDAOLambdaStorageLigo :: LambdaStorage
+baseDAOLambdaStorageLigo =
+  fromVal ($(fetchValue @LambdaStorage "resources/lambdaDAO_storage.tz"))
 
 baseDAORegistryStorageLigo :: RegistryStorage
 baseDAORegistryStorageLigo =

@@ -34,7 +34,7 @@ TS_OUT ?= typescript
 
 .PHONY: all clean test typescript
 
-all: $(OUT)/trivialDAO.tz $(OUT)/registryDAO.tz $(OUT)/treasuryDAO.tz $(OUT)/plist_contract.tz
+all: $(OUT)/lambdatreasuryDAO.tz  $(OUT)/lambdaregistryDAO.tz $(OUT)/trivialDAO.tz $(OUT)/registryDAO.tz $(OUT)/treasuryDAO.tz $(OUT)/lambdaDAO.tz $(OUT)/plist_contract.tz
 
 # Compile LIGO contract into its michelson representation.
 $(OUT)/%DAO.tz: src/**/**
@@ -219,6 +219,140 @@ $(OUT)/treasuryDAO_storage.tz: src/**
 	# ============== Compilation successful ============== #
 	# See "$(OUT)/treasuryDAO_storage.tz" for compilation result #
 	#
+
+$(OUT)/lambdaDAO_storage.tz : metadata_map = Big_map.empty
+$(OUT)/lambdaDAO_storage.tz : freeze_history = []
+$(OUT)/lambdaDAO_storage.tz : fixed_proposal_fee_in_token = 0n
+$(OUT)/lambdaDAO_storage.tz : quorum_threshold = 10n
+$(OUT)/lambdaDAO_storage.tz : min_quorum = 1n
+$(OUT)/lambdaDAO_storage.tz : max_quorum = 99n
+$(OUT)/lambdaDAO_storage.tz : period = 15840n
+$(OUT)/lambdaDAO_storage.tz : quorum_change = 5n
+$(OUT)/lambdaDAO_storage.tz : max_quorum_change = 19n
+$(OUT)/lambdaDAO_storage.tz : governance_total_supply = 1000n
+$(OUT)/lambdaDAO_storage.tz : proposal_flush_level = 36000n
+$(OUT)/lambdaDAO_storage.tz : proposal_expired_level = 47520n
+$(OUT)/lambdaDAO_storage.tz: src/**
+	# ============== Compiling LambdaDAO storage ============== #
+	cp src/variants/lambda/implementation.mligo src/implementation.mligo
+	cp src/variants/lambda/storage.mligo src/implementation_storage.mligo
+	mkdir -p $(OUT)
+	$(BUILD_STORAGE) --output-file $(OUT)/lambdaDAO_storage.tz \
+      src/base_DAO.mligo -e base_DAO_contract "default_storage( \
+        { admin = (\"$(call require_defined,admin_address)\" : address) \
+				; guardian = (\"$(call require_defined,guardian_address)\" : address) \
+				; governance_token = \
+					{ address = (\"$(call require_defined,governance_token_address)\" : address) \
+					; token_id = ($(call require_defined,governance_token_id) : nat) \
+					} \
+				; start_level = {blocks = $(call require_defined,start_level)} \
+				; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+				; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
+        ; config_data = \
+          { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
+          ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
+          ; period = { blocks = ($(period) : nat) } \
+          ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
+          ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) }\
+          ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
+          ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
+          ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
+          ; max_quorum_change = { numerator = (($(max_quorum_change) : nat) * quorum_denominator)/100n } \
+          ; governance_total_supply = ($(governance_total_supply) : nat) \
+          } \
+        })"
+	# ================= Compilation successful ================= #
+	# See "$(OUT)/lambdaDAO_storage.tz" for compilation result	#
+	#
+$(OUT)/lambdaregistryDAO_storage.tz : metadata_map = Big_map.empty
+$(OUT)/lambdaregistryDAO_storage.tz : freeze_history = []
+$(OUT)/lambdaregistryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
+$(OUT)/lambdaregistryDAO_storage.tz : quorum_threshold = 10n
+$(OUT)/lambdaregistryDAO_storage.tz : min_quorum = 1n
+$(OUT)/lambdaregistryDAO_storage.tz : max_quorum = 99n
+$(OUT)/lambdaregistryDAO_storage.tz : period = 15840n
+$(OUT)/lambdaregistryDAO_storage.tz : quorum_change = 5n
+$(OUT)/lambdaregistryDAO_storage.tz : max_quorum_change = 19n
+$(OUT)/lambdaregistryDAO_storage.tz : governance_total_supply = 1000n
+$(OUT)/lambdaregistryDAO_storage.tz : proposal_flush_level = 36000n
+$(OUT)/lambdaregistryDAO_storage.tz : proposal_expired_level = 47520n
+$(OUT)/lambdaregistryDAO_storage.tz: src/**
+	# ============== Compiling LambdaDAO storage ============== #
+	cp src/variants/lambdaregistry/implementation.mligo src/implementation.mligo
+	cp src/variants/lambdaregistry/storage.mligo src/implementation_storage.mligo
+	mkdir -p $(OUT)
+	$(BUILD_STORAGE) --output-file $(OUT)/lambdaregistryDAO_storage.tz \
+      src/base_DAO.mligo -e base_DAO_contract "default_storage( \
+        { admin = (\"$(call require_defined,admin_address)\" : address) \
+				; guardian = (\"$(call require_defined,guardian_address)\" : address) \
+				; governance_token = \
+					{ address = (\"$(call require_defined,governance_token_address)\" : address) \
+					; token_id = ($(call require_defined,governance_token_id) : nat) \
+					} \
+				; start_level = {blocks = $(call require_defined,start_level)} \
+				; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+				; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
+        ; config_data = \
+          { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
+          ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
+          ; period = { blocks = ($(period) : nat) } \
+          ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
+          ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) }\
+          ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
+          ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
+          ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
+          ; max_quorum_change = { numerator = (($(max_quorum_change) : nat) * quorum_denominator)/100n } \
+          ; governance_total_supply = ($(governance_total_supply) : nat) \
+          } \
+        })"
+	# ================= Compilation successful ================= #
+	# See "$(OUT)/lambdaregistryDAO_storage.tz" for compilation result	#
+	#
+	#
+$(OUT)/lambdatreasuryDAO_storage.tz : metadata_map = Big_map.empty
+$(OUT)/lambdatreasuryDAO_storage.tz : freeze_history = []
+$(OUT)/lambdatreasuryDAO_storage.tz : fixed_proposal_fee_in_token = 0n
+$(OUT)/lambdatreasuryDAO_storage.tz : quorum_threshold = 10n
+$(OUT)/lambdatreasuryDAO_storage.tz : min_quorum = 1n
+$(OUT)/lambdatreasuryDAO_storage.tz : max_quorum = 99n
+$(OUT)/lambdatreasuryDAO_storage.tz : period = 15840n
+$(OUT)/lambdatreasuryDAO_storage.tz : quorum_change = 5n
+$(OUT)/lambdatreasuryDAO_storage.tz : max_quorum_change = 19n
+$(OUT)/lambdatreasuryDAO_storage.tz : governance_total_supply = 1000n
+$(OUT)/lambdatreasuryDAO_storage.tz : proposal_flush_level = 36000n
+$(OUT)/lambdatreasuryDAO_storage.tz : proposal_expired_level = 47520n
+$(OUT)/lambdatreasuryDAO_storage.tz: src/**
+	# ============== Compiling LambdaDAO storage ============== #
+	cp src/variants/lambdatreasury/implementation.mligo src/implementation.mligo
+	cp src/variants/lambdatreasury/storage.mligo src/implementation_storage.mligo
+	mkdir -p $(OUT)
+	$(BUILD_STORAGE) --output-file $(OUT)/lambdatreasuryDAO_storage.tz \
+      src/base_DAO.mligo -e base_DAO_contract "default_storage( \
+        { admin = (\"$(call require_defined,admin_address)\" : address) \
+				; guardian = (\"$(call require_defined,guardian_address)\" : address) \
+				; governance_token = \
+					{ address = (\"$(call require_defined,governance_token_address)\" : address) \
+					; token_id = ($(call require_defined,governance_token_id) : nat) \
+					} \
+				; start_level = {blocks = $(call require_defined,start_level)} \
+				; metadata_map = ($(call escape_double_quote,$(metadata_map)) : metadata_map) \
+				; freeze_history = ($(call escape_double_quote,$(freeze_history)) : freeze_history_list) \
+        ; config_data = \
+          { max_quorum = { numerator = (($(max_quorum) : nat) * quorum_denominator)/100n } \
+          ; min_quorum = { numerator = (($(min_quorum) : nat) * quorum_denominator)/100n } \
+          ; period = { blocks = ($(period) : nat) } \
+          ; proposal_flush_level = { blocks = ($(proposal_flush_level) : nat) } \
+          ; proposal_expired_level = { blocks = ($(proposal_expired_level) : nat) }\
+          ; fixed_proposal_fee_in_token = ($(fixed_proposal_fee_in_token) : nat) \
+          ; quorum_threshold = { numerator = (($(quorum_threshold) : nat) * quorum_denominator)/100n } \
+          ; quorum_change = { numerator = (($(quorum_change) : nat) * quorum_denominator)/100n } \
+          ; max_quorum_change = { numerator = (($(max_quorum_change) : nat) * quorum_denominator)/100n } \
+          ; governance_total_supply = ($(governance_total_supply) : nat) \
+          } \
+        })"
+	# ================= Compilation successful ================= #
+	# See "$(OUT)/lambdatreasuryDAO_storage.tz" for compilation result	#
+	#
 # For development and testing purpose
 test-storage:
 	make $(OUT)/trivialDAO_storage.tz \
@@ -242,6 +376,26 @@ test-storage:
 		governance_token_id=0n \
 		start_level=100n
 
+	make $(OUT)/lambdaDAO_storage.tz \
+		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+		governance_token_id=0n \
+		start_level=100n
+
+	make $(OUT)/lambdaregistryDAO_storage.tz \
+		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+		governance_token_id=0n \
+		start_level=100n
+
+	make $(OUT)/lambdatreasuryDAO_storage.tz \
+		admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+		guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+		governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+		governance_token_id=0n \
+		start_level=100n
 haskell-resources: all test-storage
 	# ============== Copying resources for Haskell library ============== #
 	mkdir -p haskell/resources

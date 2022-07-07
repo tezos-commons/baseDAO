@@ -28,7 +28,7 @@ flushTransferProposal
 flushTransferProposal = testGroup "TransferProposal Tests"
   [ testScenario "checks it can flush a transfer type proposal (#66)" $ scenario $
       withOriginated @variant 3
-        (\_ s -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) s) $
+        (\_ s -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) (s { sConfig = (sConfig s) { cPeriod = 35, cProposalFlushLevel = 70 }})) $
         \[admin, wallet1, wallet2] (toPeriod -> period) baseDao dodTokenContract -> do
 
           let
@@ -80,7 +80,7 @@ flushTransferProposal = testGroup "TransferProposal Tests"
               ])
   , testScenario "checks it can flush a transfer proposal" $ scenario $
         withOriginated @variant 3
-            (\_ s -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) s) $
+            (\_ s -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) (s { sConfig = (sConfig s) { cPeriod = 35, cProposalFlushLevel = 70 }})) $
           \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
 
             let
