@@ -128,9 +128,9 @@ initialStorage :: Address -> RegistryStorage
 initialStorage admin = let
   fs = baseDAORegistryStorageLigo { sExtra = def }
   in fs { sAdmin = admin, sConfig = (sConfig fs)
-            { cPeriod = 11
-            , cProposalFlushLevel = 22
-            , cProposalExpiredLevel = 100
+            { cPeriod = 25
+            , cProposalFlushLevel = 50
+            , cProposalExpiredLevel = 300
             , cGovernanceTotalSupply = 100
 
       }}

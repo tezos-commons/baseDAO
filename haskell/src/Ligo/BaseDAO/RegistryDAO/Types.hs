@@ -40,11 +40,11 @@ data RegistryCustomEpParam
   = Lookup_registry LookupRegistryParam
   | RegistryCepDummy ()
 
-instance Buildable RegistryCustomEpParam where
-  build = genericF
-
 customGeneric "RegistryCustomEpParam" ligoLayout
 deriving anyclass instance IsoValue RegistryCustomEpParam
+
+instance Buildable RegistryCustomEpParam where
+  build = genericF
 
 instance HasAnnotation RegistryCustomEpParam where
   annOptions = baseDaoAnnOptions
@@ -77,11 +77,11 @@ data RegistryExtra = RegistryExtra
 instance Default RegistryExtra where
   def = RegistryExtra (mkBigMap @(Map RegistryKey RegistryValue) M.empty) (mkBigMap @(Map RegistryKey ProposalKey) M.empty) S.empty 1 0 1000 1 1 zeroMutez [tz|1u|]
 
-instance Buildable RegistryExtra where
-  build = genericF
-
 customGeneric "RegistryExtra" ligoLayout
 deriveRPCWithStrategy "RegistryExtra" ligoLayout
+
+instance Buildable RegistryExtra where
+  build = genericF
 
 deriving anyclass instance IsoValue RegistryExtra
 instance HasAnnotation RegistryExtra where

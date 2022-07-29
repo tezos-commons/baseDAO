@@ -11,18 +11,18 @@ module SMT.Common.Gen
 import Prelude hiding (drop, swap)
 
 import Crypto.Random (drgNewSeed, seedFromInteger, withDRG)
-import Data.Map qualified as Map
-import Hedgehog.Gen qualified as Gen
+import qualified Data.Map as Map
+import qualified Hedgehog.Gen as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
-import Hedgehog.Range qualified as Range
+import qualified Hedgehog.Range as Range
 
 import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
 import Lorentz hiding (cast, concat, get, not)
-import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
-import Morley.Tezos.Address (Address(..), mkKeyAddress, parseContractHash)
+import Morley.Tezos.Address (Address(..), mkKeyAddress)
 import Morley.Tezos.Core (dummyChainId)
-import Morley.Tezos.Crypto (SecretKey, sign, toPublic)
+import Morley.Tezos.Crypto (SecretKey, parseHash, sign, toPublic)
 import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
@@ -333,7 +333,7 @@ genVote = do
               ds = DataToSign
                   { dsChainId = dummyChainId
                   , dsContract =
-                      ContractAddress $ unsafe $ parseContractHash "KT1WsLzQ61xtMNJHfwgCHh2RnALGgFAzeSx9"
+                      ContractAddress $ unsafe $ parseHash "KT1WsLzQ61xtMNJHfwgCHh2RnALGgFAzeSx9"
                   , dsNonce = Nonce 0
                   , dsData = voteParam
                   }

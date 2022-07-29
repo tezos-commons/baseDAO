@@ -10,11 +10,11 @@ module Test.Ligo.LambdaDAO
 
 import Prelude
 
-import Data.Map qualified as M
+import qualified Data.Map as M
 import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (assert, div)
-import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
+import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
 import Morley.Michelson.Typed (convertContract)
 import Morley.Michelson.Typed.Convert (untypeValue)
 import Morley.Util.Named
@@ -63,18 +63,18 @@ toPeriod = unPeriod . cPeriod . sConfig
 -- input string is not empty.
 proposal_1_check :: HandlerCheck
 proposal_1_check =
-  L.car #
-  (unpackRaw @MText) #
-  assertSome [mt|Input cannot be unpacked|] #
-  L.size #
-  assertNeq0 [mt|Input cannot be empty|] #
-  push ()
+  mkLambda $ L.car #
+    (unpackRaw @MText) #
+    assertSome [mt|Input cannot be unpacked|] #
+    L.size #
+    assertNeq0 [mt|Input cannot be empty|] #
+    push ()
 
 
 -- | A proposal handler that accept a text value
 -- and inserts it into a list in handler storage.
 proposal_1_handler :: ProposalHandler
-proposal_1_handler =
+proposal_1_handler = mkLambda $
   (getField #piPacked_argument) #
   (unpackRaw @MText) #  ifNone dummyHandler insertHandlerStorage
   where

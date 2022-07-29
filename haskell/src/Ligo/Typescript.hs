@@ -76,6 +76,7 @@ nToType (NTChest _) = toType $ U.TChest
 nToType (NTChestKey _) = toType $ U.TChestKey
 nToType (NTSaplingState _ a) = toType $ U.TSaplingState (singNatToNatural a)
 nToType (NTSaplingTransaction _ a) = toType $ U.TSaplingTransaction (singNatToNatural a)
+nToType (NTTxRollupL2Address _ ) = toType $ U.TTxRollupL2Address
 
 singNatToNatural :: SingNat n -> Natural
 singNatToNatural SZ = 0
@@ -334,6 +335,7 @@ mkTypesFor typename epType = case U.unwrapT epType of
     error "In Ligo.Typescript.mkTypesFor: sappling state values not yet supported"
   U.TSaplingTransaction _ ->
     error "In Ligo.Typescript.mkTypesFor: sappling transaction values not yet supported"
+  U.TTxRollupL2Address -> [TsType typename (TsAlias TsString)]
 
   where
 

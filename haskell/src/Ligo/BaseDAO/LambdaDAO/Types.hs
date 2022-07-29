@@ -1,5 +1,6 @@
 -- SPDX-FileCopyrightText: 2022 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Ligo.BaseDAO.LambdaDAO.Types
   ( AddHandlerParam(..)
@@ -23,6 +24,7 @@ import Data.Map qualified as M
 
 import Fmt (Buildable, build, genericF)
 import Lorentz as L
+import Lorentz.Lambda
 import Morley.AsRPC
 
 import Ligo.BaseDAO.RegistryDAO.Types
@@ -40,12 +42,6 @@ data ExecuteHandlerParam = ExecuteHandlerParam
   { ehHandlerName :: MText
   , ehPackedArgument :: ByteString
   }
-
-instance HasAnnotation ExecuteHandlerParam where
-  annOptions = baseDaoAnnOptions
-
-instance HasAnnotation LambdaDaoProposalMetadata where
-  annOptions = baseDaoAnnOptions
 
 type HandlerStorage = Map MText ByteString
 
@@ -71,39 +67,16 @@ data AddHandlerParam = AddHandlerParam
   , ahHandler_check :: HandlerCheck
   }
 
-instance HasAnnotation PhInput where
-  annOptions = baseDaoAnnOptions
-
-instance HasAnnotation PhOutput where
-  annOptions = baseDaoAnnOptions
-
-instance HasAnnotation AddHandlerParam where
-  annOptions = baseDaoAnnOptions
-
 data HandlerInfo = HandlerInfo
   { _hiCode :: ProposalHandler
   , _hiHandler_check :: HandlerCheck
   , _hiIs_active :: Bool
   } deriving stock Eq
 
-customGeneric "HandlerInfo" ligoLayout
-deriving anyclass instance IsoValue HandlerInfo
-
-instance HasAnnotation HandlerInfo where
-  annOptions = baseDaoAnnOptions
-
-instance Buildable HandlerInfo where
-  build = genericF
-
-customGeneric "LambdaDaoProposalMetadata" ligoLayout
-deriving anyclass instance IsoValue LambdaDaoProposalMetadata
-
 customGeneric "ExecuteHandlerParam" ligoLayout
 deriving anyclass instance IsoValue ExecuteHandlerParam
 
 customGeneric "AddHandlerParam" ligoLayout
-deriving anyclass instance IsoValue AddHandlerParam
-
 customGeneric "PhInput" ligoLayout
 deriving anyclass instance IsoValue PhInput
 
@@ -118,16 +91,6 @@ data LambdaExtra = LambdaExtra
 instance Default LambdaExtra where
   def = LambdaExtra (mkBigMap @(Map MText HandlerInfo) M.empty) mempty
 
-instance Buildable LambdaExtra where
-  build = genericF
-
-customGeneric "LambdaExtra" ligoLayout
-deriveRPCWithStrategy "LambdaExtra" ligoLayout
-
-deriving anyclass instance IsoValue LambdaExtra
-instance HasAnnotation LambdaExtra where
-  annOptions = baseDaoAnnOptions
-
 type instance VariantToParam 'Lambda = ()
 type instance VariantToExtra 'Lambda = LambdaExtra
 
@@ -139,3 +102,47 @@ type instance VariantToExtra 'LambdaTreasury = LambdaExtra
 type LambdaStorage = StorageSkeleton (VariantToExtra 'Lambda)
 
 type LambdaCustomEpParam = ()
+
+instance HasAnnotation ExecuteHandlerParam where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation PhInput where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation PhOutput where
+  annOptions = baseDaoAnnOptions
+
+customGeneric "HandlerInfo" ligoLayout
+deriving anyclass instance IsoValue HandlerInfo
+
+instance HasAnnotation HandlerInfo where
+  annOptions = baseDaoAnnOptions
+
+deriving stock instance Generic (WrappedLambda i o)
+
+instance Buildable (WrappedLambda i o) where
+  build = genericF
+
+instance Buildable HandlerInfo where
+  build = genericF
+
+customGeneric "LambdaExtra" ligoLayout
+deriveRPCWithStrategy "LambdaExtra" ligoLayout
+deriving anyclass instance IsoValue LambdaExtra
+
+instance HasAnnotation LambdaExtra where
+  annOptions = baseDaoAnnOptions
+
+deriving anyclass instance IsoValue AddHandlerParam
+
+instance HasAnnotation AddHandlerParam where
+  annOptions = baseDaoAnnOptions
+
+customGeneric "LambdaDaoProposalMetadata" ligoLayout
+deriving anyclass instance IsoValue LambdaDaoProposalMetadata
+
+instance HasAnnotation LambdaDaoProposalMetadata where
+  annOptions = baseDaoAnnOptions
+
+instance Buildable LambdaExtra where
+  build = genericF
