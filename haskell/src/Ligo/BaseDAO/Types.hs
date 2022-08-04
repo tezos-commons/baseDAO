@@ -53,6 +53,7 @@ module Ligo.BaseDAO.Types
   , ContractExtra
   , CustomEntrypoints
   , CallCustomParam
+  , CEConatraints
   , Proposal (..)
   , Parameter
   , Parameter' (..)
@@ -62,6 +63,7 @@ module Ligo.BaseDAO.Types
   , FreezeParam
   , UnfreezeParam
   , UnstakeVoteParam
+  , HasBaseDAOEp
 
   , FixedFee (..)
   , Storage
@@ -85,16 +87,18 @@ module Ligo.BaseDAO.Types
   , next
   ) where
 
-import Universum (Enum, Integral, Num, One(..), Real, Type, div, fromIntegral, maybe, (*))
+import Universum (Enum, Integral, Num, One(..), Real, Type, Typeable, div, fromIntegral, maybe, (*))
 
 import Fmt (Buildable, build, genericF)
 
 import Lorentz hiding (div, now)
 import Lorentz.Annotation ()
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import qualified Lorentz.Contracts.Spec.TZIP16Interface as TZIP16
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
+import Lorentz.Contracts.Spec.TZIP16Interface qualified as TZIP16
 import Morley.AsRPC (HasRPCRepr(..), deriveRPC, deriveRPCWithStrategy)
 import Morley.Michelson.Typed.Annotation
+import Morley.Michelson.Typed.Scope
+  (HasNoBigMap, HasNoContract, HasNoNestedBigMaps, HasNoOp, HasNoTicket)
 import Morley.Michelson.Typed.T (T(TUnit))
 import Morley.Michelson.Untyped.Annotation
 import Morley.Util.Markdown
@@ -108,6 +112,9 @@ import Test.Cleveland.Instances ()
 data Variants
   = Registry
   | Treasury
+  | Lambda
+  | LambdaRegistry
+  | LambdaTreasury
   | Base
 
 -- | A type family to map a variant to the type that represents it's custom entrypoints.
@@ -892,3 +899,37 @@ instance ParameterHasEntrypoints (Parameter' ()) where
 
 customGeneric "VoteParam" ligoLayout
 deriving anyclass instance IsoValue VoteParam
+
+type HasBaseDAOEp a = (HasDefEntrypointArg a (EntrypointRef 'Nothing) (), ParameterContainsEntrypoints a
+  '[ "Propose" :> ProposeParams
+   , "Transfer_contract_tokens" :> TransferContractTokensParam
+   , "Transfer_ownership" :> TransferOwnershipParam
+   , "Accept_ownership" :> ()
+   , "Vote" :> [PermitProtected VoteParam]
+   , "Flush" :> Natural
+   , "Unfreeze" :> UnfreezeParam
+   , "Freeze" :> FreezeParam
+   , "Drop_proposal" :> ProposalKey
+   , "Update_delegate" :> [DelegateParam]
+   , "Unstake_vote" :> UnstakeVoteParam
+   ])
+
+type CEConatraints cep =
+  ( Typeable cep
+  , Typeable (VariantToExtra cep)
+  , Typeable (AsRPC (VariantToExtra cep))
+  , HasNoTicket (ToT (AsRPC (VariantToExtra cep)))
+  , HasNoBigMap (ToT (AsRPC (VariantToExtra cep)))
+  , HasNoOp (ToT (AsRPC (VariantToExtra cep)))
+  , HasNoContract (ToT (AsRPC (VariantToExtra cep)))
+  , HasNoNestedBigMaps (ToT (AsRPC (VariantToExtra cep)))
+  , HasNoTicket (ToT (VariantToExtra cep))
+  , HasNoOp (ToT (VariantToExtra cep))
+  , HasNoContract (ToT (VariantToExtra cep))
+  , HasNoNestedBigMaps (ToT (VariantToExtra cep))
+  , HasAnnotation (VariantToExtra cep)
+  , IsoValue (VariantToExtra cep)
+  , IsoValue (AsRPC (VariantToExtra cep))
+  , HasNoOp (ToT (VariantToExtra cep))
+  )
+

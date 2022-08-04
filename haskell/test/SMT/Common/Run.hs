@@ -228,20 +228,6 @@ printResult mc
       modelCallMsg = "* Call with:\n" <> (pretty mc)
 
 
-type HasBaseDAOEp a = (HasDefEntrypointArg a (EntrypointRef 'Nothing) (), ParameterContainsEntrypoints a
-  '[ "Propose" :> ProposeParams
-   , "Transfer_contract_tokens" :> TransferContractTokensParam
-   , "Transfer_ownership" :> TransferOwnershipParam
-   , "Accept_ownership" :> ()
-   , "Vote" :> [PermitProtected VoteParam]
-   , "Flush" :> Natural
-   , "Unfreeze" :> UnfreezeParam
-   , "Freeze" :> FreezeParam
-   , "Drop_proposal" :> ProposalKey
-   , "Update_delegate" :> [DelegateParam]
-   , "Unstake_vote" :> UnstakeVoteParam
-   ])
-
 -- | Advance nettest level and call ligo dao with the provided argument.
 -- Return the result of the call (storage or error) and the storage of
 -- auxiliary contracts.

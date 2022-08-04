@@ -23,30 +23,9 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
 import Lorentz hiding (assert, (>>))
 import Universum
 
-import Morley.Michelson.Typed.Scope
-  (HasNoBigMap, HasNoContract, HasNoNestedBigMaps, HasNoOp, HasNoTicket)
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
-
-type CEConatraints cep =
-  ( Typeable cep
-  , Typeable (VariantToExtra cep)
-  , Typeable (AsRPC (VariantToExtra cep))
-  , HasNoTicket (ToT (AsRPC (VariantToExtra cep)))
-  , HasNoBigMap (ToT (AsRPC (VariantToExtra cep)))
-  , HasNoOp (ToT (AsRPC (VariantToExtra cep)))
-  , HasNoContract (ToT (AsRPC (VariantToExtra cep)))
-  , HasNoNestedBigMaps (ToT (AsRPC (VariantToExtra cep)))
-  , HasNoTicket (ToT (VariantToExtra cep))
-  , HasNoOp (ToT (VariantToExtra cep))
-  , HasNoContract (ToT (VariantToExtra cep))
-  , HasNoNestedBigMaps (ToT (VariantToExtra cep))
-  , HasAnnotation (VariantToExtra cep)
-  , IsoValue (VariantToExtra cep)
-  , IsoValue (AsRPC (VariantToExtra cep))
-  , HasNoOp (ToT (VariantToExtra cep))
-  )
 
 getStorageRPC' :: forall cep p vd caps m. (HasCallStack, CEConatraints cep, MonadCleveland caps m) => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra cep))
 getStorageRPC' addr = getStorage @(StorageSkeleton (VariantToExtra cep)) (unTAddress addr)
