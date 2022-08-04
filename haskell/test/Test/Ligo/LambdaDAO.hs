@@ -20,10 +20,10 @@ import Morley.Michelson.Typed.Convert (untypeValue)
 import Morley.Util.Named
 import Test.Cleveland
 
-import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.LambdaDAO.Types
+import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 
 getStorageRPCLambda :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra 'Lambda))
@@ -199,7 +199,7 @@ test_LambdaDAO =
 
       , testScenario "RemoveHandler proposal check checks for existing handler" $ scenario $
          withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           (\(admin: _) -> initialStorageWithPreloadedLambdasDisabled admin) $
            \(_:wallet1:_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Remove_handler "proposal_handler_1"

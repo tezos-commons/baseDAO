@@ -12,6 +12,12 @@ copyright:           2020-2021 TQ Tezos, 2021-2022 Tezos Commons
 extra-doc-files:
 - README.md
 extra-source-files:
+- resources/lambdaDAO.tz
+- resources/lambdaDAO_storage.tz
+- resources/lambdaregistryDAO.tz
+- resources/lambdaregistryDAO_storage.tz
+- resources/lambdatreasuryDAO.tz
+- resources/lambdatreasuryDAO_storage.tz
 - resources/registryDAO.tz
 - resources/treasuryDAO.tz
 - resources/trivialDAO.tz
