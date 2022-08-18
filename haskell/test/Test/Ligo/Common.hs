@@ -50,7 +50,7 @@ withOriginated addrCount storageFn tests = do
   mapM (\x -> refillable $ newAddress $ fromString ("address" <> (show x))) [1 ..addrCount] >>= \case
     [] -> error "Should ask for at least admin address"
     addresses@(admin: _) -> do
-      dodTokenContract <- chAddress <$> originateSimple "token_contract" [] dummyFA2Contract
+      dodTokenContract <- chAddress <$> withSender admin (originateSimple "token_contract" [] dummyFA2Contract)
       let storageInitial = storageFn addresses $ getInitialStorage @variant admin
       now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
       let storage = storageInitial
@@ -61,7 +61,7 @@ withOriginated addrCount storageFn tests = do
               , sStartLevel = now_level
             }
 
-      baseDao <- originateUntyped $ UntypedOriginateData
+      baseDao <- withSender admin $ originateUntyped $ UntypedOriginateData
         { uodName = "BaseDAO - RegistryDAO Test Contract"
         , uodBalance = zeroMutez
         , uodStorage = untypeValue $ toVal storage
