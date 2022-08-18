@@ -9,7 +9,7 @@
 
 [@inline]
 let authorize_admin (store : storage): storage =
-  if sender = store.admin then
+  if Tezos.get_sender unit = store.admin then
     store
   else
     (failwith not_admin : storage)

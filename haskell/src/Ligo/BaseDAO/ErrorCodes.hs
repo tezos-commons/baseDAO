@@ -10,10 +10,10 @@ module Ligo.BaseDAO.ErrorCodes where
 
 import Universum
 
-import Lorentz.Contracts.Spec.TZIP16Interface
 import Morley.Micheline (toExpression)
 import Morley.Michelson.Text
 import Morley.Michelson.Typed (toVal)
+import Lorentz.Contracts.Spec.TZIP16Interface
 
 ----------------------------------------------------------------------------
 -- Invalid Input Error Codes

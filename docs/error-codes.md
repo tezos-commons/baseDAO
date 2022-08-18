@@ -1,6 +1,7 @@
 <!--
-- SPDX-FileCopyrightText: 2021 Tezos Commons
-- SPDX-License-Identifier: LicenseRef-MIT-TC
+- SPDX-FileCopyrightText: 2021 TQ Tezos
+
+- SPDX-License-Identifier: LicenseRef-MIT-TQ
 -->
 
 <!--

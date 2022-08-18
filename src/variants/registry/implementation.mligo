@@ -57,7 +57,7 @@ let apply_diff_affected
  * where min_xtz_amount and max_xtz_amount are from storage configuration.
  *)
 let proposal_check (params, extras : propose_params * contract_extra) : unit =
-  let proposal_size = Bytes.size(params.proposal_metadata) in
+  let proposal_size = Bytes.length(params.proposal_metadata) in
   let frozen_scale_value = extras.frozen_scale_value in
   let frozen_extra_value = extras.frozen_extra_value in
   let max_proposal_size = extras.max_proposal_size in

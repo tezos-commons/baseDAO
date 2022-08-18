@@ -12,7 +12,7 @@
 let transfer_ownership (param, store : transfer_ownership_param * storage) : return =
   let store = authorize_admin(store) in
   let store =
-    if Tezos.self_address = param
+    if Tezos.get_self_address unit = param
     // If new admin is address of baseDAO, set as admin right away.
     then { store with admin = param ; }
     else { store with pending_owner = param ; }
@@ -24,6 +24,6 @@ let transfer_ownership (param, store : transfer_ownership_param * storage) : ret
  * new admin.
  *)
 let accept_ownership(store : storage) : return =
-  if store.pending_owner = Tezos.sender
-  then (nil_op, { store with admin = Tezos.sender })
+  if store.pending_owner = Tezos.get_sender unit
+  then (nil_op, { store with admin = Tezos.get_sender unit })
   else (failwith not_pending_admin : return)

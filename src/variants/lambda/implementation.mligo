@@ -4,6 +4,10 @@
 #if !VARIANT
 #define VARIANT
 
+#include "error_codes.mligo"
+#include "helper/unpack.mligo"
+#include "variants/lambda/types.mligo"
+#include "variants/lambda/common.mligo"
 #include "types.mligo"
 
 // -----------------------------------------------------------------
@@ -16,7 +20,8 @@
 // requirements
 // -----------------------------------------------------------------
 
-let proposal_check (_, _ : propose_params * contract_extra) : unit = unit
+let proposal_check (propose_params, ce : propose_params * contract_extra) : unit =
+  common_proposal_check (propose_params, ce)
 
 // -----------------------------------------------------------------
 // decision_callback
@@ -27,11 +32,11 @@ let proposal_check (_, _ : propose_params * contract_extra) : unit = unit
 // -----------------------------------------------------------------
 
 let decision_callback (input : decision_callback_input)
-    : decision_callback_output = { operations = ([] : operation list); extras = input.extras; guardian = (None : address option) }
+    : decision_callback_output = common_decision_callback(input)
 
 // -----------------------------------------------------------------
 // Rejected proposal slash value is called when a proposal is rejected, and the
-// value that voters get back can be slashed.  This procedure should return the
+// value that voters get back can be slashed. This procedure should return the
 // amount to be slashed.
 // -----------------------------------------------------------------
 

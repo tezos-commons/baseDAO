@@ -2,11 +2,13 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TQ
 
 module Test.Ligo.BaseDAO.Common.Errors
-  ( zeroMutezErrMsg
-  , tooSmallXtzErrMsg
-  , tooLargeXtzErrMsg
-  , incorrectTokenAmountErrMsg
+  ( incorrectTokenAmountErrMsg
+  , proposalHandlerExists
+  , proposalHandlerNotFound
   , tooLargeProposalErrMsg
+  , tooLargeXtzErrMsg
+  , tooSmallXtzErrMsg
+  , zeroMutezErrMsg
   ) where
 
 import Lorentz
@@ -27,3 +29,9 @@ incorrectTokenAmountErrMsg = [mt|WRONG_TOKEN_AMOUNT|]
 
 tooLargeProposalErrMsg :: MText
 tooLargeProposalErrMsg = [mt|LARGE_PROPOSAL|]
+
+proposalHandlerExists :: MText
+proposalHandlerExists = [mt|PROPOSAL_HANDLER_EXISTS|]
+
+proposalHandlerNotFound :: MText
+proposalHandlerNotFound = [mt|PROPOSAL_HANDLER_NOT_FOUND|]

@@ -5,29 +5,29 @@
         "homepage": "",
         "owner": "input-output-hk",
         "repo": "hackage.nix",
-        "rev": "92a2b1faff6afb43b217bf8b34e48147d5505e77",
-        "sha256": "0nyhz0a1rwfyavhhknh1822rm2vc2a97r7k94dsf0nhsh1ing3pc",
+        "rev": "320598cd2416ec43193a038738b5443211f0b6df",
+        "sha256": "1rxm3nwjpfsya2pd1v0279qj5vmbz49ishjinmr3wcnz10q40w3h",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/hackage.nix/archive/92a2b1faff6afb43b217bf8b34e48147d5505e77.tar.gz",
+        "url": "https://github.com/input-output-hk/hackage.nix/archive/320598cd2416ec43193a038738b5443211f0b6df.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "haskell.nix": {
-        "branch": "zhenya/ops1122-fix-snapshot-path-pin",
+        "branch": "master",
         "description": "Alternative Haskell Infrastructure for Nixpkgs",
         "homepage": "https://input-output-hk.github.io/haskell.nix",
-        "owner": "serokell",
+        "owner": "input-output-hk",
         "repo": "haskell.nix",
-        "rev": "a4e105dcdb6d2b9d0627b8f0b893cec80485c14e",
-        "sha256": "144cfklhmqrq1kmvnmvcfmn819ijy4hr20whfazypxa72lcs3lz0",
+        "rev": "d457e12916c77cc9342ed7356ffdf266a05ef982",
+        "sha256": "0z6fr81bi37mw3kaw7g7wg5ayplh72czv3asih2npz7bnadq1al5",
         "type": "tarball",
-        "url": "https://github.com/serokell/haskell.nix/archive/a4e105dcdb6d2b9d0627b8f0b893cec80485c14e.tar.gz",
+        "url": "https://github.com/input-output-hk/haskell.nix/archive/d457e12916c77cc9342ed7356ffdf266a05ef982.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ligo": {
-        "sha256": "06y2yng41gqz4lrxrfwhi767nfils7vrpm28h1fg73sxd65xycgh",
+        "sha256": "12d89vbz9ykvymbdnf7q4hw00hzknrfvddk919vx3xy1632n1gdj",
         "type": "file",
-        "url": "https://gitlab.com/ligolang/ligo/-/jobs/1943933762/artifacts/raw/ligo",
-        "url_template": "https://gitlab.com/ligolang/ligo/-/jobs/1943933762/artifacts/raw/ligo"
+        "url": "https://gitlab.com/ligolang/ligo/-/jobs/2684632179/artifacts/raw/ligo",
+        "url_template": "https://gitlab.com/ligolang/ligo/-/jobs/2684632179/artifacts/raw/ligo"
     },
     "morley": {
         "sha256": "0g9mdqb7l85z8qa931lxmcqrzhscq6451plz1k18v738ylx4dxmj",
@@ -73,10 +73,10 @@
         "homepage": "",
         "owner": "input-output-hk",
         "repo": "stackage.nix",
-        "rev": "8222c5eef15f0882412a4afc5bfc9d3a70edef1d",
-        "sha256": "0169qvd3xb3a3bcr2wj5yqrhb9v5i5198jp1zawlgimq4px8li1y",
+        "rev": "699d6eb6222d53d4dc4ae2cc8daa9206748b793c",
+        "sha256": "0rkyk2v4x9z0dc3nxa4rzvsvhzw90x2l863z8fm6f27qgicpvdan",
         "type": "tarball",
-        "url": "https://github.com/input-output-hk/stackage.nix/archive/8222c5eef15f0882412a4afc5bfc9d3a70edef1d.tar.gz",
+        "url": "https://github.com/input-output-hk/stackage.nix/archive/699d6eb6222d53d4dc4ae2cc8daa9206748b793c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "xrefcheck": {
