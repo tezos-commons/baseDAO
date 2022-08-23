@@ -217,7 +217,15 @@ let lookup_registry (param, store : lookup_registry_param * storage) : operation
 let default_registry_DAO_storage (data : initial_registryDAO_storage) : storage =
   let store = default_storage (data.base_data) in
   { store with
-    extra = default_extra
+    extra =
+      { default_extra with frozen_scale_value = data.frozen_scale_value
+      ; frozen_extra_value = data.frozen_extra_value
+      ; max_proposal_size = data.max_proposal_size
+      ; slash_scale_value = data.slash_scale_value
+      ; slash_division_value = data.slash_division_value
+      ; min_xtz_amount = data.min_xtz_amount
+      ; max_xtz_amount = data.max_xtz_amount
+      }
   }
 
 // We are not using this right now, but just leaving here in case we might want it

@@ -90,7 +90,15 @@ let decision_callback (input : decision_callback_input)
 let default_treasury_DAO_storage (data : initial_treasuryDAO_storage) : storage =
   let store = default_storage (data.base_data)
   in { store with
-    extra = default_extra
+    extra =
+      { default_extra with frozen_scale_value = data.frozen_scale_value
+      ; frozen_extra_value = data.frozen_extra_value
+      ; max_proposal_size = data.max_proposal_size
+      ; slash_scale_value = data.slash_scale_value
+      ; slash_division_value = data.slash_division_value
+      ; min_xtz_amount = data.min_xtz_amount
+      ; max_xtz_amount = data.max_xtz_amount
+      }
   }
 
 let custom_ep (_, storage : custom_ep_param * storage): operation list * storage

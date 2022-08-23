@@ -215,7 +215,6 @@ make out/treasuryDAO_storage.tz \
   max_xtz_amount=100mutez \
   start_level=100n \
   metadata_map=Big_map.empty \
-  freeze_history=Big_map.empty \
   fixed_proposal_fee_in_token=0n \
   freeze_history=[] \
   quorum_threshold=10n \
@@ -244,13 +243,6 @@ make out/lambdaDAO_storage.tz \
   guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
   governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
   governance_token_id=0n \
-  frozen_scale_value=1n \
-  frozen_extra_value=0n \
-  max_proposal_size=100n \
-  slash_scale_value=1n \
-  slash_division_value=1n \
-  min_xtz_amount=0mutez \
-  max_xtz_amount=100mutez \
   start_level=100n \
   metadata_map=Big_map.empty \
   freeze_history=[] \
