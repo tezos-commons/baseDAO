@@ -54,6 +54,7 @@ withOriginated addrCount storageFn tests = do
     , uodStorage = untypeValue $ toVal storage
     , uodContract = convertContract baseDAOLambdaLigo
     }
+  advanceToLevel now_level
   tests addresses storage (TAddress baseDao) (TAddress dodTokenContract)
 
 toPeriod :: LambdaStorage -> Natural
