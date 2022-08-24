@@ -36,6 +36,12 @@ data MetadataConfig = MetadataConfig
   , mcThumbnailUri :: Maybe Text
   } deriving stock (Eq, Show)
 
+----------------------------------------------------------------------------
+-- JSON serializers/deserializers
+----------------------------------------------------------------------------
+
+deriveJSON aesonOptions ''MetadataConfig
+
 -- | All the information for instantiating metadata.
 --
 -- This includes pieces defined by user (if any) like some constants for
@@ -107,7 +113,7 @@ governanceTokenView MetadataSettings{} = View
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @Storage Nothing [] $
             unsafeCompileViewCode $ WithoutParam $ do
-              stToField #sGovernanceToken
+              mkLambda $ stToField #sGovernanceToken
       ]
   }
 
@@ -121,12 +127,7 @@ permitsCounterView MetadataSettings{} = View
       [ VIMichelsonStorageView $
           mkSimpleMichelsonStorageView @Storage $
             unsafeCompileViewCode $ WithoutParam $
-              stToField #sPermitsCounter
+              mkLambda $ stToField #sPermitsCounter
       ]
   }
 
-----------------------------------------------------------------------------
--- JSON serializers/deserializers
-----------------------------------------------------------------------------
-
-deriveJSON aesonOptions ''MetadataConfig

@@ -22,13 +22,13 @@ data PlistParameter
   | Pop ()
   deriving stock (Eq, Show)
 
-instance Buildable PlistParameter where
-  build = genericF
-
 customGeneric "PlistParameter" ligoLayout
 deriving anyclass instance IsoValue PlistParameter
 instance ParameterHasEntrypoints PlistParameter where
   type ParameterEntrypointsDerivation PlistParameter = EpdDelegate
+
+instance Buildable PlistParameter where
+  build = genericF
 
 data PlistStorage = PlistStorage
   { psPlist :: (Maybe ProposalDoublyLinkedList)

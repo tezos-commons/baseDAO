@@ -32,7 +32,8 @@ import Text.Show (show)
 
 import Lorentz hiding (cast, get, not, subMutez)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Morley.Tezos.Address (ContractHash(..))
+import Morley.Tezos.Address (ContractHash)
+import Morley.Tezos.Crypto (HashTag)
 import Morley.Tezos.Core
 
 import Ligo.BaseDAO.ErrorCodes
@@ -179,6 +180,9 @@ data ModelCall var = ModelCall
   } deriving stock (Generic)
 
 deriving stock instance Show (VariantToParam var) => Show (ModelCall var)
+
+instance Buildable (HashTag a) where
+  build = build . show
 
 instance Buildable ContractHash where
   build = genericF

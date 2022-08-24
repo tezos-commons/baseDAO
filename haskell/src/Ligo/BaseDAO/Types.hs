@@ -1,6 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-orphans -Wno-identities #-}
 
 -- | Types mirrored from LIGO implementation.
 module Ligo.BaseDAO.Types
@@ -153,6 +153,8 @@ baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnak
 -- Proposals
 ------------------------------------------------------------------------
 
+type ProposalMetadata = ByteString
+
 data ProposeParams = ProposeParams
   { ppFrom             :: Address
   , ppFrozenToken      :: Natural
@@ -252,6 +254,9 @@ data VoteParam = VoteParam
   , vFrom        :: Address
   }
   deriving stock (Eq, Show)
+
+customGeneric "VoteParam" ligoLayout
+deriving anyclass instance IsoValue VoteParam
 
 instance TypeHasDoc ProposalMetadata => TypeHasDoc VoteParam where
   typeDocMdDescription = "Describes target proposal id, vote type and vote amount"
@@ -494,8 +499,6 @@ deriving newtype instance IsoValue (DynamicRecView n)
 dynRecUnsafe :: DynamicRec n
 dynRecUnsafe = DynamicRec' mempty
 
-type ProposalMetadata = ByteString
-
 type ContractExtra' big_map = DynamicRec' big_map "ce"
 type ContractExtra = ContractExtra' BigMap
 
@@ -539,6 +542,11 @@ data ForbidXTZParam
   | Unstake_vote UnstakeVoteParam
   deriving stock (Eq, Show)
 
+customGeneric "ForbidXTZParam" ligoLayout
+deriving anyclass instance IsoValue ForbidXTZParam
+instance ParameterHasEntrypoints ForbidXTZParam where
+  type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
+
 instance Buildable ForbidXTZParam where
   build = genericF
 
@@ -550,6 +558,14 @@ data AllowXTZParamContract
   | Default ()
   deriving stock (Eq, Show)
 
+customGeneric "AllowXTZParamContract" ligoLayout
+deriving anyclass instance IsoValue AllowXTZParamContract
+instance ParameterHasEntrypoints AllowXTZParamContract where
+  type ParameterEntrypointsDerivation AllowXTZParamContract = EpdDelegate
+
+instance HasAnnotation AllowXTZParamContract where
+  annOptions = baseDaoAnnOptions
+
 instance Buildable AllowXTZParamContract where
   build = genericF
 
@@ -557,6 +573,12 @@ data AllowXTZParam cep
   = ConcreteEp AllowXTZParamContract
   | CustomEp cep
   deriving stock (Eq, Show)
+
+customGeneric "AllowXTZParam" ligoLayout
+deriving anyclass instance IsoValue cep => IsoValue (AllowXTZParam cep)
+
+instance ParameterHasEntrypoints (AllowXTZParam ()) where
+  type ParameterEntrypointsDerivation (AllowXTZParam ()) = EpdDelegate
 
 instance Buildable cep => Buildable (AllowXTZParam cep) where
   build = genericF
@@ -567,6 +589,11 @@ data Parameter' cep
   deriving stock (Eq, Show)
 
 type Parameter = Parameter' ()
+
+customGeneric "Parameter'" ligoLayout
+deriving anyclass instance IsoValue cep => IsoValue (Parameter' cep)
+instance ParameterHasEntrypoints (Parameter' ()) where
+  type ParameterEntrypointsDerivation (Parameter' ()) = EpdDelegate
 
 instance Buildable cep => Buildable (Parameter' cep) where
   build = genericF
@@ -589,11 +616,11 @@ data GovernanceToken = GovernanceToken
   , gtTokenId :: FA2.TokenId
   } deriving stock (Eq, Show)
 
-instance Buildable GovernanceToken where
-  build = genericF
-
 customGeneric "GovernanceToken" ligoLayout
 deriving anyclass instance IsoValue GovernanceToken
+
+instance Buildable GovernanceToken where
+  build = genericF
 
 data QuorumThresholdAtCycle = QuorumThresholdAtCycle
   { qaQuorumThreshold :: QuorumThreshold
@@ -654,6 +681,9 @@ newtype FixedFee = FixedFee Natural
   deriving newtype (Num)
   deriving anyclass IsoValue
 
+instance Buildable FixedFee where
+  build = genericF
+
 instance HasRPCRepr FixedFee where
   type AsRPC FixedFee = FixedFee
 
@@ -672,6 +702,9 @@ data Config = Config
 
 customGeneric "Config" ligoLayout
 
+instance HasAnnotation FixedFee where
+  annOptions = baseDaoAnnOptions
+
 deriving stock instance Show Config
 deriving stock instance Eq Config
 deriving anyclass instance IsoValue Config
@@ -681,6 +714,18 @@ instance Buildable Config where
   build = genericF
 
 deriveRPCWithStrategy "Config" ligoLayout
+
+instance Buildable Proposal where
+  build = genericF
+
+instance HasAnnotation Proposal where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation GovernanceToken where
+  annOptions = baseDaoAnnOptions
+
+instance HasAnnotation AddressFreezeHistory where
+  annOptions = baseDaoAnnOptions
 
 data StorageSkeleton ce = Storage
   { sAdmin :: Address
@@ -715,20 +760,6 @@ deriveRPCWithStrategy "StorageSkeleton" ligoLayout
 type StorageRPC = StorageSkeletonRPC (VariantToExtra 'Base)
 
 type Storage = StorageSkeleton (VariantToExtra 'Base)
-
-instance HasAnnotation GovernanceToken where
-  annOptions = baseDaoAnnOptions
-
-instance HasAnnotation Proposal where
-  annOptions = baseDaoAnnOptions
-
-instance HasAnnotation FixedFee where
-  annOptions = baseDaoAnnOptions
-instance Buildable FixedFee where
-  build = genericF
-
-instance HasAnnotation AddressFreezeHistory where
-  annOptions = baseDaoAnnOptions
 
 instance HasFieldOfType (StorageSkeleton (ContractExtra' BigMap)) name field => StoreHasField (StorageSkeleton (ContractExtra' BigMap)) name field where
   storeFieldOps = storeFieldOpsADT
@@ -868,37 +899,6 @@ mkStorage' admin vp qt mcp cp gts extra mdt lvl tokenAddress = let
     quorumThresholdDef = mkQuorumThreshold 1 10 -- 10% of frozen total supply
     votingPeriodDef = Period $ 60 * 60 * 24 * 7  -- 7 days
 
--- Instances
-------------------------------------------------
-
-instance Buildable Proposal where
-  build = genericF
-customGeneric "ForbidXTZParam" ligoLayout
-deriving anyclass instance IsoValue ForbidXTZParam
-instance ParameterHasEntrypoints ForbidXTZParam where
-  type ParameterEntrypointsDerivation ForbidXTZParam = EpdDelegate
-
-customGeneric "AllowXTZParamContract" ligoLayout
-deriving anyclass instance IsoValue AllowXTZParamContract
-instance ParameterHasEntrypoints AllowXTZParamContract where
-  type ParameterEntrypointsDerivation AllowXTZParamContract = EpdDelegate
-
-instance HasAnnotation AllowXTZParamContract where
-  annOptions = baseDaoAnnOptions
-
-customGeneric "AllowXTZParam" ligoLayout
-deriving anyclass instance IsoValue cep => IsoValue (AllowXTZParam cep)
-
-instance ParameterHasEntrypoints (AllowXTZParam ()) where
-  type ParameterEntrypointsDerivation (AllowXTZParam ()) = EpdDelegate
-
-customGeneric "Parameter'" ligoLayout
-deriving anyclass instance IsoValue cep => IsoValue (Parameter' cep)
-instance ParameterHasEntrypoints (Parameter' ()) where
-  type ParameterEntrypointsDerivation (Parameter' ()) = EpdDelegate
-
-customGeneric "VoteParam" ligoLayout
-deriving anyclass instance IsoValue VoteParam
 
 type HasBaseDAOEp a = (HasDefEntrypointArg a (EntrypointRef 'Nothing) (), ParameterContainsEntrypoints a
   '[ "Propose" :> ProposeParams

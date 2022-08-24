@@ -35,13 +35,14 @@ data TreasuryExtra = TreasuryExtra
 instance Default TreasuryExtra where
   def = TreasuryExtra 1 0 1000 1 1 zeroMutez [tz|1u|]
 
+customGeneric "TreasuryExtra" ligoLayout
+deriving anyclass instance IsoValue TreasuryExtra
+instance HasAnnotation TreasuryExtra where
+  annOptions = baseDaoAnnOptions
+
 instance Buildable TreasuryExtra where
   build = genericF
 
 instance HasRPCRepr TreasuryExtra where
   type AsRPC TreasuryExtra = TreasuryExtra
 
-customGeneric "TreasuryExtra" ligoLayout
-deriving anyclass instance IsoValue TreasuryExtra
-instance HasAnnotation TreasuryExtra where
-  annOptions = baseDaoAnnOptions

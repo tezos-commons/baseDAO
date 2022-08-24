@@ -241,7 +241,7 @@ genCustomCallsRegistryDao = do
 
 genLookupRegistryParam :: GeneratorT 'Registry (TAddress (MText, Maybe MText) () -> LookupRegistryParam)
 genLookupRegistryParam = do
-  key <- genMText
+  key <- genMText def
   pure $ \viewContractAddr -> (LookupRegistryParam key (unTAddress viewContractAddr))
 
 genRegistryDaoProposalMetadata :: GeneratorT 'Registry (Address -> Address -> RegistryDaoProposalMetadata)
@@ -267,8 +267,8 @@ genTransferProposal :: GeneratorT 'Registry (Address -> Address -> RegistryDaoPr
 genTransferProposal = do
   agoraId <- Gen.integral (Range.constant 1 10)
   registryDiff <- Gen.list (Range.linear 1 3) do
-    registryKey <- genMText
-    registryValue <- Gen.maybe genMText
+    registryKey <- genMText def
+    registryValue <- Gen.maybe (genMText def)
     pure (registryKey, registryValue)
 
   mkTranfers <- Gen.list (Range.linear 1 3) do

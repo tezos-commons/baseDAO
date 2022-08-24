@@ -3,7 +3,7 @@
 
 # To update hackage and stackage indexes used by CI run:
 # $ niv update hackage.nix; niv update stackage.nix
-resolver: lts-18.10
+resolver: lts-19.3
 
 packages:
   - haskell
@@ -11,36 +11,36 @@ packages:
 extra-deps:
 
 # Stable versions available on Hackage
-- cleveland-0.1.1
-- morley-client-0.1.1
+- cleveland-0.2.0
+- morley-client-0.2.0
 - morley-prelude-0.5.1
-- lorentz-0.13.3
-
-- git: https://gitlab.com/morley-framework/morley.git
-  commit: a7fad974928a1854379dee2cd1595e47115e8d91 # master
-  subdirs:
-    - code/morley
+- lorentz-0.14.0
+- morley-1.17.0
 
 - git: https://gitlab.com/morley-framework/indigo.git
-  commit: 8074d3c6a03d6e79b7ddb48b323bca72bf6c2767 # master
+  commit: 08f5cdda02ab0d70ff4491d2e9f3620a2a5310c9 # master
   subdirs:
     - .
 - git: https://gitlab.com/morley-framework/morley-ledgers.git
-  commit: 81ce02e733b6c33e4d4fe8034e65d95f03a5f0a7 # master
+  commit: 9727e20a50d1e8dd518819c4afd9d46af87bed66 # master
   subdirs:
     - code/morley-ledgers
 - git: https://gitlab.com/morley-framework/morley-metadata.git
-  commit: c7d545897bad10bc98ceb1d9672f184b108dd40e # master
+  commit: 4635eae9882afbb661aea8991dfcdb7baabe967f # master
   subdirs:
     - code/morley-metadata
 
 # Required by morley
 - git: https://github.com/serokell/base-noprelude.git
-  commit: 1282e0b992b00089d55228a2aa9edc4a3581c319
+  commit: c8b06c4c8a271fce0c2f41ab18e88d58e64bac52 # 4.15.1.0
+
+- git: https://github.com/co-log/co-log.git
+  commit: 0552a366b90be5c361f7394447291d8de3b9d0e2
+- chronos-1.1.4
 - hex-text-0.1.0.4
 - show-type-0.1.1
 - named-0.3.0.1
-- co-log-0.4.0.1
+- co-log-core-0.3.1.0
 - colourista-0.1.0.1
 - ansi-terminal-0.10.3
 - galois-field-1.0.2
@@ -53,6 +53,15 @@ extra-deps:
 - NaCl-0.0.5.0
 - libsodium-1.0.18.2
 - OddWord-1.0.2.0
+- typerep-map-0.5.0.0
+# Required by chronos
+- bytebuild-0.3.10.0
+- byteslice-0.2.7.0
+- bytesmith-0.3.8.0
+# Required by byte*
+- run-st-0.1.1.0
+- zigzag-0.0.1.0
+- contiguous-0.6.1.1
 
 # Required by indigo
 - summoner-2.0.1.1
