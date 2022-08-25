@@ -9,7 +9,9 @@
 #include "variants/lambda/types.mligo"
 #include "variants/lambda/common.mligo"
 #include "variants/lambdaregistry/storage.mligo"
+#include "variants/lambdaregistry/types.mligo"
 #include "types.mligo"
+#include "defaults.mligo"
 
 let check_token_locked_and_proposal_size (frozen_token, required_token_lock, proposal_size, max_proposal_size
   : nat * nat * nat * nat) : string option =
@@ -93,4 +95,21 @@ let custom_ep (custom_ep_param, storage : custom_ep_param * storage): operation 
   | _ -> (([]: operation list), storage)
 
 type contract_extra = unit
+
+let default_lambda_registry_DAO_storage (data : initial_registryDAO_storage) : storage =
+  let store = default_storage (data.base_data) in
+  let handler_storage = Map.literal
+    [ ("frozen_extra_value", Bytes.pack data.frozen_scale_value)
+    ; ("max_proposal_size", Bytes.pack data.max_proposal_size)
+    ; ("slash_scale_value", Bytes.pack data.slash_scale_value)
+    ; ("slash_division_value", Bytes.pack data.slash_division_value)
+    ; ("min_xtz_amount", Bytes.pack data.min_xtz_amount)
+    ; ("max_xtz_amount", Bytes.pack data.max_xtz_amount)
+    ] in
+  { store with
+    extra =
+      { default_extra with handler_storage = handler_storage
+      }
+  }
+
 #endif

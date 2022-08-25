@@ -210,7 +210,10 @@ voteOutdatedProposal
   :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m) -> m ()
 voteOutdatedProposal originateFn = do
-  DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
+  let configDesc =
+        ConfigDesc configConsts
+          { cmPeriod = Just 40, cmQuorumThreshold = Just (mkQuorumThreshold 1 100) }
+  DaoOriginateData{..} <- originateFn configDesc defaultQuorumThreshold
 
   withSender dodOwner2 $
     call dodDao (Call @"Freeze") (#amount :! 4)

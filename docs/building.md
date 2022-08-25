@@ -188,7 +188,7 @@ make out/registryDAO_storage.tz \
   quorum_change=5n \
   max_quorum_change=19n \
   proposal_flush_level=36000n \
-  proposal_expired_level= 47520n \
+  proposal_expired_level=47520n \
   governance_total_supply=1000n
 ```
 
@@ -215,7 +215,6 @@ make out/treasuryDAO_storage.tz \
   max_xtz_amount=100mutez \
   start_level=100n \
   metadata_map=Big_map.empty \
-  freeze_history=Big_map.empty \
   fixed_proposal_fee_in_token=0n \
   freeze_history=[] \
   quorum_threshold=10n \
@@ -232,6 +231,98 @@ make out/treasuryDAO_storage.tz \
 The `admin_address`, `guardian_address`, `governance_token_address`,
 `start_level` and `governance_token_id` are required values. The rest of the
 arguments are optional and will be equal to the values above if not specified.
+
+### LambdaDAO
+
+This storage is defined in [src/variants/lambda/implementation.mligo](../src/variants/lambda/implementation.mligo) and
+can be compiled with `make`:
+
+```sh
+make out/lambdaDAO_storage.tz \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+  guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+  governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+  governance_token_id=0n \
+  start_level=100n \
+  metadata_map=Big_map.empty \
+  freeze_history=[] \
+  fixed_proposal_fee_in_token=0n \
+  quorum_threshold=10n \
+  min_quorum=1n \
+  max_quorum=99n \
+  period=15840n \
+  quorum_change=5n \
+  max_quorum_change=19n \
+  proposal_flush_level=36000n \
+  proposal_expired_level=47520n \
+  governance_total_supply=1000n
+```
+
+### LambdaRegistryDAO
+
+This storage is defined in [src/variants/lambdaregistry/implementation.mligo](../src/variants/lambdaregistry/implementation.mligo) and
+can be compiled with `make`:
+
+```sh
+make out/lambdaregistryDAO_storage.tz \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+  guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+  governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+  governance_token_id=0n \
+  frozen_scale_value=1n \
+  frozen_extra_value=0n \
+  max_proposal_size=100n \
+  slash_scale_value=1n \
+  slash_division_value=1n \
+  min_xtz_amount=0mutez \
+  max_xtz_amount=100mutez \
+  start_level=100n \
+  metadata_map=Big_map.empty \
+  freeze_history=[] \
+  fixed_proposal_fee_in_token=0n \
+  quorum_threshold=10n \
+  min_quorum=1n \
+  max_quorum=99n \
+  period=15840n \
+  quorum_change=5n \
+  max_quorum_change=19n \
+  proposal_flush_level=36000n \
+  proposal_expired_level=47520n \
+  governance_total_supply=1000n
+```
+
+### LambdaTreasuryDAO
+
+This storage is defined in [src/variants/lambdatreasury/implementation.mligo](../src/variants/lambdatreasury/implementation.mligo) and
+can be compiled with `make`:
+
+```sh
+make out/lambdatreasuryDAO_storage.tz \
+  admin_address=tz1QozfhaUW4wLnohDo6yiBUmh7cPCSXE9Af \
+  guardian_address=KT1QbdJ7M7uAQZwLpvzerUyk7LYkJWDL7eDh \
+  governance_token_address=KT1RdwP8XJPjFyGoUsXFQnQo1yNm6gUqVdp5 \
+  governance_token_id=0n \
+  frozen_scale_value=1n \
+  frozen_extra_value=0n \
+  max_proposal_size=100n \
+  slash_scale_value=1n \
+  slash_division_value=1n \
+  min_xtz_amount=0mutez \
+  max_xtz_amount=100mutez \
+  start_level=100n \
+  metadata_map=Big_map.empty \
+  freeze_history=[] \
+  fixed_proposal_fee_in_token=0n \
+  quorum_threshold=10n \
+  min_quorum=1n \
+  max_quorum=99n \
+  period=15840n \
+  quorum_change=5n \
+  max_quorum_change=19n \
+  proposal_flush_level=36000n \
+  proposal_expired_level=47520n \
+  governance_total_supply=1000n
+```
 
 ## Storage generation checks
 The LIGO functions used by the `Makefile` targets above perform some automatic check, specifically:

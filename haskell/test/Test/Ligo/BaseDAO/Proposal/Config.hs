@@ -127,6 +127,7 @@ instance IsConfigDescExt DAO.Config ConfigConstants where
   fillConfig ConfigConstants{..} DAO.Config{..} = DAO.Config
     { cProposalFlushLevel = cmProposalFlushTime ?: cProposalFlushLevel
     , cProposalExpiredLevel = cmProposalExpiredTime ?: cProposalExpiredLevel
+    , cPeriod = cmPeriod ?: cPeriod
     , ..
     }
 
