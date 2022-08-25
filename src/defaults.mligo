@@ -12,9 +12,9 @@ let validate_proposal_flush_expired_level (data : initial_config_data) : unit =
   else unit
 
 let validate_quorum_threshold_bound (data : initial_config_data) : unit =
-  if data.quorum_threshold >= data.max_quorum then
+  if data.quorum_threshold > data.max_quorum then
     failwith("'quorum_threshold' needs to be smaller than or equal to 'max_quorum'")
-  else if data.quorum_threshold <= data.min_quorum then
+  else if data.quorum_threshold < data.min_quorum then
     failwith("'quorum_threshold' needs to be bigger than or equal to 'min_quorum'")
   else
     unit
