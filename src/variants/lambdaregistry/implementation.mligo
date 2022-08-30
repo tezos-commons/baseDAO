@@ -99,7 +99,8 @@ type contract_extra = unit
 let default_lambda_registry_DAO_storage (data : initial_registryDAO_storage) : storage =
   let store = default_storage (data.base_data) in
   let handler_storage = Map.literal
-    [ ("frozen_extra_value", Bytes.pack data.frozen_scale_value)
+    [ ("frozen_extra_value", Bytes.pack data.frozen_extra_value)
+    ; ("frozen_scale_value", Bytes.pack data.frozen_scale_value)
     ; ("max_proposal_size", Bytes.pack data.max_proposal_size)
     ; ("slash_scale_value", Bytes.pack data.slash_scale_value)
     ; ("slash_division_value", Bytes.pack data.slash_division_value)
