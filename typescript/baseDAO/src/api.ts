@@ -18,6 +18,8 @@ import { Transfer_ownership } from './generated/Transfer_ownership';
 import { Vote } from './generated/Vote';
 import { Freeze } from './generated/Freeze';
 import { Unfreeze } from './generated/Unfreeze';
+import { Unstake_vote } from './generated/Unstake_vote';
+import { Update_delegate } from './generated/Update_delegate';
 
 function println(s: string) {
   console.log(s);
@@ -152,7 +154,7 @@ export class BaseDAOContract {
 
   propose(arg: Propose): Promise<string|void> {
     return this.withContract(
-      contract => contract.methods.propose(arg.frozen_token, arg.proposal_metadata));
+      contract => contract.methods.propose(arg.from, arg.frozen_token, arg.proposal_metadata));
   }
 
 
@@ -179,6 +181,16 @@ export class BaseDAOContract {
   unfreeze(arg: Freeze) {
     return this.withContract(
       contract => contract.methods.unfreeze(arg));
+  }
+
+  unstake_vote(arg: Unstake_vote) {
+    return this.withContract(
+        contract => contract.methods.unstake_vote(arg));
+  }
+
+  update_delegate(arg: Update_delegate) {
+    return this.withContract(
+        contract => contract.methods.update_delegate(arg));
   }
 }
 
