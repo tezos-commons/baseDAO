@@ -3,6 +3,8 @@
 
 env:
   TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER: "Y"
+  CHAIN_TEST_MONEYBAG_SECRET_KEY: "$TESTNET_MONEYBAG"
+  CHAIN_TEST_MONEYBAG_PASSWORD: "$TESTNET_MONEYBAG_PASSWORD"
 
 steps:
   - label: hlint
@@ -115,6 +117,22 @@ steps:
           --color=always
           --cleveland-mode=only-network
           --xml=./test-report.xml')
+
+  - label: ligo-test-local-chain-014
+    env:
+      TASTY_CLEVELAND_NODE_ENDPOINT: "http://localhost:8733"
+      # this key is defined in local-chain bootstrap accounts list in
+      # https://github.com/serokell/aquarius-infra/blob/master/servers/albali/chain.nix
+      CHAIN_TEST_MONEYBAG_SECRET_KEY: "unencrypted:edsk3nAQ3uCP7vc2ccLhhWNNncgFfWQ5HgTyPawepQ8DURRRfzVQzB"
+    if: *not_scheduled
+    depends_on:
+      - build-ligo
+      - build-haskell
+      - ligo-test
+      # NOTE ^ this last dependency is not strictly necessary, but it saves us
+      # from building the tests twice and 'ligo-test' running time is mostly that.
+    commands: *ligo-nettest
+
   - label: check typescript api
     if: *not_scheduled
     depends_on:
@@ -122,7 +140,6 @@ steps:
       - build-haskell
     commands:
       - nix run -f ci.nix packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta pkgs.diffutils -c ./scripts/ci/validate-typescript-api.sh
-
 
   - label: typescript-build
     if: *not_scheduled
@@ -149,8 +166,18 @@ steps:
     if: build.source == "schedule"
     env:
       TASTY_CLEVELAND_NODE_ENDPOINT: "https://jakarta.testnet.tezos.serokell.team"
-      CHAIN_TEST_MONEYBAG_SECRET_KEY: "$JAKARTANET_MONEYBAG"
-      CHAIN_TEST_MONEYBAG_PASSWORD: "$JAKARTANET_MONEYBAG_PASSWORD"
+    depends_on:
+      - build-ligo
+      - build-haskell
+    commands: *ligo-nettest
+    retry:
+      automatic:
+        limit: 1
+
+  - label: scheduled kathmandunet ligo test
+    if: build.source == "schedule"
+    env:
+      TASTY_CLEVELAND_NODE_ENDPOINT: "https://kathmandu.testnet.tezos.serokell.team"
     depends_on:
       - build-ligo
       - build-haskell
