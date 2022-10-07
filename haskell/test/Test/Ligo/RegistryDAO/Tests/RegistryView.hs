@@ -13,6 +13,7 @@ import Prelude
 import Test.Tasty (TestTree)
 
 import Lorentz as L hiding (Contract, assert, div)
+import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 import Test.Cleveland.Lorentz (contractConsumer)
@@ -39,10 +40,10 @@ registryView = testScenario "checks on-chain view correctly returns the registry
         proposalSize = metadataSize proposalMeta
 
       withSender wallet1 $
-        call baseDao (Call @"Freeze") (#amount :! proposalSize)
+        transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
 
       withSender voter1 $
-        call baseDao (Call @"Freeze") (#amount :! 50)
+        transfer baseDao$ calling (ep @"Freeze") (#amount :! 50)
       -- Advance one voting period to a proposing stage.
       startLevel <- getOriginationLevel' @variant baseDao
       advanceToLevel (startLevel + period)
@@ -51,24 +52,24 @@ registryView = testScenario "checks on-chain view correctly returns the registry
 
       -- We propose the addition of a new registry key
       withSender wallet1 $
-        call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozen proposalMeta)
+        transfer baseDao$ calling (ep @"Propose") (ProposeParams (MkAddress wallet1) requiredFrozen proposalMeta)
 
       -- Advance one voting period to a voting stage.
       advanceToLevel (startLevel + 2*period)
       -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
-      let proposalKey = makeProposalKey (ProposeParams wallet1 requiredFrozen proposalMeta)
+      let proposalKey = makeProposalKey (ProposeParams (MkAddress wallet1) requiredFrozen proposalMeta)
       withSender voter1 $
-        call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 50 voter1) Nothing]
+        transfer baseDao$ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 50 (MkAddress voter1)) Nothing]
 
       -- Advance one voting period to a proposing stage.
       proposalStart <- getProposalStartLevel' @variant baseDao proposalKey
       advanceToLevel (proposalStart + 2*period)
       withSender admin $
-        call baseDao (Call @"Flush") (1 :: Natural)
+        transfer baseDao$ calling (ep @"Flush") (1 :: Natural)
 
-      consumer <- chAddress <$> originateSimple "consumer" [] (contractConsumer @(MText, (Maybe MText)))
+      consumer <- originate "consumer" [] (contractConsumer @(MText, (Maybe MText)))
 
       withSender voter1 $
-        call baseDao (Call @"Lookup_registry") (LookupRegistryParam [mt|key|] consumer)
+        transfer baseDao$ calling (ep @"Lookup_registry") (LookupRegistryParam [mt|key|] (MkAddress $ chAddress consumer))
 
       checkStorage @[(MText, (Maybe MText))] consumer ([([mt|key|], Just [mt|testVal|])])

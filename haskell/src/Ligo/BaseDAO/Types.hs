@@ -103,6 +103,7 @@ import Morley.Michelson.Typed.T (T(TUnit))
 import Morley.Michelson.Untyped.Annotation
 import Morley.Util.Markdown
 import Morley.Util.Named
+import Morley.Tezos.Address
 import Test.Cleveland.Instances ()
 
 -- | A data type to track and specify the different DAO variants in existence
@@ -765,7 +766,7 @@ instance HasFieldOfType (StorageSkeleton (ContractExtra' BigMap)) name field => 
   storeFieldOps = storeFieldOpsADT
 
 mkStorage
-  :: "admin" :! Address
+  :: "admin" :! ImplicitAddress
   -> "extra" :! ce
   -> "metadata" :! TZIP16.MetadataMap
   -> "level" :! Natural
@@ -782,12 +783,12 @@ mkStorage
   (arg #quorumThreshold -> qt)
   (arg #config -> config) =
   Storage
-    { sAdmin = admin
+    { sAdmin = MkAddress admin
     , sConfig = config
-    , sGuardian = admin
+    , sGuardian = MkAddress admin
     , sExtra = extra
     , sMetadata = metadata
-    , sPendingOwner = admin
+    , sPendingOwner = MkAddress admin
     , sPermitsCounter = Nonce 0
     , sProposals = mempty
     , sOngoingProposalsDlist = Nothing
@@ -805,7 +806,7 @@ mkStorage
     }
 
 mkMetadataMap
-  :: "metadataHostAddress" :! Address
+  :: "metadataHostAddress" :! ContractAddress
   -> "metadataHostChain" :? TZIP16.ExtChainId
   -> "metadataKey" :! MText
   -> TZIP16.MetadataMap
@@ -880,7 +881,7 @@ setExtra :: (ce -> ce) -> StorageSkeleton ce -> StorageSkeleton ce
 setExtra fn fsk = fsk { sExtra = fn $ sExtra fsk }
 
 mkStorage'
-  :: forall cep. "admin" :! Address
+  :: forall cep. "admin" :! ImplicitAddress
   -> "votingPeriod" :? Period
   -> "quorumThreshold" :? QuorumThreshold
   -> "maxChangePercent" :? Natural

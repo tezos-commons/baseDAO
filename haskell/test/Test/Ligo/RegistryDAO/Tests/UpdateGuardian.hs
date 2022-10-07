@@ -12,7 +12,7 @@ import Prelude
 
 import Test.Tasty (TestTree)
 
-import Lorentz as L hiding (Contract, assert, div)
+import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -29,29 +29,29 @@ updateGuardian = testScenario "checks it can flush a proposal that updates guard
     \[admin, wallet1, wallet2, newGuardian] (toPeriod -> period) baseDao _ -> do
 
       let
-        proposalMeta = toProposalMetadata @variant newGuardian
+        proposalMeta = toProposalMetadata @variant (MkAddress newGuardian)
 
         proposalSize = metadataSize proposalMeta
-        proposeParams = ProposeParams wallet1 proposalSize proposalMeta
+        proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
 
       withSender wallet1 $
-        call baseDao (Call @"Freeze") (#amount :! proposalSize)
+        transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
       withSender wallet2 $
-        call baseDao (Call @"Freeze") (#amount :! 20)
+        transfer baseDao$ calling (ep @"Freeze") (#amount :! 20)
 
       -- Advance one voting period to a proposing stage.
       startLevel <- getOriginationLevel' @variant baseDao
       advanceToLevel (startLevel + period)
 
       withSender wallet1 $
-        call baseDao (Call @"Propose") proposeParams
+        transfer baseDao$ calling (ep @"Propose") proposeParams
 
       checkBalance' @variant baseDao wallet1 proposalSize
 
       let
         key1 = makeProposalKey proposeParams
         upvote = NoPermit VoteParam
-            { vFrom = wallet2
+            { vFrom = MkAddress wallet2
             , vVoteType = True
             , vVoteAmount = 20
             , vProposalKey = key1
@@ -59,10 +59,9 @@ updateGuardian = testScenario "checks it can flush a proposal that updates guard
 
       -- Advance one voting period to a voting stage.
       advanceToLevel (startLevel + 2*period)
-      withSender wallet2 $ call baseDao (Call @"Vote") [upvote]
+      withSender wallet2 $ transfer baseDao $ calling (ep @"Vote") [upvote]
       proposalStart <- getProposalStartLevel' @variant baseDao key1
       advanceToLevel (proposalStart + 2*period)
-      withSender admin $ call baseDao (Call @"Flush") (1 :: Natural)
+      withSender admin $ transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
       checkGuardian' @variant baseDao newGuardian
-

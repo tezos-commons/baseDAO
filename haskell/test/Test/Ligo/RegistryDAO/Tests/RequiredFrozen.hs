@@ -12,8 +12,8 @@ import Prelude
 
 import Test.Tasty (TestTree)
 
-import Lorentz as L hiding (Contract, assert, div)
 import Morley.Util.Named
+import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -33,7 +33,7 @@ requiredFrozen = testScenario "check it correctly calculates required frozen tok
         proposalSize = metadataSize proposalMeta -- 10
 
       withSender wallet1 $
-        call baseDao (Call @"Freeze") (#amount :! (proposalSize + 2))
+        transfer baseDao$ calling (ep @"Freeze") (#amount :! (proposalSize + 2))
 
       startLevel <- getOriginationLevel' @variant baseDao
 
@@ -44,4 +44,4 @@ requiredFrozen = testScenario "check it correctly calculates required frozen tok
       -- frozen_extra_value set to 1 and 2 means that it requires 12 tokens to be
       -- frozen (10 * 1 + 2) if proposal size is 10.
       withSender wallet1 $
-         call baseDao (Call @"Propose") (ProposeParams wallet1 (proposalSize + 2) proposalMeta)
+         transfer baseDao $ calling (ep @"Propose") (ProposeParams (MkAddress wallet1) (proposalSize + 2) proposalMeta)

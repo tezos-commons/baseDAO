@@ -15,6 +15,7 @@ import Data.Set qualified as S
 import Test.Tasty (TestTree)
 
 import Lorentz as L hiding (assert, div)
+import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Contract
@@ -24,13 +25,13 @@ import Test.Ligo.Common
 import Test.Ligo.TreasuryDAO
 import Test.Ligo.TreasuryDAO.Types
 
-getStorageRPCLambda :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra 'Lambda))
-getStorageRPCLambda addr = getStorage @(StorageSkeleton (VariantToExtra 'Lambda)) (unTAddress addr)
+getStorageRPCLambda :: forall caps m. MonadCleveland caps m => ContractAddress ->  m (StorageSkeletonRPC (VariantToExtra 'Lambda))
+getStorageRPCLambda addr = getStorage @(StorageSkeleton (VariantToExtra 'Lambda)) addr
 
 instance TestableVariant 'LambdaTreasury where
   getInitialStorage admin = initialStorageWithExplictLambdaDAOConfig admin
   getContract = baseDAOLambdaTreasuryLigo
-  getVariantStorageRPC addr = getStorage @(StorageSkeleton (VariantToExtra 'LambdaTreasury)) (unTAddress addr)
+  getVariantStorageRPC addr = getStorage @(StorageSkeleton (VariantToExtra 'LambdaTreasury)) addr
 
 instance IsProposalArgument 'LambdaTreasury TransferProposal where
   toMetadata a = lPackValueRaw @LambdaDaoProposalMetadata $ Execute_handler $ ExecuteHandlerParam "transfer_proposal" $ lPackValueRaw a
@@ -73,10 +74,10 @@ instance VariantExtraHasField 'LambdaTreasury "MaxProposalSize" Natural where
 test_LambdaTreasuryDAO :: TestTree
 test_LambdaTreasuryDAO = treasuryDAOTests @'LambdaTreasury
 
-initialStorage :: Address -> LambdaStorage
+initialStorage :: ImplicitAddress -> LambdaStorage
 initialStorage admin = let
   fs = baseDAOLambdatreasuryStorageLigo
-  in fs { sAdmin = admin, sConfig = (sConfig fs)
+  in fs { sAdmin = MkAddress admin, sConfig = (sConfig fs)
             { cPeriod = 11
             , cProposalFlushLevel = 22
             , cProposalExpiredLevel = 33
@@ -84,7 +85,7 @@ initialStorage admin = let
 
       }}
 
-initialStorageWithExplictLambdaDAOConfig :: Address -> LambdaStorage
+initialStorageWithExplictLambdaDAOConfig :: ImplicitAddress -> LambdaStorage
 initialStorageWithExplictLambdaDAOConfig admin = (initialStorage admin)
   & setExtra (setInHandlerStorage [mt|proposal_receivers|] (mempty :: S.Set Address))
   & setExtra (setInHandlerStorage [mt|frozen_scale_value|] (1 :: Natural))

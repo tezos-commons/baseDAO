@@ -12,8 +12,8 @@ import Prelude
 
 import Test.Tasty (TestTree)
 
-import Lorentz as L hiding (Contract, assert, div)
 import Morley.Util.Named
+import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -32,11 +32,11 @@ emptyProposalTest =
         let proposalMeta = toProposalMetadata @variant $ TransferProposal 1 [] []
         let proposalSize = metadataSize proposalMeta
         withSender wallet1 $
-          call baseDao (Call @"Freeze") (#amount :! proposalSize)
+          transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
         startLevel <- getOriginationLevel' @variant baseDao
 
         -- Advance one voting period to a proposing stage.
         advanceToLevel (startLevel + toPeriod fs)
 
-        withSender wallet1 $ call baseDao (Call @"Propose")
-          (ProposeParams wallet1 proposalSize proposalMeta)
+        withSender wallet1 $ transfer baseDao $ calling (ep @"Propose")
+          (ProposeParams (MkAddress wallet1) proposalSize proposalMeta)

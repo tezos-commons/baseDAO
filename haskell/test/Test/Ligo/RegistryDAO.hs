@@ -84,12 +84,12 @@ instance VariantExtraHasField 'Registry "SlashDivisionValue" Natural where
   getVariantExtra = reSlashDivisionValueRPC
 
 instance TestableVariant 'Registry where
-  getInitialStorage admin = initialStorageWithExplictRegistryDAOConfig admin
+  getInitialStorage admin = initialStorageWithExplictRegistryDAOConfig (toAddress admin)
   getContract = baseDAORegistryLigo
-  getVariantStorageRPC addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) (unTAddress addr)
+  getVariantStorageRPC addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) addr
 
-getStorageRPCRegistry :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra 'Registry))
-getStorageRPCRegistry addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) (unTAddress addr)
+getStorageRPCRegistry :: forall caps m. MonadCleveland caps m => ContractAddress ->  m (StorageSkeletonRPC (VariantToExtra 'Registry))
+getStorageRPCRegistry addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) addr
 
 test_RegistryDAO :: [TestTree]
 test_RegistryDAO = registryDAOTests @'Registry

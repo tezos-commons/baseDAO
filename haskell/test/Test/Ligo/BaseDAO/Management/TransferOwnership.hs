@@ -22,6 +22,7 @@ module Test.Ligo.BaseDAO.Management.TransferOwnership
 import Universum
 
 import Lorentz hiding (assert, (>>))
+import Morley.Tezos.Address (ConstrainedAddress(MkAddress))
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -30,18 +31,18 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 
 type WithOriginateFn m = Integer
-  -> ([Address] -> Storage)
-  -> ([Address] -> TAddress Parameter () -> m ())
+  -> ([ImplicitAddress] -> Storage)
+  -> ([ImplicitAddress] -> ContractHandle Parameter Storage () -> m ())
   -> m ()
 
-type WithStorage = Address -> Storage
+type WithStorage = ImplicitAddress -> Storage
 
 transferOwnership
   :: MonadCleveland caps m
   => WithOriginateFn m -> WithStorage -> m ()
 transferOwnership withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[_, wallet1] baseDao ->
-    withSender wallet1 $ call baseDao (Call @"Transfer_ownership") (#newOwner :! wallet1)
+    withSender wallet1 $ (transfer baseDao $ calling (ep @"Transfer_ownership") (#newOwner :! (MkAddress wallet1)))
       & expectNotAdmin
 
 transferOwnershipSetsPendingOwner
@@ -49,9 +50,9 @@ transferOwnershipSetsPendingOwner
   => WithOriginateFn m -> WithStorage -> m ()
 transferOwnershipSetsPendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $ \[owner, wallet1] baseDao -> do
-    withSender owner $ call baseDao (Call @"Transfer_ownership") (#newOwner :! wallet1)
+    withSender owner $ (transfer baseDao $ calling (ep @"Transfer_ownership") (#newOwner :! (MkAddress wallet1)))
     mNewPendingOwner <- sPendingOwnerRPC <$> getStorageRPC baseDao
-    assert (mNewPendingOwner == wallet1) "Pending owner was not set as expected"
+    assert (mNewPendingOwner == (MkAddress wallet1)) "Pending owner was not set as expected"
 
 authenticateSender
   :: MonadCleveland caps m
@@ -59,9 +60,8 @@ authenticateSender
 authenticateSender withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
-      withSender owner $ call baseDao (Call @"Transfer_ownership")
-        (#newOwner :! wallet1)
-      withSender wallet2 $ call baseDao (Call @"Accept_ownership") ()
+      withSender owner $ (transfer baseDao $ calling (ep @"Transfer_ownership") (#newOwner :! (MkAddress wallet1)))
+      withSender wallet2 $ (transfer baseDao $ calling (Call @"Accept_ownership") ())
         & expectNotPendingOwner
 
 changeToPendingAdmin
@@ -70,11 +70,10 @@ changeToPendingAdmin
 changeToPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
-      withSender owner $ call baseDao (Call @"Transfer_ownership")
-        (#newOwner :! wallet1)
-      withSender wallet1 $ call baseDao (Call @"Accept_ownership") ()
+      withSender owner $ (transfer baseDao $ calling (ep @"Transfer_ownership") (#newOwner :! (MkAddress wallet1)))
+      withSender wallet1 $ (transfer baseDao $ calling (ep @"Accept_ownership") ())
       administrator <- sAdminRPC <$> (getStorageRPC baseDao)
-      assert (administrator == wallet1) "Administrator was not set from pending owner"
+      assert (administrator == (MkAddress wallet1)) "Administrator was not set from pending owner"
 
 noPendingAdmin
   :: MonadCleveland caps m
@@ -83,7 +82,7 @@ noPendingAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[_, wallet1] baseDao -> do
       withSender wallet1 $
-        call baseDao (Call @"Accept_ownership") ()
+        (transfer baseDao $ calling (ep @"Accept_ownership") ())
         & expectNotPendingOwner
 
 pendingOwnerNotTheSame
@@ -92,9 +91,9 @@ pendingOwnerNotTheSame
 pendingOwnerNotTheSame withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> withSender owner $ do
-      call baseDao (Call @"Transfer_ownership")
-        (#newOwner :! wallet1)
-      call baseDao (Call @"Accept_ownership") ()
+      (transfer baseDao $ calling (ep @"Transfer_ownership")
+        (#newOwner :! (MkAddress wallet1)))
+      (transfer baseDao $ calling (ep @"Accept_ownership") ())
       & expectNotPendingOwner
 
 notSetAdmin
@@ -104,12 +103,11 @@ notSetAdmin withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
       withSender owner . inBatch $ do
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner :! wallet1)
+        (transfer baseDao $ calling (ep @"Transfer_ownership")
+          (#newOwner :! (MkAddress wallet1)))
         -- Make the call once again to make sure the admin still retains admin
         -- privileges
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner :! wallet1)
+        (transfer baseDao $ calling (ep @"Transfer_ownership") (#newOwner :! (MkAddress wallet1)))
         pure ()
 
 rewritePendingOwner
@@ -119,13 +117,13 @@ rewritePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 3 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1, wallet2] baseDao -> do
       withSender owner . inBatch $ do
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner :! wallet1)
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner :! wallet2)
+        (transfer baseDao $ calling (ep @"Transfer_ownership")
+          (#newOwner :! (MkAddress wallet1)))
+        (transfer baseDao $ calling (ep @"Transfer_ownership")
+          (#newOwner :! (MkAddress wallet2)))
         pure ()
       pendingOwner <- sPendingOwnerRPC <$> (getStorageRPC baseDao)
-      assert (pendingOwner == wallet2) "Pending owner from earlier call was not re-written"
+      assert (pendingOwner == (MkAddress wallet2)) "Pending owner from earlier call was not re-written"
 
 invalidatePendingOwner
   :: MonadCleveland caps m
@@ -134,13 +132,13 @@ invalidatePendingOwner withOriginatedFn initialStorage =
   withOriginatedFn 2 (\(owner:_) -> initialStorage owner) $
     \[owner, wallet1] baseDao -> do
       withSender owner . inBatch $ do
-          call baseDao (Call @"Transfer_ownership")
-            (#newOwner :! wallet1)
-          call baseDao (Call @"Transfer_ownership")
-            (#newOwner :! owner)
+          (transfer baseDao $ calling (ep @"Transfer_ownership")
+            (#newOwner :! (MkAddress wallet1)))
+          (transfer baseDao $ calling (ep @"Transfer_ownership")
+            (#newOwner :! (MkAddress owner)))
           pure ()
       administrator <- sAdminRPC <$> (getStorageRPC baseDao)
-      assert (administrator == owner) "Pending owner from earlier call was not re-written"
+      assert (administrator == (MkAddress owner)) "Pending owner from earlier call was not re-written"
 
 bypassAcceptForSelf
   :: MonadCleveland caps m
@@ -149,10 +147,10 @@ bypassAcceptForSelf withOriginatedFn initialStorage =
   withOriginatedFn 1 (\(owner:_) -> initialStorage owner) $
     \[owner] baseDao -> do
       withSender owner $ do
-        call baseDao (Call @"Transfer_ownership")
-          (#newOwner :! (unTAddress baseDao))
-      currentAdmin <- sAdminRPC <$> getStorage @Storage (unTAddress baseDao)
-      assert (currentAdmin == (unTAddress baseDao)) "Admin address was not set"
+        (transfer baseDao $ calling (ep @"Transfer_ownership")
+          (#newOwner :! (MkAddress $ chAddress baseDao)))
+      currentAdmin <- sAdminRPC <$> getStorage @Storage (chAddress baseDao)
+      assert (currentAdmin == (MkAddress $ chAddress baseDao)) "Admin address was not set"
 
 expectNotAdmin
   :: (MonadCleveland caps m)

@@ -11,16 +11,16 @@ module SMT.Common.Gen
 import Prelude hiding (drop, swap)
 
 import Crypto.Random (drgNewSeed, seedFromInteger, withDRG)
-import qualified Data.Map as Map
-import qualified Hedgehog.Gen as Gen
+import Data.Map qualified as Map
+import Hedgehog.Gen qualified as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
-import qualified Hedgehog.Range as Range
+import Hedgehog.Range qualified as Range
 
 import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
 import Lorentz hiding (cast, concat, get, not)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
-import Morley.Tezos.Address (Address(..), mkKeyAddress)
+import Morley.Tezos.Address
 import Morley.Tezos.Core (dummyChainId)
 import Morley.Tezos.Crypto (SecretKey, parseHash, sign, toPublic)
 import Morley.Util.Named
@@ -78,7 +78,7 @@ genStorage = do
         { sFrozenTotalSupply = getTotalSupply freezeHistory
         , sDelegates = BigMap Nothing delegates
         , sFreezeHistory = BigMap Nothing freezeHistory
-        , sAdmin = admin
+        , sAdmin = MkAddress admin
         , sGuardian = guardAddr
         , sGovernanceToken = GovernanceToken
               { gtAddress = govAddr
@@ -93,7 +93,7 @@ genStorage = do
 
         , sFrozenTokenId = FA2.theTokenId
         , sMetadata = mempty
-        , sPendingOwner = admin
+        , sPendingOwner = MkAddress admin
         , sPermitsCounter = Nonce 0
         , sConfig = config
         }
@@ -119,13 +119,13 @@ genConfig = do
 
 genDelegates :: GeneratorT cep (Map Delegate ())
 genDelegates = do
-  userPool <- get <&> gsAddresses <<&>> fst
+  userPool <- get <&> gsAddresses <<&>> (MkAddress . fst)
   delegateList <- (Gen.shuffle $ (uncurry Delegate) <$> zip userPool userPool) >>= Gen.subsequence
   pure $ Map.fromList $ zip delegateList $ repeat ()
 
 genDelegateParams :: GeneratorT cep [DelegateParam]
 genDelegateParams = do
-  userPool <- get <&> gsAddresses <<&>> fst
+  userPool <- get <&> gsAddresses <<&>> (MkAddress . fst)
   isEnable <- Gen.bool
   userPool
     <&> (\addr -> DelegateParam isEnable addr)
@@ -147,7 +147,7 @@ genAddressFreezeHistory = do
 
 genFreezeHistory :: GeneratorT cep (Map Address AddressFreezeHistory)
 genFreezeHistory = do
-  addrs <- get <&> gsAddresses <<&>> fst
+  addrs <- get <&> gsAddresses <<&>> (MkAddress . fst)
   addrFreezeHistoryList <- vectorOf poolSize genAddressFreezeHistory
   let freezeHistory = zip addrs addrFreezeHistoryList
   pure $ Map.fromList freezeHistory
@@ -209,13 +209,13 @@ genRandomCalls = do
   >>= Gen.subsequence
 
   where
-    genTransferContractTokensCall :: Address -> GeneratorT cep (Address -> ModelCall cep)
+    genTransferContractTokensCall :: ImplicitAddress -> GeneratorT cep (Address -> ModelCall cep)
     genTransferContractTokensCall sender1 = do
       f <- genTransferContractTokens @cep
       pure $ \govAddr -> mkSimpleContractCall sender1 $ f govAddr
 
 
-mkSimpleContractCall :: Address -> Parameter' (VariantToParam var) -> ModelCall var
+mkSimpleContractCall :: ImplicitAddress -> Parameter' (VariantToParam var) -> ModelCall var
 mkSimpleContractCall sender1 param = do
   ModelCall
     { mcAdvanceLevel = Nothing
@@ -235,7 +235,7 @@ genProposingProcess = do
   invalidFrom <- fst <$> Gen.element userAddrs
 
   mkGenPropose <- get <&> gsMkGenPropose
-  mkPropose <- mkGenPropose sender1 delegate1 invalidFrom
+  mkPropose <- mkGenPropose (MkAddress sender1) (MkAddress delegate1) (MkAddress invalidFrom)
 
   mkGenCustomCalls <- get <&> gsMkCustomCalls
   mkCustomCalls <- mkGenCustomCalls
@@ -269,7 +269,7 @@ genProposingProcess = do
         in (freezeAmt, voterFreezeAmt, permitProtecteds, proposeAction, dropProposalAction, unstakeVoteAction)
 
   pure $
-      [ \_ -> mkCall (XtzForbidden $ Update_delegate [DelegateParam True delegate1]) Nothing
+      [ \_ -> mkCall (XtzForbidden $ Update_delegate [DelegateParam True (MkAddress delegate1)]) Nothing
       , \args ->
           let (freezeAmt, _, _, _, _, _) = applyArgs args
           in mkCall (XtzForbidden $ Freeze (#amount :! (freezeAmt)) ) Nothing
@@ -318,7 +318,7 @@ genVote = do
             { vProposalKey = proposalKey
             , vVoteType = voteType
             , vVoteAmount = voteAmt
-            , vFrom = fst from
+            , vFrom = MkAddress $ fst from
             }
 
       mkSigned <- sign' (snd from)
@@ -333,7 +333,7 @@ genVote = do
               ds = DataToSign
                   { dsChainId = dummyChainId
                   , dsContract =
-                      ContractAddress $ unsafe $ parseHash "KT1WsLzQ61xtMNJHfwgCHh2RnALGgFAzeSx9"
+                      MkAddress $ ContractAddress $ unsafe $ parseHash "KT1WsLzQ61xtMNJHfwgCHh2RnALGgFAzeSx9"
                   , dsNonce = Nonce 0
                   , dsData = voteParam
                   }
@@ -376,7 +376,7 @@ genTransferOwnership :: GeneratorT var (Parameter'' var)
 genTransferOwnership = do
   userAddrs <- get <&> gsAddresses
   newOwner <- fst <$> Gen.element userAddrs
-  pure $ XtzAllowed $ ConcreteEp $ Transfer_ownership $ (#newOwner :! newOwner)
+  pure $ XtzAllowed $ ConcreteEp $ Transfer_ownership $ (#newOwner :! (MkAddress newOwner))
 
 -- Nothing to randomize, simply for consistency
 genAcceptOwnership :: GeneratorT var (Parameter'' var)
@@ -411,9 +411,9 @@ genFa2TransferItem = do
   fromAddr <- Gen.element userAddrs <&> fst
   toAddr <- Gen.element userAddrs <&> fst
   pure $ FA2.TransferItem
-    { tiFrom = fromAddr
+    { tiFrom = MkAddress fromAddr
     , tiTxs = [ FA2.TransferDestination
-        { tdTo = toAddr
+        { tdTo = MkAddress toAddr
         , tdTokenId = FA2.theTokenId
         , tdAmount = amt
         } ]

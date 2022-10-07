@@ -5,7 +5,7 @@ BaseDAO LIGO tests are implemented in Haskell, using the `cleveland` [library](h
 ## Running the test
 
 To compile and execute them you'll need the `stack` tool, see
-[The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial
+<!-- xrefcheck: ignore link -->[The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial
 for instructions on how to obtain it.
 
 As always you can use the `Makefile` to run them, simply using:

@@ -24,6 +24,7 @@ steps:
 columns: 100
 newline: native
 language_extensions:
+  - AllowAmbiguousTypes
   - BangPatterns
   - BlockArguments
   - ConstraintKinds
@@ -31,7 +32,10 @@ language_extensions:
   - DefaultSignatures
   - DeriveAnyClass
   - DeriveDataTypeable
+  - DeriveFoldable
+  - DeriveFunctor
   - DeriveGeneric
+  - DeriveTraversable
   - DerivingStrategies
   - DerivingVia
   - EmptyCase
@@ -47,22 +51,28 @@ language_extensions:
   - MultiParamTypeClasses
   - MultiWayIf
   - NamedFieldPuns
-  - NoImplicitPrelude
+  - NegativeLiterals
+  - NumDecimals
   - NumericUnderscores
   - OverloadedLabels
   - OverloadedStrings
   - PatternSynonyms
-  - QuasiQuotes
+  - PolyKinds
   - QuantifiedConstraints
+  - QuasiQuotes
+  - RankNTypes
   - RebindableSyntax
   - RecordWildCards
   - RecursiveDo
   - ScopedTypeVariables
   - StandaloneDeriving
+  - StrictData
   - TemplateHaskell
   - TemplateHaskellQuotes
   - TupleSections
   - TypeApplications
   - TypeFamilies
   - TypeOperators
+  - UndecidableInstances
+  - UndecidableSuperClasses
   - ViewPatterns

@@ -11,6 +11,7 @@ import Lorentz hiding (assert, (>>))
 import Morley.Util.Named
 import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
+import Morley.Tezos.Address
 
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
@@ -35,45 +36,45 @@ addRemoveDelegate originateFn = do
   startLevel <- getOriginationLevel dodDao
   let param enable = DelegateParam
         { dpEnable = enable
-        , dpDelegate = dodOperator1
+        , dpDelegate = MkAddress dodOperator1
         }
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 100)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 100)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Update_delegate") [param True]
+    transfer dodDao $ calling (ep @"Update_delegate") [param True]
 
   advanceToLevel (startLevel + dodPeriod)
   let params counter = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer counter
-        , ppFrom = dodOwner1
+        , ppFrom = MkAddress dodOwner1
         }
       key = makeProposalKey (params 1)
       vote = NoPermit VoteParam
                 { vVoteType = True
                 , vVoteAmount = 1
                 , vProposalKey = key
-                , vFrom = dodOwner1
+                , vFrom = MkAddress dodOwner1
                 }
-  withSender dodOperator1 $ call dodDao (Call @"Propose") (params 1)
+  withSender dodOperator1 $ transfer dodDao $ calling (ep @"Propose") (params 1)
   advanceToLevel (startLevel + 2*dodPeriod)
-  withSender dodOperator1 $ call dodDao (Call @"Vote") [vote]
+  withSender dodOperator1 $ transfer dodDao $ calling (ep @"Vote") [vote]
 
   withSender dodOwner1 $
-    call dodDao (Call @"Update_delegate") [param False]
+    transfer dodDao $ calling (ep @"Update_delegate") [param False]
 
-  withSender dodOperator1 $ call dodDao (Call @"Vote") [vote]
+  withSender dodOperator1 $ (transfer dodDao $ calling (ep @"Vote") [vote])
     & expectFailedWith notDelegate
   advanceToLevel (startLevel + 3*dodPeriod)
-  withSender dodOperator1 $ call dodDao (Call @"Propose") (params 2)
+  withSender dodOperator1 $ (transfer dodDao $ calling (ep @"Propose") (params 2))
     & expectFailedWith notDelegate
 
 updateDelegates
   :: (MonadCleveland caps m, HasCallStack)
   => (ConfigDesc Config -> OriginateFn 'Base m)
-  -> (TAddress Parameter () -> Delegate -> m Bool)
+  -> (forall p s. ContractHandle p s () -> Delegate -> m Bool)
   -> m ()
 updateDelegates originateFn isDelegateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
@@ -83,28 +84,28 @@ updateDelegates originateFn isDelegateFn = do
         }
 
   -- Before Delegate set
-  isDelegateFn dodDao (Delegate dodOwner1 dodOperator1) @@== False
-  isDelegateFn dodDao (Delegate dodOwner1 dodOperator2) @@== False
+  isDelegateFn dodDao (Delegate (MkAddress dodOwner1) (MkAddress dodOperator1)) @@== False
+  isDelegateFn dodDao (Delegate (MkAddress dodOwner1) (MkAddress dodOperator2)) @@== False
 
   -- Add a Delegate
   withSender dodOwner1 $
-    call dodDao (Call @"Update_delegate") [mkDelegate dodOperator1 True]
+    transfer dodDao $ calling (ep @"Update_delegate") [mkDelegate (MkAddress dodOperator1) True]
 
-  isDelegateFn dodDao (Delegate dodOwner1 dodOperator1) @@== True
-  isDelegateFn dodDao (Delegate dodOwner1 dodOperator2) @@== False
+  isDelegateFn dodDao (Delegate (MkAddress dodOwner1) (MkAddress dodOperator1)) @@== True
+  isDelegateFn dodDao (Delegate (MkAddress dodOwner1) (MkAddress dodOperator2)) @@== False
 
   -- Add a new Delegate, remove an old one
-  withSender dodOwner1 $
-    call dodDao (Call @"Update_delegate")
-      [mkDelegate dodOperator1 False, mkDelegate dodOperator2 True]
+  withSender dodOwner1
+    $ transfer dodDao $ calling (ep @"Update_delegate")
+      [mkDelegate (MkAddress dodOperator1) False, mkDelegate (MkAddress dodOperator2) True]
 
-  isDelegateFn dodDao (Delegate dodOwner1 dodOperator1) @@== False
-  isDelegateFn dodDao (Delegate dodOwner1 dodOperator2) @@== True
+  isDelegateFn dodDao (Delegate (MkAddress dodOwner1) (MkAddress dodOperator1)) @@== False
+  isDelegateFn dodDao (Delegate (MkAddress dodOwner1) (MkAddress dodOperator2)) @@== True
 
 
   -- Removing a non-existent delegate is allowed
-  someAddr :: Address <- newAddress "some_address"
+  someAddr <- newAddress "some_address"
   withSender dodOwner1 $
-    call dodDao (Call @"Update_delegate") [mkDelegate someAddr False]
+    transfer dodDao $ calling (ep @"Update_delegate") [mkDelegate (MkAddress someAddr) False]
 
-  isDelegateFn dodDao (Delegate dodOwner1 someAddr) @@== False
+  isDelegateFn dodDao (Delegate (MkAddress dodOwner1) (MkAddress someAddr)) @@== False

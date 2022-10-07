@@ -13,6 +13,7 @@ import Data.Map qualified as Map
 
 import Lorentz hiding (cast, checkSignature, get, not)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
+import Morley.Tezos.Address
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
@@ -29,6 +30,6 @@ applyTransferContractTokens :: ModelSource -> TransferContractTokensParam -> Mod
 applyTransferContractTokens mso param = do
 
   store <- getStore
-  unless (msoSender mso == sAdmin store) $ throwError NOT_ADMIN
+  unless ((MkAddress $ msoSender mso) == sAdmin store) $ throwError NOT_ADMIN
 
   makeTransferOnToken (param & tcParams) (param & tcContractAddress)

@@ -43,10 +43,10 @@ executeWonProposal = testScenario "checks it correctly executes the proposal tha
 
       in do
         withSender wallet1 $
-          call baseDao (Call @"Freeze") (#amount :! 400)
+          transfer baseDao$ calling (ep @"Freeze") (#amount :! 400)
 
         withSender voter1 $
-          call baseDao (Call @"Freeze") (#amount :! 100)
+          transfer baseDao$ calling (ep @"Freeze") (#amount :! 100)
 
         startLevel <- getOriginationLevel' @variant baseDao
         -- Advance one voting period to a proposing stage.
@@ -63,20 +63,20 @@ executeWonProposal = testScenario "checks it correctly executes the proposal tha
         let requiredFrozenForUpdate = sMaxUpdateproposalSize1 * frozen_scale_value + frozen_extra_value
 
         withSender wallet1 $
-          call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozenForUpdate sMaxUpdateproposalMeta1)
+          transfer baseDao$ calling (ep @"Propose") (ProposeParams (toAddress wallet1) requiredFrozenForUpdate sMaxUpdateproposalMeta1)
 
         -- Advance one voting period to a voting stage.
         advanceToLevel (startLevel + 2* period)
         -- Then we send 60 upvotes for the proposal (as min quorum is 1% of 500)
-        let proposalKey = makeProposalKey (ProposeParams wallet1 requiredFrozenForUpdate sMaxUpdateproposalMeta1)
+        let proposalKey = makeProposalKey (ProposeParams (toAddress wallet1) requiredFrozenForUpdate sMaxUpdateproposalMeta1)
         withSender voter1 $
-          call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 60 voter1) Nothing]
+          transfer baseDao$ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 60 (toAddress voter1)) Nothing]
 
         proposalStart <- getProposalStartLevel' @variant baseDao proposalKey
         advanceToLevel (proposalStart + 2*period)
         withSender admin $
-          call baseDao (Call @"Flush") (1 :: Natural)
+          transfer baseDao$ calling (ep @"Flush") (1 :: Natural)
 
-        maxProposalSize <- ((getVariantExtra @variant @"MaxProposalSize") . sExtraRPC) <$> getVariantStorageRPC @variant baseDao
+        maxProposalSize <- ((getVariantExtra @variant @"MaxProposalSize") . sExtraRPC) <$> getVariantStorageRPC @variant (chAddress baseDao)
         assert (maxProposalSize == (341 :: Natural)) "Unexpected max_proposal_size update"
 

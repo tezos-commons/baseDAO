@@ -9,13 +9,13 @@ import Universum
 
 import Control.Monad.Except (throwError)
 import Lorentz hiding (cast, checkSignature, get, not)
-import Morley.Tezos.Address (mkKeyAddress)
+import Morley.Tezos.Address (ImplicitAddress, mkKeyAddress)
 import Morley.Tezos.Crypto (checkSignature)
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
 
-verifyPermitProtectedVote :: ModelSource -> PermitProtected VoteParam -> ModelT cep (VoteParam, Address)
+verifyPermitProtectedVote :: ModelSource -> PermitProtected VoteParam -> ModelT cep (VoteParam, ImplicitAddress)
 verifyPermitProtectedVote mso permited = do
   let voteParam = permited & ppArgument
   case (permited & ppPermit) of

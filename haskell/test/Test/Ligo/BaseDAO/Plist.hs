@@ -19,7 +19,7 @@ import Test.Tasty.Hedgehog (testProperty)
 
 import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
 import Lorentz hiding (cast, concat, get, not)
-import Morley.Tezos.Address (mkKeyAddress)
+import Morley.Tezos.Address (ConstrainedAddress(..), mkKeyAddress)
 import Morley.Tezos.Crypto (toPublic)
 
 import Ligo.BaseDAO.Types
@@ -39,7 +39,7 @@ genProposalKeyList atLeast = do
       let proposalMeta = lPackValueRaw @Natural 1
           metaSize = metadataSize proposalMeta
           param = ProposeParams
-            { ppFrom = addr
+            { ppFrom = MkAddress addr
             , ppFrozenToken = metaSize
             , ppProposalMetadata = proposalMeta
             }

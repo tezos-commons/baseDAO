@@ -22,6 +22,7 @@ import GHC.Natural
 import Lorentz hiding (cast, div, get, not, or, take)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
+import Morley.Tezos.Address
 import Morley.Util.Named
 
 import Ligo.BaseDAO.Types
@@ -153,7 +154,7 @@ applyPropose mso param@ProposeParams{..} = do
   config <- getConfig
   let FixedFee fixedFee = config & cFixedProposalFee
 
-  validFrom <- checkDelegate ppFrom (mso & msoSender)
+  validFrom <- checkDelegate ppFrom (MkAddress $ mso & msoSender)
 
   store <- getStore
   get <&> msProposalCheck >>= \f -> f (param, (store & sExtra))
@@ -197,7 +198,7 @@ applyVote mso = mapM_ acceptVote
     acceptVote pp = do
       (voteParam, author) <- verifyPermitProtectedVote mso pp
 
-      validFrom <- checkDelegate (pp & ppArgument & vFrom) author
+      validFrom <- checkDelegate (pp & ppArgument & vFrom) (MkAddress author)
       proposal <- checkIfProposalExist (voteParam & vProposalKey)
       ensureProposalVotingStage proposal
       submitVote proposal voteParam validFrom
@@ -207,8 +208,8 @@ applyFreeze mso (arg #amount -> param) = do
   let senderAddr = mso & msoSender
   let amt = param
 
-  freezingUpdateFh senderAddr (toInteger amt)
-  lockGovernanceTokens amt senderAddr
+  freezingUpdateFh (MkAddress senderAddr) (toInteger amt)
+  lockGovernanceTokens amt (MkAddress senderAddr)
     >>= \frozenTotalSupply -> modifyStore $ \s -> pure $ s
             { sFrozenTotalSupply = frozenTotalSupply
             }
@@ -253,9 +254,9 @@ applyUnfreeze :: ModelSource -> UnfreezeParam -> ModelT cep ()
 applyUnfreeze mso (arg #amount -> amt) = do
   let senderAddr = mso & msoSender
 
-  freezingUpdateFh senderAddr (negate $ fromIntegral amt)
+  freezingUpdateFh (MkAddress senderAddr) (negate $ fromIntegral amt)
 
-  unlockGovernanceTokens amt senderAddr
+  unlockGovernanceTokens amt (MkAddress senderAddr)
     >>= \frozenTotalSupply -> modifyStore $ \s -> pure $ s
             { sFrozenTotalSupply = frozenTotalSupply }
 
@@ -323,8 +324,8 @@ applyDropProposal mso proposalKey = do
   proposalIsExpired <- isLevelReached proposal =<< (getConfig <&> cProposalExpiredLevel)
 
   store <- getStore
-  if   ((mso & msoSender) == (proposal & plProposer))
-    || ((mso & msoSender) == (store & sGuardian) && (mso & msoSender) /= (mso & msoSource))
+  if   (MkAddress (mso & msoSender) == (proposal & plProposer))
+    || (MkAddress (mso & msoSender) == (store & sGuardian) && (mso & msoSender) /= (mso & msoSource))
     || proposalIsExpired
   then do
     unstakeProposerToken False proposal
@@ -345,7 +346,7 @@ updateDelegate mso delegates param =
     then Set.insert delegate delegates
     else Set.delete delegate delegates
   where
-    delegate = Delegate { dOwner = mso & msoSender, dDelegate = param & dpDelegate }
+    delegate = Delegate { dOwner = MkAddress $ mso & msoSender, dDelegate = param & dpDelegate }
 
 applyUpdateDelegate :: ModelSource -> [DelegateParam] -> ModelT cep ()
 applyUpdateDelegate mso params =
@@ -367,14 +368,14 @@ applyUnstakeVoteOne mso key = do
   when (plistMem key (store & sOngoingProposalsDlist)) $
     throwError UNSTAKE_INVALID_PROPOSAL
 
-  tokens <- case Map.lookup (mso & msoSender, key) (store & sStakedVotes & bmMap) of
+  tokens <- case Map.lookup (MkAddress $ mso & msoSender, key) (store & sStakedVotes & bmMap) of
           Just v -> pure v
           Nothing -> throwError VOTER_DOES_NOT_EXIST
 
-  unstakeTk tokens 0 (mso & msoSender)
+  unstakeTk tokens 0 (MkAddress $ mso & msoSender)
 
   modifyStore $ \s -> pure $ s
-    { sStakedVotes = BigMap Nothing $ Map.delete (mso & msoSender, key) (s & sStakedVotes & bmMap)
+    { sStakedVotes = BigMap Nothing $ Map.delete (MkAddress $ mso & msoSender, key) (s & sStakedVotes & bmMap)
     }
 
 applyUnstakeVote :: ModelSource -> UnstakeVoteParam -> ModelT cep ()

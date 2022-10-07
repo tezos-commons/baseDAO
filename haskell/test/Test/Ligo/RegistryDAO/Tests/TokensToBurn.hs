@@ -12,9 +12,9 @@ import Prelude
 
 import Test.Tasty (TestTree)
 
-import Lorentz as L hiding (Contract, assert, div)
 import Morley.Util.Named
 import Test.Cleveland
+import Morley.Tezos.Address
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
@@ -45,23 +45,23 @@ tokensToBurn = testScenario "checks it correctly calculates tokens to burn when 
         let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
 
         withSender wallet1 $
-          call baseDao (Call @"Freeze") (#amount :! requiredFrozen)
+          transfer baseDao$ calling (ep @"Freeze") (#amount :! requiredFrozen)
 
         startLevel <- getOriginationLevel' @variant baseDao
 
         -- Advance one voting period to a proposing stage.
         advanceToLevel (startLevel + period)
 
-        let params = ProposeParams wallet1 requiredFrozen proposalMeta1
+        let params = ProposeParams (MkAddress wallet1) requiredFrozen proposalMeta1
         let proposalKey = makeProposalKey params
         withSender wallet1 $
-          call baseDao (Call @"Propose") params
+          transfer baseDao$ calling (ep @"Propose") params
 
         -- Advance one voting period to a proposing stage.
         proposalStart <- getProposalStartLevel' @variant baseDao proposalKey
         advanceToLevel (proposalStart + 2*period + 1)
         withSender admin $
-          call baseDao (Call @"Flush") (1 :: Natural)
+          transfer baseDao$ calling (ep @"Flush") (1 :: Natural)
 
         -- Since we have frozen_scale_value = 2, slash_scale_value = 1 and slash_division_value = 2
         -- After the rejection above, we expect that (2 * proposalSize1/2) tokens
@@ -72,5 +72,3 @@ tokensToBurn = testScenario "checks it correctly calculates tokens to burn when 
 
 
         checkBalance' @variant baseDao wallet1 (requiredFrozen - spent)
-
-

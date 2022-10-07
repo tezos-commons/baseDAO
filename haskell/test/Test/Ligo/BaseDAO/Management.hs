@@ -16,8 +16,7 @@ import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (now, (>>))
 import Morley.Michelson.Runtime.GState (genesisAddress)
-import Morley.Michelson.Typed (convertContract)
-import Morley.Michelson.Typed.Convert (untypeValue)
+import Morley.Tezos.Address (ConstrainedAddress(MkAddress))
 import Test.Cleveland
 
 import Ligo.BaseDAO.Contract
@@ -31,19 +30,13 @@ import Test.Ligo.BaseDAO.Management.TransferOwnership
 withOriginated
   :: MonadCleveland caps m
   => Integer
-  -> ([Address] -> Storage)
-  -> ([Address] -> TAddress Parameter () -> m a)
+  -> ([ImplicitAddress] -> Storage)
+  -> ([ImplicitAddress] -> ContractHandle Parameter Storage () -> m a)
   -> m a
 withOriginated addrCount storageFn tests = do
   addresses <- mapM (\x -> refillable $ newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
-  baseDao <- originateUntyped $ UntypedOriginateData
-    { uodName = "BaseDAO Test Contract"
-    , uodBalance = zeroMutez
-    , uodStorage = untypeValue $ toVal $ storageFn addresses
-    , uodContract = convertContract baseDAOContractLigo
-    }
-
-  tests addresses (TAddress baseDao)
+  baseDao <- originate "BaseDAO Test Contract" (storageFn addresses) baseDAOContractLigo
+  tests addresses baseDao
 
 -- | We test non-token entrypoints of the BaseDAO contract here
 test_BaseDAO_Management :: [TestTree]
@@ -99,5 +92,5 @@ test_BaseDAO_Management =
       ! #extra ()
       ! #metadata mempty
       ! #level currentLevel
-      ! #tokenAddress genesisAddress
+      ! #tokenAddress (MkAddress genesisAddress)
       ! defaults

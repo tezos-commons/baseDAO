@@ -14,7 +14,6 @@ import Hedgehog hiding (assert)
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 
-import Lorentz hiding (abs, and, assert, div, not, now, (>>))
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -72,10 +71,10 @@ plistTests = do
       let defaultStore = PlistStorage (plistFromList keyList) False Nothing
       let haskellStore = (keyList, False, Nothing)
       -- Originate plist contract
-      plistContract <- originateTypedSimple @PlistParameter @_ @() "PlistContract" defaultStore plistContractLigo
-      callContractLoop params (TAddress $ chAddress plistContract) haskellStore
+      plistContract <- originate "PlistContract" defaultStore plistContractLigo
+      callContractLoop params plistContract haskellStore
 
-callContractLoop :: MonadEmulated caps m => [PlistParameter] -> TAddress PlistParameter () -> ([ProposalKey], Bool, Maybe ProposalKey) -> m ()
+callContractLoop :: MonadEmulated caps m => [PlistParameter] -> ContractHandle PlistParameter PlistStorage () -> ([ProposalKey], Bool, Maybe ProposalKey) -> m ()
 callContractLoop param addr haskellStore =
   case param of
     p:ps -> do
@@ -111,24 +110,24 @@ callHaskell (keyList, memResult, popResult) param =
       in (list, memResult, newPopResult)
 
 -- | Call ligo plist contract.
-callLigo :: MonadEmulated caps m => TAddress PlistParameter () -> PlistParameter -> m ([ProposalKey], Bool, Maybe ProposalKey)
+callLigo :: MonadEmulated caps m => ContractHandle PlistParameter PlistStorage () -> PlistParameter -> m ([ProposalKey], Bool, Maybe ProposalKey)
 callLigo addr param = do
   nettestResult <- attempt @TransferFailure $ case param of
     Insert k -> do
-      PlistStorage{..} <- getFullStorage @PlistStorage (unTAddress addr)
+      PlistStorage{..} <- getFullStorage @PlistStorage addr
 
       -- Ensure that the key being inserted does not exist in the list. In the main contract, this is checked by
       -- `check_if_proposal_exist`.
       if (k `elem` plistToList psPlist) then
         pure ()
       else
-        call addr (Call @"Insert") k
-    Delete k -> call addr (Call @"Delete") k
-    Mem k -> call addr (Call @"Mem") k
-    Pop _ -> call addr (Call @"Pop") ()
+        transfer addr $ calling (ep @"Insert") k
+    Delete k -> transfer addr $ calling (ep @"Delete") k
+    Mem k -> transfer addr $ calling (ep @"Mem") k
+    Pop _ -> transfer addr $ calling (ep @"Pop") ()
 
   case nettestResult of
     Right _ -> do
-      PlistStorage{..} <- getFullStorage @PlistStorage (unTAddress addr)
+      PlistStorage{..} <- getFullStorage @PlistStorage addr
       pure (plistToList psPlist, psMemResult, psPopResult)
     Left err -> error $ show err

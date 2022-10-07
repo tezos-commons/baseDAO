@@ -14,7 +14,7 @@ module Test.Ligo.BaseDAO.Proposal.Quorum
 
 import Universum
 
-import Lorentz hiding (assert, div, (>>))
+import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -59,19 +59,18 @@ checkQuorumThresholdDynamicUpdate originateFn = do
       >>- (ConfigDesc configConsts)
       ) (mkQuorumThreshold 3 10)
   let proposer = dodOwner1
-  let dao = dodDao
   let requiredFrozen = (10 :: Natural)
   let proposalMeta1 = ""
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount :! (2 * requiredFrozen))
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! (2 * requiredFrozen))
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
   -- First proposal period, cycle 0
 
   withSender proposer $
-    call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta1)
 
   quorumThresholdActual_ <- getQtAtCycle dodDao
   let quorumThresholdExpected_ = QuorumThresholdAtCycle (mkQuorumThreshold 3 10) 1 10
@@ -82,7 +81,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
 
   let proposalMeta2 = "A"
   withSender proposer $
-    call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta2)
 
   quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 10 and governance total supply as 100
@@ -110,21 +109,21 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   let proposalMeta1 = ""
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount :! (2 * requiredFrozen))
+    transfer dao$ calling (ep @"Freeze") (#amount :! (2 * requiredFrozen))
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
   -- First proposal period, cycle 0
 
   withSender proposer $
-    call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
   advanceToLevel (startLevel + 3*dodPeriod + 1)
 
   let proposalMeta2 = "A"
   withSender proposer $
-    call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta2)
 
   quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 100 and governance total supply as 100
@@ -155,21 +154,21 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   let proposalMeta1 = ""
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount :! (2 * requiredFrozen))
+    transfer dao$ calling (ep @"Freeze") (#amount :! (2 * requiredFrozen))
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
   -- First proposal period, cycle 0
 
   withSender proposer $
-    call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
   advanceToLevel (startLevel + 3 * dodPeriod + 1)
 
   let proposalMeta2 = "A"
   withSender proposer $
-    call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta2)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta2)
 
   quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 0 and governance total supply as 100
@@ -200,22 +199,22 @@ checkProposalSavesQuorum originateFn = do
   let proposalMeta1 = ""
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount :! (2 * requiredFrozen))
+    transfer dao$ calling (ep @"Freeze") (#amount :! (2 * requiredFrozen))
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
   -- First proposal period, cycle 0
 
   withSender proposer $
-    call dodDao (Call @"Propose") (ProposeParams proposer requiredFrozen proposalMeta1)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
   advanceToLevel (startLevel + 3*dodPeriod + 1)
 
   let proposalMeta2 = "A"
-  let proposeParams = ProposeParams proposer requiredFrozen proposalMeta2
+  let proposeParams = ProposeParams (MkAddress proposer) requiredFrozen proposalMeta2
   withSender proposer $
-    call dodDao (Call @"Propose") proposeParams
+    transfer dodDao $ calling (ep @"Propose") proposeParams
 
   let proposalKey = makeProposalKey proposeParams
   proposal <- fromMaybe (error "Proposal not found") <$> getProposal dodDao proposalKey
@@ -243,13 +242,13 @@ proposalIsRejectedIfNoQuorum = do
   let admin = dodAdmin
 
   withSender voter $
-    call dao (Call @"Freeze") (#amount :! 28)
+    transfer dao$ calling (ep @"Freeze") (#amount :! 28)
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount :! 42)
+    transfer dao$ calling (ep @"Freeze") (#amount :! 42)
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount :! 10)
+    transfer dao$ calling (ep @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -263,10 +262,10 @@ proposalIsRejectedIfNoQuorum = do
           , vVoteAmount = 3
             -- The minimum votes that is required to pass is 80 * 1/20  = 4.
           , vProposalKey = key1
-          , vFrom = voter
+          , vFrom = MkAddress voter
           }
   withSender voter $
-    call dao (Call @"Vote") [vote_]
+    transfer dao$ calling (ep @"Vote") [vote_]
 
   let expectedFrozen = 42 + 10
   checkBalance dao proposer expectedFrozen
@@ -274,7 +273,7 @@ proposalIsRejectedIfNoQuorum = do
   -- Advance one voting period to a proposing stage.
   proposalStart <- getProposalStartLevel dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod)
-  withSender admin $ call dao (Call @"Flush") 100
+  withSender admin $ transfer dao $ calling (ep @"Flush") 100
 
   checkBalance dao proposer 9 -- We expect 42 + 1 tokens to have burned
 
@@ -295,13 +294,13 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
   let admin = dodAdmin
 
   withSender voter $
-    call dao (Call @"Freeze") (#amount :! 28)
+    transfer dao$ calling (ep @"Freeze") (#amount :! 28)
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount :! 42)
+    transfer dao$ calling (ep @"Freeze") (#amount :! 42)
 
   withSender proposer $
-    call dao (Call @"Freeze") (#amount :! 10)
+    transfer dao$ calling (ep @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -315,16 +314,16 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
           , vVoteAmount = 4
             -- The minimum votes that is required to pass is 80 * 1/20  = 4.
           , vProposalKey = key1
-          , vFrom = voter
+          , vFrom = MkAddress voter
           }
   withSender voter $
-    call dao (Call @"Vote") [vote_]
+    transfer dao$ calling (ep @"Vote") [vote_]
 
   let expectedFrozen = 42 + 10
   checkBalance dao proposer expectedFrozen
 
   proposalStart <- getProposalStartLevel dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod)
-  withSender admin $ call dao (Call @"Flush") 100
+  withSender admin $ transfer dao $ calling (ep @"Flush") 100
 
   checkBalance dao proposer 52

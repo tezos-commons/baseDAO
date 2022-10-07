@@ -320,7 +320,6 @@ test-suite baseDAO-test
     , lorentz
     , morley
     , morley-ledgers
-    , morley-metadata
     , morley-prelude
     , mtl
     , named

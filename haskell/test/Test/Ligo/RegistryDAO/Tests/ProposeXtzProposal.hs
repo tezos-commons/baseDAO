@@ -12,8 +12,8 @@ import Prelude
 
 import Test.Tasty (TestTree)
 
-import Lorentz as L hiding (Contract, assert, div)
 import Morley.Util.Named
+import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -30,12 +30,12 @@ proposeXtzProposal = testScenario "checks it can propose a valid xtz type propos
     \[_, wallet] (toPeriod -> period) baseDao _ -> do
       let
         proposalMeta amt = toProposalMetadata @variant $
-            TransferProposal 1 [ xtzTransferType amt wallet ] []
-        proposeParams amt = ProposeParams wallet (metadataSize $ proposalMeta amt) $ proposalMeta amt
+            TransferProposal 1 [ xtzTransferType amt (MkAddress wallet) ] []
+        proposeParams amt = ProposeParams (MkAddress wallet) (metadataSize $ proposalMeta amt) $ proposalMeta amt
         proposalSize amt = metadataSize $ proposalMeta amt
 
       withSender wallet $
-        call baseDao (Call @"Freeze") (#amount :! proposalSize 10)
+        transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize 10)
 
       startLevel <- getOriginationLevel' @variant baseDao
       -- Advance one voting period to a proposing stage.
@@ -43,21 +43,21 @@ proposeXtzProposal = testScenario "checks it can propose a valid xtz type propos
 
       -- Fails because 10 >= max_xtz_amount
       withSender wallet $
-        call baseDao (Call @"Propose") (proposeParams 10)
+        (transfer baseDao$ calling (ep @"Propose") (proposeParams 10))
         & expectFailProposalCheck tooLargeXtzErrMsg
 
       -- Fails because 1 >= min_xtz_amount
       withSender wallet $
-        call baseDao (Call @"Propose") (proposeParams 1)
+        (transfer baseDao$ calling (ep @"Propose") (proposeParams 1))
         & expectFailProposalCheck tooSmallXtzErrMsg
 
       withSender wallet $
-        call baseDao (Call @"Freeze") (#amount :! proposalSize 3)
+        transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize 3)
 
       -- Advance two voting period to another proposing stage.
       advanceToLevel (startLevel + 3*period)
 
       withSender wallet $
-        call baseDao (Call @"Propose") (proposeParams 3)
+        transfer baseDao$ calling (ep @"Propose") (proposeParams 3)
 
       checkBalance' @variant baseDao wallet (proposalSize 3 + proposalSize 10)

@@ -12,8 +12,8 @@ import Prelude
 
 import Test.Tasty (TestTree)
 
-import Lorentz as L hiding (Contract, assert, div)
 import Test.Cleveland
+import Morley.Tezos.Address
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
@@ -32,5 +32,5 @@ notEnoughFrozen = testScenario "checks it fails if required tokens are not froze
       -- frozen_scale_value, frozen_extra_value set to 1 and 0 means that it requires 6
       -- tokens to be frozen (6 * 1 + 0) because proposal size happen to be 6 here.
       in withSender wallet1 $
-         call baseDao (Call @"Propose") (ProposeParams wallet1 2 proposalMeta)
+         (transfer baseDao $ calling (ep @"Propose") (ProposeParams (MkAddress wallet1) 2 proposalMeta))
          & expectFailProposalCheck incorrectTokenAmountErrMsg

@@ -14,6 +14,7 @@ import Test.Tasty (TestTree)
 
 import Lorentz as L hiding (Contract, assert, div)
 import Morley.Michelson.Text (mkMText)
+import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -34,6 +35,6 @@ largeProposalTest =
         proposalMeta = toProposalMetadata @variant $ TransferProposal 1 [] $
             [(unsafe $ mkMText ("long_key" <> (show @_ @Int t)), Just [mt|long_value|]) | t <- [1..10]]
         proposalSize = metadataSize proposalMeta
-        in withSender wallet1 $ call
-           baseDao (Call @"Propose") (ProposeParams wallet1 proposalSize proposalMeta)
+        in withSender wallet1 $ (transfer baseDao $ calling
+           (ep @"Propose") (ProposeParams (MkAddress wallet1) proposalSize proposalMeta))
             & expectFailProposalCheck tooLargeProposalErrMsg
