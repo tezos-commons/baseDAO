@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.RegistryDAO.Tests.UpdateDelegate
   ( updateDelegate
   ) where
@@ -24,9 +21,9 @@ import Test.Ligo.RegistryDAO.Tests.Common
 updateDelegate
   :: forall variant. RegistryTestConstraints variant => TestTree
 updateDelegate = testScenario "checks it can flush a proposal that updates contract delegate address" $ scenario $
-  withOriginated @variant 4
+  withOriginated @variant @4
       (\_ s -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) s) $
-    \[admin, wallet1, wallet2, delegateAddr] (toPeriod -> period) baseDao _ -> do
+    \(admin ::< wallet1 ::< wallet2 ::< delegateAddr ::< Nil') (toPeriod -> period) baseDao _ -> do
       registerDelegate delegateAddr
       case delegateAddr of
         ImplicitAddress delegate -> do

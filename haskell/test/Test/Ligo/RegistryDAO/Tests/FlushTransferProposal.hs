@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.RegistryDAO.Tests.FlushTransferProposal
   ( flushTransferProposal
   ) where
@@ -28,9 +25,9 @@ flushTransferProposal
   :: forall variant. RegistryTestConstraints variant => TestTree
 flushTransferProposal = testGroup "TransferProposal Tests"
   [ testScenario "checks it can flush a transfer type proposal (#66)" $ scenario $
-      withOriginated @variant 3
+      withOriginated @variant
         (\_ s -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) (s { sConfig = (sConfig s) { cPeriod = 35, cProposalFlushLevel = 70 }})) $
-        \[admin, wallet1, wallet2] (toPeriod -> period) baseDao dodTokenContract -> do
+        \(admin ::< wallet1 ::< wallet2 ::< Nil') (toPeriod -> period) baseDao dodTokenContract -> do
 
           let
             proposalMeta = toProposalMetadata @variant $ TransferProposal
@@ -80,9 +77,9 @@ flushTransferProposal = testGroup "TransferProposal Tests"
               , [ FA2.TransferItem { tiFrom = (MkAddress wallet1), tiTxs = [FA2.TransferDestination { tdTo = MkAddress $ chAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = proposalSize }] } ] -- governance token transfer for freeze
               ])
   , testScenario "checks it can flush a transfer proposal" $ scenario $
-        withOriginated @variant 3
+        withOriginated @variant
             (\_ s -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) (s { sConfig = (sConfig s) { cPeriod = 35, cProposalFlushLevel = 70 }})) $
-          \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
+          \(admin ::< wallet1 ::< wallet2 ::< Nil') (toPeriod -> period) baseDao _ -> do
 
             let
               proposalMeta = toProposalMetadata @variant $

@@ -1,9 +1,8 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Test.Ligo.LambdaTreasuryDAO
   ( test_LambdaTreasuryDAO
   ) where
@@ -24,9 +23,6 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.Common
 import Test.Ligo.TreasuryDAO
 import Test.Ligo.TreasuryDAO.Types
-
-getStorageRPCLambda :: forall caps m. MonadCleveland caps m => ContractAddress ->  m (StorageSkeletonRPC (VariantToExtra 'Lambda))
-getStorageRPCLambda addr = getStorage @(StorageSkeleton (VariantToExtra 'Lambda)) addr
 
 instance TestableVariant 'LambdaTreasury where
   getInitialStorage admin = initialStorageWithExplictLambdaDAOConfig admin

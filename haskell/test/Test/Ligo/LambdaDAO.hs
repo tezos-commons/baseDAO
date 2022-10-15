@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.LambdaDAO
   ( test_LambdaDAO
   ) where
@@ -17,6 +14,8 @@ import Lorentz as L hiding (assert, div)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Tezos.Address
 import Morley.Util.Named
+import Morley.Util.Peano
+import Morley.Util.SizedList (SizedList, SizedList'(..))
 import Test.Cleveland
 
 import Ligo.BaseDAO.Contract
@@ -24,18 +23,18 @@ import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.LambdaDAO.Types
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
+import Test.Ligo.Common (refillables)
 
 getStorageRPCLambda :: forall p caps vd m. MonadCleveland caps m => ContractHandle p vd () ->  m (StorageSkeletonRPC (VariantToExtra 'Lambda))
 getStorageRPCLambda addr = getStorage @(StorageSkeleton (VariantToExtra 'Lambda)) (chAddress addr)
 
 withOriginated
-  :: MonadCleveland caps m
-  => Integer
-  -> ([ImplicitAddress] -> LambdaStorage)
-  -> ([ImplicitAddress] -> LambdaStorage -> ContractHandle (Parameter' LambdaCustomEpParam) (StorageSkeleton (VariantToExtra 'Lambda)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
+  :: (IsoNatPeano num num', MonadCleveland caps m, SingIPeano num)
+  => (SizedList num ImplicitAddress -> LambdaStorage)
+  -> (SizedList num ImplicitAddress -> LambdaStorage -> ContractHandle (Parameter' LambdaCustomEpParam) (StorageSkeleton (VariantToExtra 'Lambda)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
   -> m a
-withOriginated addrCount storageFn tests = do
-  addresses <- mapM (\x -> refillable $ newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
+withOriginated storageFn tests = do
+  addresses <- refillables $ newAddresses $ enumAliases "address"
   dodTokenContract <- originate "token_contract" [] dummyFA2Contract
   let storageInitial = storageFn addresses
   now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
@@ -97,9 +96,9 @@ test_LambdaDAO :: [TestTree]
 test_LambdaDAO =
   [ let flushPeriod = 41 in testGroup "LambdaDAO Tests"
       [ testScenario "AddHandler/ExecuteHandler adds/execute handlers/proposals" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
-           \(admin:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           \(admin::<wallet1::<_) fs baseDao _ -> do
 
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Add_handler $ AddHandlerParam "proposal_handler_1" proposal_1_handler proposal_1_check
@@ -160,9 +159,9 @@ test_LambdaDAO =
                 Left _ -> fail "Unpacking failed"
 
       , testScenario "AddHandler proposal check checks for existing handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
-           \(admin:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           \(admin::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Add_handler $ AddHandlerParam "proposal_handler_1" proposal_1_handler proposal_1_check
              let proposalSize = metadataSize proposalMeta
@@ -197,9 +196,9 @@ test_LambdaDAO =
                & expectFailedWith (failProposalCheck, proposalHandlerExists)
 
       , testScenario "Remove handler proposal check checks for existing handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
-           \(_:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           \(_::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Remove_handler "proposal_handler_1"
              let proposalSize = metadataSize proposalMeta
@@ -214,9 +213,9 @@ test_LambdaDAO =
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "Remove handler proposal check checks for active handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithPreloadedLambdasDisabled admin) $
-           \(_:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithPreloadedLambdasDisabled admin) $
+           \(_::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Remove_handler "proposal_handler_1"
              let proposalSize = metadataSize proposalMeta
@@ -231,9 +230,9 @@ test_LambdaDAO =
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "ExecuteHandler proposal check checks for existing handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
-           \(_:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           \(_::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Execute_handler $ ExecuteHandlerParam "proposal_handler_1" (lPackValueRaw [mt|Something|])
              let proposalSize = metadataSize proposalMeta
@@ -248,9 +247,9 @@ test_LambdaDAO =
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "ExecuteHandler proposal check checks for active handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithPreloadedLambdasDisabled admin) $
-           \(_:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithPreloadedLambdasDisabled admin) $
+           \(_::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Execute_handler $ ExecuteHandlerParam "proposal_handler_1" (lPackValueRaw [mt|Something|])
              let proposalSize = metadataSize proposalMeta
@@ -265,9 +264,9 @@ test_LambdaDAO =
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "RemoveHandler proposal disables the handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithPreloadedLambdas admin) $
-           \(admin:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithPreloadedLambdas admin) $
+           \(admin::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $ Remove_handler [mt|proposal_handler_1|]
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
@@ -313,9 +312,9 @@ test_LambdaDAO =
             let
               s = initialStorageWithPreloadedLambdas adm
             in s { sConfig = (sConfig s) { cPeriod = 30, cProposalFlushLevel = flushInterval, cProposalExpiredLevel = 300 } }
-         in withOriginated 2
-           (\(admin: _) -> storageFn admin) $
-           \(admin:wallet1:_) fs baseDao _ -> do
+         in withOriginated @2
+           (\(admin ::< _) -> storageFn admin) $
+           \(admin::<wallet1::<_) fs baseDao _ -> do
              -- Raise an 'Execute' followed by a 'Remove_handler' proposal
              let refString = [mt|Test string|]
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $

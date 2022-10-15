@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.RegistryDAO.Tests.LargeProposal
   ( largeProposalTest
   ) where
@@ -27,9 +24,9 @@ largeProposalTest
   :: forall variant. RegistryTestConstraints variant => TestTree
 largeProposalTest =
   testScenario "proposal exceeding max_proposal_size result in error" $ scenario $
-    withOriginated @variant 2
+    withOriginated @variant
       (\_ s -> s) $
-      \(_:wallet1:_) _ baseDao _ -> let
+      \(_ ::< wallet1 ::< Nil') _ baseDao _ -> let
         -- In the explicitly set configuration max_proposal_size is set at 100.
         -- And here we create a proposal that is bigger then 100.
         proposalMeta = toProposalMetadata @variant $ TransferProposal 1 [] $

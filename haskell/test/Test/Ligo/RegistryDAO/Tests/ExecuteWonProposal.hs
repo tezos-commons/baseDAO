@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.RegistryDAO.Tests.ExecuteWonProposal
   ( executeWonProposal
   ) where
@@ -29,7 +26,7 @@ executeWonProposal = testScenario "checks it correctly executes the proposal tha
   let frozen_extra_value = 0 :: Natural
   let slash_scale_value = 1 :: Natural
   let slash_division_value = 1 :: Natural
-  withOriginated @variant 3
+  withOriginated @variant
     (\_ fs ->
       fs &
       setVariantExtra @variant @"FrozenScaleValue" frozen_scale_value &
@@ -39,7 +36,7 @@ executeWonProposal = testScenario "checks it correctly executes the proposal tha
       setVariantExtra @variant @"SlashDivisionValue" slash_division_value
       ) $
 
-    \(admin: wallet1: voter1 : _) (toPeriod -> period) baseDao _ -> let
+    \(admin ::< wallet1 ::< voter1 ::< Nil') (toPeriod -> period) baseDao _ -> let
 
       in do
         withSender wallet1 $
@@ -79,4 +76,3 @@ executeWonProposal = testScenario "checks it correctly executes the proposal tha
 
         maxProposalSize <- ((getVariantExtra @variant @"MaxProposalSize") . sExtraRPC) <$> getVariantStorageRPC @variant (chAddress baseDao)
         assert (maxProposalSize == (341 :: Natural)) "Unexpected max_proposal_size update"
-

@@ -1,7 +1,7 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
 --
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -Wno-orphans   #-}
 -- For all the incomplete list pattern matches in the calls to with
 -- withOriginated func
 module Test.Ligo.RegistryDAO.Tests.RequiredFrozen
@@ -25,9 +25,9 @@ import Test.Ligo.RegistryDAO.Types
 requiredFrozen
   :: forall variant. RegistryTestConstraints variant => TestTree
 requiredFrozen = testScenario "check it correctly calculates required frozen tokens" $ scenario $
-  withOriginated @variant 2
+  withOriginated @variant @2
     (\_ s -> setVariantExtra @variant @"FrozenExtraValue" (2 :: Natural) s) $
-    \(_:wallet1:_) fs baseDao _ -> do
+    \(_ ::< wallet1 ::< _) fs baseDao _ -> do
       let
         proposalMeta = toProposalMetadata @variant $ TransferProposal 1 [] []
         proposalSize = metadataSize proposalMeta -- 10

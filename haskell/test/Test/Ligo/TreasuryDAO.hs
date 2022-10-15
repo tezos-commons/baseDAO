@@ -1,6 +1,7 @@
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns #-}
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
+
+{-# OPTIONS_GHC -Wno-orphans  #-}
 
 module Test.Ligo.TreasuryDAO
   ( test_TreasuryDAO
@@ -108,11 +109,11 @@ treasuryDAOTests = testGroup "TreasuryDAO Tests"
   ]
 
 validProposal
-  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, HasCallStack)
+  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
   => m ()
-validProposal = withFrozenCallStack $ withOriginated @variant 3
+validProposal = withFrozenCallStack $ withOriginated @variant @3
   (\_ s -> s { sConfig = (sConfig s) { cPeriod = 20 } }) $
-  \(_: dodOwner1: dodOwner2 : _) fs dodDao _ -> do
+  \(_ ::< dodOwner1 ::< dodOwner2 ::< Nil') fs dodDao _ -> do
     let dodPeriod = toPeriod fs
     startLevel <- getOriginationLevel' @variant dodDao
     let
@@ -139,11 +140,11 @@ validProposal = withFrozenCallStack $ withOriginated @variant 3
     checkBalance' @variant dodDao dodOwner1 proposalSize
 
 flushTokenTransfer
-  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, HasCallStack)
+  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
   => m ()
-flushTokenTransfer = withFrozenCallStack $ withOriginated @variant 3
+flushTokenTransfer = withFrozenCallStack $ withOriginated @variant @3
   (\_ s -> s { sConfig = (sConfig s) { cPeriod = 20, cProposalExpiredLevel = 300 } }) $
-  \(dodAdmin : dodOwner1: dodOwner2 : _) fs dodDao dodTokenContract -> do
+  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< Nil') fs dodDao dodTokenContract -> do
   let dodPeriod = toPeriod fs
   startLevel <- getOriginationLevel' @variant dodDao
 
@@ -189,11 +190,11 @@ flushTokenTransfer = withFrozenCallStack $ withOriginated @variant 3
   checkBalance' @variant dodDao dodOwner2 20
 
 flushXtzTransfer
-  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, HasCallStack)
+  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
   => m ()
-flushXtzTransfer = withFrozenCallStack $ withOriginated @variant 3
+flushXtzTransfer = withFrozenCallStack $ withOriginated @variant @3
   (\_ s -> s { sConfig = (sConfig s) { cPeriod = 25, cProposalExpiredLevel = 300 } }) $
-  \(dodAdmin : dodOwner1: dodOwner2 : _) fs dodDao _ -> do
+  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< Nil') fs dodDao _ -> do
   let dodPeriod = toPeriod fs
   originationLevel <- getOriginationLevel' @variant dodDao
 
@@ -248,11 +249,11 @@ flushXtzTransfer = withFrozenCallStack $ withOriginated @variant 3
   --TODO: check xtz balance
 
 flushUpdateGuardian
-  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, HasCallStack)
+  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
   => m ()
-flushUpdateGuardian = withFrozenCallStack $ withOriginated @variant 3
+flushUpdateGuardian = withFrozenCallStack $ withOriginated @variant @3
   (\_ s -> s { sConfig = (sConfig s) { cPeriod = 25, cProposalExpiredLevel = 300 } }) $
-  \(dodAdmin : dodOwner1: dodOwner2 : _) fs dodDao _ -> do
+  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< Nil') fs dodDao _ -> do
   let dodPeriod = toPeriod fs
 
   let
@@ -292,11 +293,11 @@ flushUpdateGuardian = withFrozenCallStack $ withOriginated @variant 3
   checkGuardian' @variant dodDao dodOwner2
 
 flushUpdateContractDelegate
-  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, HasCallStack)
+  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
   => m ()
-flushUpdateContractDelegate = withFrozenCallStack $ withOriginated @variant 4
+flushUpdateContractDelegate = withFrozenCallStack $ withOriginated @variant @4
   (\_ s -> s { sConfig = (sConfig s) { cPeriod = 25, cProposalExpiredLevel = 300 } }) $
-  \(dodAdmin : dodOwner1: dodOwner2 : dodOperator2 : _) fs dodDao _ -> do
+  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< dodOperator2 ::< Nil') fs dodDao _ -> do
   let dodPeriod = toPeriod fs
   registerDelegate dodOperator2
   case dodOperator2 of
@@ -338,11 +339,11 @@ flushUpdateContractDelegate = withFrozenCallStack $ withOriginated @variant 4
       getDelegate dodDao @@== (Just delegate)
 
 proposalCheckFailZeroMutez
-  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, HasCallStack)
+  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
   => m ()
-proposalCheckFailZeroMutez = withFrozenCallStack $ withOriginated @variant 3
+proposalCheckFailZeroMutez = withFrozenCallStack $ withOriginated @variant @3
   (\_ s -> setVariantExtra @variant @"MinXtzAmount" zeroMutez s) $
-  \(_ : dodOwner1: dodOwner2 : _) fs dodDao _ -> do
+  \(_ ::< dodOwner1 ::< dodOwner2 ::< Nil') fs dodDao _ -> do
   let dodPeriod = toPeriod fs
 
   startLevel <- getOriginationLevel' @variant dodDao
@@ -366,11 +367,11 @@ proposalCheckFailZeroMutez = withFrozenCallStack $ withOriginated @variant 3
       & expectFailedWith (failProposalCheck, zeroMutezErrMsg)
 
 proposalCheckBiggerThanMaxProposalSize
-  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, HasCallStack)
+  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
   => m ()
-proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack $ withOriginated @variant 3
+proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack $ withOriginated @variant @3
   (\_ s ->  s) $
-  \(_ : dodOwner1: dodOwner2 : _) fs dodDao _ -> do
+  \(_ ::< dodOwner1 ::< dodOwner2 ::< Nil') fs dodDao _ -> do
   let dodPeriod = toPeriod fs
   startLevel <- getOriginationLevel' @variant dodDao
   let

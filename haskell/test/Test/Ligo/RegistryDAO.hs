@@ -1,9 +1,8 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Test.Ligo.RegistryDAO
   ( RegistryTestConstraints
   , test_RegistryDAO
@@ -88,8 +87,8 @@ instance TestableVariant 'Registry where
   getContract = baseDAORegistryLigo
   getVariantStorageRPC addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) addr
 
-getStorageRPCRegistry :: forall caps m. MonadCleveland caps m => ContractAddress ->  m (StorageSkeletonRPC (VariantToExtra 'Registry))
-getStorageRPCRegistry addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) addr
+-- getStorageRPCRegistry :: forall caps m. MonadCleveland caps m => ContractAddress ->  m (StorageSkeletonRPC (VariantToExtra 'Registry))
+-- getStorageRPCRegistry addr = getStorage @(StorageSkeleton (VariantToExtra 'Registry)) addr
 
 test_RegistryDAO :: [TestTree]
 test_RegistryDAO = registryDAOTests @'Registry
@@ -147,4 +146,3 @@ initialStorageWithExplictRegistryDAOConfig admin = (initialStorage admin)
   & setExtra (\re -> re { reMinXtzAmount = 2 })
   & setExtra (\re -> re { reMaxXtzAmount = 5 })
   & setExtra (\re -> re { reMaxProposalSize = 100 })
-

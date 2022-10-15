@@ -34,26 +34,19 @@ extra-deps:
 # Required by morley
 - git: https://github.com/serokell/base-noprelude.git
   commit: c8b06c4c8a271fce0c2f41ab18e88d58e64bac52 # 4.15.1.0
+- OddWord-1.0.2.0
+- bitvec-1.0.3.0@sha256:f69ed0e463045cb497a7cf1bc808a2e84ea0ce286cf9507983bb6ed8b4bd3993,3977
+- colourista-0.1.0.1@sha256:98353ee0e2f5d97d2148513f084c1cd37dfda03e48aa9dd7a017c9d9c0ba710e,3307
+- named-0.3.0.1@sha256:418543272f0c844a77639b05276ee3906d5f305cd4cab46fafcb4f15b7f1e60d,2312
+- show-type-0.1.1
 
+# TODO: set to a base-4.15-compatible version when one is released
 - git: https://github.com/co-log/co-log.git
   commit: 0552a366b90be5c361f7394447291d8de3b9d0e2
+  # nix-sha256: 0z3kf6jgza4g0lxc77hajjyn42ck7cw3bl27xlqffgj39ig6qdqs
+# Required by co-log
 - chronos-1.1.4
-- hex-text-0.1.0.4
-- show-type-0.1.1
-- named-0.3.0.1
 - co-log-core-0.3.1.0
-- colourista-0.1.0.1
-- ansi-terminal-0.10.3
-- galois-field-1.0.2
-- elliptic-curve-0.3.0
-- pairing-1.1.0
-- protolude-0.2.4
-- poly-0.4.0.0
-- groups-0.4.1.0
-- crypto-sodium-0.0.5.0
-- NaCl-0.0.5.0
-- libsodium-1.0.18.2
-- OddWord-1.0.2.0
 - typerep-map-0.5.0.0
 # Required by chronos
 - bytebuild-0.3.10.0
@@ -64,9 +57,24 @@ extra-deps:
 - zigzag-0.0.1.0
 - contiguous-0.6.1.1
 
-# Required by indigo
-- summoner-2.0.1.1
-- generic-data-0.8.3.0
-- neat-interpolation-0.3.2.6
-- optparse-applicative-0.15.1.0
-- megaparsec-8.0.0
+
+# Packages by Adjoint (somewhat unmaintained, hence they require constraints on their deps)
+- galois-field-1.0.2
+- elliptic-curve-0.3.0
+- pairing-1.1.0
+# Required by galois-field.
+- protolude-0.2.4
+- poly-0.4.0.0
+# Required by pairing.
+- groups-0.4.1.0
+# For keyed BLAKE2b and NaCl secret box
+- crypto-sodium-0.0.5.0
+# Dependencies of crypto-sodium
+- NaCl-0.0.5.0
+- libsodium-1.0.18.2
+
+flags:
+  # Disable 'terminfo' haskell package, because it cannot be linked statically
+  # https://github.com/purescript/purescript/issues/3696
+  haskeline:
+    terminfo: false

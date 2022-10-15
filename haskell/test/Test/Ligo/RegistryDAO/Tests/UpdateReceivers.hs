@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.RegistryDAO.Tests.UpdateReceivers
   ( updateReceivers
   ) where
@@ -26,9 +23,9 @@ import Test.Ligo.RegistryDAO.Types
 updateReceivers
   :: forall variant. RegistryTestConstraints variant => TestTree
 updateReceivers = testScenario "checks it can flush an Update_receivers_proposal" $ scenario $
-  withOriginated @variant 3
+  withOriginated @variant @3
       (\_ s -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) s) $
-    \[admin, wallet1, wallet2] (toPeriod -> period) baseDao _ -> do
+    \(admin ::< wallet1 ::< wallet2 ::< Nil') (toPeriod -> period) baseDao _ -> do
 
       let
         proposalMeta = toProposalMetadata @variant $ Add_receivers [MkAddress wallet1, MkAddress wallet2]

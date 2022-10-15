@@ -2,6 +2,8 @@
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
 {-# LANGUAGE OverloadedLists #-}
 
+{-# LANGUAGE OverloadedLists #-}
+
 module Test.Ligo.BaseDAO.OffChainViews
   ( test_FA2
   ) where
@@ -12,7 +14,6 @@ import Data.Aeson (encode)
 import Data.ByteString.Lazy qualified as BS
 
 import Morley.Michelson.Runtime.GState (genesisAddress)
-import Morley.Michelson.Text
 import Morley.Tezos.Address
 import Named (defaults, (!))
 import Test.Cleveland
@@ -27,7 +28,7 @@ import Test.Morley.Metadata
 
 metadataBigMap :: MetadataConfig -> MetadataMap
 metadataBigMap conf = metadataURI (tezosStorageUri selfHost "metadata")
-  <> [([mt|metadata|], BS.toStrict $ encode $ knownBaseDAOMetadata $ mkMetadataSettings conf)]
+  <> [("metadata", BS.toStrict $ encode $ knownBaseDAOMetadata $ mkMetadataSettings conf)]
 
 offChainViewStorage :: Storage
 offChainViewStorage =

@@ -169,3 +169,6 @@ tests:
     - tasty-hedgehog
     - tasty-hunit-compat
     - universum
+    - aeson
+    - morley-metadata-test
+    - morley-metadata

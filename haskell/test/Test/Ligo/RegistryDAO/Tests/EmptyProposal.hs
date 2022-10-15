@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.RegistryDAO.Tests.EmptyProposal
   ( emptyProposalTest
   ) where
@@ -26,9 +23,9 @@ emptyProposalTest
   :: forall variant. RegistryTestConstraints variant => TestTree
 emptyProposalTest =
   testScenario "Calling the propose endpoint with an empty proposal works" $ scenario $
-    withOriginated @variant 2
+    withOriginated @variant
       (\_ s -> s) $
-      \(_:wallet1:_) fs baseDao _ -> do
+      \(_::< wallet1::< Nil') fs baseDao _ -> do
         let proposalMeta = toProposalMetadata @variant $ TransferProposal 1 [] []
         let proposalSize = metadataSize proposalMeta
         withSender wallet1 $

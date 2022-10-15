@@ -1,9 +1,5 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
--- For all the incomplete list pattern matches in the calls to the
--- `withOriginated` function
 
 module Test.Ligo.BaseDAO.Management
   ( test_BaseDAO_Management
@@ -18,23 +14,25 @@ import Lorentz as L hiding (now, (>>))
 import Morley.Michelson.Runtime.GState (genesisAddress)
 import Morley.Tezos.Address (ConstrainedAddress(MkAddress))
 import Test.Cleveland
+import Morley.Util.Peano
+import Morley.Util.SizedList (SizedList)
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Management.TransferOwnership
+import Test.Ligo.Common (refillables)
 
 -- | Function that originates the contract and also make a bunch of
 -- address (the `addrCount` arg determines the count) for use within
 -- the tests. It is not pretty, but IMO it makes the test a bit less
 -- verbose.
 withOriginated
-  :: MonadCleveland caps m
-  => Integer
-  -> ([ImplicitAddress] -> Storage)
-  -> ([ImplicitAddress] -> ContractHandle Parameter Storage () -> m a)
+  :: (MonadCleveland caps m, IsoNatPeano num num', SingIPeano num)
+  => (SizedList num ImplicitAddress -> Storage)
+  -> (SizedList num ImplicitAddress -> ContractHandle Parameter Storage () -> m a)
   -> m a
-withOriginated addrCount storageFn tests = do
-  addresses <- mapM (\x -> refillable $ newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
+withOriginated storageFn tests = do
+  addresses <- refillables $ newAddresses (enumAliases "address")
   baseDao <- originate "BaseDAO Test Contract" (storageFn addresses) baseDAOContractLigo
   tests addresses baseDao
 
