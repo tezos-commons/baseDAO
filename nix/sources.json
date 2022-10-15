@@ -37,10 +37,10 @@
         "version": "1.13.0"
     },
     "morley-infra": {
-        "rev": "1f456da1ae6a2f8e0839ab495876a4db283b77fa",
-        "sha256": "1qk5fbjyj8pfny35fhb83sccwx7iqi7wcyhbc5785v1k5pr2vc2b",
+        "rev": "d2f8d163188f1cfef38fca75fb30fec98dbfc4c7",
+        "sha256": "1kjcjvwmp0prqcfxsaq90cb3097fnfmp7q1wb45i2an8i5rh0dhy",
         "type": "tarball",
-        "url": "https://gitlab.com/morley-framework/morley-infra/-/archive/1f456da1ae6a2f8e0839ab495876a4db283b77fa/morley-infra-1f456da1ae6a2f8e0839ab495876a4db283b77fa.tar.gz",
+        "url": "https://gitlab.com/morley-framework/morley-infra/-/archive/d2f8d163188f1cfef38fca75fb30fec98dbfc4c7/morley-infra-d2f8d163188f1cfef38fca75fb30fec98dbfc4c7.tar.gz",
         "url_template": "https://gitlab.com/morley-framework/morley-infra/-/archive/<rev>/morley-infra-<rev>.tar.gz"
     },
     "nix-npm-buildpackage": {

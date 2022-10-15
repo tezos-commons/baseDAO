@@ -282,8 +282,9 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
   DaoOriginateData{..} <-
     originateFn
      (testConfig
-       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 40 })
-       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
+       >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just 80 })
+       >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 130 })
+       >>- (ConfigDesc configConsts{ cmPeriod = Just 40 })
       ) (mkQuorumThreshold 1 5000)
   originationLevel <- getOriginationLevel dodDao
 

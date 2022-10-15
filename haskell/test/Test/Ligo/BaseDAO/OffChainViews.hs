@@ -1,5 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
+{-# LANGUAGE OverloadedLists #-}
 
 module Test.Ligo.BaseDAO.OffChainViews
   ( test_FA2
@@ -7,20 +8,33 @@ module Test.Ligo.BaseDAO.OffChainViews
 
 import Universum hiding (view)
 
+import Data.Aeson (encode)
+import Data.ByteString.Lazy qualified as BS
+
 import Morley.Michelson.Runtime.GState (genesisAddress)
+import Morley.Michelson.Text
 import Morley.Tezos.Address
 import Named (defaults, (!))
+import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
 
+import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Ligo.BaseDAO.TZIP16Metadata
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
+import Lorentz.Contracts.Spec.TZIP16Interface (MetadataMap, metadataURI, selfHost, tezosStorageUri)
+import Test.Morley.Metadata
+
+metadataBigMap :: MetadataConfig -> MetadataMap
+metadataBigMap conf = metadataURI (tezosStorageUri selfHost "metadata")
+  <> [([mt|metadata|], BS.toStrict $ encode $ knownBaseDAOMetadata $ mkMetadataSettings conf)]
 
 offChainViewStorage :: Storage
 offChainViewStorage =
   (mkStorage
   ! #admin addr
   ! #extra ()
-  ! #metadata mempty
+  ! #metadata (metadataBigMap defaultMetadataConfig)
   ! #level 100
   ! #tokenAddress (MkAddress genesisAddress)
   ! #quorumThreshold (mkQuorumThreshold 1 100)
@@ -31,27 +45,11 @@ offChainViewStorage =
     addr = [ta|tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE|]
 
 test_FA2 :: TestTree
-test_FA2 =
-  mkFA2Tests offChainViewStorage (mkMetadataSettings defaultMetadataConfig)
-
--- runView
---   :: forall ret mp. (HasCallStack, IsoValue ret)
---   => View $ ToT Storage
---   -> Storage
---   -> ViewParam mp
---   -> Either MichelsonFailed ret
--- runView view storage param =
---   case interpretView dummyContractEnv view param storage of
---     Right x -> Right x
---     Left (VIEMichelson _ (MSVIEMichelsonFailed (MichelsonFailureWithStack e _))) -> Left e
---     Left err -> error (pretty err)
-
-mkFA2Tests :: Storage -> MetadataSettings -> TestTree
-mkFA2Tests _ _ = testGroup "FA2 off-chain views" []
--- TODO: Uncomment when some way to run views is available.
---   [ testGroup "governance_token" $
---     [ testCase "Get the address and token_id of the associated FA2 contract" $
---         runView @GovernanceToken (governanceTokenView mc) storage NoParam
---         @?= (Right $ GovernanceToken (MkAddress genesisAddress) FA2.theTokenId)
---     ]
---   ]
+test_FA2 = testGroup "FA2 off-chain views"
+  [ testGroup "governance_token" $
+    [ testScenario "can flush proposals that got accepted" $ scenario $ do
+          baseDao <- originate "BaseDAO - Test Contract" offChainViewStorage baseDAOContractLigo
+          callOffChainView @GovernanceToken baseDao "governance_token" NoParam
+            @@== (GovernanceToken (MkAddress genesisAddress) FA2.theTokenId)
+    ]
+  ]
