@@ -22,7 +22,6 @@ import Test.Cleveland
 
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
-import Morley.Tezos.Address
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
 
@@ -50,7 +49,7 @@ voteNonExistingProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = UnsafeHash "\11\12\13"
-        , vFrom = MkAddress dodOwner2
+        , vFrom = toAddress dodOwner2
         }
   -- Advance one voting period to a voting stage.
   advanceToLevel (startLevel + 4*dodPeriod)
@@ -81,13 +80,13 @@ voteMultiProposals originateFn = do
             { vVoteType = True
             , vVoteAmount = 2
             , vProposalKey = key1
-            , vFrom = MkAddress dodOwner2
+            , vFrom = toAddress dodOwner2
             }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 3
             , vProposalKey = key2
-            , vFrom = MkAddress dodOwner2
+            , vFrom = toAddress dodOwner2
             }
         ]
 
@@ -134,13 +133,13 @@ proposalCorrectlyTrackVotes originateFn = do
             { vVoteType = True
             , vVoteAmount = 5
             , vProposalKey = key1
-            , vFrom = MkAddress voter1
+            , vFrom = toAddress voter1
             }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 3
             , vProposalKey = key2
-            , vFrom = MkAddress voter1
+            , vFrom = toAddress voter1
             }
         ]
 
@@ -149,13 +148,13 @@ proposalCorrectlyTrackVotes originateFn = do
             { vVoteType = False
             , vVoteAmount = 2
             , vProposalKey = key1
-            , vFrom = MkAddress voter2
+            , vFrom = toAddress voter2
             }
         , VoteParam
             { vVoteType = True
             , vVoteAmount = 4
             , vProposalKey = key2
-            , vFrom = MkAddress voter2
+            , vFrom = toAddress voter2
             }
         ]
 
@@ -164,13 +163,13 @@ proposalCorrectlyTrackVotes originateFn = do
             { vVoteType = True
             , vVoteAmount = 3
             , vProposalKey = key1
-            , vFrom = MkAddress voter1
+            , vFrom = toAddress voter1
             }
         , VoteParam
             { vVoteType = True
             , vVoteAmount = 3
             , vProposalKey = key2
-            , vFrom = MkAddress voter1
+            , vFrom = toAddress voter1
             }
         ]
 
@@ -233,7 +232,7 @@ voteOutdatedProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = MkAddress dodOwner2
+        , vFrom = toAddress dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
@@ -272,7 +271,7 @@ voteValidProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = MkAddress dodOwner2
+        , vFrom = toAddress dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
@@ -306,7 +305,7 @@ voteDeletedProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = MkAddress dodOwner2
+        , vFrom = toAddress dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
@@ -335,7 +334,7 @@ voteWithPermit originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = MkAddress dodOwner1
+        , vFrom = toAddress dodOwner1
         }
 
   -- Advance one voting period to a voting stage.
@@ -368,7 +367,7 @@ voteWithPermitNonce originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = MkAddress dodOwner1
+        , vFrom = toAddress dodOwner1
         }
 
   -- Advance one voting period to a voting stage.

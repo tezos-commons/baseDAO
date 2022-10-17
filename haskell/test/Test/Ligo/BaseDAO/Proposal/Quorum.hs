@@ -14,7 +14,6 @@ module Test.Ligo.BaseDAO.Proposal.Quorum
 
 import Universum
 
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -70,7 +69,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
   -- First proposal period, cycle 0
 
   withSender proposer $
-    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta1)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress proposer) requiredFrozen proposalMeta1)
 
   quorumThresholdActual_ <- getQtAtCycle dodDao
   let quorumThresholdExpected_ = QuorumThresholdAtCycle (mkQuorumThreshold 3 10) 1 10
@@ -81,7 +80,7 @@ checkQuorumThresholdDynamicUpdate originateFn = do
 
   let proposalMeta2 = "A"
   withSender proposer $
-    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta2)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress proposer) requiredFrozen proposalMeta2)
 
   quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 10 and governance total supply as 100
@@ -116,14 +115,14 @@ checkQuorumThresholdDynamicUpdateUpperBound originateFn = do
   -- First proposal period, cycle 0
 
   withSender proposer $
-    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta1)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress proposer) requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
   advanceToLevel (startLevel + 3*dodPeriod + 1)
 
   let proposalMeta2 = "A"
   withSender proposer $
-    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta2)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress proposer) requiredFrozen proposalMeta2)
 
   quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 100 and governance total supply as 100
@@ -161,14 +160,14 @@ checkQuorumThresholdDynamicUpdateLowerBound originateFn = do
   -- First proposal period, cycle 0
 
   withSender proposer $
-    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta1)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress proposer) requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
   advanceToLevel (startLevel + 3 * dodPeriod + 1)
 
   let proposalMeta2 = "A"
   withSender proposer $
-    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta2)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress proposer) requiredFrozen proposalMeta2)
 
   quorumThresholdActual <- getQtAtCycle dodDao
   -- We start with quorumThreshold of 3/10, with participation as 0 and governance total supply as 100
@@ -206,13 +205,13 @@ checkProposalSavesQuorum originateFn = do
   -- First proposal period, cycle 0
 
   withSender proposer $
-    transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress proposer) requiredFrozen proposalMeta1)
+    transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress proposer) requiredFrozen proposalMeta1)
 
   -- skip this proposal period and next voting period to be in next proposal period
   advanceToLevel (startLevel + 3*dodPeriod + 1)
 
   let proposalMeta2 = "A"
-  let proposeParams = ProposeParams (MkAddress proposer) requiredFrozen proposalMeta2
+  let proposeParams = ProposeParams (toAddress proposer) requiredFrozen proposalMeta2
   withSender proposer $
     transfer dodDao $ calling (ep @"Propose") proposeParams
 
@@ -262,7 +261,7 @@ proposalIsRejectedIfNoQuorum = do
           , vVoteAmount = 3
             -- The minimum votes that is required to pass is 80 * 1/20  = 4.
           , vProposalKey = key1
-          , vFrom = MkAddress voter
+          , vFrom = toAddress voter
           }
   withSender voter $
     transfer dao$ calling (ep @"Vote") [vote_]
@@ -314,7 +313,7 @@ proposalSucceedsIfUpVotesGtDownvotesAndQuorum = do
           , vVoteAmount = 4
             -- The minimum votes that is required to pass is 80 * 1/20  = 4.
           , vProposalKey = key1
-          , vFrom = MkAddress voter
+          , vFrom = toAddress voter
           }
   withSender voter $
     transfer dao$ calling (ep @"Vote") [vote_]

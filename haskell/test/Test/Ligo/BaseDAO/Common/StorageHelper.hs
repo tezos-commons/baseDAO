@@ -43,7 +43,7 @@ getFrozenTotalSupply addr = getFrozenTotalSupply' @'Base addr
 getFreezeHistory' :: forall cep p s caps m. (CEConstraints cep, MonadCleveland caps m) => ContractHandle p s () -> ImplicitAddress -> m (Maybe AddressFreezeHistory)
 getFreezeHistory' addr owner = do
   freezeHistoryBmId <- sFreezeHistoryRPC <$> (getStorageRPC' @cep addr)
-  getBigMapValueMaybe freezeHistoryBmId (MkAddress owner)
+  getBigMapValueMaybe freezeHistoryBmId (toAddress owner)
 
 getFreezeHistory :: forall p s caps m. (MonadCleveland caps m) => ContractHandle p s () -> ImplicitAddress -> m (Maybe AddressFreezeHistory)
 getFreezeHistory addr owner = getFreezeHistory' @'Base addr owner
@@ -77,7 +77,7 @@ getVoter
   -> m (Maybe StakedVote)
 getVoter addr (a, pk) = do
   bId <- sStakedVotesRPC <$> getStorageRPC addr
-  getBigMapValueMaybe bId (MkAddress a, pk)
+  getBigMapValueMaybe bId (toAddress a, pk)
 
 getProposalStartLevel'
   :: forall cep p s caps m. (CEConstraints cep, MonadCleveland caps m)
@@ -145,7 +145,7 @@ checkIfAProposalExist = checkIfAProposalExist' @'Base
 checkGuardian' :: forall cep p s caps m. (CEConstraints cep, MonadCleveland caps m) => ContractHandle p s () -> ImplicitAddress -> m ()
 checkGuardian' addr guardianToChk = do
   actual <- sGuardianRPC <$> (getStorageRPC' @cep addr)
-  actual @== (MkAddress guardianToChk)
+  actual @== (toAddress guardianToChk)
 
 checkBalance'
   :: forall cep p s caps m. (CEConstraints cep, MonadCleveland caps m)

@@ -10,7 +10,6 @@ import Prelude
 import Test.Tasty (TestTree)
 
 import Morley.Util.Named
-import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -36,4 +35,4 @@ emptyProposalTest =
         advanceToLevel (startLevel + toPeriod fs)
 
         withSender wallet1 $ transfer baseDao $ calling (ep @"Propose")
-          (ProposeParams (MkAddress wallet1) proposalSize proposalMeta)
+          (ProposeParams (toAddress wallet1) proposalSize proposalMeta)

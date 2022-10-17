@@ -40,7 +40,7 @@ withOriginated storageFn tests = do
   now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
   let storage = storageInitial
         { sGovernanceToken = GovernanceToken
-              { gtAddress = MkAddress $ chAddress dodTokenContract
+              { gtAddress = toAddress $ chAddress dodTokenContract
               , gtTokenId = FA2.theTokenId
               }
           , sStartLevel = now_level
@@ -112,14 +112,14 @@ test_LambdaDAO =
              -- Advance one voting period to a proposing stage.
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
              withSender wallet1 $ transfer baseDao$ calling (ep @"Propose") proposeParams
 
              let proposalKey = makeProposalKey proposeParams
 
              advanceToLevel (startLevel + 2 * toPeriod fs)
              withSender wallet1 $
-               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (MkAddress wallet1)) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (toAddress wallet1)) Nothing]
 
              -- Advance one voting period
              pstart <- getProposalStartLevel' @'Lambda baseDao proposalKey
@@ -137,13 +137,13 @@ test_LambdaDAO =
              let proposalSize' = metadataSize proposalMeta'
 
              advanceToLevel (startLevel + 5 * toPeriod fs)
-             let proposeParams' = ProposeParams (MkAddress wallet1) proposalSize' proposalMeta'
+             let proposeParams' = ProposeParams (toAddress wallet1) proposalSize' proposalMeta'
              withSender wallet1 $ transfer baseDao$ calling (ep @"Propose") proposeParams'
              let proposalKey' = makeProposalKey proposeParams'
 
              advanceToLevel (startLevel + 6 * toPeriod fs)
              withSender wallet1 $
-               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey' True 200 (MkAddress wallet1)) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey' True 200 (toAddress wallet1)) Nothing]
 
              pstart' <- getProposalStartLevel' @'Lambda baseDao proposalKey'
              advanceToLevel (pstart' + flushPeriod)
@@ -174,14 +174,14 @@ test_LambdaDAO =
              -- Advance one voting period to a proposing stage.
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
              withSender wallet1 $ transfer baseDao$ calling (ep @"Propose") proposeParams
 
              let proposalKey = makeProposalKey proposeParams
 
              advanceToLevel (startLevel + 2 * toPeriod fs)
              withSender wallet1 $
-               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (MkAddress wallet1)) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (toAddress wallet1)) Nothing]
 
              pstart <- getProposalStartLevel' @'Lambda baseDao proposalKey
              advanceToLevel (pstart + flushPeriod)
@@ -191,7 +191,7 @@ test_LambdaDAO =
 
              -- Raise a proposal to add the duplicate handler
              advanceToLevel (startLevel + 4 * toPeriod fs)
-             let proposeParams' = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+             let proposeParams' = ProposeParams (toAddress wallet1) proposalSize proposalMeta
              withSender wallet1 $ (transfer baseDao$ calling (ep @"Propose") proposeParams')
                & expectFailedWith (failProposalCheck, proposalHandlerExists)
 
@@ -208,7 +208,7 @@ test_LambdaDAO =
 
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
              withSender wallet1 $ (transfer baseDao$ calling (ep @"Propose") proposeParams)
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
@@ -225,7 +225,7 @@ test_LambdaDAO =
 
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
              withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams)
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
@@ -242,7 +242,7 @@ test_LambdaDAO =
 
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
              withSender wallet1 $ (transfer baseDao$ calling (ep @"Propose") proposeParams)
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
@@ -259,7 +259,7 @@ test_LambdaDAO =
 
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
              withSender wallet1 $ (transfer baseDao$ calling (ep @"Propose") proposeParams)
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
@@ -276,14 +276,14 @@ test_LambdaDAO =
              -- Advance one voting period to a proposing stage.
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
              withSender wallet1 $ transfer baseDao$ calling (ep @"Propose") proposeParams
 
              let proposalKey = makeProposalKey proposeParams
 
              advanceToLevel (startLevel + 2 * toPeriod fs)
              withSender wallet1 $
-               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (MkAddress wallet1)) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (toAddress wallet1)) Nothing]
 
              pstart <- getProposalStartLevel' @'Lambda baseDao proposalKey
              advanceToLevel (pstart + flushPeriod)
@@ -301,7 +301,7 @@ test_LambdaDAO =
              let proposalSize' = metadataSize proposalMeta'
 
              advanceToLevel (startLevel + 5 * toPeriod fs)
-             let proposeParams' = ProposeParams (MkAddress wallet1) proposalSize' proposalMeta'
+             let proposeParams' = ProposeParams (toAddress wallet1) proposalSize' proposalMeta'
              withSender wallet1 $ (transfer baseDao$ calling (ep @"Propose") proposeParams')
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
@@ -335,8 +335,8 @@ test_LambdaDAO =
              let executeProposalRaisedAt = removeProposalRaisedAt + 10
              advanceToLevel removeProposalRaisedAt
 
-             let proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
-             let removeProposeParams = ProposeParams (MkAddress wallet1) removeProposalSize removeProposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             let removeProposeParams = ProposeParams (toAddress wallet1) removeProposalSize removeProposalMeta
              withSender wallet1 $ do
               transfer baseDao$ calling (ep @"Propose") removeProposeParams
              -- Raise execute proposal. We are still in first proposal period.
@@ -351,8 +351,8 @@ test_LambdaDAO =
              advanceToLevel (startLevel + 2 * toPeriod fs)
              -- We are in second voting period.
              withSender wallet1 $ do
-               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam removeProposalKey True 200 (MkAddress wallet1)) Nothing]
-               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam executeProposalKey True 200 (MkAddress wallet1)) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam removeProposalKey True 200 (toAddress wallet1)) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam executeProposalKey True 200 (toAddress wallet1)) Nothing]
 
              advanceToLevel (removeProposalRaisedAt + flushInterval + 10)
              withSender admin $
@@ -369,7 +369,7 @@ test_LambdaDAO =
              let proposalSize' = metadataSize proposalMeta'
 
              advanceToLevel (startLevel + 5 * toPeriod fs)
-             let proposeParams' = ProposeParams (MkAddress wallet1) proposalSize' proposalMeta'
+             let proposeParams' = ProposeParams (toAddress wallet1) proposalSize' proposalMeta'
              withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams')
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
@@ -395,7 +395,7 @@ test_LambdaDAO =
   -- initialize the contract using it. This let us have the callbacks from LIGO
   -- in storage, and allows to tweak RegistryDAO configuration in tests.
   initialStorage :: ImplicitAddress -> LambdaStorage
-  initialStorage (MkAddress -> admin) = let
+  initialStorage (toAddress -> admin) = let
     fs = baseDAOLambdaStorageLigo
     in fs { sAdmin = admin, sConfig = (sConfig fs)
               { cPeriod = 20

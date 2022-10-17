@@ -39,7 +39,6 @@ import Lorentz hiding (assert, now, (>>))
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Scope (HasNoOp)
 import Test.Cleveland
-import Morley.Tezos.Address
 import Test.Cleveland.Internal.Actions.Transfer
 import Test.Cleveland.Lorentz.Types
 
@@ -106,7 +105,7 @@ addDataToSign
   -> Nonce
   -> d
   -> m (DataToSign d, d)
-addDataToSign ((MkAddress . chAddress) -> dsContract) dsNonce dsData = do
+addDataToSign ((toAddress . chAddress) -> dsContract) dsNonce dsData = do
   dsChainId <- getChainId
   return (DataToSign{..}, dsData)
 
@@ -181,7 +180,7 @@ originateLigoDaoWithConfig extra config qt = do
               ! #extra extra
               ! #admin admin
               ! #metadata mempty
-              ! #tokenAddress (MkAddress $ toContractAddress tokenContract)
+              ! #tokenAddress (toAddress $ toContractAddress tokenContract)
               ! #level (currentLevel + originationOffset)
                 -- We add some levels to offset for the delay caused by the origination function
                 -- So the expectation is that by the time origination has finished, we will be closer
@@ -190,7 +189,7 @@ originateLigoDaoWithConfig extra config qt = do
               ! #quorumThreshold qt
               ! #config config
             )
-            { sGuardian = (MkAddress $ toContractAddress guardianContract)
+            { sGuardian = (toAddress $ toContractAddress guardianContract)
             }
 
   dao <- originate "BaseDAO" storage (getBaseDAOContract @cep)
@@ -224,7 +223,7 @@ createSampleProposal_
   => Int -> ImplicitAddress -> ContractHandle Parameter Storage vd -> (ProposalKey, m ())
 createSampleProposal_ counter dodOwner1 dao =
   let params = ProposeParams
-        { ppFrom = MkAddress dodOwner1
+        { ppFrom = toAddress dodOwner1
         , ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer $ fromIntegral counter
         }

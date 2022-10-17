@@ -37,7 +37,7 @@ offChainViewStorage =
   ! #extra ()
   ! #metadata (metadataBigMap defaultMetadataConfig)
   ! #level 100
-  ! #tokenAddress (MkAddress genesisAddress)
+  ! #tokenAddress (toAddress genesisAddress)
   ! #quorumThreshold (mkQuorumThreshold 1 100)
   ! #config defaultConfig
   ! defaults
@@ -51,6 +51,6 @@ test_FA2 = testGroup "FA2 off-chain views"
     [ testScenario "can flush proposals that got accepted" $ scenario $ do
           baseDao <- originate "BaseDAO - Test Contract" offChainViewStorage baseDAOContractLigo
           callOffChainView @GovernanceToken baseDao "governance_token" NoParam
-            @@== (GovernanceToken (MkAddress genesisAddress) FA2.theTokenId)
+            @@== (GovernanceToken (toAddress genesisAddress) FA2.theTokenId)
     ]
   ]

@@ -119,7 +119,7 @@ validProposal = withFrozenCallStack $ withOriginated @variant @3
     let
       proposalMeta = toProposalMetadata @variant $ TransferProposal
           { tpAgoraPostId = 1
-          , tpTransfers = [ tokenTransferType (toAddress dodDao) (MkAddress dodOwner1) (MkAddress dodOwner2) ]
+          , tpTransfers = [ tokenTransferType (toAddress dodDao) (toAddress dodOwner1) (toAddress dodOwner2) ]
           }
       proposalSize = metadataSize proposalMeta -- 115
 
@@ -131,11 +131,11 @@ validProposal = withFrozenCallStack $ withOriginated @variant @3
     advanceToLevel (startLevel + dodPeriod + 1)
 
     withSender dodOwner1 $
-      (transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress dodOwner1) (proposalSize + 1) proposalMeta))
+      (transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress dodOwner1) (proposalSize + 1) proposalMeta))
       & expectFailedWith (failProposalCheck, incorrectTokenAmountErrMsg)
 
     withSender dodOwner1 $
-      transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress dodOwner1) proposalSize proposalMeta)
+      transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress dodOwner1) proposalSize proposalMeta)
 
     checkBalance' @variant dodDao dodOwner1 proposalSize
 
@@ -151,10 +151,10 @@ flushTokenTransfer = withFrozenCallStack $ withOriginated @variant @3
   let
     proposalMeta = toProposalMetadata @variant $ TransferProposal
         { tpAgoraPostId = 1
-        , tpTransfers = [ tokenTransferType (toAddress dodTokenContract) (MkAddress dodOwner2) (MkAddress dodOwner1) ]
+        , tpTransfers = [ tokenTransferType (toAddress dodTokenContract) (toAddress dodOwner2) (toAddress dodOwner1) ]
         }
     proposalSize = metadataSize proposalMeta
-    proposeParams = ProposeParams (MkAddress dodOwner1) proposalSize proposalMeta
+    proposeParams = ProposeParams (toAddress dodOwner1) proposalSize proposalMeta
 
   withSender dodOwner1 $
     transfer dodDao $ calling (ep @"Freeze") (#amount :! proposalSize)
@@ -172,7 +172,7 @@ flushTokenTransfer = withFrozenCallStack $ withOriginated @variant @3
 
   let
     upvote = NoPermit VoteParam
-        { vFrom = MkAddress dodOwner2
+        { vFrom = toAddress dodOwner2
         , vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key1
@@ -201,9 +201,9 @@ flushXtzTransfer = withFrozenCallStack $ withOriginated @variant @3
   let
     proposalMeta amt = toProposalMetadata @variant $ TransferProposal
         { tpAgoraPostId = 1
-        , tpTransfers = [ xtzTransferType amt (MkAddress dodOwner2) ]
+        , tpTransfers = [ xtzTransferType amt (toAddress dodOwner2) ]
         }
-    proposeParams amt = ProposeParams (MkAddress dodOwner1) (metadataSize $ proposalMeta amt) $ proposalMeta amt
+    proposeParams amt = ProposeParams (toAddress dodOwner1) (metadataSize $ proposalMeta amt) $ proposalMeta amt
 
   let mdSize = metadataSize $ proposalMeta 3
   -- Freeze in initial voting stage.
@@ -232,7 +232,7 @@ flushXtzTransfer = withFrozenCallStack $ withOriginated @variant @3
 
   let
     upvote = NoPermit VoteParam
-        { vFrom = MkAddress dodOwner2
+        { vFrom = toAddress dodOwner2
         , vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key1
@@ -257,8 +257,8 @@ flushUpdateGuardian = withFrozenCallStack $ withOriginated @variant @3
   let dodPeriod = toPeriod fs
 
   let
-    proposalMeta = toProposalMetadata @variant (MkAddress dodOwner2)
-    proposeParams = ProposeParams (MkAddress dodOwner1) (metadataSize $ proposalMeta) $ proposalMeta
+    proposalMeta = toProposalMetadata @variant (toAddress dodOwner2)
+    proposeParams = ProposeParams (toAddress dodOwner1) (metadataSize $ proposalMeta) $ proposalMeta
 
   -- Freeze in initial voting stage.
   withSender dodOwner1 $
@@ -277,7 +277,7 @@ flushUpdateGuardian = withFrozenCallStack $ withOriginated @variant @3
 
   let
     upvote = NoPermit VoteParam
-        { vFrom = MkAddress dodOwner2
+        { vFrom = toAddress dodOwner2
         , vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key1
@@ -304,7 +304,7 @@ flushUpdateContractDelegate = withFrozenCallStack $ withOriginated @variant @4
     ImplicitAddress delegate -> do
       let
         proposalMeta = toProposalMetadata @variant $ Just delegate
-        proposeParams = ProposeParams (MkAddress dodOwner1) (metadataSize $ proposalMeta) $ proposalMeta
+        proposeParams = ProposeParams (toAddress dodOwner1) (metadataSize $ proposalMeta) $ proposalMeta
 
       -- Freeze in initial voting stage.
       withSender dodOwner1 $
@@ -323,7 +323,7 @@ flushUpdateContractDelegate = withFrozenCallStack $ withOriginated @variant @4
 
       let
         upvote = NoPermit VoteParam
-            { vFrom = MkAddress dodOwner2
+            { vFrom = toAddress dodOwner2
             , vVoteType = True
             , vVoteAmount = 20
             , vProposalKey = key1
@@ -351,7 +351,7 @@ proposalCheckFailZeroMutez = withFrozenCallStack $ withOriginated @variant @3
   let
     proposalMeta = toProposalMetadata @variant $ TransferProposal
         { tpAgoraPostId = 1
-        , tpTransfers = [ xtzTransferType 0 (MkAddress dodOwner2) ]
+        , tpTransfers = [ xtzTransferType 0 (toAddress dodOwner2) ]
         }
     proposalSize = metadataSize proposalMeta
 
@@ -363,7 +363,7 @@ proposalCheckFailZeroMutez = withFrozenCallStack $ withOriginated @variant @3
   advanceToLevel (startLevel + dodPeriod)
 
   withSender dodOwner1 $
-    (transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress dodOwner1) proposalSize proposalMeta))
+    (transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress dodOwner1) proposalSize proposalMeta))
       & expectFailedWith (failProposalCheck, zeroMutezErrMsg)
 
 proposalCheckBiggerThanMaxProposalSize
@@ -376,7 +376,7 @@ proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack $ withOriginated @v
   startLevel <- getOriginationLevel' @variant dodDao
   let
     largeProposalMeta = toProposalMetadata @variant $ TransferProposal 1 $
-        [tokenTransferType (toAddress dodDao) (MkAddress dodOwner1) (MkAddress dodOwner2) | (_ :: Integer) <- [1..10]]
+        [tokenTransferType (toAddress dodDao) (toAddress dodOwner1) (toAddress dodOwner2) | (_ :: Integer) <- [1..10]]
     largeProposalSize = metadataSize largeProposalMeta
 
   -- Freeze in voting stage.
@@ -387,7 +387,7 @@ proposalCheckBiggerThanMaxProposalSize = withFrozenCallStack $ withOriginated @v
   advanceToLevel (startLevel + dodPeriod)
 
   withSender dodOwner1 $
-    (transfer dodDao $ calling (ep @"Propose") (ProposeParams (MkAddress dodOwner1) largeProposalSize largeProposalMeta))
+    (transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress dodOwner1) largeProposalSize largeProposalMeta))
       & expectFailedWith (failProposalCheck, tooLargeProposalErrMsg)
 
 
@@ -424,7 +424,7 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
 initialStorage :: ImplicitAddress -> TreasuryStorage
 initialStorage admin = let
   fs = baseDAOTreasuryStorageLigo
-  in fs { sAdmin = MkAddress admin, sConfig = (sConfig fs)
+  in fs { sAdmin = toAddress admin, sConfig = (sConfig fs)
             { cPeriod = 10
             , cProposalFlushLevel = 20
             , cProposalExpiredLevel = 30

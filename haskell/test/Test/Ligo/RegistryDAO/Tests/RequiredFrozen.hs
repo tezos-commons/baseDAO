@@ -13,7 +13,6 @@ import Prelude
 import Test.Tasty (TestTree)
 
 import Morley.Util.Named
-import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -44,4 +43,4 @@ requiredFrozen = testScenario "check it correctly calculates required frozen tok
       -- frozen_extra_value set to 1 and 2 means that it requires 12 tokens to be
       -- frozen (10 * 1 + 2) if proposal size is 10.
       withSender wallet1 $
-         transfer baseDao $ calling (ep @"Propose") (ProposeParams (MkAddress wallet1) (proposalSize + 2) proposalMeta)
+         transfer baseDao $ calling (ep @"Propose") (ProposeParams (toAddress wallet1) (proposalSize + 2) proposalMeta)

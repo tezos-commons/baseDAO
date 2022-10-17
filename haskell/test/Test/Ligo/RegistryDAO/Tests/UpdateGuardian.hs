@@ -9,7 +9,6 @@ import Prelude
 
 import Test.Tasty (TestTree)
 
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -26,10 +25,10 @@ updateGuardian = testScenario "checks it can flush a proposal that updates guard
     \(admin ::< wallet1 ::< wallet2 ::< newGuardian ::< Nil') (toPeriod -> period) baseDao _ -> do
 
       let
-        proposalMeta = toProposalMetadata @variant (MkAddress newGuardian)
+        proposalMeta = toProposalMetadata @variant (toAddress newGuardian)
 
         proposalSize = metadataSize proposalMeta
-        proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+        proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
 
       withSender wallet1 $
         transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
@@ -48,7 +47,7 @@ updateGuardian = testScenario "checks it can flush a proposal that updates guard
       let
         key1 = makeProposalKey proposeParams
         upvote = NoPermit VoteParam
-            { vFrom = MkAddress wallet2
+            { vFrom = toAddress wallet2
             , vVoteType = True
             , vVoteAmount = 20
             , vProposalKey = key1

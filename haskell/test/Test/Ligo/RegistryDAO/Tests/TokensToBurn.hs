@@ -11,7 +11,6 @@ import Test.Tasty (TestTree)
 
 import Morley.Util.Named
 import Test.Cleveland
-import Morley.Tezos.Address
 
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
@@ -49,7 +48,7 @@ tokensToBurn = testScenario "checks it correctly calculates tokens to burn when 
         -- Advance one voting period to a proposing stage.
         advanceToLevel (startLevel + period)
 
-        let params = ProposeParams (MkAddress wallet1) requiredFrozen proposalMeta1
+        let params = ProposeParams (toAddress wallet1) requiredFrozen proposalMeta1
         let proposalKey = makeProposalKey params
         withSender wallet1 $
           transfer baseDao$ calling (ep @"Propose") params

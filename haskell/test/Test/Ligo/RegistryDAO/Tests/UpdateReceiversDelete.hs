@@ -10,7 +10,6 @@ import Prelude
 import Data.Set qualified as S
 import Test.Tasty (TestTree)
 
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -25,16 +24,16 @@ updateReceiversDelete
 updateReceiversDelete = testScenario "checks it can flush an Update_receivers_proposal that deletes" $ scenario $
   withOriginated @variant @3
     (\(_ ::< wallet1 ::< wallet2 ::< _) fs ->
-      setVariantExtra @variant @"ProposalReceivers" (S.fromList [MkAddress wallet1, MkAddress wallet2]) $
+      setVariantExtra @variant @"ProposalReceivers" (S.fromList [toAddress wallet1, toAddress wallet2]) $
       setVariantExtra @variant @"MaxProposalSize" (200 :: Natural) fs
       ) $
     \(admin ::< wallet1 ::< wallet2 ::< Nil') (toPeriod -> period) baseDao _ -> do
 
       let
-        proposalMeta = toProposalMetadata @variant $ Remove_receivers [(MkAddress wallet1)]
+        proposalMeta = toProposalMetadata @variant $ Remove_receivers [(toAddress wallet1)]
 
         proposalSize = metadataSize proposalMeta
-        proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+        proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
 
       withSender wallet1 $
         transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
@@ -53,7 +52,7 @@ updateReceiversDelete = testScenario "checks it can flush an Update_receivers_pr
       let
         key1 = makeProposalKey proposeParams
         upvote = NoPermit VoteParam
-            { vFrom = MkAddress wallet2
+            { vFrom = toAddress wallet2
             , vVoteType = True
             , vVoteAmount = 20
             , vProposalKey = key1
@@ -68,5 +67,5 @@ updateReceiversDelete = testScenario "checks it can flush an Update_receivers_pr
       withSender admin $ transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
       receiversSet <- (getVariantExtra @variant @"ProposalReceivers" . sExtraRPC) <$> getVariantStorageRPC @variant (chAddress baseDao)
-      assert (Prelude.not ((MkAddress wallet1) `S.member` receiversSet))
+      assert (Prelude.not ((toAddress wallet1) `S.member` receiversSet))
         "Proposal receivers was not updated as expected"

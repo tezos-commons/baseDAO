@@ -14,7 +14,6 @@ module Test.Ligo.BaseDAO.Proposal.Tokens
 import Universum
 
 import Data.ByteString qualified as BS
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -39,8 +38,8 @@ freezeTokens originateFn = do
   tcStorage <- getStorage @[[FA2.TransferItem]] dodTokenContract
   assert (tcStorage ==
     ([[FA2.TransferItem
-      { tiFrom = MkAddress dodOwner1
-      , tiTxs = [FA2.TransferDestination { tdTo = MkAddress $ chAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+      { tiFrom = toAddress dodOwner1
+      , tiTxs = [FA2.TransferDestination { tdTo = toAddress $ chAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
       }]])) "Unexpected FA2 transfers"
 
 checkFreezeHistoryTracking
@@ -58,7 +57,7 @@ checkFreezeHistoryTracking originateFn = do
   withSender dodOwner1 $ transfer dodDao$ calling (ep @"Freeze") (#amount :! requiredFrozen)
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
-  withSender dodOwner1 $ transfer dodDao$ calling (ep @"Propose") (ProposeParams (MkAddress dodOwner1) requiredFrozen proposalMeta1)
+  withSender dodOwner1 $ transfer dodDao$ calling (ep @"Propose") (ProposeParams (toAddress dodOwner1) requiredFrozen proposalMeta1)
   advanceToLevel dodPeriod
 
   fh <- getFreezeHistory dodDao dodOwner1
@@ -90,12 +89,12 @@ canUnfreezeFromPreviousPeriod originateFn = do
   tcStorage <- getStorage @[[FA2.TransferItem]] dodTokenContract
   assert (tcStorage ==
     ([ [ FA2.TransferItem
-        { tiFrom = MkAddress $ chAddress dodDao
-        , tiTxs = [FA2.TransferDestination { tdTo = MkAddress dodOwner1, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+        { tiFrom = toAddress $ chAddress dodDao
+        , tiTxs = [FA2.TransferDestination { tdTo = toAddress dodOwner1, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
         }]
       , [FA2.TransferItem
-        { tiFrom = MkAddress $ dodOwner1
-        , tiTxs = [FA2.TransferDestination { tdTo = MkAddress $ chAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+        { tiFrom = toAddress $ dodOwner1
+        , tiTxs = [FA2.TransferDestination { tdTo = toAddress $ chAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
       }]])) "Unexpected FA2 transfers"
 
 cannotUnfreezeStakedTokens

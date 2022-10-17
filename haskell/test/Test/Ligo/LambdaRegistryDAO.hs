@@ -80,7 +80,7 @@ test_LambdaRegistryDAO = registryDAOTests @'LambdaRegistry
 initialStorage :: ImplicitAddress -> LambdaStorage
 initialStorage admin = let
   fs = baseDAOLambdaregistryStorageLigo
-  in fs { sAdmin = MkAddress admin, sConfig = (sConfig fs)
+  in fs { sAdmin = toAddress admin, sConfig = (sConfig fs)
             { cPeriod = 20
             , cProposalFlushLevel = 40
             , cProposalExpiredLevel = 100

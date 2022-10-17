@@ -12,7 +12,6 @@ import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (now, (>>))
 import Morley.Michelson.Runtime.GState (genesisAddress)
-import Morley.Tezos.Address (ConstrainedAddress(MkAddress))
 import Test.Cleveland
 import Morley.Util.Peano
 import Morley.Util.SizedList (SizedList)
@@ -90,5 +89,5 @@ test_BaseDAO_Management =
       ! #extra ()
       ! #metadata mempty
       ! #level currentLevel
-      ! #tokenAddress (MkAddress genesisAddress)
+      ! #tokenAddress (toAddress genesisAddress)
       ! defaults

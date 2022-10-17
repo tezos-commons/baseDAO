@@ -17,7 +17,6 @@ module Test.Ligo.BaseDAO.Proposal.Flush
 import Universum
 
 import Morley.Util.Named
-import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.ErrorCodes
@@ -55,13 +54,13 @@ flushAcceptedProposals originateFn = do
   advanceToLevel (startLevel + 2*dodPeriod)
 
   let upvote' = NoPermit VoteParam
-        { vFrom = MkAddress dodOwner2
+        { vFrom = toAddress dodOwner2
         , vVoteType = True
         , vVoteAmount = 10
         , vProposalKey = key1
         }
       downvote' = NoPermit VoteParam
-        { vFrom = MkAddress dodOwner2
+        { vFrom = toAddress dodOwner2
         , vVoteType = False
         , vVoteAmount = 5
         , vProposalKey = key1
@@ -138,7 +137,7 @@ flushAcceptedProposalsWithAnAmount originateFn = do
   key3 <- createSampleProposal 3 dodOwner1 dodDao
 
   let vote' key = NoPermit VoteParam
-        { vFrom = MkAddress dodOwner2
+        { vFrom = toAddress dodOwner2
         , vVoteType = True
         , vVoteAmount = 5
         , vProposalKey = key
@@ -197,7 +196,7 @@ flushRejectProposalQuorum originateFn = do
           { vVoteType = True
           , vVoteAmount = 3
           , vProposalKey = key1
-          , vFrom = MkAddress dodOwner2
+          , vFrom = toAddress dodOwner2
           }
         ]
   -- Advance one voting period to a voting stage.
@@ -242,19 +241,19 @@ flushRejectProposalNegativeVotes originateFn = do
           { vVoteType = True
           , vVoteAmount = 1
           , vProposalKey = key1
-          , vFrom = MkAddress dodOwner2
+          , vFrom = toAddress dodOwner2
           }
         , VoteParam
           { vVoteType = False
           , vVoteAmount = 1
           , vProposalKey = key1
-          , vFrom = MkAddress dodOwner2
+          , vFrom = toAddress dodOwner2
           }
         , VoteParam
           { vVoteType = False
           , vVoteAmount = 1
           , vProposalKey = key1
-          , vFrom = MkAddress dodOwner2
+          , vFrom = toAddress dodOwner2
           }
         ]
   -- Advance one voting period to a voting stage.
@@ -304,7 +303,7 @@ flushFailOnExpiredProposal originateFn = withFrozenCallStack $ do
         { vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key
-        , vFrom = MkAddress dodOwner2
+        , vFrom = toAddress dodOwner2
         }
   withSender dodOwner2 $ transfer dodDao $ calling (ep @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
@@ -385,7 +384,7 @@ flushNotEmpty originateFn = withFrozenCallStack $ do
         { vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key
-        , vFrom = MkAddress dodOwner2
+        , vFrom = toAddress dodOwner2
         }
   withSender dodOwner2 $ transfer dodDao$ calling (ep @"Vote") [params key1]
 

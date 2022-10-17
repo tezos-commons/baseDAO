@@ -66,7 +66,7 @@ withOriginated storageFn tests = do
   now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
   let storage = storageInitial
         { sGovernanceToken = GovernanceToken
-              { gtAddress = MkAddress $ chAddress dodTokenContract
+              { gtAddress = toAddress $ chAddress dodTokenContract
               , gtTokenId = FA2.theTokenId
               }
           , sStartLevel = now_level

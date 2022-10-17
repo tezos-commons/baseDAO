@@ -11,7 +11,6 @@ import Test.Tasty (TestTree)
 
 import Lorentz as L hiding (Contract, assert, div)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 import Test.Cleveland.Lorentz (contractConsumer)
@@ -33,10 +32,10 @@ flushRegistryUpdates = testScenario "can flush a transfer proposal with registry
       let
         proposalMeta = toProposalMetadata @variant $ TransferProposal
             1
-            [ tokenTransferType (toAddress dodTokenContract) (MkAddress wallet2) (MkAddress wallet1) ]
+            [ tokenTransferType (toAddress dodTokenContract) (toAddress wallet2) (toAddress wallet1) ]
             [ ([mt|testKey|], Just [mt|testValue|]) ]
         proposalSize = metadataSize proposalMeta
-        proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+        proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
 
       withSender wallet1 $
         transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
@@ -56,9 +55,9 @@ flushRegistryUpdates = testScenario "can flush a transfer proposal with registry
       -- Advance one voting period to a voting stage.
       advanceToLevel (startLevel + 2*period)
       -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
-      let proposalKey = makeProposalKey (ProposeParams (MkAddress wallet1) proposalSize proposalMeta)
+      let proposalKey = makeProposalKey (ProposeParams (toAddress wallet1) proposalSize proposalMeta)
       withSender wallet2 $
-        transfer baseDao$ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 50 (MkAddress wallet2)) Nothing]
+        transfer baseDao$ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 50 (toAddress wallet2)) Nothing]
 
       proposalStart <- getProposalStartLevel' @variant baseDao proposalKey
       advanceToLevel (proposalStart + 2*period)
@@ -66,7 +65,7 @@ flushRegistryUpdates = testScenario "can flush a transfer proposal with registry
 
       -- check the registry update
       consumer <- originate "consumer" [] (contractConsumer @(MText, (Maybe MText)))
-      withSender wallet2 $ transfer baseDao $ calling (ep @"Lookup_registry") (LookupRegistryParam [mt|testKey|] (MkAddress $ chAddress consumer))
+      withSender wallet2 $ transfer baseDao $ calling (ep @"Lookup_registry") (LookupRegistryParam [mt|testKey|] (toAddress $ chAddress consumer))
       checkStorage consumer ([([mt|testKey|], Just [mt|testValue|])])
 
       -- check the balance
@@ -74,7 +73,7 @@ flushRegistryUpdates = testScenario "can flush a transfer proposal with registry
       checkBalance' @variant baseDao wallet2 50
 
       checkStorage dodTokenContract
-        [ [ FA2.TransferItem { tiFrom = (MkAddress wallet2), tiTxs = [FA2.TransferDestination { tdTo = toAddress wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
-          , [ FA2.TransferItem { tiFrom = (MkAddress wallet2), tiTxs = [FA2.TransferDestination { tdTo = toAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = 50 }] } ] -- Wallet2 freezes 50 tokens
-          , [ FA2.TransferItem { tiFrom = (MkAddress wallet1), tiTxs = [FA2.TransferDestination { tdTo = toAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = proposalSize }] } ] -- governance token transfer for freeze
+        [ [ FA2.TransferItem { tiFrom = (toAddress wallet2), tiTxs = [FA2.TransferDestination { tdTo = toAddress wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
+          , [ FA2.TransferItem { tiFrom = (toAddress wallet2), tiTxs = [FA2.TransferDestination { tdTo = toAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = 50 }] } ] -- Wallet2 freezes 50 tokens
+          , [ FA2.TransferItem { tiFrom = (toAddress wallet1), tiTxs = [FA2.TransferDestination { tdTo = toAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = proposalSize }] } ] -- governance token transfer for freeze
         ]

@@ -10,7 +10,6 @@ import Prelude
 import Data.Set qualified as S
 import Test.Tasty (TestTree)
 
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -28,10 +27,10 @@ updateReceivers = testScenario "checks it can flush an Update_receivers_proposal
     \(admin ::< wallet1 ::< wallet2 ::< Nil') (toPeriod -> period) baseDao _ -> do
 
       let
-        proposalMeta = toProposalMetadata @variant $ Add_receivers [MkAddress wallet1, MkAddress wallet2]
+        proposalMeta = toProposalMetadata @variant $ Add_receivers [toAddress wallet1, toAddress wallet2]
 
         proposalSize = metadataSize proposalMeta
-        proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+        proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
 
       withSender wallet1 $
         transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
@@ -50,7 +49,7 @@ updateReceivers = testScenario "checks it can flush an Update_receivers_proposal
       let
         key1 = makeProposalKey proposeParams
         upvote = NoPermit VoteParam
-            { vFrom = MkAddress wallet2
+            { vFrom = toAddress wallet2
             , vVoteType = True
             , vVoteAmount = 20
             , vProposalKey = key1
@@ -65,5 +64,5 @@ updateReceivers = testScenario "checks it can flush an Update_receivers_proposal
       withSender admin $ transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
       receiversSet <- (getVariantExtra @variant @"ProposalReceivers"  . sExtraRPC) <$> getVariantStorageRPC @variant (chAddress baseDao)
-      assert (((MkAddress wallet1) `S.member` receiversSet) && ((MkAddress wallet2) `S.member` receiversSet))
+      assert (((toAddress wallet1) `S.member` receiversSet) && ((toAddress wallet2) `S.member` receiversSet))
         "Proposal receivers was not updated as expected"

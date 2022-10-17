@@ -10,7 +10,6 @@ import Prelude
 import Test.Tasty (TestTree)
 
 import Lorentz as L hiding (Contract, assert, div)
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 import Test.Cleveland.Lorentz (contractConsumer)
@@ -49,14 +48,14 @@ registryView = testScenario "checks on-chain view correctly returns the registry
 
       -- We propose the addition of a new registry key
       withSender wallet1 $
-        transfer baseDao$ calling (ep @"Propose") (ProposeParams (MkAddress wallet1) requiredFrozen proposalMeta)
+        transfer baseDao$ calling (ep @"Propose") (ProposeParams (toAddress wallet1) requiredFrozen proposalMeta)
 
       -- Advance one voting period to a voting stage.
       advanceToLevel (startLevel + 2*period)
       -- Then we send 50 upvotes for the proposal (as min quorum is 1% of total frozen tokens)
-      let proposalKey = makeProposalKey (ProposeParams (MkAddress wallet1) requiredFrozen proposalMeta)
+      let proposalKey = makeProposalKey (ProposeParams (toAddress wallet1) requiredFrozen proposalMeta)
       withSender voter1 $
-        transfer baseDao$ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 50 (MkAddress voter1)) Nothing]
+        transfer baseDao$ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 50 (toAddress voter1)) Nothing]
 
       -- Advance one voting period to a proposing stage.
       proposalStart <- getProposalStartLevel' @variant baseDao proposalKey
@@ -67,6 +66,6 @@ registryView = testScenario "checks on-chain view correctly returns the registry
       consumer <- originate "consumer" [] (contractConsumer @(MText, (Maybe MText)))
 
       withSender voter1 $
-        transfer baseDao$ calling (ep @"Lookup_registry") (LookupRegistryParam [mt|key|] (MkAddress $ chAddress consumer))
+        transfer baseDao$ calling (ep @"Lookup_registry") (LookupRegistryParam [mt|key|] (toAddress $ chAddress consumer))
 
       checkStorage @[(MText, (Maybe MText))] consumer ([([mt|key|], Just [mt|testVal|])])

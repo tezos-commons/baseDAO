@@ -783,12 +783,12 @@ mkStorage
   (arg #quorumThreshold -> qt)
   (arg #config -> config) =
   Storage
-    { sAdmin = MkAddress admin
+    { sAdmin = toAddress admin
     , sConfig = config
-    , sGuardian = MkAddress admin
+    , sGuardian = toAddress admin
     , sExtra = extra
     , sMetadata = metadata
-    , sPendingOwner = MkAddress admin
+    , sPendingOwner = toAddress admin
     , sPermitsCounter = Nonce 0
     , sProposals = mempty
     , sOngoingProposalsDlist = Nothing

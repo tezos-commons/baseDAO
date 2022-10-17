@@ -10,7 +10,6 @@ import Prelude
 import Test.Tasty (TestTree)
 
 import Morley.Util.Named
-import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -27,8 +26,8 @@ proposeXtzProposal = testScenario "checks it can propose a valid xtz type propos
     \(_ ::< wallet ::< Nil') (toPeriod -> period) baseDao _ -> do
       let
         proposalMeta amt = toProposalMetadata @variant $
-            TransferProposal 1 [ xtzTransferType amt (MkAddress wallet) ] []
-        proposeParams amt = ProposeParams (MkAddress wallet) (metadataSize $ proposalMeta amt) $ proposalMeta amt
+            TransferProposal 1 [ xtzTransferType amt (toAddress wallet) ] []
+        proposeParams amt = ProposeParams (toAddress wallet) (metadataSize $ proposalMeta amt) $ proposalMeta amt
         proposalSize amt = metadataSize $ proposalMeta amt
 
       withSender wallet $

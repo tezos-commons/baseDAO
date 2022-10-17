@@ -10,7 +10,6 @@ import Universum
 import Lorentz hiding (assert, (>>))
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Runtime.GState (genesisAddress1, genesisAddress2)
-import Morley.Tezos.Address
 import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
 
@@ -37,9 +36,9 @@ transferContractTokensScenario originateFn = do
   let target_owner2 = genesisAddress2
 
   let transferParams = [ FA2.TransferItem
-            { tiFrom = MkAddress target_owner1
+            { tiFrom = toAddress target_owner1
             , tiTxs = [ FA2.TransferDestination
-                { tdTo = MkAddress target_owner2
+                { tdTo = toAddress target_owner2
                 , tdTokenId = FA2.theTokenId
                 , tdAmount = 10
                 } ]
@@ -59,7 +58,7 @@ transferContractTokensScenario originateFn = do
   tcStorage <- getStorage @[[FA2.TransferItem]] dodTokenContract
 
   assert (tcStorage ==
-    ([ [ FA2.TransferItem { tiFrom = MkAddress target_owner1, tiTxs = [FA2.TransferDestination { tdTo = MkAddress target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
+    ([ [ FA2.TransferItem { tiFrom = toAddress target_owner1, tiTxs = [FA2.TransferDestination { tdTo = toAddress target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
       ])) "Unexpected FA2 transfers"
 
 ensureXtzTransfer

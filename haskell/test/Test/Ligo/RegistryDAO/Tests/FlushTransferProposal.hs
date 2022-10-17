@@ -11,7 +11,6 @@ import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (Contract, assert, div)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -32,10 +31,10 @@ flushTransferProposal = testGroup "TransferProposal Tests"
           let
             proposalMeta = toProposalMetadata @variant $ TransferProposal
                 1
-                [ tokenTransferType (toAddress dodTokenContract) (MkAddress wallet2) (MkAddress wallet1)]
+                [ tokenTransferType (toAddress dodTokenContract) (toAddress wallet2) (toAddress wallet1)]
                 []
             proposalSize = metadataSize proposalMeta
-            proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+            proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
 
           withSender wallet1 $
             transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
@@ -54,7 +53,7 @@ flushTransferProposal = testGroup "TransferProposal Tests"
           let
             key1 = makeProposalKey proposeParams
             upvote = NoPermit VoteParam
-                { vFrom = MkAddress wallet2
+                { vFrom = toAddress wallet2
                 , vVoteType = True
                 , vVoteAmount = 20
                 , vProposalKey = key1
@@ -72,9 +71,9 @@ flushTransferProposal = testGroup "TransferProposal Tests"
           checkBalance' @variant baseDao wallet2 20
 
           checkStorage dodTokenContract
-            ( [ [ FA2.TransferItem { tiFrom = (MkAddress wallet2), tiTxs = [FA2.TransferDestination { tdTo = MkAddress wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
-              , [ FA2.TransferItem { tiFrom = (MkAddress wallet2), tiTxs = [FA2.TransferDestination { tdTo = MkAddress $ chAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = 20 }] } ] -- Wallet2 freezes 20 tokens
-              , [ FA2.TransferItem { tiFrom = (MkAddress wallet1), tiTxs = [FA2.TransferDestination { tdTo = MkAddress $ chAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = proposalSize }] } ] -- governance token transfer for freeze
+            ( [ [ FA2.TransferItem { tiFrom = (toAddress wallet2), tiTxs = [FA2.TransferDestination { tdTo = toAddress wallet1 , tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ] -- Actual transfer
+              , [ FA2.TransferItem { tiFrom = (toAddress wallet2), tiTxs = [FA2.TransferDestination { tdTo = toAddress $ chAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = 20 }] } ] -- Wallet2 freezes 20 tokens
+              , [ FA2.TransferItem { tiFrom = (toAddress wallet1), tiTxs = [FA2.TransferDestination { tdTo = toAddress $ chAddress baseDao, tdTokenId = FA2.theTokenId, tdAmount = proposalSize }] } ] -- governance token transfer for freeze
               ])
   , testScenario "checks it can flush a transfer proposal" $ scenario $
         withOriginated @variant
@@ -83,9 +82,9 @@ flushTransferProposal = testGroup "TransferProposal Tests"
 
             let
               proposalMeta = toProposalMetadata @variant $
-                  TransferProposal 1 [ xtzTransferType 3 (MkAddress wallet2) ] []
+                  TransferProposal 1 [ xtzTransferType 3 (toAddress wallet2) ] []
               proposalSize = metadataSize proposalMeta
-              proposeParams = ProposeParams (MkAddress wallet1) proposalSize proposalMeta
+              proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
 
             withSender wallet1 $
               transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
@@ -106,7 +105,7 @@ flushTransferProposal = testGroup "TransferProposal Tests"
 
             let
               upvote = NoPermit VoteParam
-                { vFrom = MkAddress wallet2
+                { vFrom = toAddress wallet2
                 , vVoteType = True
                 , vVoteAmount = 2
                 , vProposalKey = key1

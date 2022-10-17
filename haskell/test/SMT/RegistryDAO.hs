@@ -18,7 +18,6 @@ import Hedgehog.Gen.Michelson (genMText)
 import Hedgehog.Gen.Tezos.Address (genAddress)
 import Lorentz hiding (and, div, now, (>>))
 import Morley.Michelson.Typed.Haskell.Value
-import Morley.Tezos.Address
 import Morley.Util.Named
 
 import Ligo.BaseDAO.Common.Types
@@ -244,7 +243,7 @@ genCustomCallsRegistryDao = do
 genLookupRegistryParam :: GeneratorT 'Registry (ContractHandle (MText, Maybe MText) s () -> LookupRegistryParam)
 genLookupRegistryParam = do
   key <- genMText def
-  pure $ \viewContractAddr -> (LookupRegistryParam key (MkAddress $ chAddress viewContractAddr))
+  pure $ \viewContractAddr -> (LookupRegistryParam key (toAddress viewContractAddr))
 
 genRegistryDaoProposalMetadata :: GeneratorT 'Registry (Address -> Address -> RegistryDaoProposalMetadata)
 genRegistryDaoProposalMetadata = do

@@ -73,7 +73,7 @@ test_LambdaTreasuryDAO = treasuryDAOTests @'LambdaTreasury
 initialStorage :: ImplicitAddress -> LambdaStorage
 initialStorage admin = let
   fs = baseDAOLambdatreasuryStorageLigo
-  in fs { sAdmin = MkAddress admin, sConfig = (sConfig fs)
+  in fs { sAdmin = toAddress admin, sConfig = (sConfig fs)
             { cPeriod = 11
             , cProposalFlushLevel = 22
             , cProposalExpiredLevel = 33

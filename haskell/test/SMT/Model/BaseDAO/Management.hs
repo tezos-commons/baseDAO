@@ -11,7 +11,7 @@ import Universum
 
 import Control.Monad.Except (throwError)
 
-import Morley.Tezos.Address
+import Lorentz.Address
 import Morley.Util.Named
 
 import Ligo.BaseDAO.Types
@@ -24,7 +24,7 @@ applyTransferOwnership mso (arg #newOwner -> param) = do
   modifyStore $ \s -> do
     let newOwner = param
 
-    unless ((MkAddress $ msoSender mso) == sAdmin s) $
+    unless ((toAddress $ msoSender mso) == sAdmin s) $
       throwError NOT_ADMIN
 
     if selfAddr == newOwner then
@@ -34,8 +34,8 @@ applyTransferOwnership mso (arg #newOwner -> param) = do
 
 applyAcceptOwnership :: ModelSource -> ModelT cep ()
 applyAcceptOwnership mso = modifyStore $ \s ->
-  if (s & sPendingOwner) == (MkAddress $ mso & msoSender) then
-    pure $ s { sAdmin = (MkAddress $ mso & msoSender)}
+  if (s & sPendingOwner) == (toAddress $ mso & msoSender) then
+    pure $ s { sAdmin = (toAddress $ mso & msoSender)}
   else throwError NOT_PENDING_ADMIN
 
 applyCallCustom :: ModelSource -> (VariantToParam var) -> ModelT var ()

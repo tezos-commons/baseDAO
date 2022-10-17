@@ -29,7 +29,6 @@ import Test.Cleveland
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Morley.Tezos.Address
 import Test.Ligo.BaseDAO.Common
 import Test.Ligo.BaseDAO.Proposal.Config
 
@@ -58,7 +57,7 @@ validProposal originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = MkAddress dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
 
   withSender dodOwner1 $
@@ -67,7 +66,7 @@ validProposal originateFn = do
   -- baseDAO
   storage <- getStorage @[[FA2.TransferItem]] dodTokenContract
   assert (storage ==
-    ([[FA2.TransferItem { tiFrom = MkAddress dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = MkAddress $ chAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]]))
+    ([[FA2.TransferItem { tiFrom = toAddress dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = toAddress $ chAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]]))
     "Unexpected Transfers"
 
   -- Advance one voting period to a proposing stage.
@@ -98,7 +97,7 @@ validProposalWithFixedFee = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = MkAddress dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
   let proposer = dodOwner1
 
@@ -153,7 +152,7 @@ proposerIsReturnedFeeAfterSucceeding = do
           { vVoteType = True
           , vVoteAmount = 10
           , vProposalKey = key1
-          , vFrom = MkAddress voter
+          , vFrom = toAddress voter
           }
   withSender voter $
     transfer dodDao $ calling (ep @"Vote") [vote_]
@@ -185,7 +184,7 @@ cannotProposeWithInsufficientTokens = do
   let params = ProposeParams
         { ppFrozenToken = 1
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = MkAddress dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
   withSender proposer $ (transfer dodDao $ calling (ep @"Propose") params)
     & expectFailedWith notEnoughFrozenTokens
@@ -239,7 +238,7 @@ nonProposalPeriodProposal originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = MkAddress dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
 
   withSender dodOwner1 $ (transfer dodDao $ calling (ep @"Propose") params)
@@ -279,7 +278,7 @@ burnsFeeOnFailure reason = do
   case reason of
     Downvoted -> do
       withSender voter $
-        transfer dodDao $ calling (ep @"Vote") [downvote (MkAddress voter) key1]
+        transfer dodDao $ calling (ep @"Vote") [downvote (toAddress voter) key1]
     QuorumNotMet -> return ()
 
   let expectedFrozen = 42 + 10
@@ -327,7 +326,7 @@ unstakesTokensForMultipleVotes = do
           { vVoteType = typ
           , vVoteAmount = 10
           , vProposalKey = key1
-          , vFrom = MkAddress voter
+          , vFrom = toAddress voter
           }
 
   withSender voter . inBatch $ do
@@ -367,7 +366,7 @@ insufficientTokenProposal originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 101
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = (MkAddress dodOwner1)
+        , ppFrom = (toAddress dodOwner1)
         }
 
   withSender dodOwner1 $ (transfer dodDao$ calling (ep @"Propose") params)
@@ -395,13 +394,13 @@ insufficientTokenVote originateFn = do
             { vVoteType = True
             , vVoteAmount = 51
             , vProposalKey = key1
-            , vFrom = MkAddress dodOwner2
+            , vFrom = toAddress dodOwner2
            }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 50
             , vProposalKey = key1
-            , vFrom = MkAddress dodOwner2
+            , vFrom = toAddress dodOwner2
             }
         ]
   -- Advance one voting period to a voting stage.
@@ -440,7 +439,7 @@ dropProposal originateFn = withFrozenCallStack $ do
         { vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key
-        , vFrom = MkAddress dodOwner2
+        , vFrom = toAddress dodOwner2
         }
   withSender dodOwner2 $ transfer dodDao$ calling (ep @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
@@ -452,7 +451,7 @@ dropProposal originateFn = withFrozenCallStack $ do
 
   -- `guardian` contract can drop any proposal.
   withSender dodOwner2 $ do
-    transfer dodGuardian $ calling def (MkAddress $ chAddress dodDao, key1)
+    transfer dodGuardian $ calling def (toAddress $ chAddress dodDao, key1)
 
   -- `key2` is not yet expired since it has to be more than 60
   withSender dodOwner2 $ do
@@ -512,7 +511,7 @@ unstakeVote originateFn = do
   key2 <- createSampleProposal 2 dodOwner1 dodDao
 
   let vote' key = NoPermit VoteParam
-        { vFrom = MkAddress dodOwner2
+        { vFrom = toAddress dodOwner2
         , vVoteType = True
         , vVoteAmount = 5
         , vProposalKey = key

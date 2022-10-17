@@ -78,7 +78,7 @@ genStorage = do
         { sFrozenTotalSupply = getTotalSupply freezeHistory
         , sDelegates = BigMap Nothing delegates
         , sFreezeHistory = BigMap Nothing freezeHistory
-        , sAdmin = MkAddress admin
+        , sAdmin = toAddress admin
         , sGuardian = guardAddr
         , sGovernanceToken = GovernanceToken
               { gtAddress = govAddr
@@ -93,7 +93,7 @@ genStorage = do
 
         , sFrozenTokenId = FA2.theTokenId
         , sMetadata = mempty
-        , sPendingOwner = MkAddress admin
+        , sPendingOwner = toAddress admin
         , sPermitsCounter = Nonce 0
         , sConfig = config
         }
@@ -119,13 +119,13 @@ genConfig = do
 
 genDelegates :: GeneratorT cep (Map Delegate ())
 genDelegates = do
-  userPool <- get <&> gsAddresses <<&>> (MkAddress . fst)
+  userPool <- get <&> gsAddresses <<&>> (toAddress . fst)
   delegateList <- (Gen.shuffle $ (uncurry Delegate) <$> zip userPool userPool) >>= Gen.subsequence
   pure $ Map.fromList $ zip delegateList $ repeat ()
 
 genDelegateParams :: GeneratorT cep [DelegateParam]
 genDelegateParams = do
-  userPool <- get <&> gsAddresses <<&>> (MkAddress . fst)
+  userPool <- get <&> gsAddresses <<&>> (toAddress . fst)
   isEnable <- Gen.bool
   userPool
     <&> (\addr -> DelegateParam isEnable addr)
@@ -147,7 +147,7 @@ genAddressFreezeHistory = do
 
 genFreezeHistory :: GeneratorT cep (Map Address AddressFreezeHistory)
 genFreezeHistory = do
-  addrs <- get <&> gsAddresses <<&>> (MkAddress . fst)
+  addrs <- get <&> gsAddresses <<&>> (toAddress . fst)
   addrFreezeHistoryList <- vectorOf poolSize genAddressFreezeHistory
   let freezeHistory = zip addrs addrFreezeHistoryList
   pure $ Map.fromList freezeHistory
@@ -235,7 +235,7 @@ genProposingProcess = do
   invalidFrom <- fst <$> Gen.element userAddrs
 
   mkGenPropose <- get <&> gsMkGenPropose
-  mkPropose <- mkGenPropose (MkAddress sender1) (MkAddress delegate1) (MkAddress invalidFrom)
+  mkPropose <- mkGenPropose (toAddress sender1) (toAddress delegate1) (toAddress invalidFrom)
 
   mkGenCustomCalls <- get <&> gsMkCustomCalls
   mkCustomCalls <- mkGenCustomCalls
@@ -269,7 +269,7 @@ genProposingProcess = do
         in (freezeAmt, voterFreezeAmt, permitProtecteds, proposeAction, dropProposalAction, unstakeVoteAction)
 
   pure $
-      [ \_ -> mkCall (XtzForbidden $ Update_delegate [DelegateParam True (MkAddress delegate1)]) Nothing
+      [ \_ -> mkCall (XtzForbidden $ Update_delegate [DelegateParam True (toAddress delegate1)]) Nothing
       , \args ->
           let (freezeAmt, _, _, _, _, _) = applyArgs args
           in mkCall (XtzForbidden $ Freeze (#amount :! (freezeAmt)) ) Nothing
@@ -318,7 +318,7 @@ genVote = do
             { vProposalKey = proposalKey
             , vVoteType = voteType
             , vVoteAmount = voteAmt
-            , vFrom = MkAddress $ fst from
+            , vFrom = toAddress $ fst from
             }
 
       mkSigned <- sign' (snd from)
@@ -333,7 +333,7 @@ genVote = do
               ds = DataToSign
                   { dsChainId = dummyChainId
                   , dsContract =
-                      MkAddress $ ContractAddress $ unsafe $ parseHash "KT1WsLzQ61xtMNJHfwgCHh2RnALGgFAzeSx9"
+                      toAddress $ ContractAddress $ unsafe $ parseHash "KT1WsLzQ61xtMNJHfwgCHh2RnALGgFAzeSx9"
                   , dsNonce = Nonce 0
                   , dsData = voteParam
                   }
@@ -376,7 +376,7 @@ genTransferOwnership :: GeneratorT var (Parameter'' var)
 genTransferOwnership = do
   userAddrs <- get <&> gsAddresses
   newOwner <- fst <$> Gen.element userAddrs
-  pure $ XtzAllowed $ ConcreteEp $ Transfer_ownership $ (#newOwner :! (MkAddress newOwner))
+  pure $ XtzAllowed $ ConcreteEp $ Transfer_ownership $ (#newOwner :! (toAddress newOwner))
 
 -- Nothing to randomize, simply for consistency
 genAcceptOwnership :: GeneratorT var (Parameter'' var)
@@ -411,9 +411,9 @@ genFa2TransferItem = do
   fromAddr <- Gen.element userAddrs <&> fst
   toAddr <- Gen.element userAddrs <&> fst
   pure $ FA2.TransferItem
-    { tiFrom = MkAddress fromAddr
+    { tiFrom = toAddress fromAddr
     , tiTxs = [ FA2.TransferDestination
-        { tdTo = MkAddress toAddr
+        { tdTo = toAddress toAddr
         , tdTokenId = FA2.theTokenId
         , tdAmount = amt
         } ]

@@ -11,7 +11,6 @@ import Test.Tasty (TestTree)
 
 import Lorentz as L hiding (Contract, assert, div)
 import Morley.Util.Named
-import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -27,7 +26,7 @@ zeroXtzTransfer = testScenario "proposal_check: fail when xtz transfer contains 
     (\_ s -> setVariantExtra @variant @"MinXtzAmount" (0 :: Mutez) s) $
     \(_::< wallet1::<_) fs baseDao _ -> do
       let proposalMeta = toProposalMetadata @variant $
-              TransferProposal 1 [ xtzTransferType 0 (MkAddress wallet1) ] []
+              TransferProposal 1 [ xtzTransferType 0 (toAddress wallet1) ] []
       let proposalSize = metadataSize proposalMeta
       withSender wallet1 $
         transfer baseDao$ calling (ep @"Freeze") (#amount :! proposalSize)
@@ -38,5 +37,5 @@ zeroXtzTransfer = testScenario "proposal_check: fail when xtz transfer contains 
       advanceToLevel (startLevel + toPeriod fs)
 
       withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose")
-        (ProposeParams (MkAddress wallet1) proposalSize proposalMeta))
+        (ProposeParams (toAddress wallet1) proposalSize proposalMeta))
           & expectFailProposalCheck zeroMutezErrMsg

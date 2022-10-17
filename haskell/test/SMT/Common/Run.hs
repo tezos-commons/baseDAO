@@ -18,7 +18,6 @@ import Morley.Micheline qualified as MM
 import Morley.Michelson.Runtime.Dummy (dummyLevel)
 import Morley.Michelson.Typed qualified as T
 import Morley.Michelson.Untyped qualified as U
-import Morley.Tezos.Address
 import Test.Cleveland
 import Test.Cleveland.Internal.Abstract
   (ExpressionOrTypedValue(..), TransferFailure(..), TransferFailureReason(..))
@@ -59,7 +58,7 @@ runBaseDaoSMT option@SmtOption{..} = do
         let
           ModelInput (contractCalls, ms) = mkModelInput $ ModelInputArg
               { miaGuardianAddr = unTAddress guardianContract
-              , miaGovAddr = MkAddress $ chAddress tokenContract
+              , miaGovAddr = toAddress $ chAddress tokenContract
               , miaViewContractAddr = registryDaoConsumer
               }
 
@@ -80,8 +79,8 @@ runBaseDaoSMT option@SmtOption{..} = do
         let newMs_ addr bal = newMs
               { msSelfAddress = addr
               , msContracts = Map.fromList
-                  [ (MkAddress $ chAddress tokenContract, SimpleFA2ContractType $ SimpleFA2Contract [] zeroMutez)
-                  , (MkAddress $ chAddress registryDaoConsumer, OtherContractType $ OtherContract [] zeroMutez)
+                  [ (toAddress $ chAddress tokenContract, SimpleFA2ContractType $ SimpleFA2Contract [] zeroMutez)
+                  , (toAddress $ chAddress registryDaoConsumer, OtherContractType $ OtherContract [] zeroMutez)
                   ]
               , msMutez = bal
               , msLevel = currentLevel
@@ -126,13 +125,13 @@ handleCallLoop (dao, gov, viewC) (mc:mcs) ms = do
       haskellDaoBalance = msMutez updatedMs
 
       govContract = updatedMs & msContracts
-        & Map.lookup (MkAddress $ chAddress gov)
+        & Map.lookup (toAddress $ chAddress gov)
         & fromMaybe (error "Governance contract does not exist")
       haskellGovStore = case govContract of SimpleFA2ContractType c -> c & sfcStorage; _ -> error "Shouldn't happen."
       haskellGovBalance = case govContract of SimpleFA2ContractType c -> c & sfcMutez; _ -> error "Shouldn't happen."
 
       viewContract = updatedMs & msContracts
-        & Map.lookup (MkAddress $ chAddress viewC)
+        & Map.lookup (toAddress $ chAddress viewC)
         & fromMaybe (error "View contract does not exist")
       haskellViewStore = case viewContract of OtherContractType c -> c & ocStorage; _ -> error "Shouldn't happen."
 
