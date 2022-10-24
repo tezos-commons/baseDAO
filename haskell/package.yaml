@@ -152,6 +152,7 @@ tests:
     - baseDAO-ligo-meta
     - bytestring
     - cleveland
+    - aeson
     - containers
     - cryptonite
     - fmt
@@ -159,11 +160,15 @@ tests:
     - lorentz
     - morley
     - morley-ledgers
-    - morley-metadata
     - morley-prelude
+    - morley-metadata
+    - morley-metadata-test
     - mtl
     - named
     - tasty
     - tasty-hedgehog
     - tasty-hunit-compat
     - universum
+    - aeson
+    - morley-metadata-test
+    - morley-metadata

@@ -6,11 +6,10 @@ module Test.Plist.Contract
   ) where
 
 import Lorentz qualified as L
-import Morley.Michelson.Typed
 import Test.Cleveland.Lorentz (embedContract)
 
 import Test.Plist.Type
 
-plistContractLigo :: Contract (ToT PlistParameter) (ToT PlistStorage)
-plistContractLigo = L.toMichelsonContract
+plistContractLigo :: L.Contract PlistParameter PlistStorage ()
+plistContractLigo =
   $$(embedContract @PlistParameter @PlistStorage @() "resources/plist_contract.tz")

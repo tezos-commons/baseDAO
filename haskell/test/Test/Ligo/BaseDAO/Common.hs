@@ -26,6 +26,7 @@ module Test.Ligo.BaseDAO.Common
 
   -- * Helpers
   , metadataSize
+  , refillables
 
   -- * Re-export
   , module Errors
@@ -37,9 +38,11 @@ import Universum hiding (drop, swap)
 import Data.ByteString qualified as BS
 import Lorentz hiding (assert, now, (>>))
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Morley.Michelson.Typed.Convert (convertContract, untypeValue)
 import Morley.Michelson.Typed.Scope (HasNoOp)
+import Morley.Util.SizedList (SizedList'(..), pattern (::<))
 import Test.Cleveland
+import Test.Cleveland.Internal.Abstract
+import Test.Cleveland.Internal.Actions.Helpers
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
@@ -59,14 +62,14 @@ data ContractType
   deriving stock Eq
 
 data DaoOriginateData a = DaoOriginateData
-  { dodOwner1 :: Address
-  , dodOperator1 :: Address
-  , dodOwner2 :: Address
-  , dodOperator2 :: Address
-  , dodDao :: TAddress (Parameter' (VariantToParam a)) ()
-  , dodTokenContract :: TAddress FA2.Parameter ()
-  , dodAdmin :: Address
-  , dodGuardian :: TAddress (Address, ProposalKey) ()
+  { dodOwner1 :: ImplicitAddress
+  , dodOperator1 :: ImplicitAddress
+  , dodOwner2 :: ImplicitAddress
+  , dodOperator2 :: ImplicitAddress
+  , dodDao :: ContractHandle (Parameter' (VariantToParam a)) (StorageSkeleton (VariantToExtra a)) ()
+  , dodTokenContract :: ContractHandle FA2.Parameter [FA2.TransferParams] ()
+  , dodAdmin :: ImplicitAddress
+  , dodGuardian :: ContractHandle (Address, ProposalKey) () ()
   , dodPeriod :: Natural
   }
 
@@ -100,7 +103,7 @@ makeProposalKey params = toHashHs $ lPackValue params
 
 addDataToSign
   :: (MonadCleveland caps m)
-  => TAddress param vd
+  => ContractHandle p s ()
   -> Nonce
   -> d
   -> m (DataToSign d, d)
@@ -111,7 +114,7 @@ addDataToSign (toAddress -> dsContract) dsNonce dsData = do
 -- | Add a permit from given user.
 permitProtect
   :: (MonadCleveland caps m, NicePackedValue a)
-  => Address -> (DataToSign a, a) -> m (PermitProtected a)
+  => ImplicitAddress -> (DataToSign a, a) -> m (PermitProtected a)
 permitProtect author (toSign, a) = do
   pKey <- getPublicKey author
   pSignature <- signBinary (lPackValue toSign) author
@@ -122,90 +125,68 @@ permitProtect author (toSign, a) = do
 
 sendXtz
   :: (MonadCleveland caps m, HasCallStack)
-  => TAddress cp vd -> m ()
-sendXtz addr = withFrozenCallStack $ do
-  let transferData = TransferData
-        { tdTo = toAddress addr
-        , tdAmount = [tz|0.5|] -- 0.5 xtz
-        , tdEntrypoint = DefEpName
-        , tdParameter = ()
-        }
-  transfer transferData
+  => ContractHandle cp st vd  -> m ()
+sendXtz addr = withFrozenCallStack $
+  transfer (chAddress addr) [tz|0.5|]
 
 sendXtzWithAmount
   :: (MonadCleveland caps m, HasCallStack)
-  => Mutez -> TAddress cp vd -> m ()
-sendXtzWithAmount amt addr = withFrozenCallStack $ do
-  let transferData = TransferData
-        { tdTo = toAddress addr
-        , tdAmount = amt
-        , tdEntrypoint = DefEpName
-        , tdParameter = ()
-        }
-  transfer transferData
+  => Mutez -> ContractHandle cp st vd -> m ()
+sendXtzWithAmount amt addr = withFrozenCallStack $
+  transfer (chAddress addr) amt
 
 defaultQuorumThreshold :: QuorumThreshold
 defaultQuorumThreshold = mkQuorumThreshold 1 100
 
-type OriginationCEConstraints cep = (Typeable cep, Default (VariantToExtra cep), IsoValue (VariantToExtra cep), HasNoOp (ToT (VariantToExtra cep)))
+type OriginationCEConstraints cep =
+  ( Typeable cep
+  , Default (VariantToExtra cep)
+  , NiceStorage (StorageSkeleton (VariantToExtra cep))
+  , IsoValue (VariantToExtra cep)
+  , NiceParameterFull (VariantToParam cep)
+  , HasNoOp (ToT (VariantToExtra cep)))
 
 originateLigoDaoWithConfig
  :: forall cep caps m. (OriginationCEConstraints cep, MonadCleveland caps m)
  => (VariantToExtra cep)
  -> Config
  -> OriginateFn cep m
-originateLigoDaoWithConfig extra config qt = do
+originateLigoDaoWithConfig extra config qt =
+  refillables (newAddresses $ "owner1" :< "operator1" :< "owner2" :< "operator2" :< "admin" :< Nil) >>=
+    \(owner1 ::< operator1 ::< owner2 ::< operator2 ::< admin ::< Nil') -> do
+      owner1Balance <- getBalance owner1
 
-  owner1 :: Address <- refillable $ newAddress "owner1"
-  operator1 :: Address <- refillable $ newAddress "operator1"
-  owner2 :: Address <- refillable $ newAddress "owner2"
-  operator2 :: Address <- refillable $ newAddress "operator2"
+      when (owner1Balance < 2_e6) $ do
+        let fundAddress x = transfer x [tz|5|]
+        mapM_ fundAddress [owner1, operator1, owner2, operator2, admin]
 
-  admin :: Address <- refillable $ newAddress "admin"
+      currentLevel <- getLevel
+      tokenContract <- originate "TokenContract" [] dummyFA2Contract
+      guardianContract <- originate "guardian" () dummyGuardianContract
 
-  owner1Balance <- getBalance owner1
+      let originationOffset = 12
+      let storage =
+                ( mkStorage
+                  ! #extra extra
+                  ! #admin admin
+                  ! #metadata mempty
+                  ! #tokenAddress (toAddress tokenContract)
+                  ! #level (currentLevel + originationOffset)
+                    -- We add some levels to offset for the delay caused by the origination function
+                    -- So the expectation is that by the time origination has finished, we will be closer
+                    -- to the actual block that includes origination so that the tests have a lesser chance
+                    -- to fail due to this difference.
+                  ! #quorumThreshold qt
+                  ! #config config
+                )
+                { sGuardian = toAddress guardianContract
+                }
 
-  when (owner1Balance < 2_e6) $ do
-    let fundAddress x = transfer $ TransferData x [tz|5|] DefEpName ()
-    mapM_ fundAddress [owner1, operator1, owner2, operator2, admin]
+      dao <- originate "BaseDAO" storage (getBaseDAOContract @cep)
+      advanceToLevel (currentLevel + originationOffset)
 
-  currentLevel <- getLevel
-  tokenContract <- chAddress <$> originateSimple "TokenContract" [] dummyFA2Contract
-  guardianContract <- chAddress <$> originateSimple "guardian" () dummyGuardianContract
-
-  let originationOffset = 12
-  let storage =
-            ( mkStorage
-              ! #extra extra
-              ! #admin admin
-              ! #metadata mempty
-              ! #tokenAddress tokenContract
-              ! #level (currentLevel + originationOffset)
-                -- We add some levels to offset for the delay caused by the origination function
-                -- So the expectation is that by the time origination has finished, we will be closer
-                -- to the actual block that includes origination so that the tests have a lesser chance
-                -- to fail due to this difference.
-              ! #quorumThreshold qt
-              ! #config config
-            )
-            { sGuardian = guardianContract
-            }
-  let
-
-    originateData = UntypedOriginateData
-      { uodName = "BaseDAO"
-      , uodBalance = zeroMutez
-      , uodStorage = untypeValue $ toVal storage
-      , uodContract = convertContract $ getBaseDAOContract @cep
-      }
-
-  daoUntyped <- originateUntyped originateData
-  advanceToLevel (currentLevel + originationOffset)
-
-  let dao = TAddress @(Parameter' (VariantToParam cep)) daoUntyped
-
-  pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao (TAddress tokenContract)
-      admin (TAddress guardianContract) (unPeriod $ cPeriod config)
+      pure $ DaoOriginateData owner1 operator1 owner2 operator2 dao tokenContract
+          admin guardianContract (unPeriod $ cPeriod config)
 
 originateLigoDaoWithConfigDesc
  :: forall cep caps m. (OriginationCEConstraints cep, MonadCleveland caps m)
@@ -221,7 +202,7 @@ originateLigoDao =
 
 createSampleProposal
   :: (MonadCleveland caps m, HasCallStack)
-  => Int -> Address -> TAddress Parameter vd -> m ProposalKey
+  => Int -> ImplicitAddress -> ContractHandle Parameter Storage vd -> m ProposalKey
 createSampleProposal counter dodOwner dao = do
   let (pk, action) = createSampleProposal_ counter dodOwner dao
   withSender dodOwner action
@@ -229,19 +210,19 @@ createSampleProposal counter dodOwner dao = do
 
 createSampleProposal_
   :: (MonadOps m, HasCallStack)
-  => Int -> Address -> TAddress Parameter vd -> (ProposalKey, m ())
+  => Int -> ImplicitAddress -> ContractHandle Parameter Storage vd -> (ProposalKey, m ())
 createSampleProposal_ counter dodOwner1 dao =
   let params = ProposeParams
-        { ppFrom = dodOwner1
+        { ppFrom = toAddress dodOwner1
         , ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer $ fromIntegral counter
         }
-  in (makeProposalKey params, call dao (Call @"Propose") params)
+  in (makeProposalKey params, transfer dao $ calling (ep @"Propose") params)
 
 -- TODO consider making this polymorphic on the input/output size
 createSampleProposals
   :: (MonadCleveland caps m, HasCallStack)
-  => (Int, Int) -> Address -> TAddress Parameter vd -> m (ProposalKey, ProposalKey)
+  => (Int, Int) -> ImplicitAddress -> ContractHandle Parameter Storage vd -> m (ProposalKey, ProposalKey)
 createSampleProposals (counter1, counter2) dodOwner1 dao = do
   let (pk1, action1) = createSampleProposal_ counter1 dodOwner1 dao
   let (pk2, action2) = createSampleProposal_ counter2 dodOwner1 dao
@@ -252,13 +233,19 @@ createSampleProposals (counter1, counter2) dodOwner1 dao = do
   pure (pk1, pk2)
 
 checkStorage
-  :: forall st caps m.
+  :: forall st caps m p.
       ( AsRPC st ~ st, MonadCleveland caps m
       , HasCallStack, Eq st, NiceStorage st)
-  => Address -> st -> m ()
+  => ContractHandle p st () -> st -> m ()
 checkStorage addr expected = do
-  realSt <- getStorage @st addr
+  realSt <- getStorage addr
   assert (expected == realSt) "Unexpected storage"
 
 metadataSize :: ByteString -> Natural
 metadataSize md = fromIntegral $ BS.length md
+
+refillables :: (Traversable f, MonadCleveland caps m) => m (f ImplicitAddress) -> m (f ImplicitAddress)
+refillables action = do
+  addrs <- action
+  void $ withCap getMiscCap \cap -> traverse (cmiMarkAddressRefillable cap) addrs
+  pure addrs

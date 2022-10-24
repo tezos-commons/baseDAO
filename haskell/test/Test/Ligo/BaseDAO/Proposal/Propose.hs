@@ -57,22 +57,22 @@ validProposal originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
   -- Check the token contract got a transfer call from
   -- baseDAO
-  storage <- getStorage @[[FA2.TransferItem]] (unTAddress dodTokenContract)
+  storage <- getStorage @[[FA2.TransferItem]] dodTokenContract
   assert (storage ==
-    ([[FA2.TransferItem { tiFrom = dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]]))
+    ([[FA2.TransferItem { tiFrom = toAddress dodOwner1, tiTxs = [FA2.TransferDestination { tdTo = toAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }] }]]))
     "Unexpected Transfers"
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (startLevel + dodPeriod)
 
-  withSender dodOwner1 $ call dodDao (Call @"Propose") params
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Propose") params
 
   -- Check balance
   supply <- getFrozenTotalSupply dodDao
@@ -97,16 +97,16 @@ validProposalWithFixedFee = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
   let proposer = dodOwner1
 
   withSender proposer $
-    call dodDao (Call @"Freeze") (#amount :! 52)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 52)
   -- Advance one voting period to a proposing stage.
   advanceToLevel (startLevel + dodPeriod)
 
-  withSender proposer $ call dodDao (Call @"Propose") params
+  withSender proposer $ transfer dodDao $ calling (ep @"Propose") params
 
   supply <- getFrozenTotalSupply dodDao
   supply @== 52
@@ -133,13 +133,13 @@ proposerIsReturnedFeeAfterSucceeding = do
   let voter = dodOwner2
 
   withSender voter $
-    call dodDao (Call @"Freeze") (#amount :! 20)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
 
   withSender proposer $
-    call dodDao (Call @"Freeze") (#amount :! 42)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 42)
 
   withSender proposer $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -152,10 +152,10 @@ proposerIsReturnedFeeAfterSucceeding = do
           { vVoteType = True
           , vVoteAmount = 10
           , vProposalKey = key1
-          , vFrom = voter
+          , vFrom = toAddress voter
           }
   withSender voter $
-    call dodDao (Call @"Vote") [vote_]
+    transfer dodDao $ calling (ep @"Vote") [vote_]
 
   let expectedFrozen = 42 + 10
   checkBalance dodDao proposer expectedFrozen
@@ -163,7 +163,7 @@ proposerIsReturnedFeeAfterSucceeding = do
   -- Advance one voting period to a proposing stage.
   proposalStart <- getProposalStartLevel dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod + 1)
-  withSender dodAdmin $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ transfer dodDao $ calling (ep @"Flush") 100
 
   checkBalance dodDao proposer 52
 
@@ -176,7 +176,7 @@ cannotProposeWithInsufficientTokens = do
   let proposer = dodOwner1
 
   withSender proposer $
-    call dodDao (Call @"Freeze") (#amount :! 52)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 52)
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
@@ -184,9 +184,9 @@ cannotProposeWithInsufficientTokens = do
   let params = ProposeParams
         { ppFrozenToken = 1
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
-  withSender proposer $ call dodDao (Call @"Propose") params
+  withSender proposer $ (transfer dodDao $ calling (ep @"Propose") params)
     & expectFailedWith notEnoughFrozenTokens
 
 nonUniqueProposal
@@ -197,7 +197,7 @@ nonUniqueProposal originateFn = do
   startLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 20)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (startLevel + dodPeriod)
@@ -213,12 +213,12 @@ nonUniqueProposalEvenAfterDrop originateFn = do
   startLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 20)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (startLevel + dodPeriod)
   key1 <- createSampleProposal 1 dodOwner1 dodDao
-  withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Drop_proposal") key1
   createSampleProposal 1 dodOwner1 dodDao
     & expectFailedWith proposalNotUnique
 
@@ -229,7 +229,7 @@ nonProposalPeriodProposal originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   -- Advance two voting periods to another voting stage.
   startLevel <- getOriginationLevel dodDao
@@ -238,10 +238,10 @@ nonProposalPeriodProposal originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 10
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
 
-  withSender dodOwner1 $ call dodDao (Call @"Propose") params
+  withSender dodOwner1 $ (transfer dodDao $ calling (ep @"Propose") params)
     & expectFailedWith notProposingStage
 
 burnsFeeOnFailure
@@ -259,13 +259,13 @@ burnsFeeOnFailure reason = do
   let voter = dodOwner2
 
   withSender proposer $
-    call dodDao (Call @"Freeze") (#amount :! 42)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 42)
 
   withSender voter $
-    call dodDao (Call @"Freeze") (#amount :! 1)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 1)
 
   withSender proposer $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   startLevel <- getOriginationLevel dodDao
 
@@ -278,7 +278,7 @@ burnsFeeOnFailure reason = do
   case reason of
     Downvoted -> do
       withSender voter $
-        call dodDao (Call @"Vote") [downvote voter key1]
+        transfer dodDao $ calling (ep @"Vote") [downvote (toAddress voter) key1]
     QuorumNotMet -> return ()
 
   let expectedFrozen = 42 + 10
@@ -286,7 +286,7 @@ burnsFeeOnFailure reason = do
 
   proposalStart <- getProposalStartLevel dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod)
-  withSender dodAdmin $ call dodDao (Call @"Flush") 100
+  withSender dodAdmin $ transfer dodDao $ calling (ep @"Flush") 100
 
   -- Tokens frozen with the proposal are returned as unstaked (but still
   -- frozen), except for the fee and slash amount. The latter is zero in this
@@ -309,10 +309,10 @@ unstakesTokensForMultipleVotes = do
   let voter = dodOwner2
 
   withSender proposer $
-    call dodDao (Call @"Freeze") (#amount :! 52)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 52)
 
   withSender voter $
-    call dodDao (Call @"Freeze") (#amount :! 30)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 30)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -326,12 +326,12 @@ unstakesTokensForMultipleVotes = do
           { vVoteType = typ
           , vVoteAmount = 10
           , vProposalKey = key1
-          , vFrom = voter
+          , vFrom = toAddress voter
           }
 
   withSender voter . inBatch $ do
-    call dodDao (Call @"Vote") [vote_ True]
-    call dodDao (Call @"Vote") [vote_ False]
+    transfer dodDao $ calling (ep @"Vote") [vote_ True]
+    transfer dodDao $ calling (ep @"Vote") [vote_ False]
     return ()
 
   fh <- getFreezeHistory dodDao voter
@@ -346,8 +346,8 @@ unstakesTokensForMultipleVotes = do
   -- Advance one voting period to a proposing stage.
   proposalStart <- getProposalStartLevel dodDao key1
   advanceToLevel (proposalStart + 2*dodPeriod + 1)
-  withSender dodAdmin $ call dodDao (Call @"Flush") 100
-  withSender voter $ call dodDao (Call @"Unstake_vote") [key1]
+  withSender dodAdmin $ transfer dodDao $ calling (ep @"Flush") 100
+  withSender voter $ transfer dodDao $ calling (ep @"Unstake_vote") [key1]
 
   fh_after_flush <- getFreezeHistory dodDao voter
   let expected_after_flush = Just (AddressFreezeHistory
@@ -366,10 +366,10 @@ insufficientTokenProposal originateFn = do
   let params = ProposeParams
         { ppFrozenToken = 101
         , ppProposalMetadata = lPackValueRaw @Integer 1
-        , ppFrom = dodOwner1
+        , ppFrom = toAddress dodOwner1
         }
 
-  withSender dodOwner1 $ call dodDao (Call @"Propose") params
+  withSender dodOwner1 $ (transfer dodDao $ calling (ep @"Propose") params)
     & expectFailedWith notEnoughFrozenTokens
 
 insufficientTokenVote
@@ -378,10 +378,10 @@ insufficientTokenVote
 insufficientTokenVote originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 100)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 100)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -394,19 +394,19 @@ insufficientTokenVote originateFn = do
             { vVoteType = True
             , vVoteAmount = 51
             , vProposalKey = key1
-            , vFrom = dodOwner2
+            , vFrom = toAddress dodOwner2
            }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 50
             , vProposalKey = key1
-            , vFrom = dodOwner2
+            , vFrom = toAddress dodOwner2
             }
         ]
   -- Advance one voting period to a voting stage.
   advanceToLevel (startLevel + 2*dodPeriod)
 
-  withSender dodOwner2 $ call dodDao (Call @"Vote") params
+  withSender dodOwner2 $ (transfer dodDao $ calling (ep @"Vote") params)
     & expectFailedWith notEnoughFrozenTokens
 
 dropProposal
@@ -423,10 +423,10 @@ dropProposal originateFn = withFrozenCallStack $ do
   startLevel <- getOriginationLevel' @'Base dodDao
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 30)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 30)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 20)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (startLevel + dodPeriod)
@@ -439,9 +439,9 @@ dropProposal originateFn = withFrozenCallStack $ do
         { vVoteType = True
         , vVoteAmount = 20
         , vProposalKey = key
-        , vFrom = dodOwner2
+        , vFrom = toAddress dodOwner2
         }
-  withSender dodOwner2 $ call dodDao (Call @"Vote") [params key1]
+  withSender dodOwner2 $ transfer dodDao $ calling (ep @"Vote") [params key1]
   -- Advance one voting period to a proposing stage.
   advanceToLevel (startLevel + 3*dodPeriod)
 
@@ -451,31 +451,31 @@ dropProposal originateFn = withFrozenCallStack $ do
 
   -- `guardian` contract can drop any proposal.
   withSender dodOwner2 $ do
-    call dodGuardian CallDefault (unTAddress dodDao, key1)
+    transfer dodGuardian $ calling def (toAddress dodDao, key1)
 
   -- `key2` is not yet expired since it has to be more than 60
   withSender dodOwner2 $ do
-    call dodDao (Call @"Drop_proposal") key2
+    (transfer dodDao $ calling (ep @"Drop_proposal") key2)
       & expectFailedWith dropProposalConditionNotMet
 
   advanceToLevel (proposalStart2 + 50)
   -- `key2` is expired, so it is possible to `drop_proposal`
   withSender dodOwner2 $ do
-    call dodDao (Call @"Drop_proposal") key2
+    transfer dodDao $ calling (ep @"Drop_proposal") key2
 
   -- `key3` is not yet expired
   withSender dodOwner2 $ do
-    call dodDao (Call @"Drop_proposal") key3
+    (transfer dodDao $ calling (ep @"Drop_proposal") key3)
       & expectFailedWith dropProposalConditionNotMet
 
   advanceToLevel (proposalStart3 + 50)
   -- proposers can delete their proposal
   withSender dodOwner1 $ do
-    call dodDao (Call @"Drop_proposal") key3
+    transfer dodDao $ calling (ep @"Drop_proposal") key3
 
   -- calling drop proposal again results in an error
   withSender dodOwner1 $ do
-    call dodDao (Call @"Drop_proposal") key3
+    (transfer dodDao $ calling (ep @"Drop_proposal") key3)
       & expectFailedWith proposalNotExist
 
   -- 30 tokens are frozen in total, but only 27 tokens are returned after drop_proposal
@@ -497,10 +497,10 @@ unstakeVote originateFn = do
 
   -- [Voting]
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 30)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 30)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
@@ -511,7 +511,7 @@ unstakeVote originateFn = do
   key2 <- createSampleProposal 2 dodOwner1 dodDao
 
   let vote' key = NoPermit VoteParam
-        { vFrom = dodOwner2
+        { vFrom = toAddress dodOwner2
         , vVoteType = True
         , vVoteAmount = 5
         , vProposalKey = key
@@ -522,8 +522,8 @@ unstakeVote originateFn = do
 
   -- [Voting]
   withSender dodOwner2 . inBatch $ do
-      call dodDao (Call @"Vote") [vote' key1]
-      call dodDao (Call @"Vote") [vote' key2]
+      transfer dodDao $ calling (ep @"Vote") [vote' key1]
+      transfer dodDao $ calling (ep @"Vote") [vote' key2]
       pure ()
 
   -- Advance to a level where flush can be called
@@ -531,7 +531,7 @@ unstakeVote originateFn = do
   advanceToLevel (proposalStart + (flushLevel + 1))
 
   -- [Proposing]
-  withSender dodAdmin $ call dodDao (Call @"Flush") 1
+  withSender dodAdmin $ transfer dodDao $ calling (ep @"Flush") 1
 
   -- Freeze history before `Unstake_vote`
   fhOwner2 <- getFreezeHistory dodDao dodOwner2
@@ -540,7 +540,7 @@ unstakeVote originateFn = do
   (fhOwner2 <&> fhCurrentUnstaked) @== Just 0
 
   -- Call succeeds.
-  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key1]
+  withSender dodOwner2 $ transfer dodDao $ calling (ep @"Unstake_vote") [key1]
 
   -- Freeze history after `Unstake_vote`
   fhOwner2_ <- getFreezeHistory dodDao dodOwner2
@@ -549,26 +549,26 @@ unstakeVote originateFn = do
   (fhOwner2_ <&> fhCurrentUnstaked) @== Just 0
 
   -- Trigger error since the tokens are already unstaked.
-  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key1]
+  withSender dodOwner2 $ (transfer dodDao $ calling (ep @"Unstake_vote") [key1])
     & expectFailedWith voterDoesNotExist
 
   -- Proposal key2 is not yet flush.
-  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key2]
+  withSender dodOwner2 $ (transfer dodDao $ calling (ep @"Unstake_vote") [key2])
     & expectFailedWith unstakeInvalidProposal
 
   -- owner 1 does not vote on the proposal
-  withSender dodOwner1 $ call dodDao (Call @"Unstake_vote") [key1]
+  withSender dodOwner1 $ (transfer dodDao $ calling (ep @"Unstake_vote") [key1])
     & expectFailedWith voterDoesNotExist
 
   --------------------------------------
   -- Unstake_vote on dropped proposal
   --------------------------------------
   withSender dodOwner1 $ do
-    call dodDao (Call @"Drop_proposal") key2
+    transfer dodDao $ calling (ep @"Drop_proposal") key2
 
   advanceToLevel (startLevel + 4 * dodPeriod)
   -- Call succeeds.
-  withSender dodOwner2 $ call dodDao (Call @"Unstake_vote") [key2]
+  withSender dodOwner2 $ transfer dodDao $ calling (ep @"Unstake_vote") [key2]
 
   -- Freeze history after `Unstake_vote`
   fhOwner2__ <- getFreezeHistory dodDao dodOwner2

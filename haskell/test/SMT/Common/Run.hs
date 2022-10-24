@@ -49,16 +49,16 @@ runBaseDaoSMT option@SmtOption{..} = do
   testScenarioProps $
     (scenarioEmulated $ do
         -- Originate auxiliary contracts
-        guardianContract <- (TAddress . toAddress) <$> originateSimple "guardian" () dummyGuardianContract
-        tokenContract <- ((TAddress @FA2.Parameter @()) . toAddress) <$> originateSimple "TokenContract" [] dummyFA2Contract
-        registryDaoConsumer <- (TAddress . toAddress) <$> originateSimple "registryDaoConsumer" []
+        guardianContract <- originate "guardian" () dummyGuardianContract
+        tokenContract <- originate "TokenContract" [] dummyFA2Contract
+        registryDaoConsumer <- originate "registryDaoConsumer" []
           (contractConsumer @(MText, (Maybe MText))) -- Used in registry dao.
 
         -- Generate a list of entrypoint calls
         let
           ModelInput (contractCalls, ms) = mkModelInput $ ModelInputArg
-              { miaGuardianAddr = unTAddress guardianContract
-              , miaGovAddr = unTAddress tokenContract
+              { miaGuardianAddr = toAddress guardianContract
+              , miaGovAddr = toAddress tokenContract
               , miaViewContractAddr = registryDaoConsumer
               }
 
@@ -75,44 +75,34 @@ runBaseDaoSMT option@SmtOption{..} = do
         -- Modify `Storage` from the generator with registry/treasury configuration.
         let newMs :: ModelState var = ms { msLevel = currentLevel, msStorage = soModifyS storage  }
 
-        -- Originate Dao for Nettest
-        dao <- case soContractType of
-          BaseDaoContract ->
-            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msStorage)) (T.convertContract baseDAOContractLigo)
-          RegistryDaoContract ->
-            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msStorage)) (T.convertContract baseDAORegistryLigo)
-          TreasuryDaoContract ->
-            originateUntypedSimple "BaseDAO" (T.untypeValue $ toVal (newMs & msStorage)) (T.convertContract baseDAOTreasuryLigo)
-
-        -- Send some mutez to registry/treasury dao since they can run out of mutez
-        newBal <-
-          if (soContractType == RegistryDaoContract || soContractType == TreasuryDaoContract) then do
-            let bal = [tz|500u|]
-            sendXtzWithAmount bal (TAddress dao)
-            pure bal
-          else pure zeroMutez
-
-
         -- Preparing proper `ModelState` to be used in Haskell model
-        let newMs_ = newMs
-              { msSelfAddress = toAddress dao
+        let newMs_ addr bal = newMs
+              { msSelfAddress = addr
               , msContracts = Map.fromList
-                  [ ((unTAddress tokenContract), SimpleFA2ContractType $ SimpleFA2Contract [] zeroMutez)
-                  , ((unTAddress registryDaoConsumer), OtherContractType $ OtherContract [] zeroMutez)
+                  [ (toAddress tokenContract, SimpleFA2ContractType $ SimpleFA2Contract [] zeroMutez)
+                  , (toAddress registryDaoConsumer, OtherContractType $ OtherContract [] zeroMutez)
                   ]
-              , msMutez = newBal
+              , msMutez = bal
               , msLevel = currentLevel
               }
 
         -- Call ligo dao and run haskell model then compare the results.
         case eqT @var @'Base of
-          Just Refl ->
-            handleCallLoop @'Base (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
+          Just Refl -> do
+            dao <- originate "BaseDAO" (newMs & msStorage) baseDAOContractLigo
+            handleCallLoop @'Base (dao, tokenContract, registryDaoConsumer) contractCalls (newMs_ (toAddress dao) zeroMutez)
           Nothing -> case eqT @var @'Registry of
-            Just Refl ->
-              handleCallLoop @'Registry (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
+            Just Refl -> do
+              let bal = [tz|500u|]
+              dao <- originate "BaseDAO" (newMs & msStorage) baseDAORegistryLigo
+              sendXtzWithAmount bal dao
+              handleCallLoop @'Registry (dao, tokenContract, registryDaoConsumer) contractCalls (newMs_ (toAddress dao) bal)
             Nothing -> case eqT @var @'Treasury of
-              Just Refl -> handleCallLoop @'Treasury (TAddress dao, tokenContract, registryDaoConsumer) contractCalls newMs_
+              Just Refl -> do
+                let bal = [tz|500u|]
+                dao <- originate "BaseDAO" (newMs & msStorage) baseDAOTreasuryLigo
+                sendXtzWithAmount bal dao
+                handleCallLoop @'Treasury (dao, tokenContract, registryDaoConsumer) contractCalls (newMs_ (toAddress dao) bal)
               Nothing -> error "Unknown contract"
     )
 
@@ -122,7 +112,7 @@ runBaseDaoSMT option@SmtOption{..} = do
 -- 3. Compare the result. If it is to be expected, loop to the next call, else throw the error.
 handleCallLoop
   :: (ContractExtraConstrain (VariantToExtra var), Eq (VariantToExtra var), Buildable (VariantToExtra var), Buildable (VariantToParam var), CallCustomEp (VariantToParam var), HasBaseDAOEp (Parameter' (VariantToParam var)), MonadEmulated caps m)
-  => (TAddress (Parameter' (VariantToParam var)) (), TAddress FA2.Parameter (), TAddress (MText, (Maybe MText)) ())
+  => (ContractHandle (Parameter' (VariantToParam var)) (StorageSkeleton (VariantToExtra var)) (), ContractHandle FA2.Parameter [FA2.TransferParams] (), ContractHandle (MText, Maybe MText) [(MText, Maybe MText)] ())
   -> [ModelCall var] -> ModelState var -> m ()
 handleCallLoop _ [] _ = pure ()
 handleCallLoop (dao, gov, viewC) (mc:mcs) ms = do
@@ -135,13 +125,13 @@ handleCallLoop (dao, gov, viewC) (mc:mcs) ms = do
       haskellDaoBalance = msMutez updatedMs
 
       govContract = updatedMs & msContracts
-        & Map.lookup (unTAddress gov)
+        & Map.lookup (toAddress gov)
         & fromMaybe (error "Governance contract does not exist")
       haskellGovStore = case govContract of SimpleFA2ContractType c -> c & sfcStorage; _ -> error "Shouldn't happen."
       haskellGovBalance = case govContract of SimpleFA2ContractType c -> c & sfcMutez; _ -> error "Shouldn't happen."
 
       viewContract = updatedMs & msContracts
-        & Map.lookup (unTAddress viewC)
+        & Map.lookup (toAddress viewC)
         & fromMaybe (error "View contract does not exist")
       haskellViewStore = case viewContract of OtherContractType c -> c & ocStorage; _ -> error "Shouldn't happen."
 
@@ -233,7 +223,7 @@ printResult mc
 -- auxiliary contracts.
 handleCallViaLigo
   :: (ContractExtraConstrain (VariantToExtra var), CallCustomEp (VariantToParam var), HasBaseDAOEp (Parameter' (VariantToParam var)), MonadEmulated caps m)
-  => (TAddress (Parameter' (VariantToParam var)) (), TAddress FA2.Parameter (), TAddress (MText, Maybe MText) ())
+  => (ContractHandle (Parameter' (VariantToParam var)) (StorageSkeleton (VariantToExtra var)) (), ContractHandle FA2.Parameter [FA2.TransferParams] (), ContractHandle (MText, Maybe MText) [(MText, Maybe MText)] ())
   -> ModelCall var
   -> m (Either ModelError (StorageSkeleton (VariantToExtra var)), Mutez, [FA2.TransferParams], Mutez, [Text])
 handleCallViaLigo (dao, gov, viewC) mc = do
@@ -243,52 +233,52 @@ handleCallViaLigo (dao, gov, viewC) mc = do
 
   nettestResult <- attempt @TransferFailure $ callLigoEntrypoint mc dao
   let result = parseNettestError nettestResult
-  fs <- getFullStorage (unTAddress dao)
+  fs <- getFullStorage (chAddress dao)
   let fsE = case result of
         Just err -> Left err
         Nothing -> Right fs
 
   daoBalance <- getBalance dao
 
-  govStore <- getFullStorage @([FA2.TransferParams]) (unTAddress gov)
+  govStore <- getFullStorage @([FA2.TransferParams]) gov
   govBalance <- getBalance gov
 
-  viewStorage <- getFullStorage @([(MText, Maybe MText)]) (unTAddress viewC)
+  viewStorage <- getFullStorage @([(MText, Maybe MText)]) viewC
   pure (fsE, daoBalance, govStore, govBalance, show <$> viewStorage)
 
 
 callLigoEntrypoint ::
   ( CallCustomEp (VariantToParam var), HasBaseDAOEp (Parameter' (VariantToParam var))
   , MonadCleveland caps m
-  ) => ModelCall var -> TAddress (Parameter' (VariantToParam var)) () -> m ()
+  ) => ModelCall var -> ContractHandle (Parameter' (VariantToParam var)) (StorageSkeleton (VariantToExtra var)) () -> m ()
 callLigoEntrypoint mc dao = do
-  transferMoney (mc & mcSource & msoSender) oneMutez -- 0.9 XTZ
+  transfer (mc & mcSource & msoSender) oneMutez
   withSender (mc & mcSource & msoSender) $ case mc & mcParameter of
-    XtzAllowed (ConcreteEp (Propose p)) -> call dao (Call @"Propose") p
-    XtzAllowed (ConcreteEp (Transfer_contract_tokens p)) -> call dao (Call @"Transfer_contract_tokens") p
-    XtzAllowed (ConcreteEp (Transfer_ownership p)) -> call dao (Call @"Transfer_ownership") p
-    XtzAllowed (ConcreteEp (Accept_ownership p)) -> call dao (Call @"Accept_ownership") p
-    XtzAllowed (ConcreteEp (Default _)) -> call dao CallDefault ()
+    XtzAllowed (ConcreteEp (Propose p)) -> transfer dao $ calling (ep @"Propose") p
+    XtzAllowed (ConcreteEp (Transfer_contract_tokens p)) -> transfer dao $ calling (ep @"Transfer_contract_tokens") p
+    XtzAllowed (ConcreteEp (Transfer_ownership p)) -> transfer dao $ calling (ep @"Transfer_ownership") p
+    XtzAllowed (ConcreteEp (Accept_ownership p)) -> transfer dao $ calling (ep @"Accept_ownership") p
+    XtzAllowed (ConcreteEp (Default _)) -> transfer dao
 
-    XtzForbidden (Vote p) -> call dao (Call @"Vote") p
-    XtzForbidden (Flush p) -> call dao (Call @"Flush") p
-    XtzForbidden (Freeze p) -> call dao (Call @"Freeze") p
-    XtzForbidden (Unfreeze p) -> call dao (Call @"Unfreeze") p
-    XtzForbidden (Update_delegate p) -> call dao (Call @"Update_delegate") p
-    XtzForbidden (Drop_proposal p) -> call dao (Call @"Drop_proposal") p
-    XtzForbidden (Unstake_vote p) -> call dao (Call @"Unstake_vote") p
+    XtzForbidden (Vote p) -> transfer dao $ calling (ep @"Vote") p
+    XtzForbidden (Flush p) -> transfer dao $ calling (ep @"Flush") p
+    XtzForbidden (Freeze p) -> transfer dao $ calling (ep @"Freeze") p
+    XtzForbidden (Unfreeze p) -> transfer dao $ calling (ep @"Unfreeze") p
+    XtzForbidden (Update_delegate p) -> transfer dao $ calling (ep @"Update_delegate") p
+    XtzForbidden (Drop_proposal p) -> transfer dao $ calling (ep @"Drop_proposal") p
+    XtzForbidden (Unstake_vote p) -> transfer dao $ calling (ep @"Unstake_vote") p
 
     XtzAllowed (CustomEp p) -> callCustomEp dao p
 
 class CallCustomEp p where
-  callCustomEp :: MonadCleveland caps m => (TAddress (Parameter' p) vd) -> p -> m ()
+  callCustomEp :: MonadCleveland caps m => (ContractHandle (Parameter' p) st vd) -> p -> m ()
 
 instance CallCustomEp () where
   callCustomEp _ _ = pure ()
 
 instance CallCustomEp RegistryCustomEpParam where
   callCustomEp dao p = case p of
-    Lookup_registry p_ -> call dao (Call @"Lookup_registry") p_
+    Lookup_registry p_ -> transfer dao $ calling (ep @"Lookup_registry") p_
     _ -> pure ()
 
 -- TODO: Use `fromExpression` instead when new morley version is updated.

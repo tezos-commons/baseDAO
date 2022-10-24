@@ -29,6 +29,6 @@ applyTransferContractTokens :: ModelSource -> TransferContractTokensParam -> Mod
 applyTransferContractTokens mso param = do
 
   store <- getStore
-  unless (msoSender mso == sAdmin store) $ throwError NOT_ADMIN
+  unless (toAddress (msoSender mso) == sAdmin store) $ throwError NOT_ADMIN
 
   makeTransferOnToken (param & tcParams) (param & tcContractAddress)

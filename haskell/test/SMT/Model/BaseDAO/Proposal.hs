@@ -153,7 +153,7 @@ applyPropose mso param@ProposeParams{..} = do
   config <- getConfig
   let FixedFee fixedFee = config & cFixedProposalFee
 
-  validFrom <- checkDelegate ppFrom (mso & msoSender)
+  validFrom <- checkDelegate ppFrom $ toAddress $ mso & msoSender
 
   store <- getStore
   get <&> msProposalCheck >>= \f -> f (param, (store & sExtra))
@@ -197,7 +197,7 @@ applyVote mso = mapM_ acceptVote
     acceptVote pp = do
       (voteParam, author) <- verifyPermitProtectedVote mso pp
 
-      validFrom <- checkDelegate (pp & ppArgument & vFrom) author
+      validFrom <- checkDelegate (pp & ppArgument & vFrom) (toAddress author)
       proposal <- checkIfProposalExist (voteParam & vProposalKey)
       ensureProposalVotingStage proposal
       submitVote proposal voteParam validFrom
@@ -207,8 +207,8 @@ applyFreeze mso (arg #amount -> param) = do
   let senderAddr = mso & msoSender
   let amt = param
 
-  freezingUpdateFh senderAddr (toInteger amt)
-  lockGovernanceTokens amt senderAddr
+  freezingUpdateFh (toAddress senderAddr) (toInteger amt)
+  lockGovernanceTokens amt (toAddress senderAddr)
     >>= \frozenTotalSupply -> modifyStore $ \s -> pure $ s
             { sFrozenTotalSupply = frozenTotalSupply
             }
@@ -253,9 +253,9 @@ applyUnfreeze :: ModelSource -> UnfreezeParam -> ModelT cep ()
 applyUnfreeze mso (arg #amount -> amt) = do
   let senderAddr = mso & msoSender
 
-  freezingUpdateFh senderAddr (negate $ fromIntegral amt)
+  freezingUpdateFh (toAddress senderAddr) (negate $ fromIntegral amt)
 
-  unlockGovernanceTokens amt senderAddr
+  unlockGovernanceTokens amt (toAddress senderAddr)
     >>= \frozenTotalSupply -> modifyStore $ \s -> pure $ s
             { sFrozenTotalSupply = frozenTotalSupply }
 
@@ -323,8 +323,8 @@ applyDropProposal mso proposalKey = do
   proposalIsExpired <- isLevelReached proposal =<< (getConfig <&> cProposalExpiredLevel)
 
   store <- getStore
-  if   ((mso & msoSender) == (proposal & plProposer))
-    || ((mso & msoSender) == (store & sGuardian) && (mso & msoSender) /= (mso & msoSource))
+  if   (toAddress (mso & msoSender) == (proposal & plProposer))
+    || (toAddress (mso & msoSender) == (store & sGuardian) && (mso & msoSender) /= (mso & msoSource))
     || proposalIsExpired
   then do
     unstakeProposerToken False proposal
@@ -345,7 +345,7 @@ updateDelegate mso delegates param =
     then Set.insert delegate delegates
     else Set.delete delegate delegates
   where
-    delegate = Delegate { dOwner = mso & msoSender, dDelegate = param & dpDelegate }
+    delegate = Delegate { dOwner = toAddress $ mso & msoSender, dDelegate = param & dpDelegate }
 
 applyUpdateDelegate :: ModelSource -> [DelegateParam] -> ModelT cep ()
 applyUpdateDelegate mso params =
@@ -367,14 +367,14 @@ applyUnstakeVoteOne mso key = do
   when (plistMem key (store & sOngoingProposalsDlist)) $
     throwError UNSTAKE_INVALID_PROPOSAL
 
-  tokens <- case Map.lookup (mso & msoSender, key) (store & sStakedVotes & bmMap) of
+  tokens <- case Map.lookup (toAddress $ mso & msoSender, key) (store & sStakedVotes & bmMap) of
           Just v -> pure v
           Nothing -> throwError VOTER_DOES_NOT_EXIST
 
-  unstakeTk tokens 0 (mso & msoSender)
+  unstakeTk tokens 0 (toAddress $ mso & msoSender)
 
   modifyStore $ \s -> pure $ s
-    { sStakedVotes = BigMap Nothing $ Map.delete (mso & msoSender, key) (s & sStakedVotes & bmMap)
+    { sStakedVotes = BigMap Nothing $ Map.delete (toAddress $ mso & msoSender, key) (s & sStakedVotes & bmMap)
     }
 
 applyUnstakeVote :: ModelSource -> UnstakeVoteParam -> ModelT cep ()

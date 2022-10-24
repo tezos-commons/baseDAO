@@ -1,38 +1,42 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
 
+{-# LANGUAGE OverloadedLists #-}
+
 module Test.Ligo.BaseDAO.OffChainViews
   ( test_FA2
   ) where
 
 import Universum hiding (view)
 
-import Fmt (pretty)
+import Data.Aeson (encode)
+import Data.ByteString.Lazy qualified as BS
 
-import Lorentz.Value
-import Morley.Metadata
-import Morley.Michelson.Interpret (MichelsonFailed, MichelsonFailureWithStack(..))
-import Morley.Michelson.Runtime.Dummy
 import Morley.Michelson.Runtime.GState (genesisAddress)
 import Morley.Tezos.Address
 import Named (defaults, (!))
-import Test.HUnit ((@?=))
+import Test.Cleveland
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase)
 
-import Ligo.BaseDAO.TZIP16Metadata
+import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
+import Ligo.BaseDAO.TZIP16Metadata
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Lorentz.Contracts.Spec.TZIP16Interface
+import Lorentz.Contracts.Spec.TZIP16Interface (MetadataMap, metadataURI, selfHost, tezosStorageUri)
+import Test.Morley.Metadata
+
+metadataBigMap :: MetadataConfig -> MetadataMap
+metadataBigMap conf = metadataURI (tezosStorageUri selfHost "metadata")
+  <> [("metadata", BS.toStrict $ encode $ knownBaseDAOMetadata $ mkMetadataSettings conf)]
 
 offChainViewStorage :: Storage
 offChainViewStorage =
   (mkStorage
   ! #admin addr
   ! #extra ()
-  ! #metadata mempty
+  ! #metadata (metadataBigMap defaultMetadataConfig)
   ! #level 100
-  ! #tokenAddress genesisAddress
+  ! #tokenAddress (toAddress genesisAddress)
   ! #quorumThreshold (mkQuorumThreshold 1 100)
   ! #config defaultConfig
   ! defaults
@@ -41,27 +45,11 @@ offChainViewStorage =
     addr = [ta|tz1M6dcor9QNTFr9Ri68cBYvpxrogZaMttuE|]
 
 test_FA2 :: TestTree
-test_FA2 =
-  mkFA2Tests offChainViewStorage (mkMetadataSettings defaultMetadataConfig)
-
-runView
-  :: forall ret. (HasCallStack, IsoValue ret)
-  => View $ ToT Storage
-  -> Storage
-  -> ViewParam
-  -> Either MichelsonFailed ret
-runView view storage param =
-  case interpretView dummyContractEnv view param storage of
-    Right x -> Right x
-    Left (VIEMichelson _ (MSVIEMichelsonFailed (MichelsonFailureWithStack e _))) -> Left e
-    Left err -> error (pretty err)
-
-
-mkFA2Tests :: Storage -> MetadataSettings -> TestTree
-mkFA2Tests storage mc = testGroup "FA2 off-chain views"
+test_FA2 = testGroup "FA2 off-chain views"
   [ testGroup "governance_token" $
-    [ testCase "Get the address and token_id of the associated FA2 contract" $
-        runView @GovernanceToken (governanceTokenView mc) storage NoParam
-        @?= (Right $ GovernanceToken genesisAddress FA2.theTokenId)
+    [ testScenario "can flush proposals that got accepted" $ scenario $ do
+          baseDao <- originate "BaseDAO - Test Contract" offChainViewStorage baseDAOContractLigo
+          callOffChainView @GovernanceToken baseDao "governance_token" NoParam
+            @@== (GovernanceToken (toAddress genesisAddress) FA2.theTokenId)
     ]
   ]

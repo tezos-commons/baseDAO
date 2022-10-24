@@ -36,9 +36,9 @@ transferContractTokensScenario originateFn = do
   let target_owner2 = genesisAddress2
 
   let transferParams = [ FA2.TransferItem
-            { tiFrom = target_owner1
+            { tiFrom = toAddress target_owner1
             , tiTxs = [ FA2.TransferDestination
-                { tdTo = target_owner2
+                { tdTo = toAddress target_owner2
                 , tdTokenId = FA2.theTokenId
                 , tdAmount = 10
                 } ]
@@ -49,16 +49,16 @@ transferContractTokensScenario originateFn = do
         }
 
   withSender dodOwner1 $
-    call dodDao (Call @"Transfer_contract_tokens") param
+    (transfer dodDao $ calling (ep @"Transfer_contract_tokens") param)
     & expectFailedWith notAdmin
 
   withSender dodAdmin $
-    call dodDao (Call @"Transfer_contract_tokens") param
+    transfer dodDao $ calling (ep @"Transfer_contract_tokens") param
 
-  tcStorage <- getStorage @[[FA2.TransferItem]] (unTAddress dodTokenContract)
+  tcStorage <- getStorage @[[FA2.TransferItem]] dodTokenContract
 
   assert (tcStorage ==
-    ([ [ FA2.TransferItem { tiFrom = target_owner1, tiTxs = [FA2.TransferDestination { tdTo = target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
+    ([ [ FA2.TransferItem { tiFrom = toAddress target_owner1, tiTxs = [FA2.TransferDestination { tdTo = toAddress target_owner2, tdTokenId = FA2.theTokenId, tdAmount = 10 }] } ]
       ])) "Unexpected FA2 transfers"
 
 ensureXtzTransfer

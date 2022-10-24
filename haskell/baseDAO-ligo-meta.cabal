@@ -309,6 +309,7 @@ test-suite baseDAO-test
       tasty-discover:tasty-discover
   build-depends:
       HUnit
+    , aeson
     , base-noprelude >=4.7 && <5
     , baseDAO-ligo-meta
     , bytestring
@@ -321,6 +322,7 @@ test-suite baseDAO-test
     , morley
     , morley-ledgers
     , morley-metadata
+    , morley-metadata-test
     , morley-prelude
     , mtl
     , named

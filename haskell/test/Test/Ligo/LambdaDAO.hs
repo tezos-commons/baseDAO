@@ -1,23 +1,21 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.LambdaDAO
   ( test_LambdaDAO
   ) where
 
 import Prelude
 
-import qualified Data.Map as M
+import Data.Map qualified as M
 import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (assert, div)
-import qualified Lorentz.Contracts.Spec.FA2Interface as FA2
-import Morley.Michelson.Typed (convertContract)
-import Morley.Michelson.Typed.Convert (untypeValue)
+import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
+import Morley.Tezos.Address
 import Morley.Util.Named
+import Morley.Util.Peano
+import Morley.Util.SizedList (SizedList, SizedList'(..))
 import Test.Cleveland
 
 import Ligo.BaseDAO.Contract
@@ -26,36 +24,30 @@ import Ligo.BaseDAO.LambdaDAO.Types
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 
-getStorageRPCLambda :: forall p caps vd m. MonadCleveland caps m => TAddress p vd ->  m (StorageSkeletonRPC (VariantToExtra 'Lambda))
-getStorageRPCLambda addr = getStorage @(StorageSkeleton (VariantToExtra 'Lambda)) (unTAddress addr)
+getStorageRPCLambda :: forall p caps vd m. MonadCleveland caps m => ContractHandle p vd () ->  m (StorageSkeletonRPC (VariantToExtra 'Lambda))
+getStorageRPCLambda addr = getStorage @(StorageSkeleton (VariantToExtra 'Lambda)) (chAddress addr)
 
 withOriginated
-  :: MonadCleveland caps m
-  => Integer
-  -> ([Address] -> LambdaStorage)
-  -> ([Address] -> LambdaStorage -> TAddress (Parameter' LambdaCustomEpParam) () -> TAddress FA2.Parameter () -> m a)
+  :: (IsoNatPeano num num', MonadCleveland caps m, SingIPeano num)
+  => (SizedList num ImplicitAddress -> LambdaStorage)
+  -> (SizedList num ImplicitAddress -> LambdaStorage -> ContractHandle (Parameter' LambdaCustomEpParam) (StorageSkeleton (VariantToExtra 'Lambda)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
   -> m a
-withOriginated addrCount storageFn tests = do
-  addresses <- mapM (\x -> refillable $ newAddress $ fromString ("address" <> (show x))) [1 ..addrCount]
-  dodTokenContract <- chAddress <$> originateSimple "token_contract" [] dummyFA2Contract
+withOriginated storageFn tests = do
+  addresses <- refillables $ newAddresses $ enumAliases "address"
+  dodTokenContract <- originate "token_contract" [] dummyFA2Contract
   let storageInitial = storageFn addresses
   now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
   let storage = storageInitial
         { sGovernanceToken = GovernanceToken
-              { gtAddress = dodTokenContract
+              { gtAddress = toAddress dodTokenContract
               , gtTokenId = FA2.theTokenId
               }
           , sStartLevel = now_level
         }
 
-  baseDao <- originateUntyped $ UntypedOriginateData
-    { uodName = "BaseDAO - LambdaDAO Test Contract"
-    , uodBalance = zeroMutez
-    , uodStorage = untypeValue $ toVal storage
-    , uodContract = convertContract baseDAOLambdaLigo
-    }
+  baseDao <- originate "BaseDAO - LambdaDAO Test Contract" storage baseDAOLambdaLigo
   advanceToLevel now_level
-  tests addresses storage (TAddress baseDao) (TAddress dodTokenContract)
+  tests addresses storage baseDao dodTokenContract
 
 toPeriod :: LambdaStorage -> Natural
 toPeriod = unPeriod . cPeriod . sConfig
@@ -103,15 +95,15 @@ test_LambdaDAO :: [TestTree]
 test_LambdaDAO =
   [ let flushPeriod = 41 in testGroup "LambdaDAO Tests"
       [ testScenario "AddHandler/ExecuteHandler adds/execute handlers/proposals" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
-           \(admin:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           \(admin::<wallet1::<_) fs baseDao _ -> do
 
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Add_handler $ AddHandlerParam "proposal_handler_1" proposal_1_handler proposal_1_check
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
-               call baseDao (Call @"Freeze") (#amount :! (proposalSize + 1000))
+               transfer baseDao $ calling (ep @"Freeze") (#amount :! (proposalSize + 1000))
              startLevel <- getOriginationLevel' @'Lambda baseDao
 
              -- Add a new Handler
@@ -119,20 +111,20 @@ test_LambdaDAO =
              -- Advance one voting period to a proposing stage.
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams wallet1 proposalSize proposalMeta
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             withSender wallet1 $ transfer baseDao $ calling (ep @"Propose") proposeParams
 
              let proposalKey = makeProposalKey proposeParams
 
              advanceToLevel (startLevel + 2 * toPeriod fs)
              withSender wallet1 $
-               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 200 wallet1) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (toAddress wallet1)) Nothing]
 
              -- Advance one voting period
              pstart <- getProposalStartLevel' @'Lambda baseDao proposalKey
              advanceToLevel (pstart + flushPeriod)
              withSender admin $
-               call baseDao (Call @"Flush") (1 :: Natural)
+               transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
             -- Execute the handler
              advanceToLevel (startLevel + 4 * toPeriod fs)
@@ -144,18 +136,18 @@ test_LambdaDAO =
              let proposalSize' = metadataSize proposalMeta'
 
              advanceToLevel (startLevel + 5 * toPeriod fs)
-             let proposeParams' = ProposeParams wallet1 proposalSize' proposalMeta'
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams'
+             let proposeParams' = ProposeParams (toAddress wallet1) proposalSize' proposalMeta'
+             withSender wallet1 $ transfer baseDao $ calling (ep @"Propose") proposeParams'
              let proposalKey' = makeProposalKey proposeParams'
 
              advanceToLevel (startLevel + 6 * toPeriod fs)
              withSender wallet1 $
-               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey' True 200 wallet1) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey' True 200 (toAddress wallet1)) Nothing]
 
              pstart' <- getProposalStartLevel' @'Lambda baseDao proposalKey'
              advanceToLevel (pstart' + flushPeriod)
              withSender admin $
-               call baseDao (Call @"Flush") (1 :: Natural)
+               transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
              -- Check if the result of proposal_handler_1 execution.
              handlerStorage <- (leHandlerStorageRPC . sExtraRPC) <$> getStorageRPCLambda baseDao
@@ -166,14 +158,14 @@ test_LambdaDAO =
                 Left _ -> fail "Unpacking failed"
 
       , testScenario "AddHandler proposal check checks for existing handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
-           \(admin:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           \(admin::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Add_handler $ AddHandlerParam "proposal_handler_1" proposal_1_handler proposal_1_check
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
-               call baseDao (Call @"Freeze") (#amount :! (proposalSize + 1000))
+               transfer baseDao $ calling (ep @"Freeze") (#amount :! (proposalSize + 1000))
              startLevel <- getOriginationLevel' @'Lambda baseDao
 
              -- Add a new Handler
@@ -181,122 +173,122 @@ test_LambdaDAO =
              -- Advance one voting period to a proposing stage.
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams wallet1 proposalSize proposalMeta
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             withSender wallet1 $ transfer baseDao $ calling (ep @"Propose") proposeParams
 
              let proposalKey = makeProposalKey proposeParams
 
              advanceToLevel (startLevel + 2 * toPeriod fs)
              withSender wallet1 $
-               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 200 wallet1) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (toAddress wallet1)) Nothing]
 
              pstart <- getProposalStartLevel' @'Lambda baseDao proposalKey
              advanceToLevel (pstart + flushPeriod)
 
              withSender admin $
-               call baseDao (Call @"Flush") (1 :: Natural)
+               transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
              -- Raise a proposal to add the duplicate handler
              advanceToLevel (startLevel + 4 * toPeriod fs)
-             let proposeParams' = ProposeParams wallet1 proposalSize proposalMeta
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams'
+             let proposeParams' = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams')
                & expectFailedWith (failProposalCheck, proposalHandlerExists)
 
       , testScenario "Remove handler proposal check checks for existing handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
-           \(_:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           \(_::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Remove_handler "proposal_handler_1"
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
-               call baseDao (Call @"Freeze") (#amount :! (proposalSize + 1000))
+               transfer baseDao $ calling (ep @"Freeze") (#amount :! (proposalSize + 1000))
              startLevel <- getOriginationLevel' @'Lambda baseDao
 
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams wallet1 proposalSize proposalMeta
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams)
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "Remove handler proposal check checks for active handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithPreloadedLambdasDisabled admin) $
-           \(_:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithPreloadedLambdasDisabled admin) $
+           \(_::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Remove_handler "proposal_handler_1"
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
-               call baseDao (Call @"Freeze") (#amount :! (proposalSize + 1000))
+               transfer baseDao $ calling (ep @"Freeze") (#amount :! (proposalSize + 1000))
              startLevel <- getOriginationLevel' @'Lambda baseDao
 
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams wallet1 proposalSize proposalMeta
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams)
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "ExecuteHandler proposal check checks for existing handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithExplictLambdaDAOConfig admin) $
-           \(_:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithExplictLambdaDAOConfig admin) $
+           \(_::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Execute_handler $ ExecuteHandlerParam "proposal_handler_1" (lPackValueRaw [mt|Something|])
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
-               call baseDao (Call @"Freeze") (#amount :! (proposalSize + 1000))
+               transfer baseDao $ calling (ep @"Freeze") (#amount :! (proposalSize + 1000))
              startLevel <- getOriginationLevel' @'Lambda baseDao
 
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams wallet1 proposalSize proposalMeta
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams)
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "ExecuteHandler proposal check checks for active handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithPreloadedLambdasDisabled admin) $
-           \(_:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithPreloadedLambdasDisabled admin) $
+           \(_::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
                    Execute_handler $ ExecuteHandlerParam "proposal_handler_1" (lPackValueRaw [mt|Something|])
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
-               call baseDao (Call @"Freeze") (#amount :! (proposalSize + 1000))
+               transfer baseDao $ calling (ep @"Freeze") (#amount :! (proposalSize + 1000))
              startLevel <- getOriginationLevel' @'Lambda baseDao
 
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams wallet1 proposalSize proposalMeta
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams)
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "RemoveHandler proposal disables the handler" $ scenario $
-         withOriginated 2
-           (\(admin: _) -> initialStorageWithPreloadedLambdas admin) $
-           \(admin:wallet1:_) fs baseDao _ -> do
+         withOriginated @2
+           (\(admin ::< _) -> initialStorageWithPreloadedLambdas admin) $
+           \(admin::<wallet1::<_) fs baseDao _ -> do
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $ Remove_handler [mt|proposal_handler_1|]
              let proposalSize = metadataSize proposalMeta
              withSender wallet1 $
-               call baseDao (Call @"Freeze") (#amount :! (proposalSize + 1000))
+               transfer baseDao $ calling (ep @"Freeze") (#amount :! (proposalSize + 1000))
              startLevel <- getOriginationLevel' @'Lambda baseDao
 
              -- Advance one voting period to a proposing stage.
              advanceToLevel (startLevel + toPeriod fs)
 
-             let proposeParams = ProposeParams wallet1 proposalSize proposalMeta
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             withSender wallet1 $ transfer baseDao $ calling (ep @"Propose") proposeParams
 
              let proposalKey = makeProposalKey proposeParams
 
              advanceToLevel (startLevel + 2 * toPeriod fs)
              withSender wallet1 $
-               call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 200 wallet1) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 200 (toAddress wallet1)) Nothing]
 
              pstart <- getProposalStartLevel' @'Lambda baseDao proposalKey
              advanceToLevel (pstart + flushPeriod)
 
              withSender admin $
-               call baseDao (Call @"Flush") (1 :: Natural)
+               transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
             -- Raise an execute "proposal_handler_1" proposal
              advanceToLevel (startLevel + 4 * toPeriod fs)
@@ -308,8 +300,8 @@ test_LambdaDAO =
              let proposalSize' = metadataSize proposalMeta'
 
              advanceToLevel (startLevel + 5 * toPeriod fs)
-             let proposeParams' = ProposeParams wallet1 proposalSize' proposalMeta'
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams'
+             let proposeParams' = ProposeParams (toAddress wallet1) proposalSize' proposalMeta'
+             withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams')
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
       , testScenario "RemovingHandler does not prevent existing proposals from executing" $ scenario $
@@ -319,9 +311,9 @@ test_LambdaDAO =
             let
               s = initialStorageWithPreloadedLambdas adm
             in s { sConfig = (sConfig s) { cPeriod = 30, cProposalFlushLevel = flushInterval, cProposalExpiredLevel = 300 } }
-         in withOriginated 2
-           (\(admin: _) -> storageFn admin) $
-           \(admin:wallet1:_) fs baseDao _ -> do
+         in withOriginated @2
+           (\(admin ::< _) -> storageFn admin) $
+           \(admin::<wallet1::<_) fs baseDao _ -> do
              -- Raise an 'Execute' followed by a 'Remove_handler' proposal
              let refString = [mt|Test string|]
              let proposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $
@@ -331,7 +323,7 @@ test_LambdaDAO =
              let removeProposalMeta = lPackValueRaw @LambdaDaoProposalMetadata $ Remove_handler $ [mt|proposal_handler_1|]
              let removeProposalSize = metadataSize removeProposalMeta
              withSender wallet1 $
-               call baseDao (Call @"Freeze") (#amount :! (proposalSize + removeProposalSize + 1000))
+               transfer baseDao $ calling (ep @"Freeze") (#amount :! (proposalSize + removeProposalSize + 1000))
              startLevel <- getOriginationLevel' @'Lambda baseDao
 
              -- Advance one voting period to a proposing stage.
@@ -342,14 +334,14 @@ test_LambdaDAO =
              let executeProposalRaisedAt = removeProposalRaisedAt + 10
              advanceToLevel removeProposalRaisedAt
 
-             let proposeParams = ProposeParams wallet1 proposalSize proposalMeta
-             let removeProposeParams = ProposeParams wallet1 removeProposalSize removeProposalMeta
+             let proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+             let removeProposeParams = ProposeParams (toAddress wallet1) removeProposalSize removeProposalMeta
              withSender wallet1 $ do
-              call baseDao (Call @"Propose") removeProposeParams
+              transfer baseDao $ calling (ep @"Propose") removeProposeParams
              -- Raise execute proposal. We are still in first proposal period.
              advanceToLevel executeProposalRaisedAt
              withSender wallet1 $ do
-              call baseDao (Call @"Propose") proposeParams
+              transfer baseDao $ calling (ep @"Propose") proposeParams
 
              let executeProposalKey = makeProposalKey proposeParams
              let removeProposalKey = makeProposalKey removeProposeParams
@@ -358,12 +350,12 @@ test_LambdaDAO =
              advanceToLevel (startLevel + 2 * toPeriod fs)
              -- We are in second voting period.
              withSender wallet1 $ do
-               call baseDao (Call @"Vote") [PermitProtected (VoteParam removeProposalKey True 200 wallet1) Nothing]
-               call baseDao (Call @"Vote") [PermitProtected (VoteParam executeProposalKey True 200 wallet1) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam removeProposalKey True 200 (toAddress wallet1)) Nothing]
+               transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam executeProposalKey True 200 (toAddress wallet1)) Nothing]
 
              advanceToLevel (removeProposalRaisedAt + flushInterval + 10)
              withSender admin $
-               call baseDao (Call @"Flush") (1 :: Natural)
+               transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
              -- We should be in second proposal period now. Because removeProposal was raised at first
              -- proposal period, and flush interval is 2 periods. So one voting period after the first
@@ -376,13 +368,13 @@ test_LambdaDAO =
              let proposalSize' = metadataSize proposalMeta'
 
              advanceToLevel (startLevel + 5 * toPeriod fs)
-             let proposeParams' = ProposeParams wallet1 proposalSize' proposalMeta'
-             withSender wallet1 $ call baseDao (Call @"Propose") proposeParams'
+             let proposeParams' = ProposeParams (toAddress wallet1) proposalSize' proposalMeta'
+             withSender wallet1 $ (transfer baseDao $ calling (ep @"Propose") proposeParams')
                & expectFailedWith (failProposalCheck, proposalHandlerNotFound)
 
              advanceToLevel (executeProposalRaisedAt + flushInterval + 10)
              withSender admin $
-               call baseDao (Call @"Flush") (1 :: Natural)
+               transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
              -- Check if the result of proposal_handler_1 execution.
              handlerStorage <- (leHandlerStorageRPC . sExtraRPC) <$> getStorageRPCLambda baseDao
@@ -401,8 +393,8 @@ test_LambdaDAO =
   -- RegistryDAO configuration values using the setExtra function below, and
   -- initialize the contract using it. This let us have the callbacks from LIGO
   -- in storage, and allows to tweak RegistryDAO configuration in tests.
-  initialStorage :: Address -> LambdaStorage
-  initialStorage admin = let
+  initialStorage :: ImplicitAddress -> LambdaStorage
+  initialStorage (toAddress -> admin) = let
     fs = baseDAOLambdaStorageLigo
     in fs { sAdmin = admin, sConfig = (sConfig fs)
               { cPeriod = 20
@@ -412,15 +404,15 @@ test_LambdaDAO =
 
         }}
 
-  initialStorageWithExplictLambdaDAOConfig :: Address -> LambdaStorage
-  initialStorageWithExplictLambdaDAOConfig admin = (initialStorage admin)
+  initialStorageWithExplictLambdaDAOConfig :: ImplicitAddress -> LambdaStorage
+  initialStorageWithExplictLambdaDAOConfig admin = initialStorage admin
 
-  initialStorageWithPreloadedLambdas :: Address -> LambdaStorage
+  initialStorageWithPreloadedLambdas :: ImplicitAddress -> LambdaStorage
   initialStorageWithPreloadedLambdas admin = let
     preloadedHandlerInfo = HandlerInfo proposal_1_handler proposal_1_check True
     in setExtra (\e -> e { leLambdas = mkBigMap [([mt|proposal_handler_1|],  preloadedHandlerInfo)] }  ) (initialStorage admin)
 
-  initialStorageWithPreloadedLambdasDisabled :: Address -> LambdaStorage
+  initialStorageWithPreloadedLambdasDisabled :: ImplicitAddress -> LambdaStorage
   initialStorageWithPreloadedLambdasDisabled admin = let
     preloadedHandlerInfo = HandlerInfo proposal_1_handler proposal_1_check False
     in setExtra (\e -> e { leLambdas = mkBigMap [([mt|proposal_handler_1|],  preloadedHandlerInfo)] }  ) (initialStorage admin)
