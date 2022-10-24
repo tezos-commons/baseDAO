@@ -110,7 +110,8 @@ testConfig
   => ConfigDesc config
 testConfig =
   ConfigDesc configConsts
-    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100) }
+    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 1 100)
+    }
 
 -- | Config with longer voting period and bigger quorum threshold
 -- Needed for vote related tests that do not call `flush`
@@ -119,7 +120,9 @@ voteConfig
   => ConfigDesc config
 voteConfig = ConfigDesc $
   ConfigDesc configConsts
-    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 4 100) }
+    { cmQuorumThreshold = Just (DAO.mkQuorumThreshold 4 100)
+    , cmPeriod = Just $ DAO.Period 60
+    }
 
 --------------------------------------------------------------------------------
 --
