@@ -36,10 +36,10 @@ voteNonExistingProposal originateFn = do
   startLevel <- getOriginationLevel dodDao
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 2)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 2)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   -- Advance three voting periods to a proposing stage.
   advanceToLevel (startLevel + 3*dodPeriod)
@@ -49,12 +49,12 @@ voteNonExistingProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = UnsafeHash "\11\12\13"
-        , vFrom = dodOwner2
+        , vFrom = toAddress dodOwner2
         }
   -- Advance one voting period to a voting stage.
   advanceToLevel (startLevel + 4*dodPeriod)
 
-  withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
+  withSender dodOwner2 $ (transfer dodDao $ calling (ep @"Vote") [params])
     & expectFailedWith proposalNotExist
 
 voteMultiProposals
@@ -65,10 +65,10 @@ voteMultiProposals originateFn = do
   startLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 20)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 5)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 5)
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (startLevel + 3*dodPeriod)
@@ -80,19 +80,19 @@ voteMultiProposals originateFn = do
             { vVoteType = True
             , vVoteAmount = 2
             , vProposalKey = key1
-            , vFrom = dodOwner2
+            , vFrom = toAddress dodOwner2
             }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 3
             , vProposalKey = key2
-            , vFrom = dodOwner2
+            , vFrom = toAddress dodOwner2
             }
         ]
 
   -- Advance one voting period to a voting stage.
   advanceToLevel (startLevel + 4*dodPeriod)
-  withSender dodOwner2 $ call dodDao (Call @"Vote") params
+  withSender dodOwner2 $ transfer dodDao $ calling (ep @"Vote") params
   checkBalance dodDao dodOwner2 5
   getProposal dodDao key1 >>= \case
     Just proposal -> assert ((plUpvotes proposal) == 2) "Proposal had unexpected votes"
@@ -115,13 +115,13 @@ proposalCorrectlyTrackVotes originateFn = do
   let voter2 = dodOperator1
 
   withSender proposer $
-    call dodDao (Call @"Freeze") (#amount :! 20)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
 
   withSender voter1 $
-    call dodDao (Call @"Freeze") (#amount :! 40)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 40)
 
   withSender voter2 $
-    call dodDao (Call @"Freeze") (#amount :! 40)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 40)
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (originationLevel + dodPeriod)
@@ -133,13 +133,13 @@ proposalCorrectlyTrackVotes originateFn = do
             { vVoteType = True
             , vVoteAmount = 5
             , vProposalKey = key1
-            , vFrom = voter1
+            , vFrom = toAddress voter1
             }
         , VoteParam
             { vVoteType = False
             , vVoteAmount = 3
             , vProposalKey = key2
-            , vFrom = voter1
+            , vFrom = toAddress voter1
             }
         ]
 
@@ -148,13 +148,13 @@ proposalCorrectlyTrackVotes originateFn = do
             { vVoteType = False
             , vVoteAmount = 2
             , vProposalKey = key1
-            , vFrom = voter2
+            , vFrom = toAddress voter2
             }
         , VoteParam
             { vVoteType = True
             , vVoteAmount = 4
             , vProposalKey = key2
-            , vFrom = voter2
+            , vFrom = toAddress voter2
             }
         ]
 
@@ -163,25 +163,25 @@ proposalCorrectlyTrackVotes originateFn = do
             { vVoteType = True
             , vVoteAmount = 3
             , vProposalKey = key1
-            , vFrom = voter1
+            , vFrom = toAddress voter1
             }
         , VoteParam
             { vVoteType = True
             , vVoteAmount = 3
             , vProposalKey = key2
-            , vFrom = voter1
+            , vFrom = toAddress voter1
             }
         ]
 
   -- Advance one voting period to a voting stage.
   advanceToLevel (originationLevel + 2*dodPeriod)
   withSender voter1 . inBatch $ do
-    call dodDao (Call @"Vote") params1
-    call dodDao (Call @"Vote") params3
+    transfer dodDao $ calling (ep @"Vote") params1
+    transfer dodDao $ calling (ep @"Vote") params3
     pure ()
 
   withSender voter2  do
-    call dodDao (Call @"Vote") params2
+    transfer dodDao $ calling (ep @"Vote") params2
 
   proposal1 <- fromMaybe (error "proposal not found") <$> getProposal dodDao key1
   proposal2 <- fromMaybe (error "proposal not found") <$> getProposal dodDao key2
@@ -216,10 +216,10 @@ voteOutdatedProposal originateFn = do
   DaoOriginateData{..} <- originateFn configDesc defaultQuorumThreshold
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 4)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 4)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   startLevel <- getOriginationLevel dodDao
   -- Advance one voting period to a proposing stage.
@@ -232,17 +232,17 @@ voteOutdatedProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = dodOwner2
+        , vFrom = toAddress dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
   advanceToLevel (startLevel + 2*dodPeriod)
 
   withSender dodOwner2 $ do
-    call dodDao (Call @"Vote") [params]
+    transfer dodDao $ calling (ep @"Vote") [params]
     -- Advance two voting period to another voting stage.
     advanceToLevel (startLevel + 4*dodPeriod)
-    call dodDao (Call @"Vote") [params]
+    (transfer dodDao $ calling (ep @"Vote") [params])
       & expectFailedWith votingStageOver
 
 voteValidProposal
@@ -253,10 +253,10 @@ voteValidProposal originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 2)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 2)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   startLevel <- getOriginationLevel dodDao
   -- Advance three voting period to a proposing stage.
@@ -271,12 +271,12 @@ voteValidProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = dodOwner2
+        , vFrom = toAddress dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
   advanceToLevel (startLevel + 4*dodPeriod)
-  withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
+  withSender dodOwner2 $ transfer dodDao $ calling (ep @"Vote") [params]
   checkBalance dodDao dodOwner2 2
   getProposal dodDao key1 >>= \case
     Just proposal -> assert ((plUpvotes proposal) == 2) "Proposal had unexpected votes"
@@ -291,10 +291,10 @@ voteDeletedProposal originateFn = do
   startLevel <- getOriginationLevel dodDao
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 2)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 2)
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 10)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
 
   -- Advance three voting period to a proposing stage.
   advanceToLevel (startLevel + 3*dodPeriod)
@@ -305,13 +305,13 @@ voteDeletedProposal originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = dodOwner2
+        , vFrom = toAddress dodOwner2
         }
 
   -- Advance one voting period to a voting stage.
   advanceToLevel (startLevel + 4*dodPeriod)
-  withSender dodOwner1 $ call dodDao (Call @"Drop_proposal") key1
-  withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Drop_proposal") key1
+  withSender dodOwner2 $ (transfer dodDao $ calling (ep @"Vote") [params])
     & expectFailedWith proposalNotExist
 
 voteWithPermit
@@ -320,7 +320,7 @@ voteWithPermit
 voteWithPermit originateFn = do
   DaoOriginateData{..} <- originateFn voteConfig defaultQuorumThreshold
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 12)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 12)
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
@@ -334,13 +334,13 @@ voteWithPermit originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = dodOwner1
+        , vFrom = toAddress dodOwner1
         }
 
   -- Advance one voting period to a voting stage.
   advanceToLevel (startLevel + 2*dodPeriod)
 
-  withSender dodOwner2 $ call dodDao (Call @"Vote") [params]
+  withSender dodOwner2 $ transfer dodDao $ calling (ep @"Vote") [params]
   checkBalance dodDao dodOwner1 12
 
 voteWithPermitNonce
@@ -352,10 +352,10 @@ voteWithPermitNonce originateFn = do
   originationLevel <- getOriginationLevel dodDao
 
   withSender dodOwner1 $
-    call dodDao (Call @"Freeze") (#amount :! 60)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 60)
 
   withSender dodOwner2 $
-    call dodDao (Call @"Freeze") (#amount :! 50)
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 50)
 
   -- Advance one voting period to a proposing stage.
   advanceToLevel (originationLevel + dodPeriod)
@@ -367,7 +367,7 @@ voteWithPermitNonce originateFn = do
         { vVoteType = True
         , vVoteAmount = 2
         , vProposalKey = key1
-        , vFrom = dodOwner1
+        , vFrom = toAddress dodOwner1
         }
 
   -- Advance one voting period to a voting stage.
@@ -383,18 +383,18 @@ voteWithPermitNonce originateFn = do
 
   withSender dodOwner2 $ do
     -- Good nonce
-    call dodDao (Call @"Vote") [params1]
+    transfer dodDao $ calling (ep @"Vote") [params1]
 
     -- Outdated nonce
-    call dodDao (Call @"Vote") [params1]
+    (transfer dodDao $ calling (ep @"Vote") [params1])
       & expectFailedWith (missigned, (lPackValue dataToSign2))
 
     -- Nonce from future
-    call dodDao (Call @"Vote") [params3]
+    (transfer dodDao $ calling (ep @"Vote") [params3])
       & expectFailedWith (missigned, (lPackValue dataToSign2))
 
     -- Good nonce after the previous successful entrypoint call
-    call dodDao (Call @"Vote") [params2]
+    transfer dodDao $ calling (ep @"Vote") [params2]
 
   -- Check counter
   (Nonce counter) <- getVotePermitsCounter dodDao

@@ -14,7 +14,6 @@ module Test.Ligo.BaseDAO.Proposal.Tokens
 import Universum
 
 import Data.ByteString qualified as BS
-import Lorentz hiding (assert, (>>))
 import Morley.Util.Named
 import Test.Cleveland
 
@@ -32,15 +31,15 @@ freezeTokens
 freezeTokens originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
-  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount :! 10)
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
   checkBalance dodDao dodOwner1 10
   -- Check that the FA2 token got a transfer call as expected.
 
-  tcStorage <- getStorage @[[FA2.TransferItem]] (unTAddress dodTokenContract)
+  tcStorage <- getStorage @[[FA2.TransferItem]] dodTokenContract
   assert (tcStorage ==
     ([[FA2.TransferItem
-      { tiFrom = dodOwner1
-      , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+      { tiFrom = toAddress dodOwner1
+      , tiTxs = [FA2.TransferDestination { tdTo = toAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
       }]])) "Unexpected FA2 transfers"
 
 checkFreezeHistoryTracking
@@ -55,10 +54,10 @@ checkFreezeHistoryTracking originateFn = do
   let proposalSize1 = fromIntegral . BS.length $ proposalMeta1
   let requiredFrozen = proposalSize1 * frozen_scale_value + frozen_extra_value
 
-  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount :! requiredFrozen)
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Freeze") (#amount :! requiredFrozen)
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
-  withSender dodOwner1 $ call dodDao (Call @"Propose") (ProposeParams dodOwner1 requiredFrozen proposalMeta1)
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress dodOwner1) requiredFrozen proposalMeta1)
   advanceToLevel dodPeriod
 
   fh <- getFreezeHistory dodDao dodOwner1
@@ -77,25 +76,25 @@ canUnfreezeFromPreviousPeriod
 canUnfreezeFromPreviousPeriod originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
-  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount :! 10)
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
   checkBalance dodDao dodOwner1 10
 
   -- Advance one voting period to a proposing stage.
   startLevel <- getOriginationLevel dodDao
   advanceToLevel (startLevel + dodPeriod)
 
-  withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 10)
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Unfreeze") (#amount :! 10)
   checkBalance dodDao dodOwner1 00
   -- Check that the FA2 token got a transfer call as expected.
-  tcStorage <- getStorage @[[FA2.TransferItem]] (unTAddress dodTokenContract)
+  tcStorage <- getStorage @[[FA2.TransferItem]] dodTokenContract
   assert (tcStorage ==
     ([ [ FA2.TransferItem
-        { tiFrom = unTAddress dodDao
-        , tiTxs = [FA2.TransferDestination { tdTo = dodOwner1, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+        { tiFrom = toAddress dodDao
+        , tiTxs = [FA2.TransferDestination { tdTo = toAddress dodOwner1, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
         }]
       , [FA2.TransferItem
-        { tiFrom = dodOwner1
-        , tiTxs = [FA2.TransferDestination { tdTo = unTAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
+        { tiFrom = toAddress dodOwner1
+        , tiTxs = [FA2.TransferDestination { tdTo = toAddress dodDao, tdTokenId = FA2.theTokenId, tdAmount = 10 }]
       }]])) "Unexpected FA2 transfers"
 
 cannotUnfreezeStakedTokens
@@ -104,7 +103,7 @@ cannotUnfreezeStakedTokens
 cannotUnfreezeStakedTokens originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
-  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount :! 50)
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Freeze") (#amount :! 50)
   checkBalance dodDao dodOwner1 50
 
   -- Advance one voting period to a proposing stage.
@@ -116,10 +115,10 @@ cannotUnfreezeStakedTokens originateFn = do
   checkBalance dodDao dodOwner1 50
   -- but unfreeze won't let all of them be unfrozen because of the staked tokens
   -- note: 110 tokens are staked here
-  withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 41)
+  withSender dodOwner1 $ (transfer dodDao $ calling (ep @"Unfreeze") (#amount :! 41))
     & expectFailedWith notEnoughFrozenTokens
   -- it will allow the un-staked ones to be unfrozen
-  withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 40)
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Unfreeze") (#amount :! 40)
 
 cannotUnfreezeFromSamePeriod
   :: (MonadCleveland caps m, HasCallStack)
@@ -127,9 +126,9 @@ cannotUnfreezeFromSamePeriod
 cannotUnfreezeFromSamePeriod originateFn = do
   DaoOriginateData{..} <- originateFn testConfig defaultQuorumThreshold
 
-  withSender dodOwner1 $ call dodDao (Call @"Freeze") (#amount :! 10)
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Freeze") (#amount :! 10)
   checkBalance dodDao dodOwner1 10
 
   -- Cannot unfreeze in the same period
-  withSender dodOwner1 $ call dodDao (Call @"Unfreeze") (#amount :! 10)
+  withSender dodOwner1 $ (transfer dodDao $ calling (ep @"Unfreeze") (#amount :! 10))
     & expectFailedWith notEnoughFrozenTokens

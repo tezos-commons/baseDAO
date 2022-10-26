@@ -1,9 +1,6 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
-{-# OPTIONS_GHC -Wno-orphans -Wno-incomplete-uni-patterns -Wno-unused-top-binds #-}
--- For all the incomplete list pattern matches in the calls to with
--- withOriginated func
+
 module Test.Ligo.RegistryDAO.Tests.ExecuteWonProposal
   ( executeWonProposal
   ) where
@@ -29,7 +26,7 @@ executeWonProposal = testScenario "checks it correctly executes the proposal tha
   let frozen_extra_value = 0 :: Natural
   let slash_scale_value = 1 :: Natural
   let slash_division_value = 1 :: Natural
-  withOriginated @variant 3
+  withOriginated @variant
     (\_ fs ->
       fs &
       setVariantExtra @variant @"FrozenScaleValue" frozen_scale_value &
@@ -39,14 +36,14 @@ executeWonProposal = testScenario "checks it correctly executes the proposal tha
       setVariantExtra @variant @"SlashDivisionValue" slash_division_value
       ) $
 
-    \(admin: wallet1: voter1 : _) (toPeriod -> period) baseDao _ -> let
+    \(admin ::< wallet1 ::< voter1 ::< Nil') (toPeriod -> period) baseDao _ -> let
 
       in do
         withSender wallet1 $
-          call baseDao (Call @"Freeze") (#amount :! 400)
+          transfer baseDao $ calling (ep @"Freeze") (#amount :! 400)
 
         withSender voter1 $
-          call baseDao (Call @"Freeze") (#amount :! 100)
+          transfer baseDao $ calling (ep @"Freeze") (#amount :! 100)
 
         startLevel <- getOriginationLevel' @variant baseDao
         -- Advance one voting period to a proposing stage.
@@ -63,20 +60,19 @@ executeWonProposal = testScenario "checks it correctly executes the proposal tha
         let requiredFrozenForUpdate = sMaxUpdateproposalSize1 * frozen_scale_value + frozen_extra_value
 
         withSender wallet1 $
-          call baseDao (Call @"Propose") (ProposeParams wallet1 requiredFrozenForUpdate sMaxUpdateproposalMeta1)
+          transfer baseDao $ calling (ep @"Propose") (ProposeParams (toAddress wallet1) requiredFrozenForUpdate sMaxUpdateproposalMeta1)
 
         -- Advance one voting period to a voting stage.
         advanceToLevel (startLevel + 2* period)
         -- Then we send 60 upvotes for the proposal (as min quorum is 1% of 500)
-        let proposalKey = makeProposalKey (ProposeParams wallet1 requiredFrozenForUpdate sMaxUpdateproposalMeta1)
+        let proposalKey = makeProposalKey (ProposeParams (toAddress wallet1) requiredFrozenForUpdate sMaxUpdateproposalMeta1)
         withSender voter1 $
-          call baseDao (Call @"Vote") [PermitProtected (VoteParam proposalKey True 60 voter1) Nothing]
+          transfer baseDao $ calling (ep @"Vote") [PermitProtected (VoteParam proposalKey True 60 (toAddress voter1)) Nothing]
 
         proposalStart <- getProposalStartLevel' @variant baseDao proposalKey
         advanceToLevel (proposalStart + 2*period)
         withSender admin $
-          call baseDao (Call @"Flush") (1 :: Natural)
+          transfer baseDao $ calling (ep @"Flush") (1 :: Natural)
 
-        maxProposalSize <- ((getVariantExtra @variant @"MaxProposalSize") . sExtraRPC) <$> getVariantStorageRPC @variant baseDao
+        maxProposalSize <- ((getVariantExtra @variant @"MaxProposalSize") . sExtraRPC) <$> getVariantStorageRPC @variant (chAddress baseDao)
         assert (maxProposalSize == (341 :: Natural)) "Unexpected max_proposal_size update"
-

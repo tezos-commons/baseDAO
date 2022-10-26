@@ -5,19 +5,19 @@
 
 packages:
 - completed:
-    hackage: cleveland-0.2.0@sha256:10a32e3ae385a24d52a8ff67ad62c1b73925121d51602ff394196f24a8f61702,8885
+    hackage: cleveland-0.2.1@sha256:0b4e43667ef463fb97f48c795432bb535530cfb439249b7a47342ba347cb271f,9523
     pantry-tree:
-      size: 7682
-      sha256: a7241fea3c2ad972c88c7ee9617324b61fb85447ecc7b1bca940b4f09dfce32d
+      size: 8817
+      sha256: dbf8caa034b86f1e94fdaf95cbc7a2d3febdf779ef3e8fbe88f8c8db18b1c023
   original:
-    hackage: cleveland-0.2.0
+    hackage: cleveland-0.2.1
 - completed:
-    hackage: morley-client-0.2.0@sha256:404da084a84cb97f18e797aff473909ad131bc6cef746289c2fd51d180dddb53,8468
+    hackage: morley-client-0.2.1@sha256:b96ba9874b32eaf715583f27a04f3650c8f5126d6d214582953b3b18bffacb05,8546
     pantry-tree:
-      size: 3585
-      sha256: 629ebe1dbf41e0ae1e0900843863972362cdb9c56101f4f5470a8a81a5346bb0
+      size: 3647
+      sha256: db3727cabced4dbd5f2df55599da599e308ac4d2bd25eaed032b15ebbcfab33d
   original:
-    hackage: morley-client-0.2.0
+    hackage: morley-client-0.2.1
 - completed:
     hackage: morley-prelude-0.5.1@sha256:d7e26ed0c15b291899e1871f751079e8e0cdc03546d31dad9bfeb06946e733ab,2784
     pantry-tree:
@@ -26,32 +26,32 @@ packages:
   original:
     hackage: morley-prelude-0.5.1
 - completed:
-    hackage: lorentz-0.14.0@sha256:12d0fe7e28e3ef1d762a1f212e4be1d0ae415f57ece360dce2e0b12acf658bc9,4506
+    hackage: lorentz-0.14.1@sha256:81a5e53ec97e8b09531fe4ee474e9938d0369b4e0c72d27dfecef21f6da9a783,4548
     pantry-tree:
-      size: 3991
-      sha256: 17de7123fcae4ca2c263034a93b3b8b7edf6b1b0d26c3e46937890fe89ff9e14
+      size: 4056
+      sha256: 6fec0e96594ce1875ab3d414d89a068b8fa9530a87b290acccbb26199e6e1e56
   original:
-    hackage: lorentz-0.14.0
+    hackage: lorentz-0.14.1
 - completed:
-    hackage: morley-1.17.0@sha256:6a04825e2ddc3db9227ef3e1836b077ad35ee78758b14c52380d733120f65533,10075
+    hackage: morley-1.18.0@sha256:54f1f4326fac65c9d48b0f414178fd39393dcbeba3757fcb71bb45c382bc774a,10200
     pantry-tree:
-      size: 10629
-      sha256: 2efdf39d6ebc22341ca56840eb35138a4904b3c9d5008ebc852d04ee442f12bb
+      size: 10839
+      sha256: 48dc2e11dd6965d5a5e8a978fdd4ac593588a38138bf92c0ff636eb2b340ee05
   original:
-    hackage: morley-1.17.0
+    hackage: morley-1.18.0
 - completed:
     subdir: .
     name: indigo
     version: 0.6.0
     git: https://gitlab.com/morley-framework/indigo.git
     pantry-tree:
-      size: 14475
-      sha256: 628b1d4ee72a166ee1a5c871a2053b5e6fa777e41405d23cc6e94a3f5a03b2d9
-    commit: 08f5cdda02ab0d70ff4491d2e9f3620a2a5310c9
+      size: 14551
+      sha256: 9cc5496ea97a115dd591d869ce9d9a30e2f4119222007fb1cc5e5a1756e88cc9
+    commit: b1f3d7cc674aae743201435f135e88aad79e408d
   original:
     subdir: .
     git: https://gitlab.com/morley-framework/indigo.git
-    commit: 08f5cdda02ab0d70ff4491d2e9f3620a2a5310c9
+    commit: b1f3d7cc674aae743201435f135e88aad79e408d
 - completed:
     subdir: code/morley-ledgers
     name: morley-ledgers
@@ -59,25 +59,38 @@ packages:
     git: https://gitlab.com/morley-framework/morley-ledgers.git
     pantry-tree:
       size: 1524
-      sha256: 266baf977d6d999db407450ff9c98f5e0af3ccd3d2485534b08c431bfd889525
-    commit: 9727e20a50d1e8dd518819c4afd9d46af87bed66
+      sha256: 637251ffca5e0a3d37496fddd7cd5c2bb64d324c4c7e769dae123498156554b1
+    commit: 14532b532a1e9eed1b8fedae8a701580bfeed37b
   original:
     subdir: code/morley-ledgers
     git: https://gitlab.com/morley-framework/morley-ledgers.git
-    commit: 9727e20a50d1e8dd518819c4afd9d46af87bed66
+    commit: 14532b532a1e9eed1b8fedae8a701580bfeed37b
 - completed:
     subdir: code/morley-metadata
     name: morley-metadata
     version: '0'
     git: https://gitlab.com/morley-framework/morley-metadata.git
     pantry-tree:
-      size: 1462
-      sha256: e0bcabb70df963b992ff6535a39d30d7f8541a3f4f45bb5a10733b400742965a
-    commit: 4635eae9882afbb661aea8991dfcdb7baabe967f
+      size: 1461
+      sha256: b6512087c09b03584b6f35553f8357964b8e3635b1b39c61399c0357f7c41e4f
+    commit: cb05e64b417f8d4928542fef99639366e04e7b18
   original:
     subdir: code/morley-metadata
     git: https://gitlab.com/morley-framework/morley-metadata.git
-    commit: 4635eae9882afbb661aea8991dfcdb7baabe967f
+    commit: cb05e64b417f8d4928542fef99639366e04e7b18
+- completed:
+    subdir: code/morley-metadata-test
+    name: morley-metadata-test
+    version: '0'
+    git: https://gitlab.com/morley-framework/morley-metadata.git
+    pantry-tree:
+      size: 601
+      sha256: a76c7ce76eaed5cf873a8da6fdffb1fb16c8199c10cab2fb13fa170d87df06f9
+    commit: cb05e64b417f8d4928542fef99639366e04e7b18
+  original:
+    subdir: code/morley-metadata-test
+    git: https://gitlab.com/morley-framework/morley-metadata.git
+    commit: cb05e64b417f8d4928542fef99639366e04e7b18
 - completed:
     name: base-noprelude
     version: 4.15.1.0

@@ -39,7 +39,7 @@ genProposalKeyList atLeast = do
       let proposalMeta = lPackValueRaw @Natural 1
           metaSize = metadataSize proposalMeta
           param = ProposeParams
-            { ppFrom = addr
+            { ppFrom = toAddress addr
             , ppFrozenToken = metaSize
             , ppProposalMetadata = proposalMeta
             }

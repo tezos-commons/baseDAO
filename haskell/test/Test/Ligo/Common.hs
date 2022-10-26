@@ -7,13 +7,18 @@ module Test.Ligo.Common
   , TestableVariant(..)
   , withOriginated
   , toPeriod
+  , SizedList'(..)
+  , refillables
   ) where
 
 import Prelude
 
-import Lorentz as L hiding (Contract, assert, div)
+import Lorentz as L hiding (assert, div)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Morley.Michelson.Typed hiding (TAddress)
+import Morley.Michelson.Typed hiding (S, TAddress)
+import Morley.Tezos.Address
+import Morley.Util.Peano
+import Morley.Util.SizedList (SizedList, SizedList'(..))
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -34,41 +39,34 @@ class VariantExtraHasField variant name a where
 
 class VariantConstraints variant =>
   TestableVariant variant where
-  getInitialStorage :: Address -> StorageSkeleton (VariantToExtra variant)
-  getContract :: Contract (ToT (Parameter' (VariantToParam variant))) (ToT (StorageSkeleton (VariantToExtra variant)))
+  getInitialStorage :: ImplicitAddress -> StorageSkeleton (VariantToExtra variant)
+  getContract :: L.Contract (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) ()
   toProposalMetadata :: IsProposalArgument variant a => a -> ProposalMetadata
   toProposalMetadata = toMetadata @variant
-  getVariantStorageRPC :: forall caps m p vd. MonadCleveland caps m => TAddress p vd -> m (StorageSkeletonRPC (VariantToExtra variant))
+  getVariantStorageRPC :: forall caps m . MonadCleveland caps m => ContractAddress -> m (StorageSkeletonRPC (VariantToExtra variant))
 
 withOriginated
-  :: forall variant caps m a. (VariantConstraints variant, TestableVariant variant, MonadCleveland caps m)
-  => Integer
-  -> ([Address] -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
-  -> ([Address] -> StorageSkeleton (VariantToExtra variant) -> TAddress (Parameter' (VariantToParam variant)) () -> TAddress FA2.Parameter () -> m a)
+  :: forall variant num num' caps m a num0. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
+  => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
+  -> (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
   -> m a
-withOriginated addrCount storageFn tests = do
-  mapM (\x -> refillable $ newAddress $ fromString ("address" <> (show x))) [1 ..addrCount] >>= \case
-    [] -> error "Should ask for at least admin address"
-    addresses@(admin: _) -> do
-      dodTokenContract <- chAddress <$> originateSimple "token_contract" [] dummyFA2Contract
-      let storageInitial = storageFn addresses $ getInitialStorage @variant admin
-      now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
-      let storage = storageInitial
-            { sGovernanceToken = GovernanceToken
-                  { gtAddress = dodTokenContract
-                  , gtTokenId = FA2.theTokenId
-                  }
-              , sStartLevel = now_level
-            }
+withOriginated storageFn tests = do
+  addresses@(admin ::< _) <- refillables $ newAddresses $ enumAliases "address"
 
-      baseDao <- originateUntyped $ UntypedOriginateData
-        { uodName = "BaseDAO - RegistryDAO Test Contract"
-        , uodBalance = zeroMutez
-        , uodStorage = untypeValue $ toVal storage
-        , uodContract = convertContract (getContract @variant)
+  dodTokenContract <- originate "token_contract" [] dummyFA2Contract
+  let storageInitial = storageFn addresses $ getInitialStorage @variant admin
+  now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
+  let storage = storageInitial
+        { sGovernanceToken = GovernanceToken
+              { gtAddress = toAddress dodTokenContract
+              , gtTokenId = FA2.theTokenId
+              }
+          , sStartLevel = now_level
         }
-      advanceToLevel now_level
-      tests addresses storage (TAddress baseDao) (TAddress dodTokenContract)
+
+  baseDao <- originate "BaseDAO - RegistryDAO Test Contract" storage (getContract @variant)
+  advanceToLevel now_level
+  tests addresses storage baseDao dodTokenContract
 
 toPeriod :: StorageSkeleton v -> Natural
 toPeriod = unPeriod . cPeriod . sConfig
