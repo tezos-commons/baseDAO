@@ -106,6 +106,8 @@ let default_lambda_registry_DAO_storage (data : initial_registryDAO_storage) : s
     ; ("slash_division_value", Bytes.pack data.slash_division_value)
     ; ("min_xtz_amount", Bytes.pack data.min_xtz_amount)
     ; ("max_xtz_amount", Bytes.pack data.max_xtz_amount)
+    ; ("registry", Bytes.pack (Map.empty : registry))
+    ; ("registry_affected", Bytes.pack (Map.empty : registry_affected))
     ] in
   { store with
     extra =
