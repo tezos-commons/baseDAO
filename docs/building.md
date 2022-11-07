@@ -88,7 +88,7 @@ make out/acmeDAO.tz
 BaseDAO metadata should be compliant with [TZIP-16](https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-16/tzip-16.md).
 
 You can generate the known metadata, but you'll need the `stack` tool installed, see
-<!-- xrefcheck: ignore link -->[The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial for instructions on how to obtain it.
+[The Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/) tutorial for instructions on how to obtain it.
 
 ```bash
 make metadata \
