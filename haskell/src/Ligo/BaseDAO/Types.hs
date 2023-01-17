@@ -95,7 +95,7 @@ import Lorentz hiding (div, now)
 import Lorentz.Annotation ()
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Lorentz.Contracts.Spec.TZIP16Interface qualified as TZIP16
-import Morley.AsRPC (HasRPCRepr(..), deriveRPC, deriveRPCWithStrategy)
+import Morley.AsRPC (HasRPCRepr(..), deriveRPCWithOptions, DeriveRPCOptions(..))
 import Morley.Michelson.Typed.Annotation
 import Morley.Michelson.Typed.Scope
   (HasNoBigMap, HasNoContract, HasNoNestedBigMaps, HasNoOp, HasNoTicket)
@@ -658,7 +658,8 @@ instance Buildable ProposalDoublyLinkedList where
 instance HasAnnotation ProposalDoublyLinkedList where
   annOptions = baseDaoAnnOptions
 
-deriveRPC "ProposalDoublyLinkedList"
+-- TODO [morley#922]: remove droRecursive=False here
+deriveRPCWithOptions "ProposalDoublyLinkedList" def{droRecursive=False}
 
 instance HasRPCRepr (DynamicRec s) where
   type AsRPC (DynamicRec s) = DynamicRecView s
@@ -714,7 +715,7 @@ instance HasAnnotation Config where
 instance Buildable Config where
   build = genericF
 
-deriveRPCWithStrategy "Config" ligoLayout
+deriveRPCWithOptions "Config" def{droStrategy=ligoLayout}
 
 instance Buildable Proposal where
   build = genericF
@@ -757,7 +758,8 @@ instance HasAnnotation ce => HasAnnotation (StorageSkeleton ce) where
   annOptions = baseDaoAnnOptions
 deriving anyclass instance IsoValue ce => IsoValue (StorageSkeleton ce)
 
-deriveRPCWithStrategy "StorageSkeleton" ligoLayout
+-- TODO [morley#922]: remove droRecursive=False here
+deriveRPCWithOptions "StorageSkeleton" def{droStrategy=ligoLayout, droRecursive=False}
 type StorageRPC = StorageSkeletonRPC (VariantToExtra 'Base)
 
 type Storage = StorageSkeleton (VariantToExtra 'Base)
@@ -933,4 +935,3 @@ type CEConstraints cep =
   , IsoValue (AsRPC (VariantToExtra cep))
   , HasNoOp (ToT (VariantToExtra cep))
   )
-

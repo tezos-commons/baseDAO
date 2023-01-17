@@ -281,8 +281,6 @@ instance CallCustomEp RegistryCustomEpParam where
     Lookup_registry p_ -> transfer dao $ calling (ep @"Lookup_registry") p_
     _ -> pure ()
 
--- TODO: Use `fromExpression` instead when new morley version is updated.
--- More detail: https://github.com/tezos-commons/baseDAO/pull/282#discussion_r669572842
 parseNettestError :: Either TransferFailure a -> Maybe ModelError
 parseNettestError = \case
   Right _ -> Nothing

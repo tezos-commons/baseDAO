@@ -78,7 +78,8 @@ instance Default RegistryExtra where
   def = RegistryExtra (mkBigMap @(Map RegistryKey RegistryValue) M.empty) (mkBigMap @(Map RegistryKey ProposalKey) M.empty) S.empty 1 0 1000 1 1 zeroMutez [tz|1u|]
 
 customGeneric "RegistryExtra" ligoLayout
-deriveRPCWithStrategy "RegistryExtra" ligoLayout
+-- TODO [morley#922]: remove droRecursive=False here
+deriveRPCWithOptions "RegistryExtra" def{droStrategy=ligoLayout, droRecursive=False}
 
 instance Buildable RegistryExtra where
   build = genericF

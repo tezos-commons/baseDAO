@@ -11,7 +11,7 @@ rec {
   haskell-nix = pkgs.haskell-nix;
   pkgs = morley-infra.legacyPackages.${builtins.currentSystem};
   ligo = (pkgs.runCommand "ligo" {} "mkdir -p $out/bin; cp ${sources.ligo} $out/bin/ligo; chmod +x $out/bin/ligo");
-  morley = (import "${sources.morley}/ci.nix").packages.morley.exes.morley;
+  morley = (import "${sources.morley}").packages."morley:exe:morley";
   inherit (pkgs.callPackage sources.nix-npm-buildpackage { }) buildYarnPackage;
   morley-infra = import sources.morley-infra;
 
