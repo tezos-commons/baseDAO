@@ -8,17 +8,14 @@
 
 rec {
   sources = import ./nix/sources.nix;
-  xrefcheck = import sources.xrefcheck;
-  haskell-nix = import sources."haskell.nix" {
-    sourcesOverride = { hackage = sources."hackage.nix"; stackage = sources."stackage.nix"; };
-  };
-  pkgs = import sources.nixpkgs haskell-nix.nixpkgsArgs;
+  haskell-nix = pkgs.haskell-nix;
+  pkgs = morley-infra.legacyPackages.${builtins.currentSystem};
   ligo = (pkgs.runCommand "ligo" {} "mkdir -p $out/bin; cp ${sources.ligo} $out/bin/ligo; chmod +x $out/bin/ligo");
   morley = (import "${sources.morley}/ci.nix").packages.morley.exes.morley;
   inherit (pkgs.callPackage sources.nix-npm-buildpackage { }) buildYarnPackage;
   morley-infra = import sources.morley-infra;
 
-  inherit (morley-infra) stack2cabal tezos-client weeder-hacks run-chain-tests;
+  inherit (morley-infra) stack2cabal weeder-hacks run-chain-tests;
 
   # all local packages and their subdirectories
   # we need to know subdirectories to make weeder stuff work
@@ -35,7 +32,7 @@ rec {
   #   'false' for "development" (e. g. PR) build.
   # - commitSha, commitDate – git revision info used for contract documentation.
   hs-pkgs = { release, commitSha ? null, commitDate ? null }: pkgs.haskell-nix.stackProject {
-    src = pkgs.haskell-nix.haskellLib.cleanGit { src = ./.; };
+    src = pkgs.haskell-nix.haskellLib.cleanGit { name = "baseDAO"; src = ./.; };
 
     modules = [
       {

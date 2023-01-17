@@ -1,28 +1,4 @@
 {
-    "hackage.nix": {
-        "branch": "master",
-        "description": "Automatically generated Nix expressions for Hackage",
-        "homepage": "",
-        "owner": "input-output-hk",
-        "repo": "hackage.nix",
-        "rev": "9f3b3ba469545b50e4f915019c538b69a93ac34f",
-        "sha256": "0hv918fd2wr3ld1fvdf479gry23sswmg20bh44wrbw7h1wwrm9h4",
-        "type": "tarball",
-        "url": "https://github.com/input-output-hk/hackage.nix/archive/9f3b3ba469545b50e4f915019c538b69a93ac34f.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "haskell.nix": {
-        "branch": "master",
-        "description": "Alternative Haskell Infrastructure for Nixpkgs",
-        "homepage": "https://input-output-hk.github.io/haskell.nix",
-        "owner": "input-output-hk",
-        "repo": "haskell.nix",
-        "rev": "0837156c56cb5350dd9bd84eb424187e00aa1e8a",
-        "sha256": "1djmv5a0vfj78csw2cad6nicrs8iqrp928b9b3v4h7lwwhhzliwl",
-        "type": "tarball",
-        "url": "https://github.com/input-output-hk/haskell.nix/archive/0837156c56cb5350dd9bd84eb424187e00aa1e8a.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "ligo": {
         "sha256": "12d89vbz9ykvymbdnf7q4hw00hzknrfvddk919vx3xy1632n1gdj",
         "type": "file",
@@ -37,10 +13,10 @@
         "version": "1.13.0"
     },
     "morley-infra": {
-        "rev": "d2f8d163188f1cfef38fca75fb30fec98dbfc4c7",
-        "sha256": "1kjcjvwmp0prqcfxsaq90cb3097fnfmp7q1wb45i2an8i5rh0dhy",
+        "rev": "4fb8c45107f4266075c2da81742341ad440a699a",
+        "sha256": "0g2walab21ra2al9sl2ahd884hmn251cl80sw4h5pxan6v9lrgas",
         "type": "tarball",
-        "url": "https://gitlab.com/morley-framework/morley-infra/-/archive/d2f8d163188f1cfef38fca75fb30fec98dbfc4c7/morley-infra-d2f8d163188f1cfef38fca75fb30fec98dbfc4c7.tar.gz",
+        "url": "https://gitlab.com/morley-framework/morley-infra/-/archive/4fb8c45107f4266075c2da81742341ad440a699a/morley-infra-4fb8c45107f4266075c2da81742341ad440a699a.tar.gz",
         "url_template": "https://gitlab.com/morley-framework/morley-infra/-/archive/<rev>/morley-infra-<rev>.tar.gz"
     },
     "nix-npm-buildpackage": {
@@ -54,42 +30,5 @@
         "type": "tarball",
         "url": "https://github.com/serokell/nix-npm-buildpackage/archive/3461855a1dbfe844768d5adac29fe0b542d8b296.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "nixpkgs": {
-        "branch": "master",
-        "description": "Pinned Nixpkgs tree (master follows nixos-unstable-small, only tags have stable history)",
-        "homepage": "",
-        "owner": "serokell",
-        "repo": "nixpkgs",
-        "rev": "1714a2ead1a18678afa3cbf75dff3f024c579061",
-        "sha256": "12lypkc60p1w4v4j6gr097hdp1kj7fwhhi5yhb3j73z2l99zrq1d",
-        "type": "tarball",
-        "url": "https://github.com/serokell/nixpkgs/archive/1714a2ead1a18678afa3cbf75dff3f024c579061.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "stackage.nix": {
-        "branch": "master",
-        "description": "Automatically generated Nix expressions of Stackage snapshots",
-        "homepage": "",
-        "owner": "input-output-hk",
-        "repo": "stackage.nix",
-        "rev": "fbf47f75f32aedcdd97143ec59c578f403fae35f",
-        "sha256": "0wd1gsjl5hlprbh2kv6p1a7ycb6zy60brk4341vsm819kla4njzb",
-        "type": "tarball",
-        "url": "https://github.com/input-output-hk/stackage.nix/archive/fbf47f75f32aedcdd97143ec59c578f403fae35f.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "xrefcheck": {
-        "branch": "v0.2.2",
-        "description": "Check cross-references in repository documents",
-        "homepage": "",
-        "owner": "serokell",
-        "repo": "xrefcheck",
-        "rev": "887803d61c0dfb3726484f00a882101117725c62",
-        "sha256": "1ymlp4g494aig6mzi7bx3r73hpd9c5qsxznka7kjfy2lv0y5gyxy",
-        "type": "tarball",
-        "url": "https://github.com/serokell/xrefcheck/archive/887803d61c0dfb3726484f00a882101117725c62.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
-        "version": "0.2.2"
     }
 }
