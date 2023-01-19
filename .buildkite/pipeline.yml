@@ -113,6 +113,7 @@ steps:
         --no-out-link
         --argstr scenario './result/bin/baseDAO-test
           --color=always
+          --num-threads 1
           --cleveland-mode=only-network
           --xml=./test-report.xml')
   - label: check typescript api
