@@ -136,75 +136,70 @@ packages:
   original:
     hackage: show-type-0.1.1
 - completed:
-    hackage: co-log-0.5.0.0@sha256:a7e84650eaef7eba2d59ee7664309e79317a7ca67011abedf971f0e6bd6475bb,5448
+    hackage: OddWord-1.0.2.0@sha256:1d7c46b2de539739ba2cb50fd5b0c7032fbe84a22f853f2e0b460d096e325569,1965
     pantry-tree:
-      sha256: 33b838c07c8b7e70b2e82bddc889bb1e6386d7e12a9d1593c0b4b263b1fcb925
-      size: 1043
+      sha256: 91d6f851595aed111288502134412c617e6a3ecae48f4281ca313daabf80adc9
+      size: 476
   original:
-    hackage: co-log-0.5.0.0
+    hackage: OddWord-1.0.2.0
 - completed:
-    hackage: chronos-1.1.5@sha256:116b63db6e79574e7ac50bf12a6303af5dae4048b222c0f78380d24f481abb5a,3696
+    hackage: bitvec-1.0.3.0@sha256:f69ed0e463045cb497a7cf1bc808a2e84ea0ce286cf9507983bb6ed8b4bd3993,3977
+    pantry-tree:
+      sha256: e3cf4b28e01c3eb9b0cf46a8a2e7eef1ced133d5ad626aaba099cf468007dd90
+      size: 2372
+  original:
+    hackage: bitvec-1.0.3.0@sha256:f69ed0e463045cb497a7cf1bc808a2e84ea0ce286cf9507983bb6ed8b4bd3993,3977
+- completed:
+(??)    hackage: hex-text-0.1.0.4@sha256:fd5a881d92a5156f8657fccd738121f327b2d6683822259ebf7a219d0c6fa3a5,1320
+    pantry-tree:
+(??)      size: 367
+(??)      sha256: 89b660471f44dc882a90dc486095131b1f907cbbe720289367f0d07f4defabee
+  original:
+(??)    hackage: hex-text-0.1.0.4
+- completed:
+    hackage: typerep-map-0.5.0.0@sha256:34f1ba9b268a6d52e26ae460011a5571e8099b50a3f4a7c8db25dd8efe3be8ee,4667
+    pantry-tree:
+      sha256: c07e39492e0b8da34f87b3f7516f7739d60543013e7f22bc7db0dbe99eb57540
+(??)      size: 214
+(??)      sha256: c07e39492e0b8da34f87b3f7516f7739d60543013e7f22bc7db0dbe99eb57540
+  original:
+    hackage: typerep-map-0.5.0.0
+- completed:
+(??)    hackage: named-0.3.0.1@sha256:16c23f330b9f0373c464fee44d48dfa0f9d561f35bfe73dfd6ea69459688d4e5,2325
+    pantry-tree:
+(??)      size: 426
+(??)      sha256: c58b1c3313b67f124b1b3f6234ad90f1da97d8c9fdd6ad061f63b0fb38097209
+  original:
+(??)    hackage: named-0.3.0.1
+- completed:
+    hackage: byteslice-0.2.7.0@sha256:b5aa80e6efa143b532d20603fb643767386771ec059adedd87cf72cceaf96420,2403
     pantry-tree:
       sha256: 0eb2e0874c845e299c2e174144fd37da1a7957fd0055b2b99b33d23a06c7720e
       size: 581
   original:
-    hackage: chronos-1.1.5
+    hackage: byteslice-0.2.7.0
 - completed:
     hackage: co-log-core-0.3.2.0@sha256:9b2699adecee2f072b6c713089e675b592ef23f00a2ff3740bdaf4d87de8d456,3850
     pantry-tree:
       sha256: af9c807ce50a126706bd99983ec71c060a489ab2b914de8dbccf756adccc2a43
-      size: 584
+(??)      size: 584
+(??)      sha256: d4cc089c40c5052ee02f91eafa567e0a239908aabc561dfa6080ba3bfc8c25bd
   original:
-    hackage: co-log-core-0.3.2.0
-- completed:
-    hackage: typerep-map-0.5.0.0@sha256:34f1ba9b268a6d52e26ae460011a5571e8099b50a3f4a7c8db25dd8efe3be8ee,4667
-    pantry-tree:
-      sha256: ca5565de307d260dc67f6dae0d4d33eee42a3238183461569b5142ceb909c91d
-      size: 1487
-  original:
-    hackage: typerep-map-0.5.0.0
-- completed:
-    hackage: bytebuild-0.3.11.0@sha256:8e854ddd35eb17e10dc3801bbe409b2d23434cc0d58c687060c619920dacfdae,3338
-    pantry-tree:
-      sha256: 44e0f6c589d6aa1e921eb56895f9083510bf4ec40768bb28d0bcc68486dd0172
-      size: 1250
-  original:
-    hackage: bytebuild-0.3.11.0
-- completed:
-    hackage: byteslice-0.2.7.0@sha256:b5aa80e6efa143b532d20603fb643767386771ec059adedd87cf72cceaf96420,2403
-    pantry-tree:
-      sha256: d2b3fe36bbabea0225bbce11f9c61a5c81fea7bfb9f742086284e4d0667d1797
-      size: 1546
-  original:
-    hackage: byteslice-0.2.7.0
-- completed:
-    hackage: bytesmith-0.3.9.0@sha256:20a2ec7e89d74506c73c0e5e8829cd3ca8ad20b8b88d5de475c02b21fd21c253,1956
-    pantry-tree:
-      sha256: 64d00f4d6c796d7b4f073ec4a3636a7f2323ee181de8b1d7875651dd35e1f057
-      size: 1185
-  original:
-    hackage: bytesmith-0.3.9.0
+(??)    hackage: co-log-core-0.3.1.0
 - completed:
     hackage: run-st-0.1.1.0@sha256:a43245bb23984089016772481bf52bfe63eaff0c5040303f69c9b15e80872fdc,883
     pantry-tree:
-      sha256: 06d5d7ecf185a26c15e48cda6c30e8865dae715c528a31466701272fae36d822
-      size: 269
+(??)      size: 571
+(??)      sha256: aa027b21ac1ed1d446a4b20b9a1708fabed9042edf7a28ef05f3fc6278b07841
   original:
     hackage: run-st-0.1.1.0
 - completed:
     hackage: zigzag-0.0.1.0@sha256:a995158dad3dfe0347cfc8f8a9327cc3f51832600553169ba5b1e08c45b45405,1078
     pantry-tree:
-      sha256: e5e5aadb11d695f9f1792a6d8f8faa4131afc23713335ff93dab6b0806bea510
-      size: 321
+(??)      size: 1461
+(??)      sha256: 02f05d52be3ffcf36c78876629cbab80b63420672685371aea4fd10e1c4aabb6
   original:
-    hackage: zigzag-0.0.1.0
-- completed:
-    hackage: contiguous-0.6.2.0@sha256:34adb3e50fd7de105b8572562dda48c67bc5096dbd3eec0abb4ceeaf7383c4e5,1871
-    pantry-tree:
-      sha256: 1b4d14b7d2915caf00b3a37f0408c0f661450e780f05aa35891a72605b7272dc
-      size: 600
-  original:
-    hackage: contiguous-0.6.2.0
+(??)    hackage: ansi-terminal-0.10.3
 - completed:
     hackage: galois-field-1.0.2@sha256:1f7d31836da8553caf50682e9e0d7cb7edf2146bafb67bed1b6b68031278bbaf,4876
     pantry-tree:

@@ -22,6 +22,7 @@ makeTransferOnToken params addr = do
   ms <- get
   case Map.lookup addr (ms & msContracts) of
     Just (SimpleFA2ContractType _) -> pass
+    Just (SimpleFA12ContractType _) -> pass
     _ -> throwError BAD_TOKEN_CONTRACT
   execOperation $ FA2TransferOperation addr params zeroMutez
 

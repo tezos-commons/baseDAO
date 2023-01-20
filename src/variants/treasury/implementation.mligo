@@ -36,6 +36,7 @@ let proposal_check (params, extras : propose_params * contract_extra) : unit =
         let is_all_transfers_valid (transfer_type: transfer_type) =
           match transfer_type with
           | Token_transfer_type _tt -> unit
+          | Legacy_token_transfer_type _ -> unit
           | Xtz_transfer_type xt ->
               begin
                 match check_xtz_transfer(xt, min_xtz_amount, max_xtz_amount) with
@@ -53,6 +54,14 @@ let rejected_proposal_slash_value (params, extras : proposal * contract_extra) :
 
 let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (operation list) =
   match transfer_type with
+  | Legacy_token_transfer_type tt ->
+    begin
+      match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
+          : (legacy_transfer contract) option) with
+      | Some contract ->
+          (Tezos.transaction tt.transfer 0mutez contract) :: ops
+      | None -> (failwith fail_decision_callback : operation list)
+    end
   | Token_transfer_type tt ->
     begin
       match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address

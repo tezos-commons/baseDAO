@@ -92,6 +92,8 @@ treasuryDAOTests = testGroup "TreasuryDAO Tests"
           validProposal @variant
       , testScenario "can flush a Token transfer proposal" $ scenario $
           flushTokenTransfer @variant
+      , testScenario "can flush a FA1.2 Token transfer proposal" $ scenario $
+          flushFA12TokenTransfer @variant
       , testScenario "can flush a Xtz transfer proposal" $ scenario $
           flushXtzTransfer @variant
       , testScenario "can flush a Update_guardian proposal" $ scenario $
@@ -138,6 +140,57 @@ validProposal = withFrozenCallStack $ withOriginated @variant @3
       transfer dodDao $ calling (ep @"Propose") (ProposeParams (toAddress dodOwner1) proposalSize proposalMeta)
 
     checkBalance' @variant dodDao dodOwner1 proposalSize
+
+flushFA12TokenTransfer
+  :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
+  => m ()
+flushFA12TokenTransfer = withFrozenCallStack $ withOriginatedFA12 @variant @3
+  (\_ s -> s { sConfig = (sConfig s) { cPeriod = 20, cProposalExpiredLevel = 300 } }) $
+  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< Nil') fs dodDao _ fa12TokenContract -> do
+  let dodPeriod = toPeriod fs
+  startLevel <- getOriginationLevel' @variant dodDao
+
+  let
+    transferParam = fa12TokenTransferType (toAddress fa12TokenContract) (toAddress dodOwner2) (toAddress dodOwner1)
+    proposalMeta = toProposalMetadata @variant $ TransferProposal
+        { tpAgoraPostId = 1
+        , tpTransfers = [ transferParam ]
+        }
+    proposalSize = metadataSize proposalMeta
+    proposeParams = ProposeParams (toAddress dodOwner1) proposalSize proposalMeta
+
+  withSender dodOwner1 $
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! proposalSize)
+
+  withSender dodOwner2 $
+    transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
+
+  -- Advance one voting periods to a proposing stage.
+  advanceToLevel (startLevel + dodPeriod)
+
+  withSender dodOwner1 $ transfer dodDao $ calling (ep @"Propose") proposeParams
+  let key1 = makeProposalKey proposeParams
+
+  checkBalance' @variant dodDao dodOwner1 proposalSize
+
+  let
+    upvote = NoPermit VoteParam
+        { vFrom = toAddress dodOwner2
+        , vVoteType = True
+        , vVoteAmount = 20
+        , vProposalKey = key1
+        }
+
+  -- Advance one voting period to a voting stage.
+  advanceToLevel (startLevel + 2*dodPeriod)
+  withSender dodOwner2 $ transfer dodDao $ calling (ep @"Vote") [upvote]
+  -- Advance one voting period to a proposing stage.
+  proposalStart <- getProposalStartLevel' @variant dodDao key1
+  advanceToLevel (proposalStart + 2*dodPeriod + 1)
+  withSender dodAdmin $ transfer dodDao $ calling (ep @"Flush") 100
+
+  checkBalance' @variant dodDao dodOwner1 proposalSize
+  checkBalance' @variant dodDao dodOwner2 20
 
 flushTokenTransfer
   :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
@@ -298,7 +351,7 @@ flushUpdateContractDelegate
 flushUpdateContractDelegate = withFrozenCallStack $ withOriginatedSetup @variant @4
   (\(_ ::< _ ::< _ ::< dodOperator2 ::< Nil') _ -> registerDelegate dodOperator2)
   (\_ s -> s { sConfig = (sConfig s) { cPeriod = 25, cProposalExpiredLevel = 300 } }) $
-  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< ImplicitAddress delegate ::< Nil') fs dodDao _ -> do
+  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< ImplicitAddress delegate ::< Nil') fs dodDao _ _ -> do
     let dodPeriod = toPeriod fs
         proposalMeta = toProposalMetadata @variant $ Just delegate
         proposeParams = ProposeParams (toAddress dodOwner1) (metadataSize $ proposalMeta) $ proposalMeta
@@ -410,6 +463,12 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
           , tdAmount = 10
           } ]
       } ]
+  }
+
+fa12TokenTransferType :: Address -> Address -> Address -> TransferType
+fa12TokenTransferType contractAddr fromAddr toAddr = Legacy_token_transfer_type LegacyTokenTransfer
+  { lttContractAddress = contractAddr
+  , lttTransfer = (#from :! fromAddr, #to :! toAddr, #value :! 10)
   }
 
 -- Here we parse the storage value from compiled ligo storage, which

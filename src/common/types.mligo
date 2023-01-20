@@ -21,10 +21,29 @@ type token_transfer =
   ; transfer_list : transfer_item list
   }
 
+type legacy_transfer_target =
+  [@layout:comb]
+  { to : address
+  ; value : nat
+  }
+
+type legacy_transfer =
+  [@layout:comb]
+  { from : address
+  ; target : legacy_transfer_target
+  }
+
+type legacy_token_transfer =
+  [@layout:comb]
+  { contract_address : address
+  ; transfer : legacy_transfer
+  }
+
 type transfer_type =
   [@layout:comb]
   | Xtz_transfer_type of xtz_transfer
   | Token_transfer_type of token_transfer
+  | Legacy_token_transfer_type of legacy_token_transfer
 
 // Unpack Helper (fail if the unpacked result is none)
 let unpack_transfer_type_list (key_name, packed_b: string * bytes) : transfer_type list =

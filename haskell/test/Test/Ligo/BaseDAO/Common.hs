@@ -10,6 +10,7 @@ module Test.Ligo.BaseDAO.Common
   , OriginateFn
 
   , dummyFA2Contract
+  , dummyFA12Contract
   , dummyGuardianContract
   , makeProposalKey
   , addDataToSign
@@ -37,6 +38,7 @@ import Universum hiding (drop, swap)
 
 import Data.ByteString qualified as BS
 import Lorentz hiding (assert, now, (>>))
+import Lorentz.Contracts.Spec.AbstractLedgerInterface qualified as FA12
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Scope (HasNoOp)
 import Morley.Util.SizedList (SizedList'(..), pattern (::<))
@@ -83,6 +85,18 @@ dummyFA2Contract = defaultContract $
       , #cTransfer /-> cons
       , #cUpdate_operators /-> Lorentz.drop
       )) # nil # pair
+
+-- | A dummy contract with FA1.2 parameter that remembers the
+-- transfer calls.
+dummyFA12Contract :: Contract FA12.Parameter [FA12.TransferParams] ()
+dummyFA12Contract = defaultContract $
+  unpair #
+    (entryCase @FA12.Parameter (Proxy @PlainEntrypointsKind)
+      ( #cTransfer /-> cons
+      , #cGetTotalSupply /-> Lorentz.drop
+      , #cGetBalance /-> Lorentz.drop
+      )) # nil # pair
+
 
 -- | A dummy contract that act as guardian contract for BaseDAO
 dummyGuardianContract :: Contract (Address, ProposalKey) () ()

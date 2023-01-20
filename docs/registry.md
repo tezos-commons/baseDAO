@@ -34,11 +34,18 @@ Proposals can be of different type and include (`proposal_metadata`) different d
 2. Proposal to update the set of successful-proposal receiver contract addresses.
 This proposal takes a parameter that has two constructors. The proposal can add to,
 or remove from the set of addresses.
-3. Transfer proposals, that can transfer XTZ or tokens as well as update the
+3. Transfer proposals, that can transfer XTZ or tokens (FA2 as well as FA1.2) as well as update the
 registry. This includes:
    - a list of `update` items parameterized by `k` and `v` types. Each `update` item contains a key of the type `k` and a new value of the type `option v`.
-   - a list of items where each item contains:
-   `or %transfers (pair (mutez %amount) (address %recipient)) (pair (address %fa2) (list (pair (address %from_) (list %txs (pair (address %to_) (pair (nat %token_id) (nat %amount)))))))` specifies what transfer to make. The left part is used for XTZ transfers, the right part is used for FA2 transfers.
+   - a list of transfer instructions. Each item in this list can be either of an Xtz transfer, an FA2 token transfer or an FA1.2 token transfer. These alternatives are represented by the type,
+      ` (or (pair %xtz_transfer_type (mutez %amount) (address %recipient))
+                                   (or (pair %token_transfer_type
+                                          (address %contract_address)
+                                          (list %transfer_list
+                                             (pair (address %from_) (list %txs (pair (address %to_) (nat %token_id) (nat %amount))))))
+                                       (pair %legacy_token_transfer_type
+                                          (address %contract_address)
+                                          (pair %transfer (address %from) (pair %target (address %to) (nat %value))))))`
    - `nat %agoraPostID` is used to refer to an Agora post explaining the proposed transfer and/or changes and motivation for them.
 4. Proposal to update the guardian address in the BaseDAO contract:
    - This proposal takes an address parameter and use it to update the guardian address in the storage.

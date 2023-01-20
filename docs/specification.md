@@ -58,11 +58,25 @@ type token_transfer =
 type transfer_type =
   | Xtz_transfer_type of xtz_transfer
   | Token_transfer_type of token_transfer
+  | Legacy_token_transfer_type of legacy_token_transfer
 
 type treasury_dao_proposal_metadata =
   { agora_post_id : nat
   ; transfers : transfer_type list
   }
+
+type legacy_transfer =
+  [@layout:comb]
+  { from : address
+  ; target : legacy_transfer_target
+  }
+
+type legacy_token_transfer =
+  [@layout:comb]
+  { contract_address : address
+  ; transfer : legacy_transfer
+  }
+
 ```
 
 One can use the 'template/callback.mligo` and `template/storage.mligo` modules

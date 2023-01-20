@@ -93,6 +93,7 @@ treasuryDaoProposalCheck (params, extras) = do
       let isValid = (tp & tpTransfers)
               <&> (\case
                       Token_transfer_type _ -> True
+                      Legacy_token_transfer_type _ -> True
                       Xtz_transfer_type xt ->
                            (xt & xtAmount) >= minXtzAmount
                         && (xt & xtAmount) <= maxXtzAmount

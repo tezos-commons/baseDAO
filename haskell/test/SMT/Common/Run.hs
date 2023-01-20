@@ -51,6 +51,7 @@ runBaseDaoSMT option@SmtOption{..} = do
         -- Originate auxiliary contracts
         guardianContract <- originate "guardian" () dummyGuardianContract
         tokenContract <- originate "TokenContract" [] dummyFA2Contract
+        fa12TokenContract <- originate "FA12TokenContract" [] dummyFA12Contract
         registryDaoConsumer <- originate "registryDaoConsumer" []
           (contractConsumer @(MText, (Maybe MText))) -- Used in registry dao.
 
@@ -80,6 +81,7 @@ runBaseDaoSMT option@SmtOption{..} = do
               { msSelfAddress = addr
               , msContracts = Map.fromList
                   [ (toAddress tokenContract, SimpleFA2ContractType $ SimpleFA2Contract [] zeroMutez)
+                  , (toAddress fa12TokenContract, SimpleFA12ContractType $ SimpleFA12Contract [] zeroMutez)
                   , (toAddress registryDaoConsumer, OtherContractType $ OtherContract [] zeroMutez)
                   ]
               , msMutez = bal

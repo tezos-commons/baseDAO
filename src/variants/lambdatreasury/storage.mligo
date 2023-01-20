@@ -53,10 +53,29 @@ type token_transfer =
   ; transfer_list : transfer_item list
   }
 
+type legacy_transfer_target =
+  [@layout:comb]
+  { to : address
+  ; value : nat
+  }
+
+type legacy_transfer =
+  [@layout:comb]
+  { from : address
+  ; target : legacy_transfer_target
+  }
+
+type legacy_token_transfer =
+  [@layout:comb]
+  { contract_address : address
+  ; transfer : legacy_transfer
+  }
+
 type transfer_type =
   [@layout:comb]
   | Xtz_transfer_type of xtz_transfer
   | Token_transfer_type of token_transfer
+  | Legacy_token_transfer_type of legacy_token_transfer
 
 type transfer_proposal =
   { agora_post_id : nat
@@ -74,6 +93,14 @@ type transfer_params = transfer_item list
 
 let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (operation list) =
   match transfer_type with
+  | Legacy_token_transfer_type tt ->
+    begin
+      match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
+          : (legacy_transfer contract) option) with
+      | Some contract ->
+          (Tezos.transaction tt.transfer 0mutez contract) :: ops
+      | None -> (failwith fail_decision_callback : operation list)
+    end
   | Token_transfer_type tt ->
     begin
     match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
@@ -130,6 +157,7 @@ let transfer_proposal_handler_check (ptp, hs : bytes * handler_storage) : unit =
       let max_xtz_amount = fetch_tez("max_xtz_amount", hs) in
       let is_all_transfers_valid (transfer_type: transfer_type) =
         match transfer_type with
+        | Legacy_token_transfer_type _tt -> unit
         | Token_transfer_type _tt -> unit
         | Xtz_transfer_type xt ->
             begin
