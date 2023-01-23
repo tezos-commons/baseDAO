@@ -6,6 +6,7 @@ module Test.Ligo.Common
   , VariantExtraHasField(..)
   , TestableVariant(..)
   , withOriginated
+  , withOriginatedSetup
   , toPeriod
   , SizedList'(..)
   , refillables
@@ -50,11 +51,20 @@ withOriginated
   => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
   -> (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
   -> m a
-withOriginated storageFn tests = do
+withOriginated = withOriginatedSetup @variant (\_ _ -> pass)
+
+withOriginatedSetup
+  :: forall variant num num' caps m a num0. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
+  => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> m ())
+  -> (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
+  -> (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
+  -> m a
+withOriginatedSetup setup storageFn tests = do
   addresses@(admin ::< _) <- refillables $ newAddresses $ enumAliases "address"
 
   dodTokenContract <- originate "token_contract" [] dummyFA2Contract
   let storageInitial = storageFn addresses $ getInitialStorage @variant admin
+  setup addresses storageInitial
   now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
   let storage = storageInitial
         { sGovernanceToken = GovernanceToken
