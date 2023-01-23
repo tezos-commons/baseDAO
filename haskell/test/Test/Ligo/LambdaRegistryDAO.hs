@@ -81,9 +81,9 @@ initialStorage :: ImplicitAddress -> LambdaStorage
 initialStorage admin = let
   fs = baseDAOLambdaregistryStorageLigo
   in fs { sAdmin = toAddress admin, sConfig = (sConfig fs)
-            { cPeriod = 20
-            , cProposalFlushLevel = 40
-            , cProposalExpiredLevel = 100
+            { cPeriod = 25
+            , cProposalFlushLevel = 50
+            , cProposalExpiredLevel = 300
             , cGovernanceTotalSupply = 100
 
       }}
