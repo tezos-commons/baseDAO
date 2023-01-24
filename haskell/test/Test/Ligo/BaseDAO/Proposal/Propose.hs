@@ -488,11 +488,12 @@ unstakeVote
   => (ConfigDesc Config -> OriginateFn 'Base m)
   -> m ()
 unstakeVote originateFn = do
-  let flushLevel = 20
+  let flushLevel = 30
   DaoOriginateData{..}
     <- originateFn (testConfig
         >>- (ConfigDesc configConsts{ cmProposalFlushTime = Just flushLevel })
-        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just 50 })
+        >>- (ConfigDesc configConsts{ cmProposalExpiredTime = Just $ flushLevel*2 + 10 })
+        >>- (ConfigDesc configConsts{ cmPeriod = Just $ Period flushLevel })
         ) defaultQuorumThreshold
 
   -- [Voting]
