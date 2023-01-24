@@ -329,5 +329,6 @@ test-suite baseDAO-test
     , tasty
     , tasty-hedgehog
     , tasty-hunit-compat
+    , tasty-rerun
     , universum
   default-language: Haskell2010

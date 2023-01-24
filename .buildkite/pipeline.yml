@@ -111,11 +111,12 @@ steps:
         --argstr step-moneybag "$$CHAIN_TEST_MONEYBAG_SECRET_KEY"
         --argstr step-moneybag-password "$$CHAIN_TEST_MONEYBAG_PASSWORD"
         --no-out-link
-        --argstr scenario './result/bin/baseDAO-test
+        --argstr scenario 'for i in {1..3}; do ./result/bin/baseDAO-test
           --color=always
           --num-threads 1
           --cleveland-mode=only-network
-          --xml=./test-report.xml')
+          --rerun
+          --xml=./test-report.xml && break; done')
   - label: check typescript api
     if: *not_scheduled
     depends_on:
