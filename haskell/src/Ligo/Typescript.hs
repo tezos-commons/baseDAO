@@ -85,7 +85,8 @@ singNatToNatural (SS n) = 1 + singNatToNatural n
 -- looks up the entrypoints in the 'Notes t' for the whole parameter.
 lookupEntryPointsAndTypes :: Notes t -> [Entrypoint]
 lookupEntryPointsAndTypes n =
-    mapMaybe mkEntrypoint $ Map.assocs $ U.mkEntrypointsMap (U.ParameterType (nToType n) noAnn)
+    mapMaybe mkEntrypoint $ Map.assocs $
+      U.mkEntrypointsMap U.WithImplicitDefaultEp (U.ParameterType (nToType n) noAnn)
   where
     mkEntrypoint (a, b) = let
       epTxt = U.unEpName a

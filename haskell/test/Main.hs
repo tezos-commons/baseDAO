@@ -9,8 +9,9 @@ import Universum
 
 import Test.Cleveland.Ingredients (ourIngredients)
 import Test.Cleveland.Tasty (clevelandMainWithIngredients)
+import Test.Tasty.Ingredients.Rerun (rerunningTests)
 
 import Tree (tests)
 
 main :: IO ()
-main = tests >>= clevelandMainWithIngredients ourIngredients
+main = tests >>= clevelandMainWithIngredients [rerunningTests ourIngredients]

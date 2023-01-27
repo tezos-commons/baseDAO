@@ -295,48 +295,45 @@ flushUpdateGuardian = withFrozenCallStack $ withOriginated @variant @3
 flushUpdateContractDelegate
   :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)
   => m ()
-flushUpdateContractDelegate = withFrozenCallStack $ withOriginated @variant @4
+flushUpdateContractDelegate = withFrozenCallStack $ withOriginatedSetup @variant @4
+  (\(_ ::< _ ::< _ ::< dodOperator2 ::< Nil') _ -> registerDelegate dodOperator2)
   (\_ s -> s { sConfig = (sConfig s) { cPeriod = 25, cProposalExpiredLevel = 300 } }) $
-  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< dodOperator2 ::< Nil') fs dodDao _ -> do
-  let dodPeriod = toPeriod fs
-  registerDelegate dodOperator2
-  case dodOperator2 of
-    ImplicitAddress delegate -> do
-      let
+  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< ImplicitAddress delegate ::< Nil') fs dodDao _ -> do
+    let dodPeriod = toPeriod fs
         proposalMeta = toProposalMetadata @variant $ Just delegate
         proposeParams = ProposeParams (toAddress dodOwner1) (metadataSize $ proposalMeta) $ proposalMeta
 
-      -- Freeze in initial voting stage.
-      withSender dodOwner1 $
-        transfer dodDao $ calling (ep @"Freeze") (#amount :! (metadataSize $ proposalMeta))
+    -- Freeze in initial voting stage.
+    withSender dodOwner1 $
+      transfer dodDao $ calling (ep @"Freeze") (#amount :! (metadataSize $ proposalMeta))
 
-      withSender dodOwner2 $
-        transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
-      sendXtz dodDao
-      -- Advance one voting period to a proposing stage.
-      startLevel <- getOriginationLevel' @variant dodDao
-      advanceToLevel (startLevel + dodPeriod)
+    withSender dodOwner2 $
+      transfer dodDao $ calling (ep @"Freeze") (#amount :! 20)
+    sendXtz dodDao
+    -- Advance one voting period to a proposing stage.
+    startLevel <- getOriginationLevel' @variant dodDao
+    advanceToLevel (startLevel + dodPeriod)
 
-      withSender dodOwner1 $
-        transfer dodDao $ calling (ep @"Propose") proposeParams
-      let key1 = makeProposalKey proposeParams
+    withSender dodOwner1 $
+      transfer dodDao $ calling (ep @"Propose") proposeParams
+    let key1 = makeProposalKey proposeParams
 
-      let
-        upvote = NoPermit VoteParam
-            { vFrom = toAddress dodOwner2
-            , vVoteType = True
-            , vVoteAmount = 20
-            , vProposalKey = key1
-            }
+    let
+      upvote = NoPermit VoteParam
+          { vFrom = toAddress dodOwner2
+          , vVoteType = True
+          , vVoteAmount = 20
+          , vProposalKey = key1
+          }
 
-      -- Advance one voting period to a voting stage.
-      advanceToLevel (startLevel + 2*dodPeriod)
-      withSender dodOwner2 $ transfer dodDao $ calling (ep @"Vote") [upvote]
-      -- Advance one voting period to a proposing stage.
-      proposalStart <- getProposalStartLevel' @variant dodDao key1
-      advanceToLevel (proposalStart + 2*dodPeriod + 1)
-      withSender dodAdmin $ transfer dodDao $ calling (ep @"Flush") 100
-      getDelegate dodDao @@== (Just delegate)
+    -- Advance one voting period to a voting stage.
+    advanceToLevel (startLevel + 2*dodPeriod)
+    withSender dodOwner2 $ transfer dodDao $ calling (ep @"Vote") [upvote]
+    -- Advance one voting period to a proposing stage.
+    proposalStart <- getProposalStartLevel' @variant dodDao key1
+    advanceToLevel (proposalStart + 2*dodPeriod + 1)
+    withSender dodAdmin $ transfer dodDao $ calling (ep @"Flush") 100
+    getDelegate dodDao @@== (Just delegate)
 
 proposalCheckFailZeroMutez
   :: forall variant caps m. (TreasuryConstraints variant, MonadCleveland caps m, MonadFail m, HasCallStack)

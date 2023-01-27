@@ -26,7 +26,7 @@ steps:
   - label: xrefcheck
     if: *not_scheduled
     commands:
-    - nix run -f ci.nix xrefcheck -c xrefcheck
+    - nix run -f ci.nix pkgs.xrefcheck -c xrefcheck
     retry:
       automatic:
         limit: 1
@@ -66,7 +66,7 @@ steps:
     depends_on: build-haskell
     commands:
     - nix run -f ci.nix
-          tezos-client
+          pkgs.tezos-client
           pkgs.bats
           packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
         -c bats ./scripts/test.bats
@@ -88,9 +88,9 @@ steps:
     artifact_paths:
       - known_metadata.json
 
-  - label: ligo-test-local-chain-014
+  - label: ligo-test-local-chain-015
     env:
-      TASTY_CLEVELAND_NODE_ENDPOINT: "http://localhost:8733"
+      TASTY_CLEVELAND_NODE_ENDPOINT: "http://localhost:8734"
       # this key is defined in local-chain bootstrap accounts list in
       # https://github.com/serokell/aquarius-infra/blob/master/servers/albali/chain.nix
       CHAIN_TEST_MONEYBAG_SECRET_KEY: "unencrypted:edsk3nAQ3uCP7vc2ccLhhWNNncgFfWQ5HgTyPawepQ8DURRRfzVQzB"
@@ -111,10 +111,12 @@ steps:
         --argstr step-moneybag "$$CHAIN_TEST_MONEYBAG_SECRET_KEY"
         --argstr step-moneybag-password "$$CHAIN_TEST_MONEYBAG_PASSWORD"
         --no-out-link
-        --argstr scenario './result/bin/baseDAO-test
+        --argstr scenario 'for i in {1..3}; do ./result/bin/baseDAO-test
           --color=always
+          --num-threads 1
           --cleveland-mode=only-network
-          --xml=./test-report.xml')
+          --rerun
+          --xml=./test-report.xml && break; done')
   - label: check typescript api
     if: *not_scheduled
     depends_on:
@@ -145,10 +147,10 @@ steps:
     commands:
     - nix-build ci.nix -A haddock --no-out-link
 
-  - label: scheduled kathmandu ligo test
+  - label: scheduled limanet ligo test
     if: build.source == "schedule"
     env:
-      TASTY_CLEVELAND_NODE_ENDPOINT: "https://kathmandu.testnet.tezos.serokell.team"
+      TASTY_CLEVELAND_NODE_ENDPOINT: "https://lima.testnet.tezos.serokell.team"
       CHAIN_TEST_MONEYBAG_SECRET_KEY: "$TESTNET_MONEYBAG"
       CHAIN_TEST_MONEYBAG_PASSWORD: "$TESTNET_MONEYBAG_PASSWORD"
     depends_on:

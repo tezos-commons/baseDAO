@@ -168,6 +168,7 @@ tests:
     - tasty
     - tasty-hedgehog
     - tasty-hunit-compat
+    - tasty-rerun
     - universum
     - aeson
     - morley-metadata-test

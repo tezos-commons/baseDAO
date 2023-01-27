@@ -112,8 +112,7 @@ governanceTokenView MetadataSettings{} = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkMichelsonStorageView @Storage Nothing [] $
-            unsafeCompileViewCode $ WithoutParam $ do
-              mkLambda $ stToField #sGovernanceToken
+            unsafeCompileViewCode $ WithoutParam $ stToField #sGovernanceToken
       ]
   }
 
@@ -126,8 +125,6 @@ permitsCounterView MetadataSettings{} = View
   , vImplementations =
       [ VIMichelsonStorageView $
           mkSimpleMichelsonStorageView @Storage $
-            unsafeCompileViewCode $ WithoutParam $
-              mkLambda $ stToField #sPermitsCounter
+            unsafeCompileViewCode $ WithoutParam $ stToField #sPermitsCounter
       ]
   }
-

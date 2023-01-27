@@ -9,24 +9,21 @@ packages:
   - haskell
 
 extra-deps:
-
 # Stable versions available on Hackage
-- cleveland-0.2.1
-- morley-client-0.2.1
 - morley-prelude-0.5.1
-- lorentz-0.14.1
-- morley-1.18.0
+- morley-1.19.0
+- lorentz-0.15.0
+- morley-client-0.3.0
+- cleveland-0.3.0
 
 - git: https://gitlab.com/morley-framework/indigo.git
-  commit: b1f3d7cc674aae743201435f135e88aad79e408d # master
-  subdirs:
-    - .
+  commit: 2287bdc8b2c4af1db8457b03e01481d373e15dec # master
 - git: https://gitlab.com/morley-framework/morley-ledgers.git
-  commit: 14532b532a1e9eed1b8fedae8a701580bfeed37b # master
+  commit: ba7aac5b92d5fa029df23ad13a1893487d9cc2a1 # master
   subdirs:
     - code/morley-ledgers
 - git: https://gitlab.com/morley-framework/morley-metadata.git
-  commit: cb05e64b417f8d4928542fef99639366e04e7b18 # master
+  commit: 66e3684f8cc434ed79e4fb69500337afe28cff36 # master
   subdirs:
     - code/morley-metadata
     - code/morley-metadata-test
@@ -40,23 +37,19 @@ extra-deps:
 - named-0.3.0.1@sha256:418543272f0c844a77639b05276ee3906d5f305cd4cab46fafcb4f15b7f1e60d,2312
 - show-type-0.1.1
 
-# TODO: set to a base-4.15-compatible version when one is released
-- git: https://github.com/co-log/co-log.git
-  commit: 0552a366b90be5c361f7394447291d8de3b9d0e2
-  # nix-sha256: 0z3kf6jgza4g0lxc77hajjyn42ck7cw3bl27xlqffgj39ig6qdqs
+- co-log-0.5.0.0
 # Required by co-log
-- chronos-1.1.4
-- co-log-core-0.3.1.0
+- chronos-1.1.5
+- co-log-core-0.3.2.0
 - typerep-map-0.5.0.0
 # Required by chronos
-- bytebuild-0.3.10.0
+- bytebuild-0.3.11.0
 - byteslice-0.2.7.0
-- bytesmith-0.3.8.0
+- bytesmith-0.3.9.0
 # Required by byte*
 - run-st-0.1.1.0
 - zigzag-0.0.1.0
-- contiguous-0.6.1.1
-
+- contiguous-0.6.2.0
 
 # Packages by Adjoint (somewhat unmaintained, hence they require constraints on their deps)
 - galois-field-1.0.2
@@ -72,9 +65,3 @@ extra-deps:
 # Dependencies of crypto-sodium
 - NaCl-0.0.5.0
 - libsodium-1.0.18.2
-
-flags:
-  # Disable 'terminfo' haskell package, because it cannot be linked statically
-  # https://github.com/purescript/purescript/issues/3696
-  haskeline:
-    terminfo: false

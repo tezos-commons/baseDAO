@@ -160,9 +160,9 @@ originateLigoDaoWithConfig extra config qt =
         let fundAddress x = transfer x [tz|5|]
         mapM_ fundAddress [owner1, operator1, owner2, operator2, admin]
 
-      currentLevel <- getLevel
       tokenContract <- originate "TokenContract" [] dummyFA2Contract
       guardianContract <- originate "guardian" () dummyGuardianContract
+      currentLevel <- getLevel
 
       let originationOffset = 12
       let storage =
