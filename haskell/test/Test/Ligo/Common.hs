@@ -7,6 +7,7 @@ module Test.Ligo.Common
   , TestableVariant(..)
   , withOriginated
   , withOriginatedSetup
+  , withOriginatedFA12
   , toPeriod
   , SizedList'(..)
   , refillables
@@ -15,6 +16,7 @@ module Test.Ligo.Common
 import Prelude
 
 import Lorentz as L hiding (assert, div)
+import Lorentz.Contracts.Spec.AbstractLedgerInterface qualified as FA12
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed hiding (S, TAddress)
 import Morley.Tezos.Address
@@ -46,25 +48,37 @@ class VariantConstraints variant =>
   toProposalMetadata = toMetadata @variant
   getVariantStorageRPC :: forall caps m . MonadCleveland caps m => ContractAddress -> m (StorageSkeletonRPC (VariantToExtra variant))
 
-withOriginated
+withOriginatedFA12
   :: forall variant num num' caps m a num0. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
   => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
-  -> (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
+  -> (SizedList num ImplicitAddress
+        -> StorageSkeleton (VariantToExtra variant)
+        -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) ()
+        -> ContractHandle FA2.Parameter [FA2.TransferParams] ()
+        -> ContractHandle FA12.Parameter [FA12.TransferParams] ()
+        -> m a)
   -> m a
-withOriginated = withOriginatedSetup @variant (\_ _ -> pass)
+withOriginatedFA12 storageFn tests = do
+  withOriginatedSetup @variant (\_ _ -> originate "token_contract" [] dummyFA12Contract) storageFn (\addrs s tc fa2 dodFA12TokenContract ->
+    tests addrs s tc fa2 dodFA12TokenContract)
 
 withOriginatedSetup
-  :: forall variant num num' caps m a num0. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
-  => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> m ())
+  :: forall variant num num' caps m a num0 b. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
+  => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> m b)
   -> (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
-  -> (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
+  -> (SizedList num ImplicitAddress
+      -> StorageSkeleton (VariantToExtra variant)
+      -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) ()
+      -> ContractHandle FA2.Parameter [FA2.TransferParams] ()
+      -> b
+      -> m a)
   -> m a
 withOriginatedSetup setup storageFn tests = do
   addresses@(admin ::< _) <- refillables $ newAddresses $ enumAliases "address"
 
   dodTokenContract <- originate "token_contract" [] dummyFA2Contract
   let storageInitial = storageFn addresses $ getInitialStorage @variant admin
-  setup addresses storageInitial
+  setupResult <- setup addresses storageInitial
   now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
   let storage = storageInitial
         { sGovernanceToken = GovernanceToken
@@ -76,7 +90,18 @@ withOriginatedSetup setup storageFn tests = do
 
   baseDao <- originate "BaseDAO - RegistryDAO Test Contract" storage (getContract @variant)
   advanceToLevel now_level
-  tests addresses storage baseDao dodTokenContract
+  tests addresses storage baseDao dodTokenContract setupResult
+
+withOriginated
+  :: forall variant num num' caps m a num0. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
+  => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
+  -> (SizedList num ImplicitAddress
+        -> StorageSkeleton (VariantToExtra variant)
+        -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) ()
+        -> ContractHandle FA2.Parameter [FA2.TransferParams] ()
+        -> m a)
+  -> m a
+withOriginated storageFn tests = withOriginatedSetup @variant (\_ _ -> pass) storageFn (const ... tests)
 
 toPeriod :: StorageSkeleton v -> Natural
 toPeriod = unPeriod . cPeriod . sConfig

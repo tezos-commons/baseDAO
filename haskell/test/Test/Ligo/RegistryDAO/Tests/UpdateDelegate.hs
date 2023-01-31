@@ -24,7 +24,7 @@ updateDelegate = testScenario "checks it can flush a proposal that updates contr
   withOriginatedSetup @variant @4
     (\(_ ::< _ ::< _ ::< delegateAddr ::< Nil') _ -> registerDelegate delegateAddr)
     (\_ -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural))
-    \(admin ::< wallet1 ::< wallet2 ::< ImplicitAddress delegate ::< Nil') (toPeriod -> period) baseDao _ -> do
+    \(admin ::< wallet1 ::< wallet2 ::< ImplicitAddress delegate ::< Nil') (toPeriod -> period) baseDao _ _ -> do
       let
         proposalMeta = toProposalMetadata @variant $ Just delegate
 

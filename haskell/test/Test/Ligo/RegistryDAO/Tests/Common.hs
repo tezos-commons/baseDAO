@@ -6,6 +6,7 @@ module Test.Ligo.RegistryDAO.Tests.Common
   , expectFailProposalCheck
   , xtzTransferType
   , tokenTransferType
+  , fa12TokenTransferType
   ) where
 
 import Prelude
@@ -69,4 +70,10 @@ tokenTransferType contractAddr fromAddr toAddr = Token_transfer_type TokenTransf
         ]
       }
     ]
+  }
+
+fa12TokenTransferType :: Address -> Address -> Address -> TransferType
+fa12TokenTransferType contractAddr fromAddr toAddr = Legacy_token_transfer_type LegacyTokenTransfer
+  { lttContractAddress = contractAddr
+  , lttTransfer = (#from :! fromAddr, #to :! toAddr, #value :! 10)
   }

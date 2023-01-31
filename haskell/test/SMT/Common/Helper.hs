@@ -15,6 +15,11 @@ import SMT.Model.BaseDAO.Types
 handleTransfer :: [SimpleOperation] -> TransferType -> [SimpleOperation]
 handleTransfer ops transferType =
   case transferType of
+    Legacy_token_transfer_type tt ->
+      ( FA12TransferOperation
+          (tt & lttContractAddress)
+          (tt & lttTransfer) zeroMutez
+      ) : ops
     Token_transfer_type tt ->
       ( FA2TransferOperation
           (tt & ttContractAddress)

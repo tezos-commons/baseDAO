@@ -3,12 +3,14 @@
 
 -- | Common types between different DAO implementations.
 module Ligo.BaseDAO.Common.Types
-  ( TokenTransfer (..)
+  ( LegacyTokenTransfer (..)
+  , TokenTransfer (..)
   , TransferType (..)
   , XtzTransfer (..)
   ) where
 
 import Lorentz
+import Lorentz.Contracts.Spec.AbstractLedgerInterface qualified as FA12
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 
 import Ligo.BaseDAO.Types
@@ -20,6 +22,7 @@ import Ligo.BaseDAO.Types
 data TransferType
   = Xtz_transfer_type XtzTransfer
   | Token_transfer_type TokenTransfer
+  | Legacy_token_transfer_type LegacyTokenTransfer
   deriving stock Generic
   deriving anyclass IsoValue
 
@@ -51,9 +54,23 @@ data TokenTransfer = TokenTransfer
   deriving stock (Generic)
   deriving anyclass (IsoValue)
 
+data LegacyTokenTransfer = LegacyTokenTransfer
+  { lttContractAddress :: Address
+  , lttTransfer :: FA12.TransferParams
+  }
+  deriving stock (Generic)
+  deriving anyclass (IsoValue)
+
 instance HasAnnotation TokenTransfer where
   annOptions = baseDaoAnnOptions
 
 instance TypeHasDoc TokenTransfer where
   typeDocMdDescription = "Describe a proposal which wants to transfer any FA2 tokens \
+  \ to a certain address."
+
+instance HasAnnotation LegacyTokenTransfer where
+  annOptions = baseDaoAnnOptions
+
+instance TypeHasDoc LegacyTokenTransfer where
+  typeDocMdDescription = "Describe a proposal which wants to transfer any FA1.2 tokens \
   \ to a certain address."

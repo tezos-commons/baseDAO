@@ -75,6 +75,7 @@ let proposal_check (params, extras : propose_params * contract_extra) : unit =
       let max_xtz_amount = extras.max_xtz_amount in
       let is_all_transfers_valid (transfer_type: transfer_type) =
         match transfer_type with
+        | Legacy_token_transfer_type _tt -> unit
         | Token_transfer_type _tt -> unit
         | Xtz_transfer_type xt ->
             begin
@@ -107,10 +108,18 @@ let update_receivers(current_set, updates, update_fn : proposal_receivers * addr
 
 let handle_transfer (ops, transfer_type : (operation list) * transfer_type) : (operation list) =
   match transfer_type with
+  | Legacy_token_transfer_type tt ->
+    begin
+      match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
+          : (legacy_transfer contract) option) with
+      | Some contract ->
+          (Tezos.transaction tt.transfer 0mutez contract) :: ops
+      | None -> (failwith fail_decision_callback : operation list)
+    end
   | Token_transfer_type tt ->
     begin
       match (Tezos.get_entrypoint_opt "%transfer" tt.contract_address
-          : transfer_params contract option) with
+          : (transfer_params contract) option) with
       | Some contract ->
           (Tezos.transaction tt.transfer_list 0mutez contract) :: ops
       | None -> (failwith fail_decision_callback : operation list)

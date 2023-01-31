@@ -9,6 +9,7 @@ module SMT.Model.BaseDAO.Types
   , ModelState (..)
   , SimpleContractType (..)
   , SimpleFA2Contract (..)
+  , SimpleFA12Contract (..)
   , OtherContract (..)
   , SimpleOperation (..)
   , runModelT
@@ -31,6 +32,7 @@ import Fmt
 import Text.Show (show)
 
 import Lorentz hiding (cast, get, not, subMutez)
+import Lorentz.Contracts.Spec.AbstractLedgerInterface qualified as FA12
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Tezos.Address
 import Morley.Tezos.Core
@@ -102,6 +104,16 @@ execOperation op = do
                 in (Map.insert addr (SimpleFA2ContractType updatedSc) contracts, tez)
               _ ->
                 (contracts, zeroMutez)
+          FA12TransferOperation addr param tez ->
+            case Map.lookup addr contracts of
+              Just (SimpleFA12ContractType sfc) ->
+                let updatedSc = sfc
+                      { sfclStorage = param : (sfc & sfclStorage)
+                      , sfclMutez = unsafeAddMutez tez (sfc & sfclMutez)
+                      }
+                in (Map.insert addr (SimpleFA12ContractType updatedSc) contracts, tez)
+              _ ->
+                (contracts, zeroMutez)
           OtherOperation addr param tez ->
             case Map.lookup addr contracts of
               Just (OtherContractType oc) ->
@@ -137,6 +149,7 @@ modifyStore f = do
 -- Simple operation that only allows transfering to `FA2.TransferItem` entrypoint
 data SimpleOperation
   = FA2TransferOperation Address [FA2.TransferItem] Mutez
+  | FA12TransferOperation Address FA12.TransferParams Mutez
   | OtherOperation Address Text Mutez
   deriving stock (Eq, Show, Generic)
 
@@ -149,6 +162,7 @@ instance Buildable SimpleOperation where
 -- Other contract call params will be convert to text.
 data SimpleContractType
   = SimpleFA2ContractType SimpleFA2Contract
+  | SimpleFA12ContractType SimpleFA12Contract
   | OtherContractType OtherContract
   deriving stock (Eq, Show, Generic)
 
@@ -160,9 +174,16 @@ data SimpleFA2Contract = SimpleFA2Contract
   , sfcMutez :: Mutez
   } deriving stock (Eq, Show, Generic)
 
+data SimpleFA12Contract = SimpleFA12Contract
+  { sfclStorage :: [FA12.TransferParams]
+  , sfclMutez :: Mutez
+  } deriving stock (Eq, Show, Generic)
+
 instance Buildable SimpleFA2Contract where
   build = genericF
 
+instance Buildable SimpleFA12Contract where
+  build = genericF
 
 data OtherContract = OtherContract
   { ocStorage :: [Text]
