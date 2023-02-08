@@ -9,24 +9,18 @@ steps:
     if: &not_scheduled
      build.source != "schedule"
     commands:
-    - nix run -f ci.nix pkgs.hlint -c
+    - nix shell .#haskellPackages.hlint -c
         ./scripts/lint.sh
 
-  - label: reuse lint
+  - label: check
     if: *not_scheduled
     commands:
-    - nix run -f ci.nix pkgs.reuse -c
-        reuse lint
-
-  - label: check trailing whitespace
-    if: *not_scheduled
-    commands:
-    - .buildkite/check-trailing-whitespace.sh
+    - nix flake check -L
 
   - label: xrefcheck
     if: *not_scheduled
     commands:
-    - nix run -f ci.nix pkgs.xrefcheck -c xrefcheck
+    - nix shell .#xrefcheck --impure -c xrefcheck
     retry:
       automatic:
         limit: 1
@@ -34,16 +28,16 @@ steps:
   - label: check cabal files
     if: *not_scheduled
     commands:
-    - nix run -f ci.nix stack2cabal pkgs.diffutils -c ./scripts/ci/validate-cabal-files.sh
+    - nix shell .#stack2cabal .#diffutils -c ./scripts/ci/validate-cabal-files.sh
 
   - label: build-ligo
     key: build-ligo
     if: *not_scheduled
     commands:
-    - nix-build ci.nix -A build-ligo -o ./ligo-out/
-    - nix run -f ci.nix morley -c morley optimize --contract ./ligo-out/trivialDAO.tz --output trivialDAO.tz
-    - nix run -f ci.nix morley -c morley optimize --contract ./ligo-out/registryDAO.tz --output registryDAO.tz
-    - nix run -f ci.nix morley -c morley optimize --contract ./ligo-out/treasuryDAO.tz --output treasuryDAO.tz
+    - nix build -L .#build-ligo -o ./ligo-out/
+    - nix run .#morley -- optimize --contract ./ligo-out/trivialDAO.tz --output trivialDAO.tz
+    - nix run .#morley -- optimize --contract ./ligo-out/registryDAO.tz --output registryDAO.tz
+    - nix run .#morley -- optimize --contract ./ligo-out/treasuryDAO.tz --output treasuryDAO.tz
     - cp ./ligo-out/trivialDAO_storage.tz trivialDAO_storage.tz
     - cp ./ligo-out/registryDAO_storage.tz registryDAO_storage.tz
     - cp ./ligo-out/treasuryDAO_storage.tz treasuryDAO_storage.tz
@@ -59,16 +53,16 @@ steps:
     key: build-haskell
     if: *not_scheduled
     commands:
-    - nix-build ci.nix -A all-components
+    - nix build -L .
 
   - label: bats
     if: *not_scheduled
     depends_on: build-haskell
     commands:
-    - nix run -f ci.nix
-          pkgs.tezos-client
-          pkgs.bats
-          packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
+    - nix shell
+          .#tezos-client
+          .#bats
+          .#baseDAO-ligo-meta:exe:baseDAO-ligo-meta
         -c bats ./scripts/test.bats
 
   - label: ligo-test
@@ -78,12 +72,12 @@ steps:
       - build-ligo
       - build-haskell
     commands:
-    - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
+    - nix build -L .#baseDAO-ligo-meta:test:baseDAO-test
     - ./result/bin/baseDAO-test --cleveland-mode=disable-network
 
     # Get `known_metadata.json` artifact
-    - nix run -f ci.nix
-          packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta
+    - nix shell
+          .#baseDAO-ligo-meta:exe:baseDAO-ligo-meta
         -c baseDAO-ligo-meta print-metadata > known_metadata.json
     artifact_paths:
       - known_metadata.json
@@ -102,10 +96,10 @@ steps:
       # NOTE ^ this last dependency is not strictly necessary, but it saves us
       # from building the tests twice and 'ligo-test' running time is mostly that.
     commands: &ligo-nettest
-    - nix-build ci.nix -A packages.baseDAO-ligo-meta.tests.baseDAO-test
+    - nix build -L .#baseDAO-ligo-meta:test:baseDAO-test
     # Note that 'refill-balance' below is the initial 'TASTY_CLEVELAND_MONEYBAG_SECRET_KEY' balance
     # which may need to be adjusted in case of insufficient balance errors
-    - $(nix-build ci.nix -A run-chain-tests
+    - $(nix-build . -A utils.run-chain-tests
         --argstr refill-balance 800
         --argstr node-endpoint "$$TASTY_CLEVELAND_NODE_ENDPOINT"
         --argstr step-moneybag "$$CHAIN_TEST_MONEYBAG_SECRET_KEY"
@@ -123,7 +117,7 @@ steps:
       - build-ligo
       - build-haskell
     commands:
-      - nix run -f ci.nix packages.baseDAO-ligo-meta.exes.baseDAO-ligo-meta pkgs.diffutils -c ./scripts/ci/validate-typescript-api.sh
+      - nix shell .#baseDAO-ligo-meta:exe:baseDAO-ligo-meta .#diffutils -c ./scripts/ci/validate-typescript-api.sh
 
 
   - label: typescript-build
@@ -132,20 +126,20 @@ steps:
       - build-ligo
       - build-haskell
     commands:
-    - nix-build ci.nix -A build-typescript --arg release false
+    - nix build -L .#build-typescript
 
   - label: weeder
     if: *not_scheduled
     depends_on: build-haskell
     commands:
-    - nix-build ci.nix -A weeder-script
+    - nix build -L .#weeder-script
     - ./result
 
   - label: haddock
     if: *not_scheduled
     depends_on: build-haskell
     commands:
-    - nix-build ci.nix -A haddock --no-out-link
+    - nix-build . -A utils.haddock --no-out-link
 
   - label: scheduled limanet ligo test
     if: build.source == "schedule"
@@ -173,10 +167,10 @@ steps:
       - buildkite-agent artifact download treasuryDAO_storage.tz assets --step "build-ligo"
       - buildkite-agent artifact download registryDAO_storage.tz assets --step "build-ligo"
       - buildkite-agent artifact download known_metadata.json assets --step "ligo-test"
-      - nix run -f ci.nix pkgs.gitAndTools.gh -c gh release delete auto-release --yes || true
-      - nix run -f ci.nix pkgs.git -c git fetch && git tag -f auto-release && git push --force --tags
-      - nix run -f ci.nix pkgs.gitAndTools.gh -c gh release create --prerelease auto-release --title auto-release --notes ""
-      - nix run -f ci.nix pkgs.gitAndTools.gh -c gh release upload auto-release assets/*
+      - nix shell .#gitAndTools.gh -c gh release delete auto-release --yes || true
+      - nix shell .#git -c git fetch && git tag -f auto-release && git push --force --tags
+      - nix shell .#gitAndTools.gh -c gh release create --prerelease auto-release --title auto-release --notes ""
+      - nix shell .#gitAndTools.gh -c gh release upload auto-release assets/*
 
 
 notify:
