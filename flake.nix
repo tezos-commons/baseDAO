@@ -8,11 +8,12 @@
 
   inputs = {
     morley-infra.url = "gitlab:morley-framework/morley-infra";
+    morley-infra.inputs.hackage-nix.url = "github:input-output-hk/hackage.nix/07e57a6fd5f83dfd0c8713c1c86d27b134689354";
     nix-npm-buildpackage.url = "github:serokell/nix-npm-buildpackage";
     morley.url = "gitlab:morley-framework/morley";
   };
 
-  outputs = inputs@{ self, flake-utils, haskell-nix, morley-infra, morley, nix-npm-buildpackage, ... }:
+  outputs = { self, flake-utils, morley-infra, morley, nix-npm-buildpackage, ... }:
     (flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         nixpkgs = morley-infra.legacyPackages.${system};
@@ -101,11 +102,7 @@
                 cabal = {};
                 hlint = { version = "3.4"; };
                 hpack = { version = "0.34.4"; };
-                haskell-language-server = {};
               };
-              buildInputs = with pkgs; [
-                haskellPackages.implicit-hie
-              ];
             };
         };
 

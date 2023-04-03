@@ -15,15 +15,18 @@ import Data.Map qualified as Map
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Gen.Tezos.Address (genAddress)
 import Hedgehog.Range qualified as Range
+import Fmt (pretty)
 
 import Hedgehog.Gen.Tezos.Crypto (genSecretKey)
 import Lorentz hiding (cast, concat, get, not)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Haskell.Value (BigMap(..))
 import Morley.Tezos.Address
+import Morley.Tezos.Address.Alias
 import Morley.Tezos.Core (dummyChainId)
 import Morley.Tezos.Crypto (SecretKey, sign, toPublic)
 import Morley.Util.Named
+import Test.Cleveland (AddressWithAlias(..), ImplicitAddressWithAlias)
 
 import Ligo.BaseDAO.Common.Types
 import Ligo.BaseDAO.Types
@@ -35,7 +38,12 @@ genMkModelInput option@SmtOption{..} = do
 
   -- Initial
   addrs <- genSecretKey
-    <&> (\secret -> (mkKeyAddress . toPublic $ secret, secret))
+    <&> (\secret ->
+      ( AddressWithAlias
+          { awaAddress = mkKeyAddress $ toPublic secret
+          , awaAlias = mkAlias . ("addr_" <>) . pretty $ toPublic secret
+          }
+      , secret))
     & vectorOf poolSize
   startLevel <- Gen.integral (Range.constant 0 10)
 
@@ -209,13 +217,13 @@ genRandomCalls = do
   >>= Gen.subsequence
 
   where
-    genTransferContractTokensCall :: ImplicitAddress -> GeneratorT cep (Address -> ModelCall cep)
+    genTransferContractTokensCall :: ImplicitAddressWithAlias -> GeneratorT cep (Address -> ModelCall cep)
     genTransferContractTokensCall sender1 = do
       f <- genTransferContractTokens @cep
       pure $ \govAddr -> mkSimpleContractCall sender1 $ f govAddr
 
 
-mkSimpleContractCall :: ImplicitAddress -> Parameter' (VariantToParam var) -> ModelCall var
+mkSimpleContractCall :: ImplicitAddressWithAlias -> Parameter' (VariantToParam var) -> ModelCall var
 mkSimpleContractCall sender1 param = do
   ModelCall
     { mcAdvanceLevel = Nothing
@@ -344,8 +352,7 @@ genVote = do
 sign' :: SecretKey -> GeneratorT cep ( ByteString -> Signature)
 sign' addr = do
   seed <- drgNewSeed . seedFromInteger <$> Gen.integral (Range.linearFrom 0 -1000 1000)
-  pure $ \bytes -> fst $ withDRG seed $ do
-    sign addr bytes
+  pure $ fst . withDRG seed . sign addr
 
 type Parameter'' var = Parameter' (VariantToParam var)
 

@@ -95,15 +95,15 @@ import Lorentz hiding (div, now)
 import Lorentz.Annotation ()
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Lorentz.Contracts.Spec.TZIP16Interface qualified as TZIP16
-import Morley.AsRPC (HasRPCRepr(..), deriveRPCWithOptions, DeriveRPCOptions(..))
+import Morley.AsRPC (DeriveRPCOptions(..), HasRPCRepr(..), deriveRPCWithOptions, deriveRPC)
 import Morley.Michelson.Typed.Annotation
 import Morley.Michelson.Typed.Scope
   (HasNoBigMap, HasNoContract, HasNoNestedBigMaps, HasNoOp, HasNoTicket)
 import Morley.Michelson.Typed.T (T(TUnit))
 import Morley.Michelson.Untyped.Annotation
+import Morley.Tezos.Address
 import Morley.Util.Markdown
 import Morley.Util.Named
-import Morley.Tezos.Address
 import Test.Cleveland.Instances ()
 
 -- | A data type to track and specify the different DAO variants in existence
@@ -147,8 +147,8 @@ instance HasAnnotation FA2.Parameter
 frozenTokenId :: FA2.TokenId
 frozenTokenId = FA2.TokenId 0
 
-baseDaoAnnOptions :: AnnOptions
-baseDaoAnnOptions = defaultAnnOptions { fieldAnnModifier = dropPrefixThen toSnake }
+baseDaoAnnOptions :: Maybe AnnOptions
+baseDaoAnnOptions = Just def { fieldAnnModifier = toSnake . dropPrefix }
 
 ------------------------------------------------------------------------
 -- Proposals
@@ -316,7 +316,7 @@ instance HasAnnotation Delegate where
 instance Buildable Delegate where
   build = genericF
 
-type Delegates' big_map = big_map Delegate ()
+type Delegates' (big_map :: Type -> Type -> Type) = big_map Delegate ()
 
 type Delegates = Delegates' BigMap
 
@@ -658,8 +658,7 @@ instance Buildable ProposalDoublyLinkedList where
 instance HasAnnotation ProposalDoublyLinkedList where
   annOptions = baseDaoAnnOptions
 
--- TODO [morley#922]: remove droRecursive=False here
-deriveRPCWithOptions "ProposalDoublyLinkedList" def{droRecursive=False}
+deriveRPC "ProposalDoublyLinkedList"
 
 instance HasRPCRepr (DynamicRec s) where
   type AsRPC (DynamicRec s) = DynamicRecView s
@@ -758,7 +757,6 @@ instance HasAnnotation ce => HasAnnotation (StorageSkeleton ce) where
   annOptions = baseDaoAnnOptions
 deriving anyclass instance IsoValue ce => IsoValue (StorageSkeleton ce)
 
--- TODO [morley#922]: remove droRecursive=False here
 deriveRPCWithOptions "StorageSkeleton" def{droStrategy=ligoLayout, droRecursive=False}
 type StorageRPC = StorageSkeletonRPC (VariantToExtra 'Base)
 

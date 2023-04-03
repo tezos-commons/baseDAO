@@ -19,7 +19,6 @@ import Morley.Util.SizedList (SizedList)
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Management.TransferOwnership
-import Test.Ligo.Common (refillables)
 
 -- | Function that originates the contract and also make a bunch of
 -- address (the `addrCount` arg determines the count) for use within
@@ -27,8 +26,8 @@ import Test.Ligo.Common (refillables)
 -- verbose.
 withOriginated
   :: (MonadCleveland caps m, IsoNatPeano num num', SingIPeano num)
-  => (SizedList num ImplicitAddress -> Storage)
-  -> (SizedList num ImplicitAddress -> ContractHandle Parameter Storage () -> m a)
+  => (SizedList num ImplicitAddressWithAlias -> Storage)
+  -> (SizedList num ImplicitAddressWithAlias -> ContractHandle Parameter Storage () -> m a)
   -> m a
 withOriginated storageFn tests = do
   addresses <- refillables $ newAddresses (enumAliases "address")
@@ -85,7 +84,7 @@ test_BaseDAO_Management =
   where
 
     initialStorage currentLevel admin = mkStorage' @'Base
-      ! #admin admin
+      ! #admin (toImplicitAddress admin)
       ! #extra ()
       ! #metadata mempty
       ! #level currentLevel

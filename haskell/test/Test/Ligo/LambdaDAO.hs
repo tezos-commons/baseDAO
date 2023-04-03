@@ -12,7 +12,6 @@ import Test.Tasty (TestTree, testGroup)
 
 import Lorentz as L hiding (assert, div)
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Morley.Tezos.Address
 import Morley.Util.Named
 import Morley.Util.Peano
 import Morley.Util.SizedList (SizedList, SizedList'(..))
@@ -29,8 +28,8 @@ getStorageRPCLambda addr = getStorage @(StorageSkeleton (VariantToExtra 'Lambda)
 
 withOriginated
   :: (IsoNatPeano num num', MonadCleveland caps m, SingIPeano num)
-  => (SizedList num ImplicitAddress -> LambdaStorage)
-  -> (SizedList num ImplicitAddress -> LambdaStorage -> ContractHandle (Parameter' LambdaCustomEpParam) (StorageSkeleton (VariantToExtra 'Lambda)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
+  => (SizedList num ImplicitAddressWithAlias -> LambdaStorage)
+  -> (SizedList num ImplicitAddressWithAlias -> LambdaStorage -> ContractHandle (Parameter' LambdaCustomEpParam) (StorageSkeleton (VariantToExtra 'Lambda)) () -> ContractHandle FA2.Parameter [FA2.TransferParams] () -> m a)
   -> m a
 withOriginated storageFn tests = do
   addresses <- refillables $ newAddresses $ enumAliases "address"
@@ -393,7 +392,7 @@ test_LambdaDAO =
   -- RegistryDAO configuration values using the setExtra function below, and
   -- initialize the contract using it. This let us have the callbacks from LIGO
   -- in storage, and allows to tweak RegistryDAO configuration in tests.
-  initialStorage :: ImplicitAddress -> LambdaStorage
+  initialStorage :: ImplicitAddressWithAlias -> LambdaStorage
   initialStorage (toAddress -> admin) = let
     fs = baseDAOLambdaStorageLigo
     in fs { sAdmin = admin, sConfig = (sConfig fs)
@@ -404,15 +403,15 @@ test_LambdaDAO =
 
         }}
 
-  initialStorageWithExplictLambdaDAOConfig :: ImplicitAddress -> LambdaStorage
+  initialStorageWithExplictLambdaDAOConfig :: ImplicitAddressWithAlias -> LambdaStorage
   initialStorageWithExplictLambdaDAOConfig admin = initialStorage admin
 
-  initialStorageWithPreloadedLambdas :: ImplicitAddress -> LambdaStorage
+  initialStorageWithPreloadedLambdas :: ImplicitAddressWithAlias -> LambdaStorage
   initialStorageWithPreloadedLambdas admin = let
     preloadedHandlerInfo = HandlerInfo proposal_1_handler proposal_1_check True
     in setExtra (\e -> e { leLambdas = mkBigMap [([mt|proposal_handler_1|],  preloadedHandlerInfo)] }  ) (initialStorage admin)
 
-  initialStorageWithPreloadedLambdasDisabled :: ImplicitAddress -> LambdaStorage
+  initialStorageWithPreloadedLambdasDisabled :: ImplicitAddressWithAlias -> LambdaStorage
   initialStorageWithPreloadedLambdasDisabled admin = let
     preloadedHandlerInfo = HandlerInfo proposal_1_handler proposal_1_check False
     in setExtra (\e -> e { leLambdas = mkBigMap [([mt|proposal_handler_1|],  preloadedHandlerInfo)] }  ) (initialStorage admin)

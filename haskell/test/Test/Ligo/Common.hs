@@ -10,7 +10,6 @@ module Test.Ligo.Common
   , withOriginatedFA12
   , toPeriod
   , SizedList'(..)
-  , refillables
   ) where
 
 import Prelude
@@ -50,8 +49,8 @@ class VariantConstraints variant =>
 
 withOriginatedFA12
   :: forall variant num num' caps m a num0. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
-  => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
-  -> (SizedList num ImplicitAddress
+  => (SizedList num ImplicitAddressWithAlias -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
+  -> (SizedList num ImplicitAddressWithAlias
         -> StorageSkeleton (VariantToExtra variant)
         -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) ()
         -> ContractHandle FA2.Parameter [FA2.TransferParams] ()
@@ -64,9 +63,9 @@ withOriginatedFA12 storageFn tests = do
 
 withOriginatedSetup
   :: forall variant num num' caps m a num0 b. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
-  => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> m b)
-  -> (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
-  -> (SizedList num ImplicitAddress
+  => (SizedList num ImplicitAddressWithAlias -> StorageSkeleton (VariantToExtra variant) -> m b)
+  -> (SizedList num ImplicitAddressWithAlias -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
+  -> (SizedList num ImplicitAddressWithAlias
       -> StorageSkeleton (VariantToExtra variant)
       -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) ()
       -> ContractHandle FA2.Parameter [FA2.TransferParams] ()
@@ -77,7 +76,7 @@ withOriginatedSetup setup storageFn tests = do
   addresses@(admin ::< _) <- refillables $ newAddresses $ enumAliases "address"
 
   dodTokenContract <- originate "token_contract" [] dummyFA2Contract
-  let storageInitial = storageFn addresses $ getInitialStorage @variant admin
+  let storageInitial = storageFn addresses $ getInitialStorage @variant (toImplicitAddress admin)
   setupResult <- setup addresses storageInitial
   now_level <- ifEmulation getLevel (getLevel >>= (\x -> pure $ x + 5))
   let storage = storageInitial
@@ -94,8 +93,8 @@ withOriginatedSetup setup storageFn tests = do
 
 withOriginated
   :: forall variant num num' caps m a num0. (IsoNatPeano num num', SingI num', TestableVariant variant, MonadCleveland caps m, num' ~ 'S num0, MonadFail m)
-  => (SizedList num ImplicitAddress -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
-  -> (SizedList num ImplicitAddress
+  => (SizedList num ImplicitAddressWithAlias -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant))
+  -> (SizedList num ImplicitAddressWithAlias
         -> StorageSkeleton (VariantToExtra variant)
         -> ContractHandle (Parameter' (VariantToParam variant)) (StorageSkeleton (VariantToExtra variant)) ()
         -> ContractHandle FA2.Parameter [FA2.TransferParams] ()

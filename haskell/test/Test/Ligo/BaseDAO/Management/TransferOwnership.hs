@@ -28,11 +28,11 @@ import Ligo.BaseDAO.Types
 import Test.Ligo.BaseDAO.Common
 
 type WithOriginateFn num m =
-     (SizedList num ImplicitAddress -> Storage)
-  -> (SizedList num ImplicitAddress -> ContractHandle Parameter Storage () -> m ())
+     (SizedList num ImplicitAddressWithAlias -> Storage)
+  -> (SizedList num ImplicitAddressWithAlias -> ContractHandle Parameter Storage () -> m ())
   -> m ()
 
-type WithStorage = ImplicitAddress -> Storage
+type WithStorage = ImplicitAddressWithAlias -> Storage
 
 transferOwnership
   :: MonadCleveland caps m

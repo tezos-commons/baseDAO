@@ -10,20 +10,19 @@ packages:
 
 extra-deps:
 # Stable versions available on Hackage
-- morley-prelude-0.5.1
-- morley-1.19.0
-- lorentz-0.15.0
-- morley-client-0.3.0
-- cleveland-0.3.0
+- morley-prelude-0.5.2
+- morley-1.19.1
+- lorentz-0.15.1
+- morley-client-0.3.1
+- cleveland-0.3.1
+- indigo-0.6.0
 
-- git: https://gitlab.com/morley-framework/indigo.git
-  commit: 2287bdc8b2c4af1db8457b03e01481d373e15dec # master
 - git: https://gitlab.com/morley-framework/morley-ledgers.git
-  commit: ba7aac5b92d5fa029df23ad13a1893487d9cc2a1 # master
+  commit: 4e2a799063d883e401fec410512e7f382057abfc # master
   subdirs:
     - code/morley-ledgers
 - git: https://gitlab.com/morley-framework/morley-metadata.git
-  commit: 66e3684f8cc434ed79e4fb69500337afe28cff36 # master
+  commit: 4b0665c70bf725146e25d9a4a94d000e9288462f # master
   subdirs:
     - code/morley-metadata
     - code/morley-metadata-test
@@ -36,6 +35,7 @@ extra-deps:
 - colourista-0.1.0.1@sha256:98353ee0e2f5d97d2148513f084c1cd37dfda03e48aa9dd7a017c9d9c0ba710e,3307
 - named-0.3.0.1@sha256:418543272f0c844a77639b05276ee3906d5f305cd4cab46fafcb4f15b7f1e60d,2312
 - show-type-0.1.1
+- hsblst-0.0.1
 
 - co-log-0.5.0.0
 # Required by co-log

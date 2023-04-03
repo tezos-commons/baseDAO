@@ -45,4 +45,3 @@ instance Buildable TreasuryExtra where
 
 instance HasRPCRepr TreasuryExtra where
   type AsRPC TreasuryExtra = TreasuryExtra
-
