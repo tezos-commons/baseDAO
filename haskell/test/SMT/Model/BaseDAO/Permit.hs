@@ -11,6 +11,7 @@ import Control.Monad.Except (throwError)
 import Lorentz hiding (cast, checkSignature, get, not)
 import Morley.Tezos.Address (ImplicitAddress, mkKeyAddress)
 import Morley.Tezos.Crypto (checkSignature)
+import Test.Cleveland (toImplicitAddress)
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
@@ -21,7 +22,7 @@ verifyPermitProtectedVote mso permited = do
   case (permited & ppPermit) of
     Nothing ->
       -- if there is no permit to check, return the votingParam and the sender
-      pure (permited & ppArgument, mso & msoSender)
+      pure (permited & ppArgument, mso & msoSender & toImplicitAddress)
     Just permit -> do
       -- if there is a permit, check that its correct
       permitCounter <- getStore <&> sPermitsCounter

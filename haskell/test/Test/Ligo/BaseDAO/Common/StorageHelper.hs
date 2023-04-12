@@ -23,7 +23,6 @@ module Test.Ligo.BaseDAO.Common.StorageHelper
 import Lorentz hiding (assert, (>>))
 import Universum
 
-import Morley.Tezos.Address
 import Test.Cleveland
 
 import Ligo.BaseDAO.Types
@@ -46,15 +45,15 @@ getFrozenTotalSupply :: forall p s caps m. MonadCleveland caps m => ContractHand
 getFrozenTotalSupply addr = getFrozenTotalSupply' @'Base addr
 
 getFreezeHistory'
-  :: forall cep p s caps m. (CEConstraints cep, MonadCleveland caps m)
-  => ContractHandle p s () -> ImplicitAddress -> m (Maybe AddressFreezeHistory)
-getFreezeHistory' addr owner = do
+  :: forall cep p s caps m addr. (CEConstraints cep, MonadCleveland caps m, ToImplicitAddress addr)
+  => ContractHandle p s () -> addr -> m (Maybe AddressFreezeHistory)
+getFreezeHistory' addr (toImplicitAddress -> owner) = do
   freezeHistoryBmId <- sFreezeHistoryRPC <$> (getStorageRPC' @cep addr)
   getBigMapValueMaybe freezeHistoryBmId (toAddress owner)
 
 getFreezeHistory
-  :: forall p s caps m. (MonadCleveland caps m)
-  => ContractHandle p s () -> ImplicitAddress -> m (Maybe AddressFreezeHistory)
+  :: forall p s caps m addr. (MonadCleveland caps m, ToImplicitAddress addr)
+  => ContractHandle p s () -> addr -> m (Maybe AddressFreezeHistory)
 getFreezeHistory addr owner = getFreezeHistory' @'Base addr owner
 
 getQtAtCycle'
@@ -82,9 +81,9 @@ getProposal
 getProposal addr pKey = getProposal' @'Base addr pKey
 
 getVoter
-  :: forall p s caps m. MonadCleveland caps m
+  :: forall p s caps m addr. (MonadCleveland caps m, ToAddress addr)
   => ContractHandle p s ()
-  -> (ImplicitAddress, ProposalKey)
+  -> (addr, ProposalKey)
   -> m (Maybe StakedVote)
 getVoter addr key = do
   bId <- sStakedVotesRPC <$> getStorageRPC addr
@@ -154,16 +153,16 @@ checkIfAProposalExist
 checkIfAProposalExist = checkIfAProposalExist' @'Base
 
 checkGuardian'
-  :: forall cep p s caps m. (CEConstraints cep, MonadCleveland caps m)
-  => ContractHandle p s () -> ImplicitAddress -> m ()
+  :: forall cep p s caps m addr. (CEConstraints cep, MonadCleveland caps m, ToAddress addr)
+  => ContractHandle p s () -> addr -> m ()
 checkGuardian' addr guardianToChk = do
   actual <- sGuardianRPC <$> (getStorageRPC' @cep addr)
   actual @== toAddress guardianToChk
 
 checkBalance'
-  :: forall cep p s caps m. (CEConstraints cep, MonadCleveland caps m)
+  :: forall cep p s caps m addr. (CEConstraints cep, MonadCleveland caps m, ToImplicitAddress addr)
   => ContractHandle p s ()
-  -> ImplicitAddress
+  -> addr
   -> Natural
   -> m ()
 checkBalance' addr owner bal = do
@@ -171,9 +170,9 @@ checkBalance' addr owner bal = do
   (sumAddressFreezeHistory <$> fh) @== Just bal
 
 checkBalance
-  :: forall p s caps m. MonadCleveland caps m
+  :: forall p s caps m addr. (MonadCleveland caps m, ToImplicitAddress addr)
   => ContractHandle p s ()
-  -> ImplicitAddress
+  -> addr
   -> Natural
   -> m ()
 checkBalance = checkBalance' @'Base

@@ -23,8 +23,8 @@ import Text.Show (show)
 
 import Test.Cleveland.Lorentz.Types
 import Lorentz hiding (cast, not)
-import Morley.Tezos.Address
 import Morley.Tezos.Crypto (SecretKey)
+import Test.Cleveland (ImplicitAddressWithAlias)
 
 import Ligo.BaseDAO.Types
 import SMT.Model.BaseDAO.Types
@@ -85,7 +85,7 @@ data SmtOption (var :: Variants) = SmtOption
 
 -- | Generator state, contains commonly used value that shared between generators.
 data GeneratorState cep = GeneratorState
-  { gsAddresses :: [(ImplicitAddress, SecretKey)]
+  { gsAddresses :: [(ImplicitAddressWithAlias, SecretKey)]
   , gsLevel :: Natural
   , gsMkGenPropose :: MkGenPropose cep
   , gsMkCustomCalls :: MkGenCustomCalls cep

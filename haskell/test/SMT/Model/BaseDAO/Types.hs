@@ -37,6 +37,7 @@ import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Tezos.Address
 import Morley.Tezos.Core
 import Morley.Tezos.Crypto (HashTag)
+import Test.Cleveland (ImplicitAddressWithAlias)
 
 import Ligo.BaseDAO.ErrorCodes
 import Ligo.BaseDAO.Types
@@ -213,8 +214,8 @@ instance Buildable (Parameter' (VariantToParam var)) => Buildable (ModelCall var
 
 -- | Definition of an @source@ and @sender@ for a call to emulate in the SMTs
 data ModelSource = ModelSource
-  { msoSender :: ImplicitAddress
-  , msoSource :: ImplicitAddress
+  { msoSender :: ImplicitAddressWithAlias
+  , msoSource :: ImplicitAddressWithAlias
   } deriving stock (Eq, Show, Generic)
 
 instance Buildable ModelSource where

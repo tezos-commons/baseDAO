@@ -24,12 +24,13 @@ updateDelegate = testScenario "checks it can flush a proposal that updates contr
   withOriginatedSetup @variant @4
     (\(_ ::< _ ::< _ ::< delegateAddr ::< Nil') _ -> registerDelegate delegateAddr)
     (\_ -> setVariantExtra @variant @"MaxProposalSize" (200 :: Natural))
-    \(admin ::< wallet1 ::< wallet2 ::< ImplicitAddress delegate ::< Nil') (toPeriod -> period) baseDao _ _ -> do
+    \(admin ::< wallet1 ::< wallet2 ::< delegateAddr ::< Nil') (toPeriod -> period) baseDao _ _ -> do
       let
         proposalMeta = toProposalMetadata @variant $ Just delegate
 
         proposalSize = metadataSize proposalMeta
         proposeParams = ProposeParams (toAddress wallet1) proposalSize proposalMeta
+        delegate = unImplicitAddress $ awaAddress delegateAddr
 
       withSender wallet1 $
         transfer baseDao $ calling (ep @"Freeze") (#amount :! proposalSize)

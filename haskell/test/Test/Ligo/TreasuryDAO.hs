@@ -351,10 +351,11 @@ flushUpdateContractDelegate
 flushUpdateContractDelegate = withFrozenCallStack $ withOriginatedSetup @variant @4
   (\(_ ::< _ ::< _ ::< dodOperator2 ::< Nil') _ -> registerDelegate dodOperator2)
   (\_ s -> s { sConfig = (sConfig s) { cPeriod = 25, cProposalExpiredLevel = 300 } }) $
-  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< ImplicitAddress delegate ::< Nil') fs dodDao _ _ -> do
+  \(dodAdmin ::< dodOwner1 ::< dodOwner2 ::< delegateAddr ::< Nil') fs dodDao _ _ -> do
     let dodPeriod = toPeriod fs
         proposalMeta = toProposalMetadata @variant $ Just delegate
         proposeParams = ProposeParams (toAddress dodOwner1) (metadataSize $ proposalMeta) $ proposalMeta
+        delegate = unImplicitAddress $ awaAddress delegateAddr
 
     -- Freeze in initial voting stage.
     withSender dodOwner1 $

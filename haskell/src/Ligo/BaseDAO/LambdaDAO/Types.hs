@@ -124,8 +124,7 @@ instance Buildable HandlerInfo where
   build = genericF
 
 customGeneric "LambdaExtra" ligoLayout
--- TODO [morley#922]: remove droRecursive=False here
-deriveRPCWithOptions "LambdaExtra" def{droStrategy=ligoLayout, droRecursive=False}
+deriveRPCWithOptions "LambdaExtra" def{droStrategy=ligoLayout}
 deriving anyclass instance IsoValue LambdaExtra
 
 instance HasAnnotation LambdaExtra where

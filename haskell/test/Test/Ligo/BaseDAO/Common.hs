@@ -43,8 +43,6 @@ import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
 import Morley.Michelson.Typed.Scope (HasNoOp)
 import Morley.Util.SizedList (SizedList'(..), pattern (::<))
 import Test.Cleveland
-import Test.Cleveland.Internal.Abstract
-import Test.Cleveland.Internal.Actions.Helpers
 
 import Ligo.BaseDAO.Contract
 import Ligo.BaseDAO.Types
@@ -64,13 +62,13 @@ data ContractType
   deriving stock Eq
 
 data DaoOriginateData a = DaoOriginateData
-  { dodOwner1 :: ImplicitAddress
-  , dodOperator1 :: ImplicitAddress
-  , dodOwner2 :: ImplicitAddress
-  , dodOperator2 :: ImplicitAddress
+  { dodOwner1 :: ImplicitAddressWithAlias
+  , dodOperator1 :: ImplicitAddressWithAlias
+  , dodOwner2 :: ImplicitAddressWithAlias
+  , dodOperator2 :: ImplicitAddressWithAlias
   , dodDao :: ContractHandle (Parameter' (VariantToParam a)) (StorageSkeleton (VariantToExtra a)) ()
   , dodTokenContract :: ContractHandle FA2.Parameter [FA2.TransferParams] ()
-  , dodAdmin :: ImplicitAddress
+  , dodAdmin :: ImplicitAddressWithAlias
   , dodGuardian :: ContractHandle (Address, ProposalKey) () ()
   , dodPeriod :: Natural
   }
@@ -128,7 +126,7 @@ addDataToSign (toAddress -> dsContract) dsNonce dsData = do
 -- | Add a permit from given user.
 permitProtect
   :: (MonadCleveland caps m, NicePackedValue a)
-  => ImplicitAddress -> (DataToSign a, a) -> m (PermitProtected a)
+  => ImplicitAddressWithAlias -> (DataToSign a, a) -> m (PermitProtected a)
 permitProtect author (toSign, a) = do
   pKey <- getPublicKey author
   pSignature <- signBinary (lPackValue toSign) author
@@ -182,7 +180,7 @@ originateLigoDaoWithConfig extra config qt =
       let storage =
                 ( mkStorage
                   ! #extra extra
-                  ! #admin admin
+                  ! #admin (toImplicitAddress admin)
                   ! #metadata mempty
                   ! #tokenAddress (toAddress tokenContract)
                   ! #level (currentLevel + originationOffset)
@@ -216,9 +214,9 @@ originateLigoDao =
 
 createSampleProposal
   :: (MonadCleveland caps m, HasCallStack)
-  => Int -> ImplicitAddress -> ContractHandle Parameter Storage vd -> m ProposalKey
+  => Int -> ImplicitAddressWithAlias -> ContractHandle Parameter Storage vd -> m ProposalKey
 createSampleProposal counter dodOwner dao = do
-  let (pk, action) = createSampleProposal_ counter dodOwner dao
+  let (pk, action) = createSampleProposal_ counter (toImplicitAddress dodOwner) dao
   withSender dodOwner action
   pure pk
 
@@ -236,10 +234,13 @@ createSampleProposal_ counter dodOwner1 dao =
 -- TODO consider making this polymorphic on the input/output size
 createSampleProposals
   :: (MonadCleveland caps m, HasCallStack)
-  => (Int, Int) -> ImplicitAddress -> ContractHandle Parameter Storage vd -> m (ProposalKey, ProposalKey)
+  => (Int, Int)
+  -> ImplicitAddressWithAlias
+  -> ContractHandle Parameter Storage vd
+  -> m (ProposalKey, ProposalKey)
 createSampleProposals (counter1, counter2) dodOwner1 dao = do
-  let (pk1, action1) = createSampleProposal_ counter1 dodOwner1 dao
-  let (pk2, action2) = createSampleProposal_ counter2 dodOwner1 dao
+  let (pk1, action1) = createSampleProposal_ counter1 (toImplicitAddress dodOwner1) dao
+  let (pk2, action2) = createSampleProposal_ counter2 (toImplicitAddress dodOwner1) dao
   withSender dodOwner1 . inBatch $ do
     action1
     action2
@@ -257,9 +258,3 @@ checkStorage addr expected = do
 
 metadataSize :: ByteString -> Natural
 metadataSize md = fromIntegral $ BS.length md
-
-refillables :: (Traversable f, MonadCleveland caps m) => m (f ImplicitAddress) -> m (f ImplicitAddress)
-refillables action = do
-  addrs <- action
-  void $ withCap getMiscCap \cap -> traverse (cmiMarkAddressRefillable cap) addrs
-  pure addrs
