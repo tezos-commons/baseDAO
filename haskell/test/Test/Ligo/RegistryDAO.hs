@@ -24,6 +24,7 @@ import Test.Ligo.Common
 import Test.Ligo.RegistryDAO.Tests.Common
 import Test.Ligo.RegistryDAO.Tests.EmptyProposal
 import Test.Ligo.RegistryDAO.Tests.ExecuteWonProposal
+import Test.Ligo.RegistryDAO.Tests.FlushConfigUpdates
 import Test.Ligo.RegistryDAO.Tests.FlushRegistryUpdates
 import Test.Ligo.RegistryDAO.Tests.FlushTransferProposal
 import Test.Ligo.RegistryDAO.Tests.LargeProposal
@@ -104,6 +105,7 @@ registryDAOTests =
     , tokensToBurn @variant
     , executeWonProposal @variant
     , registryView @variant
+    , flushConfigUpdates @variant
     , flushTransferProposal @variant
     , proposeXtzProposal @variant
     , flushRegistryUpdates @variant
