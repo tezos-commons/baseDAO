@@ -254,7 +254,7 @@ let configuration_proposal_handler (ph_input : ph_input) : ph_output =
 
         let new_hs = match cp.frozen_extra_value with
           | Some (frozen_extra_value) ->
-              set_hs_nat ("frozen_scale_value", frozen_extra_value, new_hs)
+              set_hs_nat ("frozen_extra_value", frozen_extra_value, new_hs)
           | None -> new_hs in
 
         let new_hs = match cp.max_proposal_size with
