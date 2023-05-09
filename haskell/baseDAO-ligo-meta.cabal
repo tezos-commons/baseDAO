@@ -233,6 +233,7 @@ test-suite baseDAO-test
       Test.Ligo.RegistryDAO.Tests.Common
       Test.Ligo.RegistryDAO.Tests.EmptyProposal
       Test.Ligo.RegistryDAO.Tests.ExecuteWonProposal
+      Test.Ligo.RegistryDAO.Tests.FlushConfigUpdates
       Test.Ligo.RegistryDAO.Tests.FlushRegistryUpdates
       Test.Ligo.RegistryDAO.Tests.FlushTransferProposal
       Test.Ligo.RegistryDAO.Tests.LargeProposal

@@ -178,22 +178,22 @@ let decision_callback (input : decision_callback_input)
 
       let new_ce = match cp.frozen_extra_value with
         | Some (frozen_extra_value) ->
-            { extras with frozen_extra_value = frozen_extra_value }
+            { new_ce with frozen_extra_value = frozen_extra_value }
         | None -> new_ce in
 
       let new_ce = match cp.max_proposal_size with
         | Some (max_proposal_size) ->
-            { extras with max_proposal_size = max_proposal_size }
+            { new_ce with max_proposal_size = max_proposal_size }
         | None -> new_ce in
 
       let new_ce = match cp.slash_scale_value with
         | Some (slash_scale_value) ->
-            { extras with slash_scale_value = slash_scale_value }
+            { new_ce with slash_scale_value = slash_scale_value }
         | None -> new_ce in
 
       let new_ce = match cp.slash_division_value with
         | Some (slash_division_value) ->
-            { extras with slash_division_value = slash_division_value }
+            { new_ce with slash_division_value = slash_division_value }
         | None -> new_ce
       in { operations = ops; extras = new_ce; guardian = (None : (address option)) }
   | Transfer_proposal tp ->
