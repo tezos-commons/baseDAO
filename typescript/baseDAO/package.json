@@ -12,5 +12,12 @@
     "@taquito/michel-codec": "^8.0.6-beta.0",
     "@taquito/signer": "^8.0.4-beta-RC.0",
     "@taquito/taquito": "^8.0.4-beta-RC.0"
+  },
+  "resolutions": {
+    "lodash": ">=4.17.21",
+    "path-parse": ">=1.0.7",
+    "cookiejar": ">=2.1.4",
+    "validator": ">=13.7.0",
+    "ansi-regex": ">=5.0.1"
   }
 }
