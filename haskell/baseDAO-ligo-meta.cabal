@@ -108,13 +108,13 @@ library
     , containers
     , file-embed
     , filepath
-    , fmt
     , lorentz
     , morley
     , morley-ledgers
     , morley-metadata
     , morley-prelude
     , named
+    , prettyprinter
     , template-haskell
     , text
     , universum
@@ -317,7 +317,6 @@ test-suite baseDAO-test
     , cleveland
     , containers
     , cryptonite
-    , fmt
     , hedgehog
     , lorentz
     , morley

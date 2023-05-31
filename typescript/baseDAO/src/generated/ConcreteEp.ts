@@ -20,12 +20,14 @@ export interface ConcreteEpTransfer_contract_tokensItem {
 export interface ConcreteEpTransfer_contract_tokens {
   transfer_contract_tokens: ConcreteEpTransfer_contract_tokensItem;
 };
-export type ConcreteEpTransfer_contract_tokensParams = Array<ConcreteEpTransfer_contract_tokensParamsItem>;
+export type ConcreteEpTransfer_contract_tokensParams =
+  Array<ConcreteEpTransfer_contract_tokensParamsItem>;
 export interface ConcreteEpTransfer_contract_tokensParamsItem {
   from_: string;
   txs: ConcreteEpTransfer_contract_tokensParamsItemTxs;
 };
-export type ConcreteEpTransfer_contract_tokensParamsItemTxs = Array<ConcreteEpTransfer_contract_tokensParamsItemTxsItem>;
+export type ConcreteEpTransfer_contract_tokensParamsItemTxs =
+  Array<ConcreteEpTransfer_contract_tokensParamsItemTxsItem>;
 export interface ConcreteEpTransfer_contract_tokensParamsItemTxsItem {
   to_: string;
   token_id: number;

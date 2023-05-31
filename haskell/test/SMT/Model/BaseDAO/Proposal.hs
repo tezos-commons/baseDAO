@@ -313,8 +313,7 @@ applyFlush _ param = do
 
   newN <- flushEach (toInteger param)
 
-  if (newN == toInteger param) then throwError EMPTY_FLUSH
-  else pure ()
+  when (newN == toInteger param) $ throwError EMPTY_FLUSH
 
 applyDropProposal :: ModelSource -> ProposalKey -> ModelT cep ()
 applyDropProposal mso proposalKey = do

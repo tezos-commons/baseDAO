@@ -30,7 +30,6 @@ import Ligo.BaseDAO.Types
 getStorageRPC'
   :: forall cep caps m p s.
      ( HasCallStack, CEConstraints cep, MonadCleveland caps m
-     , NiceStorage (VariantToExtra cep)
      )
   => ContractHandle p s () -> m (StorageSkeletonRPC (VariantToExtra cep))
 getStorageRPC' addr = getStorage @(StorageSkeleton (VariantToExtra cep)) (chAddress addr)

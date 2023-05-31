@@ -40,7 +40,7 @@ import Test.Ligo.BaseDAO.Common
 --   - Originate basedao contract
 -- For Haskell:
 --   - Setup `ModelState`
-runBaseDaoSMT :: forall var. (Typeable var, IsoValue (VariantToExtra var), Default (VariantToExtra var), T.HasNoOp (ToT (VariantToExtra var))) => SmtOption var -> PropertyT IO ()
+runBaseDaoSMT :: forall var. (Typeable var, IsoValue (VariantToExtra var), Default (VariantToExtra var), T.ForbidOp (ToT (VariantToExtra var))) => SmtOption var -> PropertyT IO ()
 runBaseDaoSMT option@SmtOption{..} = do
 
   -- Run the generator to get a function that will generate a list of entrypoint calls.
@@ -229,9 +229,7 @@ handleCallViaLigo
   -> ModelCall var
   -> m (Either ModelError (StorageSkeleton (VariantToExtra var)), Mutez, [FA2.TransferParams], Mutez, [Text])
 handleCallViaLigo (dao, gov, viewC) mc = do
-  case (mc & mcAdvanceLevel) of
-    Just lvl -> advanceLevel lvl
-    Nothing -> pure ()
+  whenJust (mc & mcAdvanceLevel) advanceLevel
 
   nettestResult <- attempt @TransferFailure $ callLigoEntrypoint mc dao
   let result = parseNettestError nettestResult

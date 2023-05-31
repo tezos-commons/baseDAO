@@ -22,7 +22,7 @@ import Universum hiding (fromInteger)
 
 import Data.Map qualified as M
 
-import Fmt (Buildable, build, genericF)
+import Fmt (Buildable, GenericBuildable(..))
 import Lorentz as L
 import Morley.AsRPC
 
@@ -117,11 +117,9 @@ deriving anyclass instance IsoValue HandlerInfo
 instance HasAnnotation HandlerInfo where
   annOptions = baseDaoAnnOptions
 
-instance Buildable (WrappedLambda i o) where
-  build = genericF
+deriving via GenericBuildable (WrappedLambda i o) instance Buildable (WrappedLambda i o)
 
-instance Buildable HandlerInfo where
-  build = genericF
+deriving via GenericBuildable HandlerInfo instance Buildable HandlerInfo
 
 customGeneric "LambdaExtra" ligoLayout
 deriveRPCWithOptions "LambdaExtra" def{droStrategy=ligoLayout}
@@ -141,5 +139,4 @@ deriving anyclass instance IsoValue LambdaDaoProposalMetadata
 instance HasAnnotation LambdaDaoProposalMetadata where
   annOptions = baseDaoAnnOptions
 
-instance Buildable LambdaExtra where
-  build = genericF
+deriving via GenericBuildable LambdaExtra instance Buildable LambdaExtra

@@ -40,7 +40,7 @@ import Data.ByteString qualified as BS
 import Lorentz hiding (assert, now, (>>))
 import Lorentz.Contracts.Spec.AbstractLedgerInterface qualified as FA12
 import Lorentz.Contracts.Spec.FA2Interface qualified as FA2
-import Morley.Michelson.Typed.Scope (HasNoOp)
+import Morley.Michelson.Typed.Scope (ForbidOp)
 import Morley.Util.SizedList (SizedList'(..), pattern (::<))
 import Test.Cleveland
 
@@ -156,7 +156,7 @@ type OriginationCEConstraints cep =
   , NiceStorage (StorageSkeleton (VariantToExtra cep))
   , IsoValue (VariantToExtra cep)
   , NiceParameterFull (VariantToParam cep)
-  , HasNoOp (ToT (VariantToExtra cep)))
+  , ForbidOp (ToT (VariantToExtra cep)))
 
 originateLigoDaoWithConfig
  :: forall cep caps m. (OriginationCEConstraints cep, MonadCleveland caps m)

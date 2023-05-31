@@ -8,7 +8,7 @@ module Test.Plist.Type
 
 import Universum hiding (drop, swap)
 
-import Fmt (Buildable, build, genericF)
+import Fmt (Buildable, GenericBuildable(..))
 
 import Lorentz hiding (and, div, now, (>>))
 
@@ -27,8 +27,7 @@ deriving anyclass instance IsoValue PlistParameter
 instance ParameterHasEntrypoints PlistParameter where
   type ParameterEntrypointsDerivation PlistParameter = EpdDelegate
 
-instance Buildable PlistParameter where
-  build = genericF
+deriving via GenericBuildable PlistParameter instance Buildable PlistParameter
 
 data PlistStorage = PlistStorage
   { psPlist :: (Maybe ProposalDoublyLinkedList)
@@ -43,5 +42,4 @@ deriving stock instance Eq PlistStorage
 deriving anyclass instance IsoValue PlistStorage
 instance HasAnnotation PlistStorage where
   annOptions = baseDaoAnnOptions
-instance Buildable PlistStorage where
-  build = genericF
+deriving via GenericBuildable PlistStorage instance Buildable PlistStorage

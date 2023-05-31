@@ -153,10 +153,7 @@ data SimpleOperation
   | FA12TransferOperation Address FA12.TransferParams Mutez
   | OtherOperation Address Text Mutez
   deriving stock (Eq, Show, Generic)
-
-instance Buildable SimpleOperation where
-  build = genericF
-
+  deriving Buildable via GenericBuildable SimpleOperation
 
 -- | A simple contract type used to track originate contracts
 -- We mostly care about contract that has the FA2 transfer entrypont.
@@ -166,33 +163,25 @@ data SimpleContractType
   | SimpleFA12ContractType SimpleFA12Contract
   | OtherContractType OtherContract
   deriving stock (Eq, Show, Generic)
-
-instance Buildable SimpleContractType where
-  build = genericF
+  deriving Buildable via GenericBuildable SimpleContractType
 
 data SimpleFA2Contract = SimpleFA2Contract
   { sfcStorage :: [FA2.TransferParams]
   , sfcMutez :: Mutez
   } deriving stock (Eq, Show, Generic)
+    deriving Buildable via GenericBuildable SimpleFA2Contract
 
 data SimpleFA12Contract = SimpleFA12Contract
   { sfclStorage :: [FA12.TransferParams]
   , sfclMutez :: Mutez
   } deriving stock (Eq, Show, Generic)
-
-instance Buildable SimpleFA2Contract where
-  build = genericF
-
-instance Buildable SimpleFA12Contract where
-  build = genericF
+    deriving Buildable via GenericBuildable SimpleFA12Contract
 
 data OtherContract = OtherContract
   { ocStorage :: [Text]
   , ocMutez :: Mutez
   } deriving stock (Eq, Show, Generic)
-
-instance Buildable OtherContract where
-  build = genericF
+    deriving Buildable via GenericBuildable OtherContract
 
 -- | Definition of an entrypoint call to emulate in the SMTs
 data ModelCall var = ModelCall
@@ -206,20 +195,17 @@ deriving stock instance Show (VariantToParam var) => Show (ModelCall var)
 instance Buildable (HashTag a) where
   build = build . show
 
-instance Buildable ContractHash where
-  build = genericF
+deriving via GenericBuildable ContractHash instance Buildable ContractHash
 
-instance Buildable (Parameter' (VariantToParam var)) => Buildable (ModelCall var) where
-  build = genericF
+deriving via GenericBuildable (ModelCall var)
+  instance Buildable (Parameter' (VariantToParam var)) => Buildable (ModelCall var)
 
 -- | Definition of an @source@ and @sender@ for a call to emulate in the SMTs
 data ModelSource = ModelSource
   { msoSender :: ImplicitAddressWithAlias
   , msoSource :: ImplicitAddressWithAlias
   } deriving stock (Eq, Show, Generic)
-
-instance Buildable ModelSource where
-  build = genericF
+    deriving Buildable via GenericBuildable ModelSource
 
 -- | The possible contract errors for the models
 data ModelError
@@ -240,9 +226,7 @@ data ModelError
   | UNSTAKE_INVALID_PROPOSAL
   | VOTER_DOES_NOT_EXIST
   deriving stock (Generic, Eq, Show)
-
-instance Buildable ModelError where
-  build = genericF
+  deriving Buildable via GenericBuildable ModelError
 
 contractErrorToModelError :: Integer -> ModelError
 contractErrorToModelError errorCode
