@@ -19,6 +19,7 @@ import Data.Map qualified as Map
 import Data.Text qualified as T
 import Fmt (Buildable(build), blockListF', (+|), (|+))
 import Fmt qualified
+import Prettyprinter (nest)
 import System.FilePath
 
 import Lorentz.Entrypoints
@@ -167,7 +168,7 @@ data TsTypeDef
 -- Implements the conversion to source code.
 instance Buildable TsTypeDef where
   build (TsUnion xs) = Fmt.indentF 2 $ (Fmt.blockListF' "|" build xs)
-  build (TsTuple fs) =  Fmt.unwordsF ["[", T.intercalate ", " (Fmt.pretty <$> fs), "];"]
+  build (TsTuple fs) =  Fmt.listF fs <> ";"
   build (TsInterface fns) =  Fmt.unlinesF ["{", Fmt.indentF 2 $ Fmt.unlinesF $ mkPair <$> fns, "};"]
     where
       mkPair :: InterfaceField -> Text
@@ -181,9 +182,9 @@ instance Buildable TsTypeDef where
 instance Buildable TsDecl where
   build (TsType typename tdef) = case tdef of
     TsUnion _ -> (Fmt.unwordsF ["export type", build typename, "=\n"]) <> (build tdef)
-    TsTuple _ -> Fmt.unwordsF ["export type", build typename, "=", build tdef]
-    TsInterface _ -> Fmt.unwordsF ["export interface", build typename, build tdef]
-    TsAlias _ -> Fmt.unwordsF ["export type", build typename, "=", build tdef]
+    TsTuple _ -> nest 2 $ Fmt.unwordsF ["export type", build typename, "=", build tdef]
+    TsInterface _ -> "export interface " +| typename |+ " " +| tdef |+ ""
+    TsAlias _ -> nest 2 $ Fmt.unwordsF ["export type", build typename, "=", build tdef]
 
 -- Write down Typescript modules to represents types for the contract parameter 'cp'
 generateTs :: forall cp m. (MonadIO m, ParameterDeclaresEntrypoints cp) => FilePath -> m FilePath
@@ -221,7 +222,7 @@ writeModule fp (TsModule name imports decls _) = do
   let declLines = build <$> decls
   let importsLines = build <$> imports
   --let exportLines = (\x -> Fmt.unwordsF ["export", "{", x, "};"]) <$> exports
-  writeFile (fp </> filename) (Fmt.pretty $ Fmt.unlinesF (importsLines <> declLines))
+  writeFile (fp </> filename) (Fmt.pretty (Fmt.unlinesF (importsLines <> declLines)) <> "\n")
   pure filename
 
 -- Given a typename, and a type, generates Typescript declarations for this

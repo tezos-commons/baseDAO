@@ -9,7 +9,7 @@ module Ligo.BaseDAO.TreasuryDAO.Types
 
 import Universum hiding (fromInteger)
 
-import Fmt (Buildable, build, genericF)
+import Fmt (Buildable, GenericBuildable(..))
 import Lorentz as L
 import Morley.AsRPC
 
@@ -40,8 +40,7 @@ deriving anyclass instance IsoValue TreasuryExtra
 instance HasAnnotation TreasuryExtra where
   annOptions = baseDaoAnnOptions
 
-instance Buildable TreasuryExtra where
-  build = genericF
+deriving via GenericBuildable TreasuryExtra instance Buildable TreasuryExtra
 
 instance HasRPCRepr TreasuryExtra where
   type AsRPC TreasuryExtra = TreasuryExtra

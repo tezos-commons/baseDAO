@@ -113,13 +113,13 @@ library:
     - file-embed
     - filepath
     - text
-    - fmt
     - lorentz
     - morley
     - morley-ledgers
     - morley-metadata
     - morley-prelude
     - named
+    - prettyprinter
     - template-haskell
     - universum
     - with-utf8
@@ -155,7 +155,6 @@ tests:
     - aeson
     - containers
     - cryptonite
-    - fmt
     - hedgehog
     - lorentz
     - morley

@@ -16,7 +16,7 @@ import Universum hiding (fromInteger)
 import Data.Map qualified as M
 import Data.Set qualified as S
 
-import Fmt (Buildable, build, genericF)
+import Fmt (Buildable, GenericBuildable(..))
 import Lorentz as L
 import Morley.AsRPC
 
@@ -30,8 +30,7 @@ data LookupRegistryParam = LookupRegistryParam
 customGeneric "LookupRegistryParam" ligoCombLayout
 deriving anyclass instance IsoValue LookupRegistryParam
 
-instance Buildable LookupRegistryParam where
-  build = genericF
+deriving via GenericBuildable LookupRegistryParam instance Buildable LookupRegistryParam
 
 instance HasAnnotation LookupRegistryParam where
   annOptions = baseDaoAnnOptions
@@ -43,8 +42,7 @@ data RegistryCustomEpParam
 customGeneric "RegistryCustomEpParam" ligoLayout
 deriving anyclass instance IsoValue RegistryCustomEpParam
 
-instance Buildable RegistryCustomEpParam where
-  build = genericF
+deriving via GenericBuildable RegistryCustomEpParam instance Buildable RegistryCustomEpParam
 
 instance HasAnnotation RegistryCustomEpParam where
   annOptions = baseDaoAnnOptions
@@ -80,8 +78,7 @@ instance Default RegistryExtra where
 customGeneric "RegistryExtra" ligoLayout
 deriveRPCWithOptions "RegistryExtra" def{droStrategy=ligoLayout}
 
-instance Buildable RegistryExtra where
-  build = genericF
+deriving via GenericBuildable RegistryExtra instance Buildable RegistryExtra
 
 deriving anyclass instance IsoValue RegistryExtra
 instance HasAnnotation RegistryExtra where

@@ -9,20 +9,21 @@ packages:
   - haskell
 
 extra-deps:
-# Stable versions available on Hackage
-- morley-prelude-0.5.2
-- morley-1.19.1
-- lorentz-0.15.1
-- morley-client-0.3.1
-- cleveland-0.3.1
-- indigo-0.6.0
+- morley-prelude-0.5.3
+- morley-1.19.2
+- lorentz-0.15.2
+- morley-client-0.3.2
+- cleveland-0.3.2
+
+- git: https://gitlab.com/morley-framework/indigo.git
+  commit: 78058441a44682706469aebd56f07c93c51ecef1 # master
 
 - git: https://gitlab.com/morley-framework/morley-ledgers.git
-  commit: 4e2a799063d883e401fec410512e7f382057abfc # master
+  commit: 4c60e54f2739ec8065b2f96ab6f08360b6c85aa0 # master
   subdirs:
     - code/morley-ledgers
 - git: https://gitlab.com/morley-framework/morley-metadata.git
-  commit: 4b0665c70bf725146e25d9a4a94d000e9288462f # master
+  commit: b9daee2e495d3b8f65d0c87f24243e2e95d4a6f9 # master
   subdirs:
     - code/morley-metadata
     - code/morley-metadata-test

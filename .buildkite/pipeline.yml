@@ -82,9 +82,10 @@ steps:
     artifact_paths:
       - known_metadata.json
 
-  - label: ligo-test-local-chain-016
-    env:
-      TASTY_CLEVELAND_NODE_ENDPOINT: "http://localhost:8733"
+  - &local-chain
+    label: ligo-test-local-chain-017
+    env: &local-chain-env
+      TASTY_CLEVELAND_NODE_ENDPOINT: "http://localhost:8734"
       # this key is defined in local-chain bootstrap accounts list in
       # https://github.com/serokell/aquarius-infra/blob/master/servers/albali/chain.nix
       CHAIN_TEST_MONEYBAG_SECRET_KEY: "unencrypted:edsk3nAQ3uCP7vc2ccLhhWNNncgFfWQ5HgTyPawepQ8DURRRfzVQzB"
@@ -111,6 +112,7 @@ steps:
           --cleveland-mode=only-network
           --rerun
           --xml=./test-report.xml && break; done')
+
   - label: check typescript api
     if: *not_scheduled
     depends_on:
@@ -141,10 +143,11 @@ steps:
     commands:
     - nix-build . -A utils.haddock --no-out-link
 
-  - label: scheduled mumbainet ligo test
+  - &nettest
+    label: scheduled nairobinet ligo test
     if: build.source == "schedule"
-    env:
-      TASTY_CLEVELAND_NODE_ENDPOINT: "https://mumbai.testnet.tezos.serokell.team"
+    env: &nettest-env
+      TASTY_CLEVELAND_NODE_ENDPOINT: "https://nairobi.testnet.tezos.serokell.team"
       CHAIN_TEST_MONEYBAG_SECRET_KEY: "$TESTNET_MONEYBAG"
       CHAIN_TEST_MONEYBAG_PASSWORD: "$TESTNET_MONEYBAG_PASSWORD"
     depends_on:

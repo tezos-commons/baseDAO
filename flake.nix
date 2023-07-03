@@ -8,7 +8,6 @@
 
   inputs = {
     morley-infra.url = "gitlab:morley-framework/morley-infra";
-    morley-infra.inputs.hackage-nix.url = "github:input-output-hk/hackage.nix/07e57a6fd5f83dfd0c8713c1c86d27b134689354";
     nix-npm-buildpackage.url = "github:serokell/nix-npm-buildpackage";
     morley.url = "gitlab:morley-framework/morley";
   };

@@ -33,7 +33,7 @@ type VariantConstraints variant =
   ( HasBaseDAOEp (Parameter' (VariantToParam variant))
   , CEConstraints variant
   , IsoValue (VariantToExtra variant)
-  , HasNoOp (ToT (VariantToExtra variant)))
+  , ForbidOp (ToT (VariantToExtra variant)))
 
 class VariantExtraHasField variant name a where
   setVariantExtra :: a -> StorageSkeleton (VariantToExtra variant) -> StorageSkeleton (VariantToExtra variant)
