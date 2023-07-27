@@ -119,6 +119,8 @@ library
     , text
     , universum
     , with-utf8
+  if impl(ghc >= 9.2.0)
+    ghc-options: -Wno-unticked-promoted-constructors -Wno-missing-kind-signatures -Wno-operator-whitespace -Wno-implicit-lift
   default-language: Haskell2010
 
 executable baseDAO-ligo-meta
@@ -184,6 +186,8 @@ executable baseDAO-ligo-meta
     , morley-prelude
     , optparse-applicative
     , universum
+  if impl(ghc >= 9.2.0)
+    ghc-options: -Wno-unticked-promoted-constructors -Wno-missing-kind-signatures -Wno-operator-whitespace -Wno-implicit-lift
   default-language: Haskell2010
 
 test-suite baseDAO-test
@@ -305,7 +309,7 @@ test-suite baseDAO-test
       UndecidableInstances
       UndecidableSuperClasses
       ViewPatterns
-  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-unused-packages -Wno-prepositive-qualified-module -Wno-missing-safe-haskell-mode -threaded -eventlog "-with-rtsopts=-N -A64m -AL256m"
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-monomorphism-restriction -Wno-implicit-prelude -Wno-unused-packages -Wno-prepositive-qualified-module -Wno-missing-safe-haskell-mode -threaded "-with-rtsopts=-N -A64m -AL256m" -Wno-unused-imports
   build-tool-depends:
       tasty-discover:tasty-discover
   build-depends:
@@ -331,4 +335,6 @@ test-suite baseDAO-test
     , tasty-hunit-compat
     , tasty-rerun
     , universum
+  if impl(ghc >= 9.2.0)
+    ghc-options: -Wno-unticked-promoted-constructors -Wno-missing-kind-signatures -Wno-operator-whitespace -Wno-implicit-lift
   default-language: Haskell2010
