@@ -134,8 +134,7 @@ steps:
     if: *not_scheduled
     depends_on: build-haskell
     commands:
-    - nix build -L .#weeder-script
-    - ./result
+    - nix run -L .#ci:weeder
 
   - label: haddock
     if: *not_scheduled

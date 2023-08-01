@@ -95,6 +95,14 @@ ghc-options:
   -Wno-prepositive-qualified-module
   -Wno-missing-safe-haskell-mode
 
+when:
+  - condition: impl(ghc >= 9.2.0)
+    ghc-options:
+      - -Wno-unticked-promoted-constructors
+      - -Wno-missing-kind-signatures
+      - -Wno-operator-whitespace
+      - -Wno-implicit-lift
+
 dependencies:
   - name: base-noprelude
     version: ">= 4.7 && < 5"
@@ -144,8 +152,8 @@ tests:
 
     ghc-options:
     - -threaded
-    - -eventlog
     - '"-with-rtsopts=-N -A64m -AL256m"'
+    - -Wno-unused-imports # tasty-discover interacts badly with custom prelude
 
     dependencies:
     - HUnit

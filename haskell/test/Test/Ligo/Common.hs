@@ -1,6 +1,8 @@
 -- SPDX-FileCopyrightText: 2021 Tezos Commons
 -- SPDX-License-Identifier: LicenseRef-MIT-TC
---
+
+{-# OPTIONS_GHC -fconstraint-solver-iterations=5 #-}
+
 module Test.Ligo.Common
   ( IsProposalArgument(..)
   , VariantExtraHasField(..)

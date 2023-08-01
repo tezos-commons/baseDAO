@@ -33,7 +33,7 @@
           '';
         };
 
-        inherit (morley-infra.utils.${system}) weeder-hacks;
+        inherit (morley-infra.utils.${system}) ci-apps;
 
         # all local packages and their subdirectories
         # we need to know subdirectories to make weeder stuff work
@@ -61,18 +61,11 @@
             modules = [
               {
                 # common options for all local packages:
-                packages = pkgs.lib.genAttrs local-packages-names (packageName: {
-                  ghcOptions = with pkgs.lib; (
-                    ["-O0" "-Werror"]
-                    # produce *.dump-hi files, required for weeder:
-                    ++ optionals (!release) ["-ddump-to-file" "-ddump-hi"]
-                  );
+                packages = pkgs.lib.genAttrs local-packages-names (packageName: ci-apps.collect-hie release {
+                  ghcOptions = ["-O0" "-Werror"];
 
                   # enable haddock for local packages
                   doHaddock = true;
-
-                  # in non-release mode collect all *.dump-hi files (required for weeder)
-                  postInstall = if release then null else weeder-hacks.collect-dump-hi-files;
                 });
 
                 # disable haddock for dependencies
@@ -99,8 +92,8 @@
             shell = {
               tools = {
                 cabal = {};
-                hlint = { version = "3.4"; };
-                hpack = { version = "0.34.4"; };
+                hlint = { version = "3.5"; };
+                hpack = { version = "0.35.1"; };
               };
             };
         };
@@ -128,12 +121,6 @@
           devShells.default = (flake).devShell;
 
           packages = {
-            # a derivation which generates a script for running weeder
-            weeder-script = morley-infra.utils.${system}.weeder-script {
-              hs-pkgs = hs-pkgs-development;
-              inherit local-packages;
-            };
-
             all-components = pkgs.linkFarmFromDrvs "all-components"
               (builtins.attrValues (flake).packages);
 
@@ -180,6 +167,11 @@
                 baseDAO document --name TreasuryDAO --output TreasuryDAO.md
                 baseDAO document --name GameDAO --output GameDAO.md
               '';
+          };
+
+          apps = ci-apps.apps {
+            hs-pkgs = hs-pkgs-development;
+            inherit local-packages projectSrc;
           };
         }
       ]));

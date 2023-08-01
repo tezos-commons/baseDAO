@@ -3,66 +3,77 @@
 
 # To update hackage and stackage indexes used by CI run:
 # $ niv update hackage.nix; niv update stackage.nix
-resolver: lts-19.3
+resolver: lts-21.4
 
 packages:
   - haskell
 
 extra-deps:
-- morley-prelude-0.5.3
-- morley-1.19.2
-- lorentz-0.15.2
-- morley-client-0.3.2
-- cleveland-0.3.2
+- git: https://gitlab.com/morley-framework/morley.git
+  commit: 617305fa08b659a72be6071b49f502ece670a1f5
+  subdirs:
+  - code/morley-prelude
+  - code/morley
+  - code/lorentz
+  - code/morley-client
+  - code/cleveland
 
 - git: https://gitlab.com/morley-framework/indigo.git
-  commit: 78058441a44682706469aebd56f07c93c51ecef1 # master
+  commit: f586424abfd352f55edfb14f42221b9c01c3857a # master
 
 - git: https://gitlab.com/morley-framework/morley-ledgers.git
-  commit: 4c60e54f2739ec8065b2f96ab6f08360b6c85aa0 # master
+  commit: 4acbda1b5f3d7d26aacd2a8dd4bcceee2e534790 # master
   subdirs:
     - code/morley-ledgers
 - git: https://gitlab.com/morley-framework/morley-metadata.git
-  commit: b9daee2e495d3b8f65d0c87f24243e2e95d4a6f9 # master
+  commit: 8dc15fcbce29dea6ab2a6dc1e681a4c556386417 # master
   subdirs:
     - code/morley-metadata
     - code/morley-metadata-test
 
+- validation-1.1.3
+
 # Required by morley
 - git: https://github.com/serokell/base-noprelude.git
-  commit: c8b06c4c8a271fce0c2f41ab18e88d58e64bac52 # 4.15.1.0
-- OddWord-1.0.2.0
-- bitvec-1.0.3.0@sha256:f69ed0e463045cb497a7cf1bc808a2e84ea0ce286cf9507983bb6ed8b4bd3993,3977
-- colourista-0.1.0.1@sha256:98353ee0e2f5d97d2148513f084c1cd37dfda03e48aa9dd7a017c9d9c0ba710e,3307
-- named-0.3.0.1@sha256:418543272f0c844a77639b05276ee3906d5f305cd4cab46fafcb4f15b7f1e60d,2312
-- show-type-0.1.1
-- hsblst-0.0.1
+  commit: e2b514e3f62489b2dbcef44235c194e054fc03d9 # 4.17.1.0
+- git: https://github.com/serokell/OddWord.git # 2.0.0.0
+  commit: 50d5a452d2c78669301c560f091db9f77b6e78d0
+- bitvec-1.1.4.0
+- colourista-0.1.0.2
+- named-0.3.0.1
+- int-cast-0.2.0.0@rev:6
+- hsblst-0.0.2
+- dependent-sum-template-0.1.1.1
+- th-extras-0.0.0.6@rev:1
+- vector-sized-1.5.0
 
-- co-log-0.5.0.0
+- git: https://github.com/co-log/co-log.git
+  commit: 6a00acd2fb74ed25567b5e2b3321af338e235c73 # master
+  # co-log-0.5.0.0
 # Required by co-log
 - chronos-1.1.5
-- co-log-core-0.3.2.0
-- typerep-map-0.5.0.0
+- typerep-map-0.6.0.0
+- primitive-0.7.4.0 # downgrade, required by typerep-map
+  # it builds with 0.8 too (with allow-newer), but constraints are too tight
 # Required by chronos
-- bytebuild-0.3.11.0
-- byteslice-0.2.7.0
-- bytesmith-0.3.9.0
+- bytebuild-0.3.13.0
+- byteslice-0.2.10.0
+- bytesmith-0.3.9.1
 # Required by byte*
-- run-st-0.1.1.0
+- run-st-0.1.3.0
 - zigzag-0.0.1.0
-- contiguous-0.6.2.0
+- contiguous-0.6.3.0
 
 # Packages by Adjoint (somewhat unmaintained, hence they require constraints on their deps)
-- galois-field-1.0.2
-- elliptic-curve-0.3.0
-- pairing-1.1.0
-# Required by galois-field.
-- protolude-0.2.4
-- poly-0.4.0.0
-# Required by pairing.
-- groups-0.4.1.0
+- git: https://github.com/serokell/galois-field.git
+  commit: b3ef4c9c0f1c95e5266698dc93246cf551779675
+- poly-0.5.1.0
+- git: https://github.com/serokell/pairing.git
+  commit: 829389a09a84da34ced36bf1804f26e680663068
+- git: https://github.com/serokell/elliptic-curve.git
+  commit: 80c94254ec0ca3ee15717b30f1930c00561d057a
 # For keyed BLAKE2b and NaCl secret box
 - crypto-sodium-0.0.5.0
 # Dependencies of crypto-sodium
 - NaCl-0.0.5.0
-- libsodium-1.0.18.2
+- libsodium-1.0.18.3
